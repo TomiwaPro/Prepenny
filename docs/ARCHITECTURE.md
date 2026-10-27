@@ -165,3 +165,448 @@ The engine has a built-in copy of the official list from `https://www.gov.uk/ban
 - **Times** (balance updates, ticks, spends, D33) are ISO strings in UTC. The engine only compares stored times with each other, so it still needs no clock.
 - **Pure:** no `Date.now()`, no `Math.random()`, no network, no storage. A lint rule blocks them inside the package.
 - **Edits** are commands: `editPlan(plan, command, today) → { writes, undo }`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
+
+## 3. The data model
+
+**In plain words.** These are all the kinds of record PrePenny keeps, what's in each one and where it lives. There are three places:
+
+- **On the phone and on the server:** the plan itself. The phone's copy makes the app instant and lets it work offline. The server's copy keeps it safe, puts it on your other devices and lets a partner share it.
+- **On the server only:** sign-in devices, billing, organisations and support.
+- **On the phone only:** changes not sent yet, what-if practice changes, the app lock and this device's own settings.
+
+Payments themselves are never stored. Only the series, the one-off changes and the ticks are (brief 5.2).
+
+Types used below:
+
+| Type | Meaning |
+| --- | --- |
+| id | A random ID (UUID version 7) made on the phone, so records can be made offline |
+| pence | Whole pence as an integer: £4.53 is 453. Stored as a 64-bit whole number |
+| minor units | Whole cents (or the smallest unit) of a debt's own currency |
+| date | A calendar date, `YYYY-MM-DD`, with no time |
+| time | A date and time in UTC, for example `2026-10-30T09:14:05Z` |
+| decimal | An exact number written as text, for example `"1.1612"` (rates, percentages, hours). Never floating point |
+| yes/no | True or false |
+| text | Words a person typed |
+| choice | One of a fixed list |
+| list | Several values |
+
+### 3.1 Fields on every shared record, for sync
+
+| Field | Type | What it's for |
+| --- | --- | --- |
+| `id` | id | The record's own ID |
+| `plan_id` | id | Which plan it belongs to |
+| `private_to` | person id, or empty | Empty: everyone in the plan can see it. Set: only that person, ever (D16) |
+| `version` | number | Goes up by 1 on every save. A phone sends the version it changed; if the server has moved on, that's a clash (3.5) |
+| `seq` | number | The plan's change number when it was last saved. Phones ask for "everything after number N" |
+| `created_at`, `created_by` | time, person id | When it was made, and who made it |
+| `changed_at`, `changed_by` | time, person id | Who last changed it, and when: "Changed by Tom, 2 hours ago" (brief 4.14). Set by the server, not the phone |
+| `edit_id` | id | The edit that last saved it, for the activity list and undo |
+| `deleted` | yes/no | Removed records stay as "deleted" for 90 days so every phone hears about it, then they're cleared out for good |
+
+### 3.2 The plan and the people
+
+**Person** (server, and the person's own phones; a partner sees only the nickname)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | id | The same ID as their sign-in |
+| `nickname` | text | A nickname is enough, no real name (brief 7.2). Shown to a partner as "Changed by Tom" |
+| `created_at` | time | |
+
+Email addresses and sign-in methods live in Supabase's own sign-in tables, not here.
+
+**Plan** (phone and server)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `name` | text | For example "Our plan" |
+| `nation` | choice: England and Wales, Scotland, Northern Ireland | Which bank holidays apply (brief 4.3) |
+| `is_example` | yes/no | Sam's example plan, clearly marked (brief 4.1, D15) |
+| `max_members` | number | 2 for now (brief 4.14). Raising it is how housemates join later (3.10) |
+| `owner` | person id | Who made the plan |
+
+**Plan member** (phone and server)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `plan_id`, `person_id` | id | |
+| `role` | choice: owner, editor, viewer | "Can edit" is editor, "Can view only" is viewer (brief 4.14) |
+| `main_pay_series_id` | id | This person's main pay (D14). In a shared plan each person has their own, so Jess's plan periods follow Jess's payday and Tom's follow Tom's |
+| `joined_at` | time | |
+| `left_at` | time, or empty | Set when they leave |
+
+**Invite** (server, and the inviter's phone)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `plan_id` | id | |
+| `role` | choice: editor, viewer | "Can edit" is the default (brief 4.14) |
+| `email` | text, or empty | Only when the invite is sent by email |
+| `token_hash` | text | The invite link carries a secret. Only a scrambled copy (a hash) is stored, so a copy of the database can't be used to join |
+| `expires_at` | time | 7 days after it was made (brief 4.14) |
+| `cancelled_at`, `accepted_at`, `accepted_by` | time, time, person id | |
+
+### 3.3 Money records
+
+All of these are on the phone and the server, with the sync fields from 3.1.
+
+**Account**
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `name` | text | |
+| `kind` | choice: current, savings, joint | Brief 4.2 |
+| `currency` | text | `"GBP"` for now, ready for other currencies later (brief Part 10) |
+| `overdraft_limit` | pence | 0 if none. The floor is minus this (brief 5.5): −£1,000.00 for Ali |
+| `warning_level` | pence | Strictly under this is Tight (D10). **Proposed:** setup suggests £20.00 and people can change it |
+| `belongs_to` | person id, or empty | Whose money it is, for "From Jess" (D16). Empty for a joint account |
+| `sort_order` | number | |
+| `closed` | yes/no | |
+
+**Balance update** (what the bank showed)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `account_id` | id | |
+| `balance` | pence | The amount typed in |
+| `checked_on` | date | The balance date D (brief 5.5) |
+| `checked_at` | time | The moment of the update (D33) |
+| `expected` | pence | What the plan expected, kept for the history ("The plan expected £604.53") |
+| `source` | choice: typed, bank | Always "typed" for now. "bank" is ready for bank connections (3.10) |
+
+An account's balance and date (brief 5.2) are its latest balance update. Keeping each update as its own record gives a history and lets undo put the old one back.
+
+**Series** (anything that happens once or repeats, brief 5.2)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `account_id` | id | The account the money leaves or arrives in |
+| `to_account_id` | id, or empty | The other account, for transfers |
+| `name` | text | |
+| `direction` | choice: in, out, transfer | |
+| `type` | choice | For example Pay, Rent, Bills, Debt, Spending money, Savings, Other. The full list is fixed in step 1b. "Spending money" counts towards Left to spend (D28) |
+| `amount` | pence | |
+| `amount_cycle` | list of pence, up to 8 | "My pay changes in a pattern" (brief 4.1) |
+| `cycle_offset` | number | Where in the pattern payment 0 sits |
+| `cycle_pay_weeks` | list of pay week ids | Each pattern step linked to a saved pay week (D5). Sam: steps 1 and 3 "3-shift week", steps 2 and 4 "4-shift week" |
+| `schedule` | see below | |
+| `start_date` | date | |
+| `end_rule` | choice: never, after N payments, on a date | Brief 4.4 |
+| `last_amount` | pence, or empty | A different last payment (brief 4.4) |
+| `holiday_rule` | choice: keep the date, working day before, working day after | Brief 4.3 |
+| `debt_id`, `budget_id`, `goal_id` | id, or empty | The linked debt, budget or goal |
+| `is_estimate` | yes/no | |
+| `note` | text | |
+| `pay_profile_id` | id, or empty | For pay: which job's tax settings to use |
+| `split_from` | id, or empty | The series this one was split from (brief 5.4) |
+| `first_number` | number | The payment number this series starts at, counted from the original series, so patterns and "after N payments" carry on after a split. 0 for a new series |
+| `mirror_of` | id, or empty | Set on the shared half of a private transfer (D16, 3.6) |
+| `locked_to` | person id, or empty | Only this person can change it (D16) |
+
+The `schedule` is one of:
+
+- **once:** a date
+- **every N weeks**, 1 to 52, on the start date's weekday
+- **every N months**, 1 to 12, on a day of the month (1 to 31), the last day, the last working day, or "the first Monday" style, with optional months to leave out (Dee's council tax, April to January)
+- **on chosen dates:** a list of dates (Ali's student loan).
+
+Irregular pay with a weekly estimate (Kofi) is "every 1 week" marked as an estimate.
+
+**Payment change** (a change to one payment, brief 5.2)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `series_id` or `budget_id` | id | A budget is used for the real pay-later bill (D32) |
+| `original_date` | date | Which payment. Only one change per series and original date |
+| `new_date` | date, or empty | Moved |
+| `amount` | pence, or empty | A new amount, or the real amount once it lands |
+| `name`, `note` | text, or empty | |
+| `is_estimate` | yes/no, or empty | |
+| `skipped` | yes/no | Removed, just this one (D4) |
+
+**Proposed:** the paid tick, which brief 5.2 lists as part of a change, is its own record. Then Jess ticking Rent and Tom changing Rent's amount at the same moment never clash with each other.
+
+**Tick**
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `series_id` or `budget_id` | id | |
+| `original_date` | date | Which payment |
+| `paid_on` | date | The day it was ticked. Used for the bank balance (D1) and for debts (D27) |
+| `ticked_at` | time | Compared with the balance update's time (D33) |
+| `in_balance_update` | id, or empty | Set when ticked inside the Update balance steps, so it counts as before that update (D33) |
+| `ticked_by` | person id | Either person can tick (brief 4.14) |
+| `source` | choice: typed, bank | "bank" is ready for bank connections (3.10) |
+
+Unticking deletes the tick.
+
+**Debt**
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `name` | text | |
+| `kind` | choice: pay-later plan, credit card, loan, overdraft, owed to a person | Brief 4.6 |
+| `currency` | text | `"GBP"`, `"EUR"` and so on |
+| `rate` | decimal, or empty | Units of that currency per £1, set by the person (brief 4.6): `"1.1612"` |
+| `balance` | minor units | What's owed on `balance_on` |
+| `balance_on` | date | |
+| `balance_at` | time | When "Update from statement" was used (see question 4 in `PLAN.md`) |
+| `starting_balance` | minor units | For the progress bar: "Started at €2,396.93" |
+| `interest_rate` | decimal, or empty | Yearly %, for credit cards |
+| `statement_day` | 1 to 31 | D13 |
+| `minimum_rule` | a typed amount, or a rule: interest plus a % of the balance, at least an amount | Brief 4.6 |
+| `belongs_to` | person id, or empty | Empty means shared (brief 4.14) |
+| `closed` | yes/no | |
+
+**Budget**
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `account_id` | id | The account it leaves |
+| `name`, `type` | text, choice | Food, Travel |
+| `amount` | pence | |
+| `every` | choice: week, month | The period follows D29 |
+| `leaves` | choice: all at the start, spread across the days, pay-later bill | D2, D31, D32 |
+| `roll_over` | yes/no | Off unless switched on (D30) |
+| `roll_over_from` | date, or empty | When roll-over was switched on |
+| `starts_on` | date | |
+| `ends_on` | date, or empty | |
+| `bill_day` | 1 to 31, or empty | Pay-later bill only (D32) |
+| `statement_day` | 1 to 31, or empty | Pay-later bill only (the D32 proposal in 2.5) |
+
+**Spend** ("I spent")
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `budget_id` | id | |
+| `amount` | pence | |
+| `spent_on` | date | |
+| `recorded_at` | time | Compared with the balance update's time (D2, D33) |
+| `recorded_by` | person id | |
+| `note` | text, or empty | |
+
+**Savings goal**
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `name` | text | |
+| `target` | pence | |
+| `target_date` | date, or empty | Brief 4.7 |
+| `account_id` | id | Where the money is kept |
+| `starting_amount` | pence | Already saved when the goal was made |
+| `belongs_to` | person id, or empty | Empty means shared. A shared goal shows what each person put in, worked out from whose account each linked transfer came from (brief 4.14) |
+
+Planned transfers into a goal are series with `goal_id` set.
+
+### 3.4 Pay records
+
+**Pay profile** (one job's tax settings, brief 4.15)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `belongs_to` | person id | Whose pay |
+| `name` | text | "Warehouse job" |
+| `period` | choice: weekly, every 2 weeks, every 4 weeks, monthly | |
+| `tax_code` | text | `"1257L"`, `"S1257L"`, `"C1257L"`, `"BR"`, `"K475"` |
+| `basis` | choice: cumulative, week 1/month 1 | |
+| `pension_percent` | decimal | |
+| `pension_lower`, `pension_upper` | pence, or empty | The earnings band for each pay period. Empty means all earnings |
+| `pension_when` | choice: before tax, after tax | |
+| `student_loans` | list: Plan 1, Plan 2, Plan 4, Plan 5, Postgraduate | |
+| `other_deductions` | list of name and pence | |
+| `gross_so_far`, `tax_so_far` | pence | "Gross for tax so far" and "Tax paid so far" from the last payslip |
+| `so_far_period` | number | Which tax week or month those figures include |
+| `overtime_rate` | decimal | Remembered for "I did overtime" (brief 4.3) |
+| `work_week_starts` | weekday | The first day of a working week, for matching a shift to its payday |
+| `shift_pay_delay` | number | How many weeks after the shift's working week it's paid. Sam's is 1: "My pay is one week behind my shifts" |
+
+**Pay week** (a saved set of pay lines, D5)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `pay_profile_id` | id | |
+| `name` | text | "3-shift week" |
+| `lines` | list of name, hours (decimal), rate (decimal), kind | Kind: basic, overtime, nights, weekends, holiday |
+| `fixed` | list of name and pence | Shift premium, bonus |
+
+**Pay adjustment** ("I did overtime" or "I missed a shift")
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `series_id` | id | The pay series |
+| `original_date` | date | The payday it lands on |
+| `kind` | choice: overtime, missed shift | |
+| `worked_on` | date | The day of the shift |
+| `hours`, `rate` | decimal | |
+| `change` | pence | Worked out by the calculator when saved (D5): more for overtime, less for a missed shift |
+| `tax_year` | text | `"2026-27"` |
+
+### 3.5 History, clashes and sync
+
+**Edit** (one undoable change, phone and server)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `person_id` | id | Who made it |
+| `made_at` | time | When it was made, by the phone's clock corrected against the server's |
+| `saved_at` | time | When the server saved it |
+| `kind` | text | "change this and all later ones", "tick", "undo" and so on |
+| `summary` | small structured value | Which records and fields changed, before and after, for the activity list |
+| `undo` | small structured value | The "before" copies (2.3) |
+| `undone_by` | id, or empty | |
+| `private_to` | person id, or empty | Set when it touched anything private, so a partner never sees it |
+
+**Proposed:** edits are kept for 12 months as the change history (brief 4.12).
+
+**Notice** (a message for one person, server and that person's phones)
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `for_person` | person id | |
+| `kind` | choice: clash, partner change, shared warning | "Jess changed Rent to £560 just now" |
+| `edit_id` | id | |
+| `data` | small structured value | Which record and what changed |
+| `read_at` | time, or empty | |
+
+**How sync works, in plain words:**
+
+1. Every change is saved on the phone straight away, and the screen updates at once (brief Part 6).
+2. The change joins a queue of unsent edits on the phone.
+3. When the phone is online, it sends each edit with the version of every record it changed.
+4. The server checks everything in one go: the person is in the plan and allowed to change these records, nothing private belongs to someone else, and every record is still at the version the phone saw. Then it saves the whole edit and gives each record the plan's next change number.
+5. The server nudges every other phone in the plan over a live connection: "this plan is now at change 1,042". The nudge holds no money data. Each phone then asks for everything after the change number it already has.
+6. **A clash** is when a record moved on before the edit arrived. The phone fetches the newest records and runs the same command again on top of them. If this person's change is the newest (see question 1 in `PLAN.md`), it's saved, and the other person gets a notice: "Jess changed Rent to £560 just now". If it isn't, it isn't saved, and this person gets the notice, with a button to put theirs back. Nothing is lost without anyone being told (brief 4.14).
+7. If the command can't run any more, for example because the other person removed that payment, the phone says so: "Tom removed Rent, so your change wasn't saved."
+
+Running the command again, rather than copying records over, keeps "this and all later ones" right even when both people split the same series at once. Copying records blindly could leave two series covering the same months.
+
+**For future sessions: sync**
+
+- Writes go through one Postgres function, `save_edit(plan_id, edit_id, made_at, writes)`, called through Supabase. It runs as the signed-in person (`security invoker`), so Row Level Security still applies to every row. `writes` is a list of `{table, id, base_version, values}`. It's safe to send twice: a repeated `edit_id` changes nothing.
+- Reads: `changes_since(plan_id, seq)` returns every row in the plan, across all tables, with a higher `seq`, deleted rows included.
+- Live nudges: a private Supabase Realtime broadcast channel per plan (`plan:<id>`). A database trigger sends `{seq}` only. Joining the channel is checked by Row Level Security on `realtime.messages`.
+- Every server reply carries the server's time. The phone keeps the difference and uses it for `made_at`, so a phone with a wrong clock can't win clashes it shouldn't.
+
+### 3.6 Shared plans, roles and privacy
+
+- **Roles.** Each plan member has one role (brief 7.1):
+  - **owner:** made the plan; invites, changes permissions and renames the plan. One per plan.
+  - **editor** ("Can edit", the default): sees and changes everything shared.
+  - **viewer** ("Can view only"): sees everything shared, changes nothing shared. **Proposed:** that includes ticks. The server refuses, not only the screen (brief 8.7 test 3).
+- **Shared or private.** Each account is shared or private to the person it belongs to. When Jess shares, she chooses which accounts go into the plan (brief 4.14). A private account and everything on it (its series, changes, ticks, balance updates, budgets and spends) carry `private_to = Jess`. The database fills this in itself from the account, so the app can't forget.
+- **The rule on every table.** A person can read a row only if their sign-in session still exists (D21), they're a current member of the plan, and the row is shared or private to them. They can change it only if, as well, they're the owner or an editor (or the row is private to them), and the row isn't locked to someone else.
+- **From Jess (D16).** Jess's £600 from her private account to the joint account is saved as two linked series in one edit:
+  - the private half, on her account, `private_to = Jess`
+  - the shared half, on the joint account, named "From Jess", with no account name, note or debt, `locked_to = Jess`.
+
+  Tom sees "From Jess, £600" arriving on the date, and nothing else. The server refuses a shared half that carries anything except the date, amount, schedule and estimate flag. Money the other way shows as "To Jess".
+- **Debts and goals** each belong to the plan (shared) or to one person (brief 4.14). Who can see a debt that belongs to one person is question 7 in `PLAN.md`.
+- **Activity.** Edits that touched anything private are private too. A partner's activity list shows only shared changes.
+- **Leaving** (brief 4.14) needs nobody's approval. The leaver's private accounts move out with them into a plan of their own. If they choose to keep a copy, the shared records they could see are copied into that plan as of that moment, and never update again (brief 8.7 test 5). The other person keeps the shared plan as it was.
+- **Proposed:** if the owner stops sharing, the other person keeps a copy automatically, so nobody can be cut off from records they relied on.
+- **Nothing shows when someone last opened the app** (brief 4.14). There's no "last seen" anywhere a partner can read, and the list of signed-in devices is visible only to its owner.
+- **Sign out everywhere** (D21) ends the sessions. Every rule checks that the session still exists, so the next request from an old phone is refused at once. A message on the person's own private channel tells their other phones to wipe the plan and close the live connection. A phone that misses that message only gets nudges with no money data, and refused requests.
+
+**For future sessions: Row Level Security, in outline**
+
+```sql
+-- true while the sign-in session in the token still exists (D21)
+create function app.session_ok() returns boolean ...
+  -- exists (select 1 from auth.sessions where id = (auth.jwt() ->> 'session_id')::uuid)
+
+create function app.is_member(p uuid) returns boolean ...   -- current member, not left
+create function app.can_edit(p uuid) returns boolean ...    -- role is owner or editor
+
+create policy read on app.series for select using (
+  app.session_ok() and app.is_member(plan_id)
+  and (private_to is null or private_to = auth.uid()));
+
+create policy change on app.series for update using (...) with check (
+  app.session_ok() and app.is_member(plan_id)
+  and (private_to = auth.uid() or (private_to is null and app.can_edit(plan_id)))
+  and (locked_to is null or locked_to = auth.uid()));
+```
+
+The same pattern goes on every plan table. Every table starts with everything refused, and a test proves each policy (brief 8.7 test 2, Phase 3).
+
+### 3.7 Records on the server only
+
+| Record | Fields | Notes |
+| --- | --- | --- |
+| **Device** | person, sign-in session id, name ("Android phone, Chrome"), signed in at | The signed-in devices list (brief 4.13). No "last seen" |
+| **Push subscription** | person, device, push address and keys, made at | For reminders (brief 4.11) |
+| **Recovery contact** | person, kind (email or phone), value, verified at | Getting back in (brief 4.13) |
+| **Person settings** | which reminders are on, quiet hours from and to, weekly summary day, hide amounts in notifications (**proposed**), analytics opt-in, time zone, charge day | Also copied to the person's own phones. Time zone is "Europe/London" unless changed; reminders use it to know the person's "today" |
+| **Subscription** | person (or plan, for Couple), kind (trial, Solo, Couple, Founders, organisation), month or year, status, trial ends on, renews on, price, source (Stripe, Apple, Google, organisation), Stripe customer id, free months used this year, referral months used this year | Brief 4.17. Filled in by Stripe and store messages, never by the phone |
+| **Price** | plan, month or year, amount in pence, on sale or not, founders limit (500) | Prices are settings, not code (brief 4.17) |
+| **App setting** | VAT registered or not | Prices say "including VAT" only once registered (D25) |
+| **Organisation** | name, places, paid until, join link (hashed), Stripe ids, admins | Brief 4.17. Holds no money data from anyone's plan |
+| **Organisation member** | organisation, person, joined on, removed on | |
+| **Referral** | who referred, the friend, rewarded on | Up to 12 free months a year |
+| **Payment event** | Stripe event id (unique), received at | The same webhook twice changes nothing (brief 8.7 test 8) |
+| **Support access** | person, granted at, ends at (7 days later) | The only way support sees amounts, names or notes (brief 4.16) |
+| **Support message** | person or email, app version, phone type, message, replied at | Never adds money data on its own (brief 4.16) |
+| **Problem report** | person, screen, consent given at, attachment (screenshot or plan copy, private storage) | **Proposed:** attachments deleted after 30 days |
+| **Idea** | person, text | "Suggest a feature" |
+| **Usage count** | day, event name, count | After launch, opt-in only, no person id (brief 7.2, D19) |
+| **Deletion request** | scrambled person id, requested at, finished at | Data goes straight away. Supabase Pro backups roll off after 7 days, inside the brief's 30 (brief 7.2) |
+
+### 3.8 Kept on the phone only
+
+Stored in the phone's browser database (IndexedDB):
+
+- a copy of every record this person can see, for each plan they're in
+- the queue of unsent edits, the last change number for each plan, and the server clock difference
+- the undo list (this person's recent edits)
+- what-if practice changes, which are never sent anywhere
+- the app lock: on or off, the PIN scrambled with a random salt, the fingerprint or face key's id, and the 5-minute timeout (brief 4.13)
+- this device's settings: light or dark, pay periods or calendar months, filters, how many months to show
+- the "try first" plan and pay calculator drafts made before signing up. They move into the new account at sign-up (brief 4.13)
+- the bank holiday copy and the date it was fetched.
+
+Signing out wipes all of it (brief 4.13). Other people's private records are never on the phone, because the server never sends them.
+
+### 3.9 Where each decision lives
+
+| Decision | Where it lives in the data |
+| --- | --- |
+| D1 Paying early | Tick `paid_on` |
+| D2 Budgets and the bank | Spend `recorded_at`, Budget, Balance update |
+| D3 Left to spend line | Account `warning_level`, Plan member `main_pay_series_id` |
+| D4 Skipping | Payment change `skipped`; Series `end_rule` still counts it |
+| D5 Overtime | Series `cycle_pay_weeks`, Pay week, Pay adjustment, Pay profile `shift_pay_delay` |
+| D6, D7, D8 | Test data and test tolerances only |
+| D9 Rounding | Decimals stored as exact text; the engine rounds once |
+| D10, D11 | Rules on screen only, no data |
+| D12 Same-day order | Series `created_at` and `name` |
+| D13 Statement day | Debt `statement_day` |
+| D14 Main pay | Plan member `main_pay_series_id` |
+| D15 Example plan | Plan `is_example`, and the example data file |
+| D16 Couples | `private_to`, Series `mirror_of` and `locked_to` |
+| D17 to D23 | Tools and set-up, not data (section 1); D21 uses Device and the session check in every rule |
+| D24, D26 | Business and design, not data |
+| D25 VAT wording | App setting |
+| D27 Debts follow D1 | Tick `paid_on`, read by the debt sums |
+| D28 Left to spend | Series `type`, Budget, Plan member `main_pay_series_id` |
+| D29 Budget periods | Budget `every`, Plan member `main_pay_series_id` |
+| D30 Roll-over | Budget `roll_over`, `roll_over_from` |
+| D31 Spread | Budget `leaves` |
+| D32 Pay-later bill | Budget `leaves`, `bill_day`, `statement_day`; the real bill is a Payment change on the budget |
+| D33 Time of update | Balance update `checked_at`, Tick `ticked_at` and `in_balance_update`, Spend `recorded_at` |
+| D34 Paid off | A rule only, no data |
+| D35 to D37 | Words and checks, not data |
+
+### 3.10 Adding "Leave these out for now" later
+
+Brief Part 10 lists six things to leave out but design for. None of them needs the data started again.
+
+| Later | What's already in place | What gets added |
+| --- | --- | --- |
+| **Bank connections** that tick payments, through an FCA-authorised Open Banking provider | Ticks and balance updates already have a `source` field ("typed" or "bank"). The engine treats a tick the same however it was made | A **Bank link** record (provider, consent expiry, which account it fills) and a **Bank item** record (what the bank reported, matched to a payment). Matching creates ordinary ticks and balance updates with `source = bank`. The provider's keys live only on the server |
+| **Housemates** (more than two people) | Plan members are already a list with roles, and `max_members` is a setting. "From Jess" halves work for any number of people | Raise `max_members`. Add an optional `shares` list to a series (person and percentage) to split a bill, worked out by the engine. Who owes whom is a new engine function, not new stored data |
+| **Reading a payslip or statement from a photo** | The pay calculator and "Update from statement" already take typed figures | A step that fills those same fields from a photo. The photo is read and thrown away; only the typed-in figures are kept, as today |
+| **A shift rota that predicts paydays** | Pay weeks, pay profiles and `shift_pay_delay` already link shifts to paydays (D5) | A **Shift** record (person, date, hours, kind). The engine builds each payday's pay lines from the shifts and saves the estimate as a payment change, as "I did overtime" does now |
+| **Comparing ways to clear several debts** | Debts already hold balances, rates and minimum rules | A new engine function only. No new data |
+| **Other countries, currencies and languages** | Accounts and debts store a currency; all words live in one strings file (VOICE.md); dates and money go through one formatter; tax rules are data files | Plan `nation` becomes country and region; one strings file per language; tax files per country; bank holiday lists per country |
