@@ -23,7 +23,36 @@ Contents:
 - **Private accounts never leave their owner.** The database itself refuses to send them to anyone else, whatever the app asks for (brief 4.14, D16).
 - **Free plans until real users arrive** (D19). Section 1 says which plans and when they stop being enough.
 
-<!-- PROPOSALS -->
+## Proposed in this plan
+
+Approving this plan approves these too, unless the owner says otherwise. Each one then becomes a decision in `docs/DECISIONS.md`.
+
+**Money and rules**
+
+1. A one-off change wins over a different last amount (2.2).
+2. "Payments that could move" lists unticked money going out from today up to the short day, biggest first, and shows the new lowest point if each one moved to the first main payday after the short day (2.4).
+3. A spread budget's daily rows fold into one line on screen, which opens to show each day (2.5).
+4. The Debts screen looks 24 months ahead for "Paid off on" (2.6).
+5. "I did overtime" and "I missed a shift" change a payday only while it's an estimate (2.7).
+6. The tax year check starts warning on 1 March (2.7).
+7. "Expected" in Update balance is the plan's balance at the end of today, before anything is ticked (4.6).
+8. Setup suggests a warning level of £20.00 (3.3).
+
+**Data and sharing**
+
+9. A paid tick is its own record, so a tick and an edit never clash (3.3).
+10. Edits are kept for 12 months as the change history (3.5).
+11. "Can view only" includes ticks: a viewer can't tick shared payments (3.6).
+12. If the owner stops sharing, the other person keeps a copy automatically (3.6).
+13. A setting to hide amounts in notifications (3.7).
+14. Files attached to "Something looks wrong" are deleted after 30 days (3.7).
+
+**Tools and words**
+
+15. The tools in section 1, including TypeScript 6.0 rather than 7.0, no sheet library, Resend for email, Sentry's EU region, UptimeRobot, and buying the web address by Phase 3. RevenueCat and Codemagic are named for Phase 6 and decided then.
+16. New names for two public pages, because VOICE.md bans questions as headlines (D36): **Payday check** and **Help when money is tight** (4.1).
+
+**Not approved by approving this plan:** the D32 pay-later proposal (2.5) and the 10 questions in `PLAN.md`. They need the owner's own answers.
 
 ## 1. Tools
 
@@ -620,7 +649,7 @@ The same pattern goes on every plan table. Every table starts with everything re
 | **Device** | person, sign-in session id, name ("Android phone, Chrome"), signed in at | The signed-in devices list (brief 4.13). No "last seen" |
 | **Push subscription** | person, device, push address and keys, made at | For reminders (brief 4.11) |
 | **Recovery contact** | person, kind (email or phone), value, verified at | Getting back in (brief 4.13) |
-| **Person settings** | which reminders are on, quiet hours from and to, weekly summary day, hide amounts in notifications (**proposed**), analytics opt-in, time zone, charge day | Also copied to the person's own phones. Time zone is "Europe/London" unless changed; reminders use it to know the person's "today" |
+| **Person settings** | which reminders are on, quiet hours from and to, weekly summary day, hide amounts in notifications (**Proposed**), analytics opt-in, time zone, charge day | Also copied to the person's own phones. Time zone is "Europe/London" unless changed; reminders use it to know the person's "today" |
 | **Subscription** | person (or plan, for Couple), kind (trial, Solo, Couple, Founders, organisation), month or year, status, trial ends on, renews on, price, source (Stripe, Apple, Google, organisation), Stripe customer id, free months used this year, referral months used this year | Brief 4.17. Filled in by Stripe and store messages, never by the phone |
 | **Price** | plan, month or year, amount in pence, on sale or not, founders limit (500) | Prices are settings, not code (brief 4.17) |
 | **App setting** | VAT registered or not | Prices say "including VAT" only once registered (D25) |
