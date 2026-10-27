@@ -182,7 +182,7 @@ For each account (brief 5.5, with D1, D10, D11, D12 and D33):
 5. **Everything from D onwards,** in date order. On the same day: money in, then transfers, then money out. Within each group, by when the series was created, then by name (D12).
 6. **Balance after every row.** The day's figure is the balance after its last row.
 7. **Lowest point ahead:** the lowest end-of-day balance from today on, with its date and the payment that caused it.
-8. **Warnings.** Strictly below the warning level is Tight. Strictly below the floor (zero, or minus the overdraft limit) is Short: "£X short on [date]", with the payments before that date that could move (D10). **Proposed:** "could move" lists unticked money going out from today up to the short day, biggest first, and tapping one shows the new lowest point if it moved to the next payday.
+8. **Warnings.** Strictly below the warning level is Tight. Strictly below the floor (zero, or minus the overdraft limit) is Short: "£X short on [date]", with the payments before that date that could move (D10). **Proposed:** "could move" lists unticked money going out from today up to the short day, biggest first, and tapping one shows the new lowest point if it moved to the first main payday after the short day.
 9. **Transfers** leave one account and arrive in the other on the same date. A transfer between a private account and a shared one is stored as two linked halves (section 3.6, D16).
 10. **Budgets** add their rows (section 2.5).
 
@@ -692,3 +692,662 @@ Brief Part 10 lists six things to leave out but design for. None of them needs t
 | **A shift rota that predicts paydays** | Pay weeks, pay profiles and `shift_pay_delay` already link shifts to paydays (D5) | A **Shift** record (person, date, hours, kind). The engine builds each payday's pay lines from the shifts and saves the estimate as a payment change, as "I did overtime" does now |
 | **Comparing ways to clear several debts** | Debts already hold balances, rates and minimum rules | A new engine function only. No new data |
 | **Other countries, currencies and languages** | Accounts and debts store a currency; all words live in one strings file (VOICE.md); dates and money go through one formatter; tax rules are data files | Plan `nation` becomes country and region; one strings file per language; tax files per country; bank holiday lists per country |
+
+## 4. Screens
+
+**In plain words.** Below is every screen, sheet and public page, which part of the brief asks for it, and which of the six people need it most. Then come rough sketches of the main screens at phone width, filled in with Sam's example plan on Sun 25 Oct 2026, using the parts from `docs/DESIGN.md`. Every number in the sketches comes from Sam's plan in brief Part 8 and was checked against brief 8.3.
+
+The app has four places in the bottom navigation: **Home, Plan, Debts, More** (brief Part 6). Editing always opens in a bottom sheet on phones and a centred dialog on laptops, never a new page. "Everyone" means all six people from brief Part 2.
+
+### 4.1 Public pages (no account needed)
+
+| Page | Brief | Who needs it |
+| --- | --- | --- |
+| Website home (landing page), with the tagline | Part 6, Phase 5 | Everyone |
+| Take-home pay calculator | 4.15, 4.17 | Sam, Priya, Dee, Jess and Tom, Ali (Kofi is self-employed, so not him) |
+| Payday check (the brief's "Will I make it to payday?"): type today's balance, your payday and what's going out before it; see "£X left on Fri 30 Oct" or "£X short on Sun 1 Nov" | 4.17 | Everyone, most of all Sam, Dee and Ali |
+| Pricing, with weekly prices ("about 69p a week") and founder places left | 4.17 | Everyone |
+| For organisations: buy places, then a dashboard of places in use | 4.17 | Employers and housing associations |
+| Help centre articles | 4.16 | Everyone |
+| Help when money is tight (the brief's "Worried about money?") | 4.16 | Sam, Dee, Ali |
+| Privacy notice, terms, accessibility statement | 7.2, 7.3 | Everyone |
+| Service status | 4.16 | Everyone |
+| Sign up and sign in: email code, Google, later Apple | 4.13, D20 | Everyone |
+
+**Proposed:** VOICE.md bans questions as headlines and wins over the brief (D36), so two pages get new names. "Will I make it to payday?" becomes **Payday check**, headed "Check your money lasts until payday". "Worried about money?" becomes **Help when money is tight**. Help articles are titled as statements too: "Why your lowest point is on Sunday".
+
+### 4.2 First-time setup
+
+Every step can be skipped and changed later (brief 4.1). Sketches are in 4.6.
+
+| Step | Brief | Who needs it most |
+| --- | --- | --- |
+| Welcome: the tagline, "Start" and "Look at an example plan" | 4.1, Part 6 | Everyone |
+| 1. Your account and balance today, with any overdraft limit and warning level | 4.1, 4.2 | Everyone; Ali for the overdraft |
+| 2. How you're paid: every pay choice, "My pay changes in a pattern", linking pattern steps to pay weeks (D5), choosing the main pay when there's more than one (D14) | 4.1, 4.3 | Everyone: Sam's pattern, Priya's last working day, Dee's two incomes, Kofi's estimate, Ali's chosen dates |
+| 3. Rent | 4.1 | Sam, Ali (each term), Jess and Tom |
+| 4. Bills checklist with UK defaults | 4.1 | Everyone; Priya's yearly bills, Dee's council tax |
+| 5. Debts | 4.1, 4.6 | Sam, Kofi, Ali |
+| 6. Spending money | 4.1, 4.5 | Everyone |
+| 7. Savings | 4.1, 4.7 | Priya, Jess and Tom |
+| 8. Here's your plan | 4.1 | Everyone |
+
+### 4.3 Main screens
+
+| Screen | Brief | Who needs it most |
+| --- | --- | --- |
+| **Home** | 4.9 | Everyone |
+| **Plan**, by pay period or calendar month, with filters and "Show another month" | 4.8 | Everyone |
+| **Debts** | 4.6 | Sam, Kofi, Ali. Others see "No debts" and an "Add a debt" button |
+| **One debt**, with "Update from statement" and, for credit cards, the minimum, fixed and full comparison | 4.6 | Sam, Kofi, Ali |
+| **More** | 4.11 to 4.17 | Everyone |
+| Accounts, and one account | 4.2 | Everyone; Jess and Tom have three |
+| Budgets, and one budget with its spends | 4.5 | Everyone |
+| Savings goals, and one goal | 4.7, 4.14 | Priya, Jess and Tom |
+| Pay calculator, with saved pay weeks and "Check my payslip" | 4.15 | Sam, Priya, Dee, Jess and Tom, Ali |
+| What if | 4.10 | Everyone, most of all Kofi |
+| Shared plan: who's in it, permissions, invite, leave | 4.14 | Jess and Tom |
+| Activity: recent changes, with undo for your own | 4.12, 4.14 | Jess and Tom; everyone for the change history |
+| Reminders | 4.11 | Everyone |
+| Export, import and delete | 4.12 | Everyone |
+| Account settings: email, sign-in method, password, two-step sign-in, backup email or phone | 4.13 | Everyone |
+| Signed-in devices, with "Sign out of this device" and "Sign out everywhere" | 4.13 | Everyone |
+| App lock settings, and the lock screen ("Open with your PIN", "Open with fingerprint", "Open with face", D35) | 4.13 | Everyone; Jess and Tom for safety |
+| Subscription: plan, charge day, cancel in two taps, "Can't afford it this month", refer a friend | 4.17 | Everyone |
+| Help, Contact us, Suggest a feature, Help when money is tight | 4.16 | Everyone |
+| The 60-second tour, skippable and replayable | 4.16 | Everyone |
+| Support admin (staff only), with no money data unless access is given | 4.16 | The owner and support |
+| Tax year check (staff only) | 4.15 | The owner |
+
+### 4.4 Bottom sheets
+
+| Sheet | Brief | Who needs it most |
+| --- | --- | --- |
+| **Edit a payment**: mark as paid, move to next payday, skip, change amount, date, name or note, then "Just this one" or "This and all later ones", or remove | 4.4, 5.4 | Everyone |
+| Add a payment: in, out or transfer, how often, when it ends, a different last amount, weekend rule, type, linked debt or goal, estimate | 4.3, 4.4 | Everyone |
+| **Update balance**, in three steps | 4.2, D33 | Everyone |
+| I spent | 4.5 | Everyone |
+| I did overtime, and I missed a shift | 4.3, D5 | Sam; Dee for her wages |
+| Real pay arrived: type the real amount and see the difference | 4.3 | Sam, Dee, Kofi |
+| Filters: still to pay, money in, debts, a type, an account | 4.8 | Everyone |
+| Payments that could move, opened from a shortfall | 5.5, Part 3 | Sam, Dee, Ali |
+| Update from statement | 4.6 | Sam, Kofi, Ali |
+| Add or edit a debt, including the credit card rule and a currency rate | 4.6 | Sam, Kofi, Ali |
+| Add or edit a budget | 4.5 | Everyone |
+| Add or edit a savings goal | 4.7 | Priya, Jess and Tom |
+| Share with my partner: choose accounts, permission, link or email | 4.14 | Jess and Tom |
+| Clash notice: "Jess changed Rent to £560 just now" | 4.14 | Jess and Tom |
+| Leave the shared plan: keep a copy or not | 4.14 | Jess and Tom |
+| Something looks wrong: choose to attach a screenshot or plan copy, after a clear consent message | 4.16 | Everyone |
+| Subscribe, when the trial has ended | 4.17 | Everyone |
+| Sign out, warning if some changes haven't been sent yet | 4.13 | Everyone |
+| The small "?" help sheets | 4.16 | Everyone |
+
+### 4.5 Messages that appear on any screen
+
+- **Undo bar** after every change: "Rent changed for this and all later ones. Undo" (brief 3.4).
+- **Offline note:** "You're offline. Changes are saved on this phone and will be sent when you're back online." (brief Part 6)
+- **Sync down note:** "Changes can't be sent right now. They're saved on this phone." (brief 4.16)
+- **Example plan banner:** "This is an example plan. Nothing here is yours." (brief 4.1, D15)
+- **Trial ended banner:** "Your free trial has ended. You can still see your plan, update your balance and tick payments." (brief 4.17)
+- **Gentle advice note,** after a shortfall three paydays running: "Free, confidential help is available" with a link to Help when money is tight (brief 4.16).
+
+### 4.6 Sketches
+
+Each sketch is about 36 characters wide, roughly a 320px phone. `[Button]` is a button, `(o)` and `( )` are choices, `[x]` and `[ ]` are tick boxes, `(Tight)` is a status pill, `#` is a filled progress bar and a line of dots is a row divider. The real screens use the colours, sizes and parts in `docs/DESIGN.md`.
+
+**Home** (brief 4.9). Balance card, figure cards, payment rows, the 2 by 2 actions and the bottom navigation.
+
+```
+Home                              ?
++--------------------------------+
+| Current account                |
+| £267.54                        |
+| Checked today, Sun 25 Oct      |
+| ------------------------------ |
+| +----------------------------+ |
+| | Left to spend until        | |
+| | Fri 30 Oct                 | |
+| | £30.00                     | |
+| | Spend no more than £22.54  | |
+| | to keep at least £20 until | |
+| | Fri 30 Oct.                | |
+| +----------------------------+ |
++--------------------------------+
++--------------------------------+
+| Lowest point ahead     (Tight) |
+| £4.53                          |
+| Sun 1 Nov, after Rent          |
+| Under £20 from Mon 26 Oct.     |
++--------------------------------+
++--------------------------------+
+| This pay has to cover          |
+| Going out by Thu 29 Oct        |
+|                       £721.07  |
+| Coming in             £500.00  |
++--------------------------------+
+ Next due
++--------------------------------+
+| 25  Spending money     −£30.00 |
+| Oct until payday               |
+|     Sun 25 Oct    £237.54 left |
+|................................|
+| 26  Family loan       −£125.00 |
+| Oct Mon 26 Oct    £112.54 left |
+|................................|
+| 26  Driving lesson    −£100.00 |
+| Oct Mon 26 Oct     £12.54 left |
++--------------------------------+
++---------------+ +--------------+
+|Update balance | |Add a payment |
++---------------+ +--------------+
++---------------+ +--------------+
+|I spent        | |I did overtime|
++---------------+ +--------------+
+----------------------------------
+ (Home)    Plan    Debts    More
+```
+
+**Plan** (brief 4.8), grouped by Sam's pay periods, Friday to Thursday (D14).
+
+```
+Plan                       What if
+(Pay periods) Months     [Filters]
++--------------------------------+
+| Lowest point ahead     (Tight) |
+| £4.53 on Sun 1 Nov, after Rent |
++--------------------------------+
+ This week, to Thu 29 Oct
++--------------------------------+
+| 25  Spending money     −£30.00 |
+| Oct until payday  £237.54 left |
+|................................|
+| 26  Family loan       −£125.00 |
+| Oct               £112.54 left |
+|................................|
+| 26  Driving lesson    −£100.00 |
+| Oct        £12.54 left (Tight) |
+|................................|
+| 28  From savings      +£500.00 |
+| Oct               £512.54 left |
+|................................|
+| 29  Pay-later card    −£466.07 |
+| Oct                £46.47 left |
+|................................|
+| Left at the end         £46.47 |
++--------------------------------+
+ Fri 30 Oct to Thu 5 Nov
++--------------------------------+
+| Came in                £603.06 |
+|................................|
+| 30  Pay               +£603.06 |
+| Oct Estimate      £649.53 left |
+|................................|
+| 30  Spending money     −£45.00 |
+| Oct               £604.53 left |
+|................................|
+| 1   Rent              −£600.00 |
+| Nov         £4.53 left (Tight) |
+|     Lowest point ahead         |
+|................................|
+| Left at the end          £4.53 |
++--------------------------------+
+ Fri 6 Nov to Thu 12 Nov
++--------------------------------+
+| Came in                £618.46 |
+| ...                            |
+| Left at the end        £155.69 |
++--------------------------------+
+     [ Show another month ]
+----------------------------------
+  Home    (Plan)   Debts    More
+```
+
+**Edit a payment** (brief 4.4 and 5.4). Tapping a row opens this sheet. The quick actions at the top are the "two taps".
+
+```
++================================+
+|              ----              |
+| Rent                     Close |
+| Sun 1 Nov, Current account     |
+| −£600.00           £4.53 left  |
+|................................|
+| [Mark as paid]                 |
+| [Move to next payday]          |
+|  Moves it to Fri 6 Nov         |
+| [Skip this one]                |
+|................................|
+| Amount                         |
+| [£ 600.00                    ] |
+| Date                           |
+| [Sun 1 Nov                   ] |
+| Name                           |
+| [Rent                        ] |
+| Note                           |
+| [                            ] |
+| [ ] This is an estimate        |
+|................................|
+| Change                         |
+| (o) Just this one              |
+| ( ) This and all later ones    |
+|                                |
+| [            Save            ] |
+| Remove                         |
++--------------------------------+
+```
+
+**Update balance** (brief 4.2, D33), shown on Fri 30 Oct for brief 8.4 test 5.
+
+```
+Step 1 of 3
++================================+
+| Update balance           Close |
+| Current account                |
+| Type what your bank shows now  |
+| [£ 600.00                    ] |
+| [            Next            ] |
++--------------------------------+
+
+Step 2 of 3
++================================+
+| The plan expected £604.53 by   |
+| the end of today.              |
+| Your bank shows £600.00.       |
+| That's £4.53 less.             |
+| [            Next            ] |
++--------------------------------+
+
+Step 3 of 3
++================================+
+| Tick anything from today or    |
+| earlier that has gone out or   |
+| come in                        |
+| [x] Sun 25 Oct                 |
+|     Spending money     −£30.00 |
+|     until payday               |
+| [x] Mon 26 Oct                 |
+|     Family loan       −£125.00 |
+| [x] Mon 26 Oct                 |
+|     Driving lesson    −£100.00 |
+| [x] Wed 28 Oct                 |
+|     From savings      +£500.00 |
+| [x] Thu 29 Oct                 |
+|     Pay-later card    −£466.07 |
+| [x] Fri 30 Oct                 |
+|     Pay               +£603.06 |
+| [x] Fri 30 Oct                 |
+|     Spending money     −£45.00 |
+| [Tick all]                     |
+| [            Done            ] |
++--------------------------------+
+
+Done
++================================+
+| Balance updated                |
+| £600.00, Fri 30 Oct, 9:14am    |
+|................................|
+| Lowest point ahead     (Tight) |
+| £0.00 on Sun 1 Nov, after Rent |
+| [            Close           ] |
++--------------------------------+
+```
+
+**Proposed:** "expected" in step 2 is the plan's balance at the end of today, before anything is ticked.
+
+**Debts** (brief 4.6), in order of the date each is paid off.
+
+```
+Debts
++--------------------------------+
+| Owed now                       |
+| £3,214.86                      |
+| 6 debts. Family loan counted   |
+| at €1.1612 per £1.             |
++--------------------------------+
++--------------------------------+
+| Pay-later card         £466.07 |
+| Paid off on Thu 29 Oct         |
+| [                    ] 0% paid |
+|................................|
+| Pay in 3               £183.89 |
+| Paid off on Sun 6 Dec          |
+| [                    ] 0% paid |
+|................................|
+| Family loan (€)      €1,400.57 |
+|                    (£1,206.14) |
+| Paid off on Fri 1 Jan 2027     |
+| [########            ] 42% paid|
+|................................|
+| Laptop loan            £484.00 |
+| Paid off on Sat 20 Feb 2027    |
+| [                    ] 0% paid |
+|................................|
+| Sofa finance           £453.77 |
+| Paid off on Mon 23 Aug 2027    |
+| [                    ] 0% paid |
+|................................|
+| Credit card            £420.99 |
+| Paid off on Wed 15 Mar 2028    |
+| Estimate                       |
+| [                    ] 0% paid |
++--------------------------------+
+       [ Add a debt ]
+----------------------------------
+  Home     Plan   (Debts)   More
+```
+
+The bars start at 0% because Sam's starting balances are the ones typed in on Sun 25 Oct, except the Family loan, which started at €2,396.93.
+
+**One debt** (brief 4.6): the Family loan, shown in both currencies.
+
+```
+< Debts
+Family loan (€)
++--------------------------------+
+| Left now                       |
+| €1,400.57                      |
+| About £1,206.14 at €1.1612     |
+| per £1                         |
+| ------------------------------ |
+| Paid off on Fri 1 Jan 2027     |
+| [########            ] 42% paid|
+| €996.36 paid of €2,396.93      |
++--------------------------------+
+ Payments
++--------------------------------+
+| 26  Family loan       −£125.00 |
+| Oct €145.15  €1,255.42 left    |
+|................................|
+| 6   Family loan       −£125.00 |
+| Nov €145.15  €1,110.27 left    |
+|................................|
+| 20  Family loan       −£250.00 |
+| Nov €290.30    €819.97 left    |
+|................................|
+| 4   Family loan       −£250.00 |
+| Dec €290.30    €529.67 left    |
+|................................|
+| 18  Family loan       −£250.00 |
+| Dec €290.30    €239.37 left    |
+|................................|
+| 1   Family loan       −£206.15 |
+| Jan €239.38  Paid off          |
+| 2027                           |
++--------------------------------+
+[Update from statement]
+[Change the rate]  [Add a payment]
+```
+
+The last payment leaves −€0.01, so it shows "Paid off" (D34).
+
+**Setup, welcome**
+
+```
+PrePenny
+Plan every penny before payday.
+
+See what's left after every
+payment, the lowest point ahead
+and when each debt is paid off.
+
+[           Start            ]
+[  Look at an example plan   ]
+Already have an account? Sign in
+```
+
+**Setup, step 1: your account**
+
+```
+Step 1 of 8                   Skip
+Your account
+Name
+[Current account             ]
+Type what your bank shows today
+[£ 267.54                    ]
+Overdraft limit, if you have one
+[£ 0.00                      ]
+Warn me when it goes under
+[£ 20.00                     ]
+[+ Add another account]
+[            Next            ]
+```
+
+**Setup, step 2: how you're paid**
+
+```
+Step 2 of 8                   Skip
+How you're paid
+(o) Weekly
+( ) Every 2 weeks
+( ) Every 4 weeks
+( ) Monthly on a date
+( ) Last working day of the month
+( ) On chosen dates
+( ) It changes: a weekly estimate
+Next payday
+[Fri 30 Oct                  ]
+[x] My pay changes in a pattern
+ 1 [£ 452.17]   2 [£ 618.46]
+ 3 [£ 469.06]   4 [£ 592.17]
+ [+ Add a payday] (up to 8)
+On a weekend or bank holiday
+[Pay the working day before v]
+[+ Add another income]
+[            Next            ]
+```
+
+When pay follows a pattern, a short extra page offers to link each payday in the pattern to a saved pay week, for example "3-shift week" for paydays 1 and 3 (D5), with "Do this later". When there's more than one income, it asks which is the main pay (D14).
+
+**Setup, step 3: rent**
+
+```
+Step 3 of 8                   Skip
+Rent
+Amount
+[£ 550.00                    ]
+First payment
+[Sun 1 Nov                   ]
+How often
+[Monthly on the 1st         v]
+From
+[Current account            v]
+[I don't pay rent]
+[            Next            ]
+```
+
+**Setup, step 4: bills** (example amounts, not from Sam's plan)
+
+```
+Step 4 of 8                   Skip
+Bills
+Tick the ones you pay
+[x] Council tax      [£ 132.00]
+    10 payments, Apr to Jan
+[ ] Energy
+[ ] Water
+[x] Phone            [£  18.00]
+    Monthly on the 14th
+[ ] Broadband
+[ ] TV licence
+[ ] Insurance
+[ ] Subscriptions
+[+ Add another bill]
+[            Next            ]
+```
+
+**Setup, step 5: debts**
+
+```
+Step 5 of 8                   Skip
+Debts
+Add anything you're paying off.
++--------------------------------+
+| Sofa finance           £453.77 |
+| Pay-later plan                 |
+| £37.88 on the 23rd             |
++--------------------------------+
+[+ Add a debt]
+ Pay-later plan, credit card,
+ loan, overdraft, owed to a person
+[I have no debts]
+[            Next            ]
+```
+
+**Setup, step 6: spending money** (example amounts, not from Sam's plan)
+
+```
+Step 6 of 8                   Skip
+Spending money
+Food    [£ 200.00] [a month    v]
+Travel  [£  25.00] [a week     v]
+How Food leaves your account
+(o) All at the start (safest)
+( ) Spread across the days
+( ) As one pay-later bill
+[+ Add another]
+[            Next            ]
+```
+
+**Setup, step 7: savings** (example amounts, not from Sam's plan)
+
+```
+Step 7 of 8                   Skip
+Savings
+Goal
+[Holiday                     ]
+Target
+[£ 1,200.00                  ]
+By, if you have a date
+[Fri 30 Jul 2027             ]
+Move in
+[£ 50.00] [each payday       v]
+From [Current account       v]
+To   [Savings               v]
+[            Next            ]
+```
+
+**Setup, step 8: here's your plan**
+
+```
+Step 8 of 8
+Here's your plan
++--------------------------------+
+| Lowest point ahead     (Tight) |
+| £4.53 on Sun 1 Nov, after Rent |
++--------------------------------+
++--------------------------------+
+| Left to spend until Fri 30 Oct |
+| £30.00                         |
++--------------------------------+
++--------------------------------+
+| First debt paid off            |
+| Pay-later card, Thu 29 Oct     |
++--------------------------------+
+[        Go to my plan         ]
+[  Take the 60-second tour     ]
+```
+
+**What if** (brief 4.10): Sam tries "What if my pay on Fri 30 Oct is £100 less?"
+
+```
+What if                      Close
++--------------------------------+
+| Practice mode. Your real plan  |
+| doesn't change unless you keep |
+| these changes.                 |
++--------------------------------+
+ Your changes
+ Pay on Fri 30 Oct: £603.06 to
+ £503.06                   [Undo]
+ [+ Make another change]
++--------------------------------+
+|              Real     What if  |
+| Lowest point £4.53    −£95.47  |
+|              Sun 1 Nov         |
+|              (Tight)  (Short)  |
++--------------------------------+
++--------------------------------+
+| You'd be £95.47 short on       |
+| Sun 1 Nov. Moving one of these |
+| payments would fix it.         |
+| Pay-later card, Thu 29 Oct     |
+|                       −£466.07 |
+| Family loan, Mon 26 Oct        |
+|                       −£125.00 |
+| Driving lesson, Mon 26 Oct     |
+|                       −£100.00 |
++--------------------------------+
+ Paid off on     Real    What if
+ Family loan     1 Jan   1 Jan
+ Laptop loan     20 Feb  20 Feb
+[Keep changes]     [Throw away]
+```
+
+**Pay calculator** (brief 4.15), with Sam's week 26 payslip from brief 8.6.
+
+```
+Take-home pay calculator
+An estimate, not tax advice.
+ Pay
++--------------------------------+
+| Basic [34.5] h x [£ 12.71]     |
+|                        £438.50 |
+| Shift premium          £114.69 |
+| [+ Add a line]                 |
+| Gross                  £553.19 |
++--------------------------------+
+ Tax and deductions
++--------------------------------+
+| Tax code [1257L]   Paid weekly |
+| (o) Cumulative  ( ) Week 1     |
+| Gross for tax so far           |
+| [£ 8,463.43                  ] |
+| Tax paid so far                |
+| [£ 434.60                    ] |
+| Pension 4%, before tax, on     |
+| earnings £120 to £967 a week   |
+| Student loan [None          v] |
++--------------------------------+
++--------------------------------+
+| Take-home                      |
+| £452.17                        |
+| Tax £58.80, National Insurance |
+| £24.89, Pension £17.33         |
++--------------------------------+
+[Add to plan as Fri 30 Oct estimate]
+[Save as a pay week]
+[Check my payslip]
+```
+
+On the public page, "Add to plan" becomes "Start a free plan with this pay".
+
+**More** (brief 4.11 to 4.17)
+
+```
+More
+ Your plan
+  Accounts                       >
+  Budgets                        >
+  Savings goals                  >
+  Pay calculator                 >
+  What if                        >
+  Share with my partner          >
+  Activity                       >
+ You
+  Reminders                      >
+  App lock                       >
+  Subscription                   >
+  Free trial, 24 days left
+  Account settings               >
+  Signed-in devices              >
+  Export, import and delete      >
+ Help
+  Help centre                    >
+  Help when money is tight       >
+  Contact us                     >
+  Something looks wrong          >
+  Suggest a feature              >
+ [Sign out]
+----------------------------------
+  Home     Plan    Debts   (More)
+```
