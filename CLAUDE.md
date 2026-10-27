@@ -10,7 +10,8 @@ Before any work, read all of these:
 2. `docs/DECISIONS.md`: decisions made since the brief.
 3. `docs/VOICE.md`: how all text is written.
 4. `docs/DESIGN.md`: how every screen looks.
-5. `PLAN.md`: what's done, what's next, and questions waiting for the owner.
+5. `docs/ARCHITECTURE.md`: how it's built: tools, engine, data, screens, folders, tests and risks.
+6. `PLAN.md`: what's done, what's next, and questions waiting for the owner.
 
 Where `docs/DECISIONS.md` and `docs/BRIEF.md` disagree, `docs/DECISIONS.md` wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too.
 

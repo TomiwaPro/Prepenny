@@ -14,6 +14,7 @@ It's at the planning stage. There's no app code yet. See `PLAN.md` for progress.
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Every decision made since the brief, and why. Wins over the brief. |
 | [`docs/VOICE.md`](docs/VOICE.md) | How all text is written, and the banned words. |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | How every screen looks: font, sizes, colours, parts. |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it's built: tools, the engine, the data, screens, folders, tests and risks. |
 | [`PLAN.md`](PLAN.md) | Progress, questions waiting for the owner, and the launch checklist. |
 | [`CLAUDE.md`](CLAUDE.md) | Rules for every Claude Code session on this repository. |
 
