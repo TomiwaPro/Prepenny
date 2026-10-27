@@ -1,8 +1,8 @@
 # Decisions
 
-Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins.
+Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -200,3 +200,103 @@ Why: saying "including VAT" when no VAT is charged would be wrong.
 The look is sample C's modern layout in sample A's navy and cream, with one font (Figtree) throughout. Details in `docs/DESIGN.md`.
 
 Why: it's the look the owner approved (the "Your pick" board).
+
+## Answers agreed on 27 Oct 2026
+
+### D27. Paying a debt early
+
+Agreed 27 Oct 2026. Replaces the due date in brief 5.6.
+
+Debts follow D1. A payment ticked early counts against the debt on the day it was ticked, so "Update from statement" never takes it off twice.
+
+Why: the debt and the bank balance use the same paid date, so neither counts a payment twice.
+
+### D28. Left to spend
+
+Agreed 27 Oct 2026. Replaces how D3 works out the main number.
+
+"Left to spend" covers today until the day before the next main payday, labelled with that payday, for example "Left to spend until Thu 31 Dec". It is the total of spending money still due to leave the account in that window: unspent budget rows plus payments of the type Spending money.
+
+The D3 line and formula stay as they are.
+
+Why: it works the same for weekly and monthly pay, and the label says exactly how long the money has to last.
+
+### D29. Budget periods
+
+Agreed 27 Oct 2026.
+
+- A weekly budget starts on the main payday's weekday when the main pay is weekly, every 2 weeks or every 4 weeks (Friday for Sam), and on Monday otherwise.
+- A monthly budget runs from one main payday to the day before the next when the main pay is monthly, and by calendar month from the 1st otherwise.
+
+Why: budgets line up with the day the money arrives, and everyone else gets the usual week and month.
+
+### D30. Roll-over
+
+Agreed 27 Oct 2026.
+
+Roll-over is off unless it's switched on for that budget.
+
+- When it's off, unspent money stays in the account.
+- When it's on, the unspent amount at the end of a period is added to the next period's budget, shown as "£25 + £7 from last week".
+
+Why: nothing moves unless the person asks for it, and when it does, they can see where the extra came from.
+
+### D31. Spread across the days
+
+Agreed 27 Oct 2026. Settles the "spread across the days" rule left open in D2.
+
+The budget leaves in equal daily amounts, rounded down to the penny, with the leftover pennies on the last day. £25 a week is £3.57 a day for 6 days and £3.58 on the last.
+
+In the current period, only the unspent amount (D2) is spread over the days left, from today.
+
+Why: the daily amounts always add up to the exact budget, and only money not yet spent is spread.
+
+### D32. Pay-later bill
+
+Agreed 27 Oct 2026. Settles most of the "pay-later bill" rule left open in D2.
+
+Spends on the card don't leave the bank account when they're made. The bill, on its bill date, is the budget for the period, or what was really spent if that's more. When the real bill arrives, the person types it in and it replaces the estimate.
+
+Still open: which spends each bill covers. The proposal is in `docs/ARCHITECTURE.md`, and the owner approves it before it's built.
+
+Why: the bank only sees the bill, and planning for at least the budget keeps the plan on the safe side.
+
+### D33. Balance updates store the time
+
+Agreed 27 Oct 2026. Adds a time to D1 and D2.
+
+A balance update stores the time as well as the date. A payment ticked, or a spend recorded, after the latest update counts as not yet inside that balance, even on the same day. Ticks made inside the "Update balance" steps count as before the update.
+
+Why: anything ticked or recorded after the update isn't in the number the person typed, so counting it as inside would show too much money.
+
+### D34. A debt never shows less than nothing
+
+Agreed 27 Oct 2026.
+
+When 1p or less is left, including a small minus from rounding, show "Paid off" and £0.00.
+
+Why: rounding each payment (D9) can leave a penny either way, and "−€0.01 left" on a paid debt would only confuse.
+
+### D35. App lock wording
+
+Agreed 27 Oct 2026.
+
+The app lock says "Open with your PIN", "Open with fingerprint" or "Open with face", never "unlock".
+
+Why: "unlock" is banned in `docs/VOICE.md`, and these words say exactly what to do.
+
+### D36. Voice and design win over the brief
+
+Agreed 27 Oct 2026.
+
+`docs/VOICE.md` and `docs/DESIGN.md` also win over the brief where they're stricter.
+
+Why: they were written after the brief to set exact rules, for example no emoji anywhere, where the brief only bans them on money screens.
+
+### D37. Screen widths
+
+Agreed 27 Oct 2026.
+
+Every screen is checked at 320px and 360px wide.
+
+Why: the brief asks for screens that work down to 320px, and its end-to-end tests run at 360px.
