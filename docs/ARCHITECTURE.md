@@ -30,29 +30,34 @@ Approving this plan approves these too, unless the owner says otherwise. Each on
 **Money and rules**
 
 1. A one-off change wins over a different last amount (2.2).
-2. "Payments that could move" lists unticked money going out from today up to the short day, biggest first, and shows the new lowest point if each one moved to the first main payday after the short day (2.4).
-3. A spread budget's daily rows fold into one line on screen, which opens to show each day (2.5).
-4. The Debts screen looks 24 months ahead for "Paid off on" (2.6).
-5. "I did overtime" and "I missed a shift" change a payday only while it's an estimate (2.7).
-6. The tax year check starts warning on 1 March (2.7).
-7. "Expected" in Update balance is the plan's balance at the end of today, before anything is ticked (4.6).
-8. Setup suggests a warning level of £20.00 (3.3).
+2. A payment ticked after a balance update, but dated before it, goes out at the start with the overdue payments. Balances from today on come out the same as if it went out today (2.4).
+3. "Payments that could move" lists the unticked payments going out from today up to the short day that would fix the shortfall on their own if moved to the first main payday after it, biggest first, with "Show all" for the rest (2.4).
+4. A spread budget's daily rows fold into one line on screen, which opens to show each day (2.5).
+5. A debt in another currency counts as paid off at 1 cent (or that currency's smallest unit) or less, as D34 does with 1p (2.6).
+6. The Debts screen looks 24 months ahead for "Paid off on" (2.6).
+7. "I did overtime" and "I missed a shift" change a payday only while it's an estimate (2.7).
+8. The tax year check starts warning on 1 March (2.7).
+9. "Expected" in Update balance is the plan's balance at the end of today, before anything is ticked (4.6).
+10. Setup suggests a warning level of £20.00 (3.3).
 
 **Data and sharing**
 
-9. A paid tick is its own record, so a tick and an edit never clash (3.3).
-10. Edits are kept for 12 months as the change history (3.5).
-11. "Can view only" includes ticks: a viewer can't tick shared payments (3.6).
-12. If the owner stops sharing, the other person keeps a copy automatically (3.6).
-13. A setting to hide amounts in notifications (3.7).
-14. Files attached to "Something looks wrong" are deleted after 30 days (3.7).
+11. A paid tick is its own record, so a tick and an edit never clash (3.3).
+12. Series split from the same original share a family, so main pay and the same-day order (D12) don't change after a split (3.3).
+13. Edits are kept for 12 months as the change history (3.5).
+14. "Can view only" includes ticks. This narrows brief 4.14's "either person can tick" to people who can edit (3.6).
+15. Money from a shared account into a private one shows as "To Jess", the reverse of D16 (3.6).
+16. If the owner leaves, the person who stays becomes the owner. If the owner stops sharing, the other person keeps a copy automatically (3.6).
+17. A setting to hide amounts in notifications (3.7).
+18. Files attached to "Something looks wrong" are deleted after 30 days (3.7).
 
 **Tools and words**
 
-15. The tools in section 1, including TypeScript 6.0 rather than 7.0, no sheet library, Resend for email, Sentry's EU region, UptimeRobot, and buying the web address by Phase 3. RevenueCat and Codemagic are named for Phase 6 and decided then.
-16. New names for two public pages, because VOICE.md bans questions as headlines (D36): **Payday check** and **Help when money is tight** (4.1).
+19. The tools in section 1, including TypeScript 6.0 rather than 7.0, no sheet library, Resend for email, Sentry's EU region, UptimeRobot, and buying the web address by Phase 3. RevenueCat and Codemagic are named for Phase 6 and decided then.
+20. The phone gets fresh bank holidays from PrePenny's own site, which copies GOV.UK's list weekly, so the phone never contacts another site (2.9).
+21. New names for two public pages, because VOICE.md bans questions as headlines (D36): **Payday check** and **Help when money is tight** (4.1).
 
-**Not approved by approving this plan:** the D32 pay-later proposal (2.5) and the 10 questions in `PLAN.md`. They need the owner's own answers.
+**Not approved by approving this plan:** the D32 pay-later proposal and how a pay-later budget meets Left to spend (2.5, question 3), and the other questions in `PLAN.md`. They need the owner's own answers.
 
 ## 1. Tools
 
@@ -104,7 +109,7 @@ Versions are the latest at the time of writing (27 Oct 2026). Phase 1 fixes the 
 | Resend | Sends emails: sign-in codes, invites, trial and renewal reminders, support replies | Free plan | Yes: 3,000 emails a month, 100 a day. Resend keeps email text for 30 days on servers in the US, so **no email ever contains amounts, payment names or notes**. A French alternative, Brevo, is ready if the owner prefers |
 | Web Push | Reminders on the phone, sent straight from PrePenny's server with no other push company in between (brief 7.1) | The `web-push` library, 3.6 | Free. On iPhone it needs "Add to Home Screen" until Phase 6 (D22) |
 | Sentry, EU data region | Error reports, with every amount, name and note stripped before sending (brief 7.1). Built into our own code, not loaded from Sentry. Only the error type, where in the code, the app version and phone type are sent | Free (Developer) plan | Yes: 5,000 errors a month |
-| UptimeRobot | Checks every 5 minutes that the app and server are up, and runs the status page (brief 4.16) | Free plan | Yes: 50 checks and 1 status page. Its terms allow business use |
+| UptimeRobot | Checks every 5 minutes that the app and server are up, and runs the status page (brief 4.16) | Free plan | Yes: 50 checks and 1 status page. Its terms, updated in May 2026, allow business use; older guides say otherwise, so check again before launch |
 | Google sign-in | Lets people sign in with Google (D20) | Google Cloud | Free |
 | A web address | The website, and the address sign-in emails come from | About £10 a year | **Not free.** Needed by Phase 3, before the rest of the launch checklist |
 | Stripe | Subscriptions: Checkout, the customer portal and payment messages (brief 4.17). Test mode until launch | No monthly fee | Yes. Stripe takes about 1.5% + 20p of each UK card payment, plus 0.7% for running subscriptions |
@@ -146,7 +151,7 @@ It's built first, in Phase 1, before any screen (brief Part 9).
 
 | What it does | What goes in | What comes out |
 | --- | --- | --- |
-| **Work out payments** | Series, one-off changes, ticks, bank holidays, a start and end date | Every payment in that window: date, amount, account, and whether it's an estimate, ticked, moved or skipped, plus the series and payment number it came from |
+| **Work out payments** | Series, one-off changes, ticks, pay adjustments, bank holidays, a start and end date | Every payment in that window: date, amount, account, and whether it's an estimate, ticked, moved or skipped, plus the series and payment number it came from |
 | **Work out the plan** | Everything stored for the plan, today's date, how far ahead to look | For each account: every row with "Left after this", each day's closing balance, the "Not ticked yet" list, the lowest point ahead (amount, date and the payment that caused it), the first day under the warning level, and each shortfall with its amount, date and the payments before it that could move |
 | **Group into periods** | The plan, and pay periods or calendar months | Each period's "Came in", its rows in date order, and "Left at the end" |
 | **Left to spend** | The plan and today | The amount, the payday it lasts until (D28), and the "Spend no more than" line when it's needed (D3) |
@@ -170,12 +175,12 @@ Take Sam's rent. All that's stored is:
 To show the plan, the engine counts payments from the start of the series. Payment 0 is Sun 1 Nov 2026, payment 1 is Tue 1 Dec 2026, and so on. For each payment number k:
 
 1. **Date.** Worked out from the series start and k, never from the previous payment, so dates never drift (brief 5.3). Weekly: start + 7 × every × k days. Monthly: the start day in month k, or the month's last day when the month is shorter (31 Jan, 28 Feb, 31 Mar). "Last day", "last working day" and "first Monday" are worked out for each month. Specific dates (Ali's student loan) come from the list. Months set to be left out (Dee's council tax in February and March) are passed over and don't count as payments.
-2. **Amount.** The change's amount if there is one; otherwise the different last amount if this is the last payment; otherwise `cycle[(k + offset) mod cycle length]` if the amount follows a pattern; otherwise the series amount (brief 5.3). **Proposed:** a one-off change wins over the last amount, because it's the most specific thing the person typed.
+2. **Amount.** The change's amount if there is one; otherwise the different last amount if this is the last payment; otherwise `cycle[(k + offset) mod cycle length]` if the amount follows a pattern; otherwise the series amount (brief 5.3). **Proposed:** a one-off change wins over the last amount, because it's the most specific thing the person typed. While a payday is an estimate, its pay adjustments ("I did overtime", "I missed a shift") are added on top (2.7).
 3. **Weekend and bank holiday rule.** Move to the working day before or after, or keep the date (brief 4.3).
 4. **Changed date, skip.** A changed date replaces the result. A skipped payment is left out but still counts towards "after N payments" (D4).
 5. **Stop** at the end rule or the end of the view.
 
-The date from step 1, before any move, is the payment's **original date**. Changes and ticks are attached to the series and the original date (brief 5.2), so they stay attached even if the bank holiday list or the series' rule changes later.
+The date from step 1, before any move, is the payment's **original date**. Changes and ticks are attached to the series and the original date (brief 5.2), so they stay attached when the bank holiday list or the weekend rule changes. When an edit changes the dates themselves, changes and ticks move across by payment number, as in a split (2.3).
 
 Sam's pay shows the pattern working. The series has the cycle £452.17, £618.46, £469.06, £592.17 with offset 0, plus one change: the first payment (Fri 30 Oct) is £603.06. Payment 5 is Fri 4 Dec: cycle[5 mod 4] = cycle[1] = £618.46.
 
@@ -184,8 +189,8 @@ Sam's pay shows the pattern working. The series has the cycle £452.17, £618.46
 Every edit goes in as a command and comes out as records to save. The engine never changes anything itself.
 
 - **Just this one:** save a change for that payment (brief 5.4).
-- **This and all later ones:** split the series. The old series now ends just before this payment: by count if it ends after a number of payments, otherwise by date. A new series starts at this payment with the edits. It remembers which payment number it starts at, so the amount pattern and the "after N payments" count carry on. Later changes and ticks move across to it by payment number. On the first payment of a series, this edits the whole series instead.
-  - Brief 8.4 test 1: rent £560 from 1 Jan 2027. The old series ends after 2 payments (November and December), and keeps the November £600 change. The new series is £560 from 1 Jan 2027.
+- **This and all later ones:** split the series. The old series now ends just before this payment: by count if it ends after a number of payments, otherwise by date. A new series starts at this payment with the edits. It remembers which payment number it starts at, so the amount pattern and the "after N payments" count carry on. Later changes and ticks move across to it by payment number. Changes that the edit replaces are dropped (brief 5.4); exactly which ones is question 2 in `PLAN.md`. The new series joins the old one's family (3.3), so main pay and the same-day order stay as they were. On the first payment of a series, this edits the whole series instead.
+  - Brief 8.4 test 1: rent £560 from 1 Jan 2027. The old series never ended, so it now ends by date, on Thu 31 Dec 2026, and keeps the November £600 change. The new series is £560 from 1 Jan 2027.
   - Brief 8.4 test 2: a new note on pay from Fri 4 Dec. The new series starts at payment 5, so its pattern position is (0 + 5) mod 4 = 1: £618.46, the same as before. Every amount stays the same.
 - **Remove this one:** mark it skipped. **Remove this and later:** end the series before it.
 - **Move:** a changed date. **Move to next payday:** a changed date on the first main payday after the payment's current date (D14).
@@ -207,11 +212,11 @@ For each account (brief 5.5, with D1, D10, D11, D12 and D33):
 1. **Start** from the latest balance update: amount B, typed on date D at time T.
 2. **Already inside B, so ignored:** payments ticked at or before T, payments ticked inside that update's steps (D33), and spends recorded at or before T (D2, D33).
 3. **Overdue:** unticked payments dated before D. These are applied first, oldest first. On screen, "Not ticked yet" lists unticked payments dated before today (D11).
-4. **Ticked after T:** counts as going out on its paid date, the day it was ticked (D1, D33).
-5. **Everything from D onwards,** in date order. On the same day: money in, then transfers, then money out. Within each group, by when the series was created, then by name (D12).
+4. **Ticked after T:** not inside B, even on the same day (D33). It goes out on its paid date: the day it was ticked if that was before the payment was due (D1), otherwise the payment's own date (3.3). **Proposed:** if that date is before D, it goes out at the start with the overdue payments, shown as ticked. Balances from today on come out the same as if it went out today.
+5. **Everything from D onwards,** in date order. On the same day: money in, then transfers, then money out. Within each group, by when the series' family was first created (3.3), then by name (D12).
 6. **Balance after every row.** The day's figure is the balance after its last row.
 7. **Lowest point ahead:** the lowest end-of-day balance from today on, with its date and the payment that caused it.
-8. **Warnings.** Strictly below the warning level is Tight. Strictly below the floor (zero, or minus the overdraft limit) is Short: "£X short on [date]", with the payments before that date that could move (D10). **Proposed:** "could move" lists unticked money going out from today up to the short day, biggest first, and tapping one shows the new lowest point if it moved to the first main payday after the short day.
+8. **Warnings.** Strictly below the warning level is Tight. Strictly below the floor (zero, or minus the overdraft limit) is Short: "£X short on [date]", with the payments before that date that could move (D10). **Proposed:** "could move" lists the unticked payments going out from today up to the short day that would fix the shortfall on their own if moved to the first main payday after it, biggest first, with "Show all" for the rest. Tapping one shows the new lowest point.
 9. **Transfers** leave one account and arrive in the other on the same date. A transfer between a private account and a shared one is stored as two linked halves (section 3.6, D16).
 10. **Budgets** add their rows (section 2.5).
 
@@ -221,11 +226,11 @@ Brief 8.4 test 5 checks steps 2 to 4: a balance of £600 on Fri 30 Oct with ever
 
 Each budget has a period (D29), an amount, a way of leaving the account, and roll-over on or off (D30).
 
-- **All at the start** (the default, brief 5.5): a future period leaves in full on its first day, as one row. In the period that contains today, spends recorded after the balance update are rows on their own dates, and the unspent part, max(0, budget minus all spends this period), leaves as one row today (D2).
-- **Spread across the days** (D31): equal daily amounts, rounded down to the penny, with the leftover pennies on the last day. £25 a week is £3.57 a day for 6 days and £3.58 on the 7th. In the period that contains today, only the unspent part is spread, over the days left from today. **Proposed:** on screen, a period's daily rows fold into one line ("Travel, £3.57 a day") that opens to show each day; the maths always uses the daily rows.
+- **All at the start** (the default, brief 5.5): a future period leaves in full on its first day, as one row. In the period that contains the balance date, spends recorded after the balance update are rows on their own dates, and the unspent part, max(0, budget minus all spends this period), leaves as one row today (D2).
+- **Spread across the days** (D31): equal daily amounts, rounded down to the penny, with the leftover pennies on the last day. £25 a week is £3.57 a day for 6 days and £3.58 on the 7th. In the current period, only the unspent part is spread, over the days left from today. **Proposed:** on screen, a period's daily rows fold into one line ("Travel, £3.57 a day") that opens to show each day; the maths always uses the daily rows.
 - **Pay-later bill** (D32): spends on the card never leave the bank account. One bill row leaves on the bill date: the budget, or what was really spent in the period the bill covers if that's more. When the real bill arrives, the person types it in and it replaces the estimate.
-  - **Proposed, waiting for the owner (D32):** each pay-later budget stores a bill day and a statement day. A bill covers spends dated from the day after the previous statement day up to and including this statement day. The statement day starts as the day before the bill day, and can be changed to match the card. Example: bill on the 29th, statement day the 28th, so the bill on Sun 29 Nov covers spends from Thu 29 Oct to Sat 28 Nov. "Spent" and "left" for this budget use the same dates.
-  - **Proposed:** what's left on a pay-later budget isn't part of "Left to spend", because it doesn't leave the bank before payday (D28). It shows on its own line underneath: "On the pay-later card: £80.00 left until Sat 28 Nov".
+  - **Proposed, waiting for the owner (D32, question 3 in `PLAN.md`):** each pay-later budget stores a bill day and a statement day. A bill covers spends dated from the day after the previous statement day up to and including this statement day. The statement day starts as the day before the bill day, and can be changed to match the card. Example: bill on the 29th, statement day the 28th, so the bill on Sun 29 Nov covers spends from Thu 29 Oct to Sat 28 Nov. "Spent" and "left" for this budget use the same dates.
+  - **Also part of question 3:** how a pay-later budget meets "Left to spend" (D28). The suggestion: what's left on the budget is spent on the card, not from the bank account, so it shows on its own line under Left to spend ("On the pay-later card: £80.00 left until Sat 28 Nov") rather than inside it. The bill itself pays for spending already done, so it doesn't count in Left to spend even when it falls before payday; it shows in the plan like rent.
 - **Roll-over** (D30): when on, a period's budget is the budget plus the unspent amount at the end of the period before, shown as "£25 + £7 from last week". Future periods in the plan assume the current one is spent in full, so roll-over appears once a period has ended.
 - **Left to spend** (D28): all spending money due to leave from today to the day before the next main payday. That's unspent budget rows (including spread days and any full future period that starts inside that window) plus payments of the type Spending money. The extra line from D3 appears only when spending it all would take the balance under the warning level: X = max(0, L + M − W).
 - **A balance checked in an earlier budget period** isn't covered by D2 yet. See question 9 in `PLAN.md`.
@@ -233,9 +238,9 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
 ### 2.6 Debts
 
 - **Left now** = the balance on its date, minus every linked payment ticked as paid with a paid date after that date (brief 5.6, D27). Each payment is converted with the debt's rate and rounded once (D9).
-- **Paid off on** = the first date where the balance minus the planned linked payments after its date, in order, reaches 1p or less (1 cent for a debt in euros). If that never happens in the view, show what will still be left at the end.
+- **Paid off on** = the first date where the balance minus the planned linked payments after its date, in order, reaches 1p or less. **Proposed:** 1 cent, or the smallest unit, for a debt in another currency. If that never happens in the view, show what will still be left at the end.
 - **Never less than nothing** (D34): 1p or less, including a small minus from rounding, shows "Paid off" and £0.00. Family loan: €1,400.57 minus 6 payments converted at €1.1612 per £1 leaves −€0.01, so it shows "Paid off on Fri 1 Jan 2027".
-- **Credit cards with an interest rate:** monthly interest (balance × yearly rate ÷ 12) is added on the statement day (D13), rounded once (D9), and the minimum is worked out from the rule, for example interest plus 1% of the balance, at least £5, never more than the balance. Both are labelled as estimates.
+- **Credit cards with an interest rate:** monthly interest (balance × yearly rate ÷ 12) is added on the statement day (D13), rounded once (D9), and the minimum is worked out from the rule, for example interest plus 1% of the balance, at least £5. Both are labelled as estimates. What happens when a planned payment is more than what's left is question 5 in `PLAN.md`.
 - **Compare** minimum, fixed amount and full balance: months to clear and interest paid. Numbers only (brief Part 3, principle 10).
 - **Proposed:** the Debts screen looks 24 months ahead for "Paid off on", whatever the Plan screen shows, and after that says how much is left on the last day it looks at. The brief 8.3 tests keep their own view to the end of February 2027.
 
@@ -266,7 +271,7 @@ How the engine stays fast:
 
 ### 2.9 Bank holidays
 
-The engine has a built-in copy of the official list from `https://www.gov.uk/bank-holidays.json` for England and Wales, Scotland and Northern Ireland (brief 5.7). The app also fetches a fresher copy from PrePenny's own website, which a weekly job refreshes from GOV.UK, and keeps it on the phone. The phone itself never contacts GOV.UK. Each plan has one nation, chosen in setup.
+The engine has a built-in copy of the official list from `https://www.gov.uk/bank-holidays.json` for England and Wales, Scotland and Northern Ireland (brief 5.7). **Proposed:** the app also fetches a fresher copy of that same file from PrePenny's own website, which a weekly job refreshes from GOV.UK, and keeps it on the phone, so the phone never contacts another site. Each plan has one nation, chosen in setup.
 
 ### For future sessions: the engine
 
@@ -344,7 +349,7 @@ Email addresses and sign-in methods live in Supabase's own sign-in tables, not h
 | --- | --- | --- |
 | `plan_id`, `person_id` | id | |
 | `role` | choice: owner, editor, viewer | "Can edit" is editor, "Can view only" is viewer (brief 4.14) |
-| `main_pay_series_id` | id | This person's main pay (D14). In a shared plan each person has their own, so Jess's plan periods follow Jess's payday and Tom's follow Tom's |
+| `main_pay_family_id` | id | This person's main pay (D14): a series family (3.3), so it still points at the right pay after a split. In a shared plan each person has their own, so Jess's plan periods follow Jess's payday and Tom's follow Tom's |
 | `joined_at` | time | |
 | `left_at` | time, or empty | Set when they leave |
 
@@ -404,7 +409,7 @@ An account's balance and date (brief 5.2) are its latest balance update. Keeping
 | `cycle_pay_weeks` | list of pay week ids | Each pattern step linked to a saved pay week (D5). Sam: steps 1 and 3 "3-shift week", steps 2 and 4 "4-shift week" |
 | `schedule` | see below | |
 | `start_date` | date | |
-| `end_rule` | choice: never, after N payments, on a date | Brief 4.4 |
+| `end_rule` | never; after N payments, with N; or on a date, with the date | Brief 4.4 |
 | `last_amount` | pence, or empty | A different last payment (brief 4.4) |
 | `holiday_rule` | choice: keep the date, working day before, working day after | Brief 4.3 |
 | `debt_id`, `budget_id`, `goal_id` | id, or empty | The linked debt, budget or goal |
@@ -412,6 +417,7 @@ An account's balance and date (brief 5.2) are its latest balance update. Keeping
 | `note` | text | |
 | `pay_profile_id` | id, or empty | For pay: which job's tax settings to use |
 | `split_from` | id, or empty | The series this one was split from (brief 5.4) |
+| `family_id` | id | The first series in its chain of splits (its own id if never split). Main pay and the same-day order (D12) use the family, so a split changes neither |
 | `first_number` | number | The payment number this series starts at, counted from the original series, so patterns and "after N payments" carry on after a split. 0 for a new series |
 | `mirror_of` | id, or empty | Set on the shared half of a private transfer (D16, 3.6) |
 | `locked_to` | person id, or empty | Only this person can change it (D16) |
@@ -421,9 +427,10 @@ The `schedule` is one of:
 - **once:** a date
 - **every N weeks**, 1 to 52, on the start date's weekday
 - **every N months**, 1 to 12, on a day of the month (1 to 31), the last day, the last working day, or "the first Monday" style, with optional months to leave out (Dee's council tax, April to January)
-- **on chosen dates:** a list of dates (Ali's student loan).
+- **on chosen dates:** a list of dates (Ali's student loan)
+- **irregular:** a weekly estimate on a chosen weekday (Kofi). It's its own kind, so D14's Monday-to-Sunday weeks can tell it apart from weekly pay. Which day counts as the next main payday is question 8 in `PLAN.md`.
 
-Irregular pay with a weekly estimate (Kofi) is "every 1 week" marked as an estimate.
+Kofi's 25% for tax has no field yet. It waits for question 6 in `PLAN.md`; if the answer is yes, a series gets an optional percentage to set aside and the account it goes to.
 
 **Payment change** (a change to one payment, brief 5.2)
 
@@ -445,7 +452,7 @@ Irregular pay with a weekly estimate (Kofi) is "every 1 week" marked as an estim
 | --- | --- | --- |
 | `series_id` or `budget_id` | id | |
 | `original_date` | date | Which payment |
-| `paid_on` | date | The day it was ticked. Used for the bank balance (D1) and for debts (D27) |
+| `paid_on` | date | The day it was ticked, if that was before the payment was due (D1); otherwise the payment's own date. Used for the bank balance and for debts (D27, brief 5.6) |
 | `ticked_at` | time | Compared with the balance update's time (D33) |
 | `in_balance_update` | id, or empty | Set when ticked inside the Update balance steps, so it counts as before that update (D33) |
 | `ticked_by` | person id | Either person can tick (brief 4.14) |
@@ -605,18 +612,20 @@ Running the command again, rather than copying records over, keeps "this and all
 - **Roles.** Each plan member has one role (brief 7.1):
   - **owner:** made the plan; invites, changes permissions and renames the plan. One per plan.
   - **editor** ("Can edit", the default): sees and changes everything shared.
-  - **viewer** ("Can view only"): sees everything shared, changes nothing shared. **Proposed:** that includes ticks. The server refuses, not only the screen (brief 8.7 test 3).
+  - **viewer** ("Can view only"): sees everything shared, changes nothing shared. **Proposed:** that includes ticks, which narrows brief 4.14's "either person can tick" to people who can edit. The server refuses, not only the screen (brief 8.7 test 3).
 - **Shared or private.** Each account is shared or private to the person it belongs to. When Jess shares, she chooses which accounts go into the plan (brief 4.14). A private account and everything on it (its series, changes, ticks, balance updates, budgets and spends) carry `private_to = Jess`. The database fills this in itself from the account, so the app can't forget.
 - **The rule on every table.** A person can read a row only if their sign-in session still exists (D21), they're a current member of the plan, and the row is shared or private to them. They can change it only if, as well, they're the owner or an editor (or the row is private to them), and the row isn't locked to someone else.
 - **From Jess (D16).** Jess's £600 from her private account to the joint account is saved as two linked series in one edit:
   - the private half, on her account, `private_to = Jess`
   - the shared half, on the joint account, named "From Jess", with no account name, note or debt, `locked_to = Jess`.
 
-  Tom sees "From Jess, £600" arriving on the date, and nothing else. The server refuses a shared half that carries anything except the date, amount, schedule and estimate flag. Money the other way shows as "To Jess".
+  Tom sees "From Jess, £600" arriving on the date, and nothing else. The server refuses a shared half that carries anything except the date, amount, schedule and estimate flag.
+
+  The private half is money going out of Jess's account and the shared half is money coming into the joint account. Neither is a transfer in the sums, so Jess's own view counts the £600 once on each side, never twice. **Proposed:** money the other way shows as "To Jess".
 - **Debts and goals** each belong to the plan (shared) or to one person (brief 4.14). Who can see a debt that belongs to one person is question 7 in `PLAN.md`.
 - **Activity.** Edits that touched anything private are private too. A partner's activity list shows only shared changes.
 - **Leaving** (brief 4.14) needs nobody's approval. The leaver's private accounts move out with them into a plan of their own. If they choose to keep a copy, the shared records they could see are copied into that plan as of that moment, and never update again (brief 8.7 test 5). The other person keeps the shared plan as it was. Shared halves of the leaver's transfers ("From Jess") stay in the shared plan, no longer locked, so the person who stays can change or remove them.
-- **Proposed:** if the owner stops sharing, the other person keeps a copy automatically, so nobody can be cut off from records they relied on.
+- **Proposed:** if the owner leaves, the person who stays becomes the owner. If the owner stops sharing, the other person keeps a copy automatically, so nobody can be cut off from records they relied on.
 - **Nothing shows when someone last opened the app** (brief 4.14). There's no "last seen" anywhere a partner can read, and the list of signed-in devices is visible only to its owner.
 - **Sign out everywhere** (D21) ends the sessions. Every rule checks that the session still exists, so the next request from an old phone is refused at once. A message on the person's own private channel tells their other phones to wipe the plan and close the live connection. A phone that misses that message only gets nudges with no money data, and refused requests.
 
@@ -656,7 +665,7 @@ The same pattern goes on every plan table. Every table starts with everything re
 | **Organisation** | name, places, paid until, join link (hashed), Stripe ids, admins | Brief 4.17. Holds no money data from anyone's plan |
 | **Organisation member** | organisation, person, joined on, removed on | |
 | **Referral** | who referred, the friend, rewarded on | Up to 12 free months a year |
-| **Payment event** | Stripe event id (unique), received at | The same webhook twice changes nothing (brief 8.7 test 8) |
+| **Payment event** | Stripe event id (unique), received at | The same message from Stripe twice changes nothing (brief 8.7 test 8) |
 | **Support access** | person, granted at, ends at (7 days later) | The only way support sees amounts, names or notes (brief 4.16) |
 | **Support message** | person or email, app version, phone type, message, replied at | Never adds money data on its own (brief 4.16) |
 | **Problem report** | person, screen, consent given at, attachment (screenshot or plan copy, private storage) | **Proposed:** attachments deleted after 30 days |
@@ -672,7 +681,7 @@ Stored in the phone's browser database (IndexedDB):
 - the queue of unsent edits, the last change number for each plan, and the server clock difference
 - the undo list (this person's recent edits)
 - what-if practice changes, which are never sent anywhere
-- the app lock: on or off, the PIN scrambled with a random salt, the fingerprint or face key's id, and the 5-minute timeout (brief 4.13)
+- the app lock: on or off, the PIN, scrambled so it can't be read back, the fingerprint or face key's id, and the 5-minute timeout (brief 4.13)
 - this device's settings: light or dark, pay periods or calendar months, filters, how many months to show
 - the "try first" plan and pay calculator drafts made before signing up. They move into the new account at sign-up (brief 4.13)
 - the bank holiday copy and the date it was fetched.
@@ -685,23 +694,23 @@ Signing out wipes all of it (brief 4.13). Other people's private records are nev
 | --- | --- |
 | D1 Paying early | Tick `paid_on` |
 | D2 Budgets and the bank | Spend `recorded_at`, Budget, Balance update |
-| D3 Left to spend line | Account `warning_level`, Plan member `main_pay_series_id` |
+| D3 Left to spend line | Account `warning_level`, Plan member `main_pay_family_id` |
 | D4 Skipping | Payment change `skipped`; Series `end_rule` still counts it |
 | D5 Overtime | Series `cycle_pay_weeks`, Pay week, Pay adjustment, Pay profile `shift_pay_delay` |
 | D6, D7, D8 | Test data and test tolerances only |
 | D9 Rounding | Decimals stored as exact text; the engine rounds once |
-| D10, D11 | Rules on screen only, no data |
-| D12 Same-day order | Series `created_at` and `name` |
+| D10, D11 | Rules in the engine and on screen; nothing stored |
+| D12 Same-day order | Series `family_id` (when the family was first created) and `name` |
 | D13 Statement day | Debt `statement_day` |
-| D14 Main pay | Plan member `main_pay_series_id` |
+| D14 Main pay | Plan member `main_pay_family_id` |
 | D15 Example plan | Plan `is_example`, and the example data file |
 | D16 Couples | `private_to`, Series `mirror_of` and `locked_to` |
 | D17 to D23 | Tools and set-up, not data (section 1); D21 uses Device and the session check in every rule |
 | D24, D26 | Business and design, not data |
 | D25 VAT wording | App setting |
 | D27 Debts follow D1 | Tick `paid_on`, read by the debt sums |
-| D28 Left to spend | Series `type`, Budget, Plan member `main_pay_series_id` |
-| D29 Budget periods | Budget `every`, Plan member `main_pay_series_id` |
+| D28 Left to spend | Series `type`, Budget, Plan member `main_pay_family_id` |
+| D29 Budget periods | Budget `every`, Plan member `main_pay_family_id` |
 | D30 Roll-over | Budget `roll_over`, `roll_over_from` |
 | D31 Spread | Budget `leaves` |
 | D32 Pay-later bill | Budget `leaves`, `bill_day`, `statement_day`; the real bill is a Payment change on the budget |
@@ -718,13 +727,13 @@ Brief Part 10 lists six things to leave out but design for. None of them needs t
 | **Bank connections** that tick payments, through an FCA-authorised Open Banking provider | Ticks and balance updates already have a `source` field ("typed" or "bank"). The engine treats a tick the same however it was made | A **Bank link** record (provider, consent expiry, which account it fills) and a **Bank item** record (what the bank reported, matched to a payment). Matching creates ordinary ticks and balance updates with `source = bank`. The provider's keys live only on the server |
 | **Housemates** (more than two people) | Plan members are already a list with roles, and `max_members` is a setting. "From Jess" halves work for any number of people | Raise `max_members`. Add an optional `shares` list to a series (person and percentage) to split a bill, worked out by the engine. Who owes whom is a new engine function, not new stored data |
 | **Reading a payslip or statement from a photo** | The pay calculator and "Update from statement" already take typed figures | A step that fills those same fields from a photo. The photo is read and thrown away; only the typed-in figures are kept, as today |
-| **A shift rota that predicts paydays** | Pay weeks, pay profiles and `shift_pay_delay` already link shifts to paydays (D5) | A **Shift** record (person, date, hours, kind). The engine builds each payday's pay lines from the shifts and saves the estimate as a payment change, as "I did overtime" does now |
+| **A shift rota that predicts paydays** | Pay weeks, pay profiles and `shift_pay_delay` already link shifts to paydays (D5) | A **Shift** record (person, date, hours, kind). The engine builds each payday's pay lines from the shifts and saves the difference as a pay adjustment, as "I did overtime" does now |
 | **Comparing ways to clear several debts** | Debts already hold balances, rates and minimum rules | A new engine function only. No new data |
 | **Other countries, currencies and languages** | Accounts and debts store a currency; all words live in one strings file (VOICE.md); dates and money go through one formatter; tax rules are data files | Plan `nation` becomes country and region; one strings file per language; tax files per country; bank holiday lists per country |
 
 ## 4. Screens
 
-**In plain words.** Below is every screen, sheet and public page, which part of the brief asks for it, and which of the six people need it most. Then come rough sketches of the main screens at phone width, filled in with Sam's example plan on Sun 25 Oct 2026, using the parts from `docs/DESIGN.md`. Every number in the sketches comes from Sam's plan in brief Part 8 and was checked against brief 8.3.
+**In plain words.** Below is every screen, sheet and public page, which part of the brief asks for it, and which of the six people need it most. Then come rough sketches of the main screens at phone width, filled in with Sam's example plan on Sun 25 Oct 2026, using the parts from `docs/DESIGN.md`. Every number in the sketches comes from Sam's plan in brief Part 8 and was checked against brief 8.3, except where a sketch says its amounts are examples.
 
 The app has four places in the bottom navigation: **Home, Plan, Debts, More** (brief Part 6). Editing always opens in a bottom sheet on phones and a centred dialog on laptops, never a new page. "Everyone" means all six people from brief Part 2.
 
@@ -742,6 +751,9 @@ The app has four places in the bottom navigation: **Home, Plan, Debts, More** (b
 | Privacy notice, terms, accessibility statement | 7.2, 7.3 | Everyone |
 | Service status | 4.16 | Everyone |
 | Sign up and sign in: email code, Google, later Apple | 4.13, D20 | Everyone |
+| Getting back in: a backup email or phone added in advance, or contact support | 4.13 | Everyone |
+| Join a shared plan: the page an invite link opens, to sign up or sign in and then join | 4.14 | Jess and Tom |
+| Join through an organisation: the page an organisation's link opens | 4.17 | People whose employer or housing association pays |
 
 **Proposed:** VOICE.md bans questions as headlines and wins over the brief (D36), so two pages get new names. "Will I make it to payday?" becomes **Payday check**, headed "Check your money lasts until payday". "Worried about money?" becomes **Help when money is tight**. Help articles are titled as statements too: "Why your lowest point is on Sunday".
 
@@ -1160,12 +1172,12 @@ Next payday
  3 [£ 469.06]   4 [£ 592.17]
  [+ Add a payday] (up to 8)
 On a weekend or bank holiday
-[Pay the working day before v]
+[Keep the date              v]
 [+ Add another income]
 [            Next            ]
 ```
 
-When pay follows a pattern, a short extra page offers to link each payday in the pattern to a saved pay week, for example "3-shift week" for paydays 1 and 3 (D5), with "Do this later". When there's more than one income, it asks which is the main pay (D14).
+Sam's example keeps every date (D15), so his pay stays on Fridays even on Christmas Day and New Year's Day. When pay follows a pattern, a short extra page offers to link each payday in the pattern to a saved pay week, for example "3-shift week" for paydays 1 and 3 (D5), with "Do this later". When there's more than one income, it asks which is the main pay (D14).
 
 **Setup, step 3: rent**
 
@@ -1539,12 +1551,15 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | Test | From | Step |
 | --- | --- | --- |
 | Exactly £20.00 is not under a £20 warning level | D10 | 1b |
+| "Not ticked yet" lists unticked payments dated before today, whatever the balance date | D11 | 1b |
+| Plan periods run from one main payday to the day before the next; irregular main pay uses Monday-to-Sunday weeks | D14 | 1b |
 | The same-day order never changes between runs | D12 | 1b |
 | A payment ticked, or a spend recorded, after a balance update on the same day isn't inside that balance; a tick made inside the Update balance steps is | D33 | 1b |
 | A skipped payment still counts towards "after N payments" and nothing is added at the end | D4 | 1c |
 | "Move to next payday" moves to the first main payday after the payment's date | D14 | 1c |
 | A payment ticked early comes off a debt once, even after "Update from statement" | D27 | 1d |
 | The Family loan ends at −€0.01 and shows "Paid off" and £0.00 | D34 | 1d |
+| Spends recorded before the balance update are inside it, later ones are rows on their dates, and the unspent part leaves today; past periods are settled and future ones leave in full | D2 | 1e |
 | Left to spend runs to the day before the next main payday and is labelled with that payday | D28 | 1e |
 | Budget periods: Sam's weekly budgets start on Friday; a monthly budget runs payday to payday for monthly pay and by calendar month otherwise | D29 | 1e |
 | Roll-over adds last period's unspent amount, shown as "£25 + £7 from last week"; off means nothing moves | D30 | 1e |
@@ -1560,13 +1575,13 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | --- | --- | --- |
 | **Sync between two phones** | Two people change the same thing, one of them offline, or a change is sent twice when the signal drops | Every edit has its own ID, so sending it twice changes nothing. The server saves edits one at a time and checks versions. Clashes run the command again on the newest data, so splits never overlap. Whoever's change loses is told. Unsent edits stay on the phone until the server confirms them. Section 3.5, question 1 |
 | **Sign out everywhere within 1 minute** (D21) | Supabase's sign-in tokens keep working until they expire, even after the session ends | Every database rule checks that the session still exists, so an old phone is refused on its very next request. A message tells the person's other phones to wipe the plan. Live nudges carry no money data, so a connection that stays open leaks nothing. Brief 8.7 test 6 proves it |
-| **iPhone home-screen apps** | Sign-in isn't shared with Safari. Reminders only work after "Add to Home Screen". The phone may clear a site's stored data when space runs low. A web app can't hide its preview in the app switcher | 6-digit email codes, not links (D20). The app explains "Add to Home Screen" when reminders are turned on (D22). The app asks the phone to keep its data, and the server copy is always the real one, so cleared data comes back at the next sign-in. Before sign-out or after a long time offline, it warns about unsent changes. Until Phase 6, the app covers balances when it's hidden, but the phone may still show an older preview; the App lock screen says so plainly. The Phase 6 apps hide it properly |
+| **iPhone home-screen apps** | Sign-in isn't shared with Safari. Reminders only work after "Add to Home Screen". The phone may clear a site's stored data when space runs low. A web app can't hide its preview in the app switcher | 6-digit email codes first, with a link only as a backup (D20). The app explains "Add to Home Screen" when reminders are turned on (D22). The app asks the phone to keep its data, and the server copy is always the real one, so cleared data comes back at the next sign-in. Before sign-out or after a long time offline, it warns about unsent changes. Until Phase 6, the app covers balances when it's hidden, but the phone may still show an older preview; the App lock screen says so plainly. The Phase 6 apps hide it properly |
 | **Tax tables** | Rates change every April, Scotland sets its own bands later in the winter, rules sometimes change mid-year, and one wrong threshold changes every payslip | One file per tax year, each figure with its GOV.UK source link. Tested against the four real payslips in brief 8.6 and GOV.UK's worked examples. A file can hold a change part-way through a year. The admin check warns from 1 March. The calculator always says it's an estimate and "Ask your payroll team" |
 | **Dates and clock changes** | Treating a date as midnight UTC moves it a day; times shift when the clocks change | The engine uses day numbers, never date objects. "Today" is the person's local date in their time zone. Sun 25 Oct 2026, the day of Sam's example, is the day the clocks go back, so the D33 tests run across it |
 | **Money maths** | Floating point makes 0.1 + 0.2 slightly wrong | Whole pence everywhere, exact decimals for rates, one rounding rule (D9), and property tests on thousands of made-up plans |
 | **Speed on a cheap phone** | 10,000 payments worked out on every change could make the screen stutter | Section 2.8: a speed budget tested on every push, the engine in a background worker, only changed series redone, small downloads, skeleton screens instead of spinners, and a check on a real mid-range Android phone in Phase 4 |
 | **A partner seeing private data** | One missing database rule would show Jess's private account to Tom | Every table starts with everything refused. The database fills in `private_to` itself. A database test for every table, and brief 8.7 test 2 tries every request Tom could make. Nudges, activity, exports and "keep a copy" all leave private records out |
-| **Money in logs, error reports or emails** | Error messages often include the data that caused them; database errors can print the whole row | Error reports use an allow-list: only an error code, where in the code, the app version and phone type. The database functions check input before saving and return their own codes, never the row. Emails never contain amounts, payment names or notes. A check script looks for logging near money fields |
+| **Money in logs, error reports or emails** | Error messages often include the data that caused them; database errors can print the whole row | Error reports send only a fixed list of things: an error code, where in the code, the app version and phone type. The database functions check input before saving and return their own codes, never the row. Emails never contain amounts, payment names or notes. A check script looks for logging near money fields |
 | **Bank holidays changing** | The government sometimes adds a one-off bank holiday | A weekly job refreshes the copy from GOV.UK, and every release updates the built-in copy |
 | **Free plan limits** | A free Supabase project pauses after 7 days without use. Cloudflare's free plan wording is unclear about paid apps. GitHub's free minutes could run out | Supabase Pro before launch (D19). Read Cloudflare's terms before launch, added to the launch checklist. Run the slower tests only on pull requests if minutes run short |
 | **App store review** (Phase 6) | Apple wants subscriptions sold inside the app as well, a company account for a money app, and account deletion inside the app | In-app purchases where the rules require them, with RevenueCat keeping one subscription across web and stores. Developer accounts in the company's name (D24). "Delete my account" is already in the app (brief 4.12) |
