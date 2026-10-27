@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -300,3 +300,313 @@ Agreed 27 Oct 2026.
 Every screen is checked at 320px and 360px wide.
 
 Why: the brief asks for screens that work down to 320px, and its end-to-end tests run at 360px.
+
+## The approved plan
+
+D38 to D58 are the 21 proposals in `docs/ARCHITECTURE.md` ("Proposed in this plan"), in the same order. The owner approved the plan on 27 Oct 2026. The section in brackets is where each one is explained.
+
+### D38. A one-off change wins over a different last amount
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.2).
+
+A payment's amount is, in this order: the one-off change's amount, then the different last amount if it's the last payment, then the amount pattern, then the series amount.
+
+Why: a one-off change is the most specific thing the person typed.
+
+### D39. Ticked after a balance update, with an earlier paid date
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.4).
+
+A payment ticked after a balance update, with a paid date before that update's balance date, goes out at the start with the overdue payments, and shows as ticked. Balances from today on come out the same as if it went out today.
+
+Why: it isn't inside the balance the person typed (D33), so it still has to come off, and taking it off first means every balance from today on allows for it.
+
+### D40. Payments that could move
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.4). Replaced by D69.
+
+When the plan shows a shortfall, "Payments that could move" lists the unticked payments going out from today up to the short day that would fix the shortfall on their own if moved to the first main payday after it, biggest first, with "Show all" for the rest. Tapping one shows the new lowest point.
+
+Why: brief 5.5 and principle 7 ask for the payments that could move to fix a shortfall, and showing first the ones that fix it on their own gives one clear thing to do.
+
+### D41. A spread budget folds into one line
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.5).
+
+On screen, a spread budget's daily rows for a period fold into one line ("Travel, £3.57 a day") that opens to show each day. The sums always use the daily rows.
+
+Why: a row for every day would push the other payments off the screen.
+
+### D42. Paid off in another currency
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.6).
+
+A debt in another currency counts as paid off at 1 cent (or that currency's smallest unit) or less, as D34 does with 1p.
+
+Why: converting and rounding each payment (D9) can leave a cent either way, just as it can leave a penny.
+
+### D43. Debts look 24 months ahead
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.6).
+
+The Debts screen looks 24 months ahead for "Paid off on", whatever the Plan screen shows. After that, it says how much is left on the last day it looks at. The brief 8.3 tests keep their own view, to the end of February 2027.
+
+Why: the Plan screen shows 3 months by default, but many debts run for longer, and 24 months is the furthest the plan can show (brief 4.8).
+
+### D44. Overtime changes only an estimate
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.7).
+
+"I did overtime" and "I missed a shift" change a payday only while it's an estimate. Once the real amount is typed in, the real amount stands.
+
+Why: the real amount is what the bank shows, and the plan stays true to the bank (brief Part 3, principle 1).
+
+### D45. The tax year check warns from 1 March
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.7).
+
+The admin check starts warning on 1 March if the file for the tax year starting in April is missing.
+
+Why: a new file is needed every April (brief 4.15), and a month's warning leaves time to add it before the first payday of the new tax year.
+
+### D46. "Expected" in Update balance
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 4.6).
+
+"Expected" in Update balance is the plan's balance at the end of today, before anything is ticked.
+
+Why: it's what the bank should show once everything planned up to today has gone out or come in, so the person sees one clear difference to check.
+
+### D47. Suggested warning level
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.3).
+
+Setup suggests a warning level of £20.00, and people can change it.
+
+Why: it's the warning level in Sam's plan (brief 8.1), and a starting amount is quicker to set up than an empty box.
+
+### D48. A paid tick is its own record
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.3).
+
+A paid tick is stored as its own record, not as part of a payment change.
+
+Why: then one person ticking Rent and the other changing Rent's amount at the same moment never clash.
+
+### D49. Split series share a family
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.3).
+
+Series split from the same original share a family. Main pay and the same-day order (D12) use the family, so a split changes neither.
+
+Why: a split makes a new series, and without the family it would lose its place as main pay and could move within the same day.
+
+### D50. Change history kept for 12 months
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.5).
+
+Edits are kept for 12 months as the change history (brief 4.12).
+
+Why: long enough to look back over a full year, yearly bills included, without keeping more than needed (brief 7.2).
+
+### D51. "Can view only" includes ticks
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.6).
+
+Someone who can view only can't tick payments either. This narrows brief 4.14's "either person can tick" to people who can edit. The server refuses, not only the screen.
+
+Why: a tick changes the balances and debts in the plan, so it's a change like any other.
+
+### D52. "To Jess"
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.6).
+
+Money from a shared account into a private one shows in the shared plan only as "To Jess" on that date, with the amount: the reverse of D16.
+
+Why: the same privacy as D16, the other way round.
+
+### D53. When the owner of a shared plan leaves
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.6).
+
+If the owner leaves, the person who stays becomes the owner. If the owner stops sharing, the other person keeps a copy automatically.
+
+Why: nobody can be cut off from records they relied on (brief 4.14).
+
+### D54. Hide amounts in notifications
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.7).
+
+A setting hides amounts in notifications.
+
+Why: notifications can show on a locked phone, where someone else might see them.
+
+### D55. Problem report files deleted after 30 days
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.7).
+
+Screenshots and plan copies attached to "Something looks wrong" are deleted after 30 days.
+
+Why: they can hold money data, and 30 days is long enough to look into a problem (brief 7.2 asks to collect the minimum).
+
+### D56. The tools
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 1).
+
+The tools in ARCHITECTURE.md section 1, including TypeScript 6.0 rather than 7.0, no sheet library, Resend for email, Sentry's EU region, UptimeRobot, and buying the web address by Phase 3. RevenueCat and Codemagic are named for Phase 6 and decided then.
+
+Why: section 1 gives the reason for each. In short: the tools around TypeScript 7.0 don't fully support it yet; the popular sheet library hasn't been updated since Dec 2024 and DESIGN.md bans a library's default look; the free plans are enough for now; Sentry's EU region keeps error reports in Europe; and sign-in emails need PrePenny's own web address from Phase 3.
+
+### D57. Fresh bank holidays from PrePenny's own site
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 2.9).
+
+The engine has a built-in copy of GOV.UK's bank holiday list. The phone gets fresher copies from PrePenny's own site, which copies GOV.UK's list weekly.
+
+Why: the phone never contacts another site, for the same reason as D23.
+
+### D58. Names for two public pages
+
+Agreed 27 Oct 2026 (ARCHITECTURE.md 4.1).
+
+"Will I make it to payday?" becomes **Payday check**, headed "Check your money lasts until payday". "Worried about money?" becomes **Help when money is tight**. Help articles are titled as statements too.
+
+Why: VOICE.md bans questions as headlines, and it wins over the brief (D36).
+
+## Answers to the Phase 0 questions
+
+D59 to D68 are the owner's answers to the 10 questions asked at the end of Phase 0, in the same order: question 1 is D59. The owner accepted every suggested answer on 27 Oct 2026.
+
+### D59. Clashes after being offline
+
+Agreed 27 Oct 2026. Needed before Phase 3.
+
+"Newest" means when a change was made, not when it reached the server. Tom changes Rent offline at 9am, Jess changes it online at 10am, and Tom's phone reconnects at 11am: Jess's change stays, because she made it last. Tom is told and can put his back with one tap.
+
+Why: the change made last is the newest wish, whatever the signal did, and nobody loses a change without being told (brief 4.14).
+
+### D60. "This and all later ones" and earlier one-off changes
+
+Agreed 27 Oct 2026. Needed before step 1c. Settles which changes brief 5.4 drops.
+
+A one-off change is dropped only where the new edit changes the same thing. If March's rent was changed on its own to £580, and rent is then changed to £560 for this and all later ones from January, March becomes £560. One-off changes to other things stay: a moved date stays unless the edit changes dates, a note stays unless it changes the note, and ticks always stay.
+
+Why: brief 5.4 drops the changes the edit replaces, and a change is only replaced where the new edit sets the same thing.
+
+### D61. Pay-later bills: which spends each bill covers
+
+Agreed 27 Oct 2026. Needed before step 1e. Settles what D32 left open.
+
+Each pay-later card has a statement day, which starts as the day before the bill day and can be changed to match the card. A bill covers spends from the day after the last statement day up to and including this one, so a bill on Sun 29 Nov covers spends from Thu 29 Oct to Sat 28 Nov. "Spent" and "left" for the budget use the same dates.
+
+What's left on that budget is spent on the card, not from the bank account, so it shows on its own line under Left to spend ("On the pay-later card: £80.00 left until Sat 28 Nov"), not inside it. The bill pays for spending already done, so it doesn't count in Left to spend even when it falls before payday. It shows in the plan like rent.
+
+Why: it matches how card statements work, and Left to spend stays about money leaving the bank account.
+
+### D62. "Update from statement" stores the time
+
+Agreed 27 Oct 2026. Needed before step 1d. Adds a time to D27.
+
+Debts work like D33. Each "Update from statement" stores the time as well as the date. A payment ticked after it comes off the debt, even on the same day. Ticks made inside the update steps count as before it.
+
+Why: the same rule as balance updates, so a payment ticked later the same day still comes off, and nothing comes off twice.
+
+### D63. Paying more than what's left
+
+Agreed 27 Oct 2026. Needed before step 1d.
+
+The plan makes no automatic change. Sam's Credit card has £20.99 left before its payment on Wed 15 Mar 2028, but the planned payment is £25.00. The debt shows "Paid off" (D34), and the payment says "£4.01 more than what's left", with a one-tap fix: "Make it £20.99 and stop after it". A minimum worked out from a rule never goes above the balance.
+
+Why: the plan never changes a payment the person set up without asking, and they see the exact amount and a quick fix.
+
+### D64. Setting money aside for tax
+
+Agreed 27 Oct 2026. Needed before step 1e.
+
+Any money coming in can have an optional "Set aside": a percentage that moves to a chosen account on the same day, rounded to the nearest penny (D9). It follows the estimate, and changes when the real amount is typed in. This is how Kofi sets 25% aside for tax.
+
+Why: brief Part 2 says Kofi sets money aside for tax automatically, and no rule said how.
+
+### D65. A debt or goal that belongs to one person
+
+Agreed 27 Oct 2026. Needed before Phase 3.
+
+A debt or goal that belongs to one person is private to them unless they choose to share it, like an account. A payment to it from a shared account still shows in the shared plan with its name and amount, but the debt's balance and paid-off date stay private.
+
+Why: it follows the rule for accounts (brief 4.14, D16), and the shared plan still shows all the money leaving its accounts.
+
+### D66. Next main payday for irregular pay
+
+Agreed 27 Oct 2026. Needed before step 1b. Adds to D14.
+
+When the main pay is irregular, the next main payday is the next Monday, so Kofi sees "Left to spend until Mon 2 Nov".
+
+Why: D14 makes irregular plan periods Monday to Sunday, and Left to spend (D28) and "Move to next payday" need a next payday.
+
+### D67. A balance checked in an earlier budget period
+
+Agreed 27 Oct 2026. Needed before step 1e. Adds to D2.
+
+D2's rule applies to the budget period that contains today, with spends recorded at or before the balance update counted as inside the balance. A budget period that ended between the update and today takes nothing more: its spends show on their dates, and anything unspent stays in the account, or rolls over if roll-over is on (D30).
+
+Why: read word for word, D2 would take last week's unspent money out today, although D30 says it stays in the account.
+
+### D68. Cloudflare Workers instead of Pages
+
+Agreed 27 Oct 2026. Needed before Phase 2. Replaces the choice of Cloudflare Pages in D18.
+
+The website and app are hosted on Cloudflare Workers instead of Cloudflare Pages.
+
+Why: Cloudflare now tells new projects to start on Workers, and Pages gets no new features. It's the same company and price, with a preview link for every pull request (ARCHITECTURE.md 1.6).
+
+## From the owner's review of the plan
+
+### D69. Payments that could move
+
+Agreed 27 Oct 2026. Replaces D40.
+
+"Payments that could move" lists unticked payments dated from today to the day before the short day (brief 5.5 says "before that date"). It includes only those that would fix the shortfall on their own if moved to the first main payday after it, without making any day short that wasn't short before. Biggest first, with "Show all" for the rest.
+
+Test for step 1b: in Sam's plan with the Fri 30 Oct pay £100 lower (£503.06), he is £95.47 short on Sun 1 Nov, and the list is Pay-later card −£466.07, Family loan −£125.00, Driving lesson −£100.00. Spending money −£30.00 is not in it, because moving it still leaves him £65.47 short.
+
+Why: brief 5.5 lists the payments before the short date, and moving a payment shouldn't cause a new shortfall somewhere else.
+
+### D70. Test: Credit card paid off on Wed 15 Mar 2028
+
+Agreed 27 Oct 2026.
+
+Test for step 1d: looking 24 months ahead (D43), Sam's Credit card is paid off on Wed 15 Mar 2028, and that payment shows "£4.01 more than what's left" (D63).
+
+Why: D63 needs a test with an exact date and amount.
+
+### D71. A tick's paid date
+
+Agreed 27 Oct 2026. Adds to D1 and D27.
+
+A tick's paid date is the day it was ticked, if that's earlier than the payment's date. Otherwise it's the payment's date after any weekend, bank holiday or moved-date change.
+
+Why: the paid date has to be the day the money really leaves or arrives, and a payment that was moved goes on its new date, not its original one.
+
+### D72. The speed test uses the middle of 20 runs
+
+Agreed 27 Oct 2026.
+
+The speed test (step 1g) uses the middle time of 20 runs after a warm-up.
+
+Why: one slow moment on GitHub's machines can't fail it.
+
+### D73. One pull request per step
+
+Agreed 27 Oct 2026. Replaces "one pull request per phase" in brief Part 9.
+
+One pull request per step, not per phase. Each pull request is named after its step, for example "Step 1a: dates, repeats and bank holidays".
+
+Why: each step runs in its own session.
+
+### D74. Bank holidays beyond the official list
+
+Agreed 27 Oct 2026. Adds to D57.
+
+When the official bank holiday list doesn't reach a year the plan shows, the engine works out that year's usual bank holidays for each nation by the standard rules, including substitute days. It uses the official list as soon as that list covers the year. A test proves the rules give exactly the official list for every year the list covers.
+
+Why: GOV.UK's list only runs a year or so ahead, and the plan and the Debts screen can look 24 months ahead (D43).
