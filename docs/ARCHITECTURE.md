@@ -25,6 +25,88 @@ Contents:
 
 <!-- PROPOSALS -->
 
+## 1. Tools
+
+**In plain words.** These are every tool and service PrePenny will use. Most are free. Before launch, three things start to cost money: Supabase's paid plan (about £20 a month, D19), the web address (about £10 a year, needed from Phase 3 because sign-in emails must come from it) and, in Phase 6, the Apple and Google developer accounts. Stripe takes a share of each payment instead of a monthly fee.
+
+Versions are the latest at the time of writing (27 Oct 2026). Phase 1 fixes the exact versions in the project's files, and they only change on purpose. Facts about free plans were checked on the services' own pages on 27 Oct 2026 and should be checked again before launch.
+
+### 1.1 Building the app
+
+| Tool | What it does, and why | Version | Free plan enough for now? |
+| --- | --- | --- | --- |
+| Node.js | Runs the build tools and tests on the computer that builds the app | 24 (long-term support) | Free |
+| pnpm | Installs the building blocks and runs the monorepo: engine and app in one repository (D17) | 12.15 | Free |
+| TypeScript | The language for all the code, so mistakes are caught before they run (brief 7.1) | 6.0. **Proposed:** not the new 7.0 yet, because the tools around it (Next.js type checks, linting) don't fully support 7.0 | Free |
+| React | Builds the screens (brief 7.1) | 19.3 | Free |
+| Next.js, static export | Turns the screens into plain files: the public pages as ready-made pages search engines can read, and the app as one bundle that also becomes the phone apps (D17) | 16.4 | Free |
+| Dexie | Stores the plan in the phone's own browser database (IndexedDB), so it opens instantly and works offline (brief 7.1) | 4.4 | Free |
+| Supabase client | Talks to the database, sign-in and live updates | 2.118 | Free |
+| Serwist | The offline helper (service worker): keeps the app's files on the phone so it opens with no signal. Used through its command-line build step, which works with Next.js 16's static export | 9.5 | Free |
+| Zod | Checks data arriving from outside, such as an imported backup, before it's trusted | 4.6 | Free |
+| Figtree font files | The one font, served from PrePenny's own site, never from Google (D23) | 5.3 (Fontsource) | Free, open licence |
+| The browser's own dialog element | Bottom sheets and laptop dialogs, styled entirely with the DESIGN.md colours and sizes. **Proposed:** no sheet library; the popular one (vaul) hasn't been updated since Dec 2024, and DESIGN.md bans a library's default look | Built into browsers | Free |
+| Our own icons | About 10 simple line icons drawn as SVG (DESIGN.md: navigation and a few actions only) | Ours | Free |
+
+### 1.2 Tests and checks
+
+| Tool | What it does, and why | Version | Free plan enough for now? |
+| --- | --- | --- | --- |
+| Vitest | Runs the engine's tests (brief 7.1) | 5.0 | Free |
+| fast-check | Property tests: tries thousands of made-up plans to prove a rule always holds (brief 5.8) | 4.10 | Free |
+| Playwright | End-to-end tests that use the real app on phone-sized screens, 320px and 360px wide (brief 7.1, D37) | 1.64 | Free |
+| axe-core for Playwright | Automatic accessibility checks against WCAG 2.2 AA (brief Part 6) | 4.14 | Free |
+| Biome | Checks code style and common mistakes, and formats the code, in one fast tool | 2.6 | Free |
+| Our own check scripts | Banned words and long dashes in every string (VOICE.md), no amounts or names in logs, a missing tax year file (brief 4.15) | Ours | Free |
+| Supabase command line | Database changes, a local test database, and deploying server functions | 2.122 | Free |
+| pgTAP | Tests inside the database proving one person can never read another's data (brief Part 9, Phase 3) | Built into Supabase | Free |
+| GitHub Actions | Runs every check on every push, and the end-to-end tests (brief 7.1) | | 2,000 free minutes a month for a private repository. Enough for now. If minutes run short, the slower end-to-end tests run only on pull requests |
+| Dependabot and `pnpm audit` | Warn about building blocks with known security problems (brief 7.2) | | Free |
+
+### 1.3 Services
+
+| Service | What it does, and why | Version or plan | Free plan enough for now? |
+| --- | --- | --- | --- |
+| Cloudflare Pages | Hosts the website and app, with a preview link for every pull request (D18) | Free plan | Yes: 500 builds a month. See question 10 in `PLAN.md` |
+| Supabase, London region | The database (Postgres), sign-in, live updates and server functions, all in one place (D17) | Free plan, Pro before launch | Yes for now: 500 MB of data, 50,000 people a month, 200 live connections, 500,000 function calls. But it pauses after 7 days without use and has no backups or 90-day sign-out. Move to Pro (about £20 a month) before launch (D19) |
+| Supabase Auth | Sign-in with a 6-digit email code (D20), Google (Phase 3), Apple (Phase 6), and two-step sign-in with an authenticator app | Included | Yes. Two-step sign-in is free. The 90-day "stay signed in" limit needs Pro (D19) |
+| Supabase Realtime | Nudges the other phone within seconds when the plan changes (brief 4.14) | Included | Yes |
+| Supabase Edge Functions | All server work: Stripe messages, emails, reminders, invites, account deletion (D17). They can run the engine, so reminders use the same sums as the app | Included | Yes |
+| Resend | Sends emails: sign-in codes, invites, trial and renewal reminders, support replies | Free plan | Yes: 3,000 emails a month, 100 a day. Resend keeps email text for 30 days on servers in the US, so **no email ever contains amounts, payment names or notes**. A French alternative, Brevo, is ready if the owner prefers |
+| Web Push | Reminders on the phone, sent straight from PrePenny's server with no other push company in between (brief 7.1) | The `web-push` library, 3.6 | Free. On iPhone it needs "Add to Home Screen" until Phase 6 (D22) |
+| Sentry, EU data region | Error reports, with every amount, name and note stripped before sending (brief 7.1). Built into our own code, not loaded from Sentry. Only the error type, where in the code, the app version and phone type are sent | Free (Developer) plan | Yes: 5,000 errors a month |
+| UptimeRobot | Checks every 5 minutes that the app and server are up, and runs the status page (brief 4.16) | Free plan | Yes: 50 checks and 1 status page. Its terms allow business use |
+| Google sign-in | Lets people sign in with Google (D20) | Google Cloud | Free |
+| A web address | The website, and the address sign-in emails come from | About £10 a year | **Not free.** Needed by Phase 3, before the rest of the launch checklist |
+| Stripe | Subscriptions: Checkout, the customer portal and payment messages (brief 4.17). Test mode until launch | No monthly fee | Yes. Stripe takes about 1.5% + 20p of each UK card payment, plus 0.7% for running subscriptions |
+| PrePenny's own counts | After launch only: opt-in, counts only, stored in Supabase, no other analytics company (D19) | Ours | Free |
+
+### 1.4 Phase 6: the app stores
+
+These are chosen in Phase 6. Listed now so nothing earlier rules them out.
+
+| Tool or service | What it does, and why | Version or plan | Free plan enough? |
+| --- | --- | --- | --- |
+| Capacitor | Wraps the same build into the iPhone and Android apps (D17) | 8.5 | Free |
+| Capacitor plugins | Hiding balances in the app switcher (`@capacitor/privacy-screen` 2.0), fingerprint or face (`@aparajita/capacitor-biometric-auth` 10), phone notifications (`@capacitor/push-notifications` 8.1) | As listed | Free |
+| RevenueCat | **Proposed for Phase 6:** one subscription across Stripe, the App Store and Google Play (brief Phase 6). Apple's UK rules allow a subscription bought on the web to work in the app only if it's also sold inside the app | Free plan | Free until $2,500 a month of sales, then 1% |
+| Codemagic | Builds the iPhone app on a Mac in the cloud (brief Phase 6). Ionic Appflow, the other well-known choice, is closing in 2027 | Free plan | 500 Mac minutes a month. Check its terms allow a business app before relying on it |
+| Apple Developer Program | Needed to publish on the App Store, registered to the company (D24) | £79 a year | Not free |
+| Google Play Console | Needed to publish on Google Play, registered to the company (D24) | US$25 once | Not free |
+
+### 1.5 Considered and not chosen
+
+- **A ready-made sync service** (such as PowerSync). It would add another company that sees people's plans, and PrePenny's sync is small enough to build on Supabase (section 3.5).
+- **Vite instead of Next.js.** Next.js's static export already builds the public pages as ready-made pages that search engines can read, which the free calculator and payday check need (brief 4.17). D17 stays.
+- **A component library.** DESIGN.md bans their default look, and the few pieces needed (sheets, dialogs, buttons) are small.
+
+### 1.6 Better than a decision already made?
+
+One, and it isn't changed: it's question 10 in `PLAN.md`.
+
+- **Cloudflare Workers instead of Cloudflare Pages (D18).** Cloudflare's own guidance now says new projects should start on Workers. Pages keeps working with no end date, but new features go to Workers. Workers' free plan also gives a preview link for every pull request (the latest 100 are kept), serves the app's files free and includes 3,000 build minutes a month. Same company, same price, and it avoids a move later.
+- One more thing to check before launch, whichever is chosen: Cloudflare describes its free plan as "for personal or hobby projects", and no clause either allows or bans a paid app. D18 chose Cloudflare because it's free for commercial use, so the terms should be read before launch. If needed, Workers' paid plan is US$5 a month. This is added to the launch checklist.
+
 ## 2. The engine
 
 **In plain words.** The engine is the calculator at the heart of PrePenny. You give it what's stored (accounts, balances, payments, debts, budgets) and today's date. It gives back every row of the plan with the balance after it, the lowest point ahead, any warning, left to spend, and when each debt is paid off. It never saves anything, never goes online and never looks at a clock. That makes it easy to test: Sam's plan from brief Part 8 goes in, and the exact numbers from the brief must come out.
