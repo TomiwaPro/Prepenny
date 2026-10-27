@@ -1351,3 +1351,197 @@ More
 ----------------------------------
   Home     Plan    Debts   (More)
 ```
+
+## 5. Folders
+
+**In plain words.** One repository holds everything: the engine, the app, the database set-up and the documents. Each folder has one job.
+
+```
+prepenny/
+  apps/
+    web/                 The app and the website (Next.js, static export)
+      app/               Pages, by web address
+        (site)/          Public pages: home, pay calculator, payday check,
+                         pricing, organisations, help, legal pages
+        app/             The app: Home, Plan, Debts, More and the screens under More
+        setup/           First-time setup steps
+        admin/           Support admin and tax year check (staff only; the
+                         database decides who can see anything)
+      components/        The parts from DESIGN.md: balance card, figure card,
+                         payment row, actions, bottom navigation, sheet
+      strings/           Every word people read, in one file (en-GB.ts), per VOICE.md
+      styles/            Design tokens (colours, sizes, spacing) and the font set-up
+      data/              The phone's database (Dexie), the unsent edits queue, sync
+      worker/            The background worker that runs the engine
+      lib/               Money and date formatting, privacy-safe error reports
+      public/
+        fonts/           Figtree files, self-hosted (D23)
+        data/            Bank holiday copy, refreshed weekly
+        manifest.webmanifest  Home-screen app details
+      e2e/               Playwright tests: one per person, at 320px and 360px
+  packages/
+    engine/              The money engine: pure TypeScript, no screens,
+                         no network, no clock
+      src/
+        money/           Pence, rounding (D9), currency conversion
+        dates/           Day numbers, months, working days, bank holidays
+        schedule/        Series and changes into payments
+        balance/         The balance rule, lowest point, warnings, shortfalls
+        periods/         Pay periods, calendar months, next main payday
+        edit/            Commands, splitting, undo
+        budgets/         Budget rows, spreading, pay-later bills, roll-over,
+                         left to spend
+        debts/           Left now, paid off on, credit card interest and minimums
+        goals/           Savings goals
+        pay/             Take-home pay, overtime, payslip check
+          tax-years/     One file per tax year, with its GOV.UK source links
+        whatif/          The real plan beside practice changes
+      data/              Built-in bank holiday copy from GOV.UK
+      test/
+        fixtures/        Sam's plan and each other person's plan
+        unit/            One file per rule
+        property/        Property tests (fast-check)
+        speed/           24 months of 100 series
+    model/               Record types and checks shared by the app and server
+                         functions: sync fields, database rows to engine inputs
+  supabase/
+    migrations/          Tables, Row Level Security rules and database
+                         functions, in order
+    functions/           Server work: Stripe messages, reminders, emails,
+                         invites, account deletion, bank holiday refresh
+    tests/               Database tests proving who can see what (pgTAP)
+    seed.sql             Test data for a local database
+  content/
+    help/                Help centre articles in Markdown (brief 7.1)
+    legal/               Privacy notice, terms and accessibility statement drafts
+    emails/              Wording for every email
+  scripts/               Checks: banned words and long dashes, no money in logs,
+                         tax year file, bank holiday refresh
+  docs/                  BRIEF, DECISIONS, VOICE, DESIGN, ARCHITECTURE
+  .github/workflows/     The checks GitHub runs on every push
+  CLAUDE.md, PLAN.md, README.md
+  package.json, pnpm-workspace.yaml, tsconfig.base.json, biome.json
+```
+
+In Phase 6, Capacitor adds `apps/web/ios`, `apps/web/android` and `apps/web/capacitor.config.ts`.
+
+**For future sessions: folders**
+
+- Static export can't build a page per database record, so screens for one record take the ID after a question mark: `/app/debt?id=…`.
+- `packages/engine` must never import from `apps/` or `packages/model`. `packages/model` may import the engine's types. Both are checked by a lint rule.
+- Server functions in `supabase/functions` import the engine directly (Deno can run it), so reminders and the app always agree.
+
+## 6. Tests
+
+**In plain words.** Every test from brief Parts 5 and 8, plus the tests in D3, D5, D8 and D31, with the step where each is written. Steps 1a to 1g are in `PLAN.md`. Each test is written in the step that builds its rule, then every test runs on every push from then on. The brief 8.7 tests need sign-in, two phones and Stripe, so they're written in Phases 3 and 5, not Phase 1.
+
+No expected number in these tests is ever changed to make a test pass (CLAUDE.md).
+
+| # | Test | From | Step |
+| --- | --- | --- | --- |
+| 1 | Money in whole pence; rounding to the nearest penny, halves away from zero, once per pay line or payment | 5.1, D9 | 1a |
+| 2 | Dates as `YYYY-MM-DD`, "today" passed in, no clock | 5.1 | 1a |
+| 3 | Weekly payment k is start + 7 × every × k days, never from the previous payment | 5.3 | 1a |
+| 4 | Monthly: 31 January gives 28 February then 31 March, with no drift | 5.3 | 1a |
+| 5 | 31st-of-the-month dates, including leap years (29 Feb 2028) | 5.8 | 1a |
+| 6 | Last day, last working day and "first Monday" worked out per month | 5.3 | 1a |
+| 7 | Amount: the change, then the last amount, then the cycle with its offset, then the series amount | 5.3 | 1a |
+| 8 | Weekend and bank holiday rule, then a changed date; every end rule | 5.3 | 1a |
+| 9 | A bank holiday on payday | 5.8 | 1a |
+| 10 | Bank holidays: built-in copy, the nation's own list | 5.7 | 1a |
+| 11 | Priya: £2,100 on the last working day, moved to the working day before, lands on Thu 31 Dec 2026 then Fri 29 Jan 2027. A yearly payment appears once a year; a quarterly one every 3 months | 8.5 | 1a |
+| 12 | Dee: Universal Credit due on the 28th, moved to the working day before, lands on Thu 24 Dec 2026. Council tax in 10 payments, April to January, has nothing in February or March | 8.5 | 1a |
+| 13 | A payment on the 31st lands on 30 Nov, 31 Dec, 28 Feb 2027 and 31 Mar 2027 | 8.5 | 1a |
+| 14 | The balance rule, steps 1 to 6 and 8: ticked payments inside the balance, overdue first, same-day order, balance after every row, lowest point, Tight and Short | 5.5 | 1b |
+| 15 | Update the balance on 30 Oct to £600 and tick everything up to then: the plan works forward from £600, and nothing ticked is counted twice | 8.4 | 1b |
+| 16 | Jess and Tom: a £600 transfer on payday lowers one balance and raises the other by £600; the total across accounts is unchanged | 8.5 | 1b |
+| 17 | Ali: with a £1,000 overdraft, −£300 is Tight, not Short; only below −£1,000 is Short | 8.5 | 1b |
+| 18 | Sam's balance first goes under £20 on Mon 26 Oct 2026, at £12.54 after Driving lesson; the lowest point is still £4.53 on Sun 1 Nov | D8 | 1b |
+| 19 | Just this one | 5.4 | 1c |
+| 20 | This and all later ones: the split, the cycle position kept, later changes moved by payment number, replaced changes dropped; on the first payment it edits the series | 5.4 | 1c |
+| 21 | A cycle continues correctly after a split | 5.8 | 1c |
+| 22 | Remove this one; remove this and later | 5.4 | 1c |
+| 23 | Every edit is one undoable step | 5.4 | 1c |
+| 24 | Rent £560 from 1 Jan 2027, this and all later: January and February are £560; November (£600) and December (£550) don't change | 8.4 | 1c |
+| 25 | Only the note on pay from 4 Dec 2026, this and all later: every pay amount stays exactly the same and the 4-week pattern continues | 8.4 | 1c |
+| 26 | £640 as the real pay on 6 Nov, just this one: only that payday loses its estimate label, and every balance after it rises by £21.54 | 8.4 | 1c |
+| 27 | Remove spending money from 8 Jan 2027, this and all later: the last spending money row is 1 Jan 2027 | 8.4 | 1c |
+| 28 | Debts: left now and paid off on | 5.6 | 1d |
+| 29 | Credit cards: monthly interest and the minimum from the rule, on the statement day | 5.6, D13 | 1d |
+| 30 | Foreign currency: the person's rate, rounded per payment, both currencies shown | 4.6, 5.1 | 1d |
+| 31 | A budget leaves at the start of its period, as one row | 5.5 | 1e |
+| 32 | Sam on Sun 25 Oct: L = £30.00, M = £12.54 (Mon 26 Oct), W = £20, so "Spend no more than £22.54" | D3 | 1e |
+| 33 | £25 a week spread is £3.57 a day for 6 days and £3.58 on the last; in the current period only the unspent amount is spread, over the days left from today | D31 | 1e |
+| 34 | Weeks 26 to 29 payslips: pension and tax match to the penny; National Insurance and take-home within 1p | 8.6 | 1f |
+| 35 | A Scottish tax code | 8.6 | 1f |
+| 36 | Student loan Plan 2 | 8.6 | 1f |
+| 37 | A BR code | 8.6 | 1f |
+| 38 | An emergency code on week 1/month 1 | 8.6 | 1f |
+| 39 | A monthly salary | 8.6 | 1f |
+| 40 | A pension taken after tax | 8.6 | 1f |
+| 41 | "I did overtime": 11.5 hours at £19.07 worked Mon 26 Oct 2026, with pay one week behind, lands on Fri 6 Nov 2026 | 8.6, D5 | 1f |
+| 42 | With week 27's lines it raises that payday by about £155: £155.23, within £1 (D7) | 8.6, D5 | 1f |
+| 43 | The same overtime on week 26's lines gives £150.89, which is how 30 Oct became £603.06 | D5 | 1f |
+| 44 | Property: the end balance equals the start balance plus every applied payment | 5.8 | 1g |
+| 45 | Property: splitting a series without changing anything gives exactly the same payments | 5.8 | 1g |
+| 46 | Property: undo returns the exact earlier state | 5.8 | 1g |
+| 47 | Sam: lowest end-of-day balance £4.53 on Sun 1 Nov 2026, after Rent | 8.3 | 1g |
+| 48 | Sam: current account at the end of Oct, Nov, Dec, Jan, Feb is £604.53, £732.91, £1,024.60, £2,235.89, £3,304.87 | 8.3 | 1g |
+| 49 | Sam: total pay £9,748.96 from 18 paydays | 8.3 | 1g |
+| 50 | Sam: Pay-later card paid off on 29 Oct 2026, Pay in 3 on 6 Dec 2026, Family loan on 1 Jan 2027, Laptop loan on 20 Feb 2027 | 8.3, D15 | 1g |
+| 51 | Sam: still owed at the end of Feb 2027: Sofa finance £225.25 (paid off 23 Aug 2027 when the view is extended), Credit card £320.99 | 8.3, D15 | 1g |
+| 52 | Sam: savings £0 from 28 Oct, £150 from 13 Nov, £0 from 30 Nov | 8.3 | 1g |
+| 53 | Kofi: in what if, removing next week's estimated income shows the new lowest point beside the real one; throwing it away leaves the real plan exactly as before | 8.5 | 1g |
+| 54 | Speed: 24 months of 100 series in under 50 milliseconds on a mid-range phone (under 12 on the test machine; a real phone in Phase 4) | 5.8 | 1g |
+| 55 | Jess invites Tom with "Can edit"; Tom changes rent and it appears on Jess's phone within 5 seconds, marked "Changed by Tom" | 8.7 | Phase 3 |
+| 56 | Jess's personal account isn't shared: no request Tom can make returns any of its data | 8.7 | Phase 3 |
+| 57 | Tom is changed to "Can view only": the server refuses his edits, not just the screen | 8.7 | Phase 3 |
+| 58 | Both edit the same payment within a second: the newest change wins and the other person is told | 8.7 | Phase 3 |
+| 59 | Tom leaves and keeps a copy: Jess's plan is unchanged, and Tom's copy no longer updates | 8.7 | Phase 3 |
+| 60 | Signing out removes the plan from the device; "Sign out everywhere" ends every other session within 1 minute | 8.7 | Phase 3 |
+| 61 | A free trial ends without payment: nothing is deleted; viewing, updating the balance, ticking and warnings still work; adding or changing a payment asks to subscribe | 8.7 | Phase 5 |
+| 62 | Cancelling takes two taps; Stripe sending the same message twice changes nothing the second time | 8.7 | Phase 5 |
+| 63 | An organisation buys 10 places and shares its link; each person who joins gets full access until the end date, then is asked to subscribe; the dashboard never shows anyone's money data | 8.7 | Phase 5 |
+
+The brief 8.3 tests use the D15 names, and the brief's view to the end of February 2027, with every payment keeping its date.
+
+**Also written in Phase 1, for today's decisions:**
+
+| Test | From | Step |
+| --- | --- | --- |
+| Exactly £20.00 is not under a £20 warning level | D10 | 1b |
+| The same-day order never changes between runs | D12 | 1b |
+| A payment ticked, or a spend recorded, after a balance update on the same day isn't inside that balance; a tick made inside the Update balance steps is | D33 | 1b |
+| A skipped payment still counts towards "after N payments" and nothing is added at the end | D4 | 1c |
+| "Move to next payday" moves to the first main payday after the payment's date | D14 | 1c |
+| A payment ticked early comes off a debt once, even after "Update from statement" | D27 | 1d |
+| The Family loan ends at −€0.01 and shows "Paid off" and £0.00 | D34 | 1d |
+| Left to spend runs to the day before the next main payday and is labelled with that payday | D28 | 1e |
+| Budget periods: Sam's weekly budgets start on Friday; a monthly budget runs payday to payday for monthly pay and by calendar month otherwise | D29 | 1e |
+| Roll-over adds last period's unspent amount, shown as "£25 + £7 from last week"; off means nothing moves | D30 | 1e |
+| Pay-later bills, once the owner approves which spends each bill covers | D32 | 1e |
+
+**After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
+
+## 7. Risks
+
+**In plain words.** The parts most likely to go wrong, and what the plan does about each.
+
+| Risk | Why it could go wrong | How the plan handles it |
+| --- | --- | --- |
+| **Sync between two phones** | Two people change the same thing, one of them offline, or a change is sent twice when the signal drops | Every edit has its own ID, so sending it twice changes nothing. The server saves edits one at a time and checks versions. Clashes run the command again on the newest data, so splits never overlap. Whoever's change loses is told. Unsent edits stay on the phone until the server confirms them. Section 3.5, question 1 |
+| **Sign out everywhere within 1 minute** (D21) | Supabase's sign-in tokens keep working until they expire, even after the session ends | Every database rule checks that the session still exists, so an old phone is refused on its very next request. A message tells the person's other phones to wipe the plan. Live nudges carry no money data, so a connection that stays open leaks nothing. Brief 8.7 test 6 proves it |
+| **iPhone home-screen apps** | Sign-in isn't shared with Safari. Reminders only work after "Add to Home Screen". The phone may clear a site's stored data when space runs low. A web app can't hide its preview in the app switcher | 6-digit email codes, not links (D20). The app explains "Add to Home Screen" when reminders are turned on (D22). The app asks the phone to keep its data, and the server copy is always the real one, so cleared data comes back at the next sign-in. Before sign-out or after a long time offline, it warns about unsent changes. Until Phase 6, the app covers balances when it's hidden, but the phone may still show an older preview; the App lock screen says so plainly. The Phase 6 apps hide it properly |
+| **Tax tables** | Rates change every April, Scotland sets its own bands later in the winter, rules sometimes change mid-year, and one wrong threshold changes every payslip | One file per tax year, each figure with its GOV.UK source link. Tested against the four real payslips in brief 8.6 and GOV.UK's worked examples. A file can hold a change part-way through a year. The admin check warns from 1 March. The calculator always says it's an estimate and "Ask your payroll team" |
+| **Dates and clock changes** | Treating a date as midnight UTC moves it a day; times shift when the clocks change | The engine uses day numbers, never date objects. "Today" is the person's local date in their time zone. Sun 25 Oct 2026, the day of Sam's example, is the day the clocks go back, so the D33 tests run across it |
+| **Money maths** | Floating point makes 0.1 + 0.2 slightly wrong | Whole pence everywhere, exact decimals for rates, one rounding rule (D9), and property tests on thousands of made-up plans |
+| **Speed on a cheap phone** | 10,000 payments worked out on every change could make the screen stutter | Section 2.8: a speed budget tested on every push, the engine in a background worker, only changed series redone, small downloads, skeleton screens instead of spinners, and a check on a real mid-range Android phone in Phase 4 |
+| **A partner seeing private data** | One missing database rule would show Jess's private account to Tom | Every table starts with everything refused. The database fills in `private_to` itself. A database test for every table, and brief 8.7 test 2 tries every request Tom could make. Nudges, activity, exports and "keep a copy" all leave private records out |
+| **Money in logs, error reports or emails** | Error messages often include the data that caused them; database errors can print the whole row | Error reports use an allow-list: only an error code, where in the code, the app version and phone type. The database functions check input before saving and return their own codes, never the row. Emails never contain amounts, payment names or notes. A check script looks for logging near money fields |
+| **Bank holidays changing** | The government sometimes adds a one-off bank holiday | A weekly job refreshes the copy from GOV.UK, and every release updates the built-in copy |
+| **Free plan limits** | A free Supabase project pauses after 7 days without use. Cloudflare's free plan wording is unclear about paid apps. GitHub's free minutes could run out | Supabase Pro before launch (D19). Read Cloudflare's terms before launch, added to the launch checklist. Run the slower tests only on pull requests if minutes run short |
+| **App store review** (Phase 6) | Apple wants subscriptions sold inside the app as well, a company account for a money app, and account deletion inside the app | In-app purchases where the rules require them, with RevenueCat keeping one subscription across web and stores. Developer accounts in the company's name (D24). "Delete my account" is already in the app (brief 4.12) |
+| **Safety in shared plans** | Money can be used to control a partner | Leaving needs no approval. Private accounts never show. No "last seen" anywhere. If the owner stops sharing, the other person keeps a copy. App lock, and an option to hide amounts in notifications. Help links to Surviving Economic Abuse (brief 4.14, 4.16) |
+| **A money rule not decided yet** | Building on a guess would put wrong numbers in front of people | Open questions wait in `PLAN.md` and are asked before the step that needs them. The brief's expected numbers are never changed (CLAUDE.md) |
+| **Sign-in emails in spam** | A new web address has no sending history | PrePenny's own web address with the standard email security records set up, Resend for sending, and Google sign-in as a second way in |
+| **Static export limits** | No server pages or redirects inside the app | All server work is in Supabase (D17). Pages for one record take the ID after a question mark. Staff-only pages are protected by database rules, not by hiding the page |
