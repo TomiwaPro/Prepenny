@@ -129,9 +129,9 @@ These are chosen in Phase 6. Listed now so nothing earlier rules them out.
 - **Vite instead of Next.js.** Next.js's static export already builds the public pages as ready-made pages that search engines can read, which the free calculator and payday check need (brief 4.17). D17 stays.
 - **A component library.** DESIGN.md bans their default look, and the few pieces needed (sheets, dialogs, buttons) are small.
 
-### 1.6 Better than a decision already made?
+### 1.6 One suggested change to a decision
 
-One, and it isn't changed: it's question 10 in `PLAN.md`.
+This is the one place where something looks clearly better than a decision already made. It isn't changed: it's question 10 in `PLAN.md`.
 
 - **Cloudflare Workers instead of Cloudflare Pages (D18).** Cloudflare's own guidance now says new projects should start on Workers. Pages keeps working with no end date, but new features go to Workers. Workers' free plan also gives a preview link for every pull request (the latest 100 are kept), serves the app's files free and includes 3,000 build minutes a month. Same company, same price, and it avoids a move later.
 - One more thing to check before launch, whichever is chosen: Cloudflare describes its free plan as "for personal or hobby projects", and no clause either allows or bans a paid app. D18 chose Cloudflare because it's free for commercial use, so the terms should be read before launch. If needed, Workers' paid plan is US$5 a month. This is added to the launch checklist.
@@ -236,7 +236,7 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
 - **Paid off on** = the first date where the balance minus the planned linked payments after its date, in order, reaches 1p or less (1 cent for a debt in euros). If that never happens in the view, show what will still be left at the end.
 - **Never less than nothing** (D34): 1p or less, including a small minus from rounding, shows "Paid off" and £0.00. Family loan: €1,400.57 minus 6 payments converted at €1.1612 per £1 leaves −€0.01, so it shows "Paid off on Fri 1 Jan 2027".
 - **Credit cards with an interest rate:** monthly interest (balance × yearly rate ÷ 12) is added on the statement day (D13), rounded once (D9), and the minimum is worked out from the rule, for example interest plus 1% of the balance, at least £5, never more than the balance. Both are labelled as estimates.
-- **Compare** minimum, fixed amount and full balance: months to clear and interest paid. Numbers only (brief 3.10).
+- **Compare** minimum, fixed amount and full balance: months to clear and interest paid. Numbers only (brief Part 3, principle 10).
 - **Proposed:** the Debts screen looks 24 months ahead for "Paid off on", whatever the Plan screen shows, and after that says how much is left on the last day it looks at. The brief 8.3 tests keep their own view to the end of February 2027.
 
 ### 2.7 Take-home pay
@@ -799,7 +799,7 @@ Every step can be skipped and changed later (brief 4.1). Sketches are in 4.6.
 | I did overtime, and I missed a shift | 4.3, D5 | Sam; Dee for her wages |
 | Real pay arrived: type the real amount and see the difference | 4.3 | Sam, Dee, Kofi |
 | Filters: still to pay, money in, debts, a type, an account | 4.8 | Everyone |
-| Payments that could move, opened from a shortfall | 5.5, Part 3 | Sam, Dee, Ali |
+| Payments that could move, opened from a shortfall | 5.5, Part 3 principle 7 | Sam, Dee, Ali |
 | Update from statement | 4.6 | Sam, Kofi, Ali |
 | Add or edit a debt, including the credit card rule and a currency rate | 4.6 | Sam, Kofi, Ali |
 | Add or edit a budget | 4.5 | Everyone |
@@ -814,7 +814,7 @@ Every step can be skipped and changed later (brief 4.1). Sketches are in 4.6.
 
 ### 4.5 Messages that appear on any screen
 
-- **Undo bar** after every change: "Rent changed for this and all later ones. Undo" (brief 3.4).
+- **Undo bar** after every change: "Rent changed for this and all later ones. Undo" (brief Part 3, principle 4).
 - **Offline note:** "You're offline. Changes are saved on this phone and will be sent when you're back online." (brief Part 6)
 - **Sync down note:** "Changes can't be sent right now. They're saved on this phone." (brief 4.16)
 - **Example plan banner:** "This is an example plan. Nothing here is yours." (brief 4.1, D15)
