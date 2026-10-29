@@ -24,8 +24,7 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
-1. **The bank holiday download is blocked** (step 1a). On 27 Oct 2026 this session's network settings refused www.gov.uk, so `https://www.gov.uk/bank-holidays.json` couldn't be downloaded. Step 1a stopped after recording D38 to D74, as the owner asked. *Needed:* allow www.gov.uk in the environment's network settings, then run step 1a's Part 2 again.
-2. **One-off bank holidays and the D74 test** (step 1a). D74's test says the rules give exactly the official list for every year it covers. But the official list can include one-off days that no rule can predict: in 2020 the Early May bank holiday moved to Fri 8 May for VE Day; in 2022 the Spring bank holiday moved to Thu 2 Jun, with an extra day on Fri 3 Jun for the Platinum Jubilee, and Mon 19 Sep was the State Funeral of Queen Elizabeth II; and Mon 8 May 2023 was the coronation. *Suggested:* the test names each one-off change and proves every other day in every year matches exactly. The engine always uses the official list for the years it covers, so these days are still right in the plan.
+1. **The bank holiday download is still blocked** (step 1a). On 27 and 29 Oct 2026 this session's network settings refused www.gov.uk, so `https://www.gov.uk/bank-holidays.json` couldn't be downloaded. Step 1a stopped before any code, as the owner asked. *Needed:* the environment's network access set to Custom, with `www.gov.uk` under Allowed domains and the package managers box ticked, saved. Then run step 1a's Part 2 again.
 
 ## Launch checklist (started)
 

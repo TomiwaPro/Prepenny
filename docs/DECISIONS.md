@@ -610,3 +610,5 @@ Agreed 27 Oct 2026. Adds to D57.
 When the official bank holiday list doesn't reach a year the plan shows, the engine works out that year's usual bank holidays for each nation by the standard rules, including substitute days. It uses the official list as soon as that list covers the year. A test proves the rules give exactly the official list for every year the list covers.
 
 Why: GOV.UK's list only runs a year or so ahead, and the plan and the Debts screen can look 24 months ahead (D43).
+
+Note, 29 Oct 2026: the official list includes one-off bank holidays that no rule can predict. The test names them as known exceptions: VE Day (Fri 8 May 2020), the Platinum Jubilee (Thu 2 and Fri 3 Jun 2022), the Queen's funeral (Mon 19 Sep 2022) and the coronation (Mon 8 May 2023). Where a one-off moved a usual bank holiday, the usual day it replaced is part of the same exception: Mon 4 May 2020 for VE Day and Mon 30 May 2022 for the Jubilee. Every other day must match the official list exactly. PrePenny always uses the official list for the years it covers.
