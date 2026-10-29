@@ -18,7 +18,10 @@ export function series(fields: Partial<Series> & Pick<Series, 'start' | 'schedul
     amount: 1000,
     end: { kind: 'never' },
     holidayRule: 'keep',
+    type: 'other',
     isEstimate: false,
+    familyId: fields.id ?? 'test-series',
+    familyCreatedAt: '2026-01-01T00:00:00Z',
     ...fields,
   };
 }

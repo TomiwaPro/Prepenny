@@ -4,6 +4,25 @@ import type { Pence } from '../money/pence.ts';
 /** Money coming in, going out, or moving between two accounts. */
 export type Direction = 'in' | 'out' | 'transfer';
 
+/**
+ * What a payment is for (D79). A short, fixed list. The words people see are
+ * Pay, Benefits, Rent or mortgage, Bills, Debt, Spending money, Savings and
+ * Other, and they live in the app's strings file, not here. Payments of the
+ * type Spending money count towards Left to spend (D28).
+ */
+export const PAYMENT_TYPES = [
+  'pay',
+  'benefits',
+  'rent',
+  'bills',
+  'debt',
+  'spending-money',
+  'savings',
+  'other',
+] as const;
+
+export type PaymentType = (typeof PAYMENT_TYPES)[number];
+
 /** What happens on a weekend or bank holiday (brief 4.3). */
 export type HolidayRule = 'keep' | 'working-day-before' | 'working-day-after';
 
@@ -68,8 +87,22 @@ export interface Series {
   /** A different amount for the last payment (brief 4.4). */
   readonly lastAmount?: Pence;
   readonly holidayRule: HolidayRule;
+  /** What it's for (D79). */
+  readonly type: PaymentType;
   readonly isEstimate: boolean;
   readonly note?: string;
+  /**
+   * The family: the id of the first series in its chain of splits, which is
+   * its own id if it was never split (D49). Main pay and the same-day order
+   * use the family, so a split changes neither.
+   */
+  readonly familyId: string;
+  /**
+   * When the family was first created, as a UTC time such as
+   * "2026-10-25T08:31:00Z". Every series in a family has the same one. On the
+   * same day, earlier families go first (D12, D49).
+   */
+  readonly familyCreatedAt: string;
   /**
    * The payment number this series starts at, counted from the original series
    * it was split from, so the amount pattern and "after N payments" carry on
@@ -108,6 +141,8 @@ export interface Payment {
   readonly amount: Pence;
   readonly name: string;
   readonly note: string | null;
+  /** What it's for, from its series (D79). */
+  readonly type: PaymentType;
   readonly isEstimate: boolean;
   /** The last payment of a series that ends. */
   readonly isLast: boolean;

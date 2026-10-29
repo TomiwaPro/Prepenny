@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -615,11 +615,11 @@ Note, 29 Oct 2026: the official list includes one-off bank holidays that no rule
 
 ## Made during step 1a
 
-D75 to D78 were decided on 29 Oct 2026 while building step 1a. D75 and D78 are for the owner to confirm.
+D75 to D78 were decided on 29 Oct 2026 while building step 1a. The owner confirmed D75 and D78 on 29 Oct 2026.
 
 ### D75. Scotland's World Cup bank holiday is a known exception too
 
-Decided 29 Oct 2026 in step 1a. Adds to D74's note. For the owner to confirm.
+Decided 29 Oct 2026 in step 1a. Adds to D74's note. Confirmed by the owner on 29 Oct 2026.
 
 The official list downloaded on 29 Oct 2026 has one more one-off day than D74's note names: Scotland's World Cup bank holiday on Mon 15 Jun 2026. The D74 test names it as a known exception too, for Scotland only. PrePenny uses the official list for 2026, so Scottish plans have it as a bank holiday.
 
@@ -643,7 +643,7 @@ Why: the same versions everywhere, changed only on purpose, and brand-new releas
 
 ### D78. Where a series' payments start and end
 
-Decided 29 Oct 2026 in step 1a. For the owner to confirm.
+Decided 29 Oct 2026 in step 1a. Confirmed by the owner on 29 Oct 2026.
 
 - The first payment is the first date the schedule gives on or after the series' start date. Monthly on the 1st from Sun 25 Oct starts on Sun 1 Nov.
 - A payment's original date is the date its schedule gives, before the weekend and bank holiday rule. For "last working day" it's the last working day itself.
@@ -653,3 +653,84 @@ Decided 29 Oct 2026 in step 1a. For the owner to confirm.
 - A series can't list the same chosen date twice, because changes and ticks find a payment by its original date (brief 5.2).
 
 Why: each follows from brief 5.3 and 5.4, and the engine needed one exact answer for each.
+
+## Made during step 1b
+
+D79 to D85 were decided on 29 Oct 2026 while building step 1b. D79 and D81 to D84 are for the owner to confirm.
+
+### D79. Payment types
+
+Decided 29 Oct 2026 in step 1b. Fixes the list that ARCHITECTURE.md 3.3 left open. For the owner to confirm.
+
+Every payment has one of eight types: **Pay, Benefits, Rent or mortgage, Bills, Debt, Spending money, Savings, Other.**
+
+- Spending money counts towards Left to spend (D28). No other type changes any sum. Types are for filters (brief 4.8) and labels.
+- Food and Travel (brief 4.5) are budgets with those names. Their rows count as spending money, as D28 already says, so they don't need types of their own.
+- In Sam's plan, the monthly food bill on the pay-later card is Bills, not Spending money, because it pays for food already bought (D61). Driving lessons and the driving test are Other.
+
+Why: eight is short enough to pick from with one thumb, every word is plain, and it covers all six people: Pay for Sam, Priya, Jess, Tom and Ali's job, Benefits for Dee's Universal Credit, Rent or mortgage, Bills for everything on the setup checklist, Debt for every debt payment, Savings for moves to and from savings, and Other for the rest, such as Ali's student loan or Kofi's fuel.
+
+### D80. The same-day order when D12 isn't enough
+
+Decided 29 Oct 2026 in step 1b. Adds to D12.
+
+When two payments on the same day are in the same group (money in, transfers or money out), and their families were made at the same moment and have the same name, the one whose family id comes first goes first, then by series id, then by payment number. Names are compared letter by letter, the same on every phone: capital letters before small ones, and a space before a comma. "By name" uses the name shown on the row, so a one-off new name counts.
+
+Why: setup can make several payments in the same instant, and D12 says the order must never change between runs. Comparing letter by letter with no language rules gives the same order on every device.
+
+### D81. Main paydays
+
+Decided 29 Oct 2026 in step 1b. Adds to D14 and D66. For the owner to confirm.
+
+- A main payday is a day a payment of the main pay lands, after the weekend and bank holiday rule and any move. A payday that was moved counts on its new date.
+- A removed (skipped) main pay payment isn't a payday. The pay period it would have started joins the one before.
+- The next main payday is the first one after today. On payday itself, it's the following payday.
+- When any series in the main pay's family is irregular, every Monday is a main payday (D14, D66).
+- With no main pay, there's no next main payday.
+
+Why: a payday is the day money arrives, so a removed one brings nothing, and "Move to next payday" shouldn't move a payment to a day with no pay. On payday, Left to spend (D28) runs until the next payday, so "next" has to mean after today.
+
+### D82. Shortfalls
+
+Decided 29 Oct 2026 in step 1b. Adds to brief 5.5 and D69. For the owner to confirm.
+
+- A shortfall is a run of days in a row, from today on, that end below the floor. "£X short on [date]" uses the first of those days and how much short it ends that day: "£95.47 short on Sun 1 Nov".
+- The engine also gives the most it's short by during the run, and the last short day, for when it gets worse before payday.
+- "The first main payday after it" in D69 is the first main payday after the first short day: Fri 6 Nov in D69's test.
+- A payment that could move must fix the whole run: after the move, no day of the run is short. Moving money out later only raises that account's balance until the new date, so in practice only a transfer can make a new short day, by arriving later in the other account. Such a transfer isn't listed.
+
+Why: one warning for a stretch of short days rather than one a day, with the date the trouble starts (brief Part 3, principle 7). A move that fixed only the first day would leave the person short the next day. D69's test needs the payday after Sun 1 Nov: moving Family loan to Fri 30 Oct, the payday after its own date, would fix nothing.
+
+### D83. Ticks
+
+Decided 29 Oct 2026 in step 1b. Adds to D1, D33, D48 and D71. The second point is for the owner to confirm.
+
+- The paid date is worked out once, when the tick is made, as D71 says, and stored with the tick. Moving the payment afterwards doesn't change it.
+- A tick on a removed payment still takes the money off. This can happen in a shared plan when one person ticks a payment just as the other removes it (D48).
+- A tick made inside one account's Update balance steps counts as inside that account's balance only. For the other account of a transfer, the tick's time is compared with that account's own latest update.
+- One tick per payment. A tick for a payment that no longer exists is ignored.
+
+Why: the paid date is the day the money really left (D71), and that doesn't change later. A tick says the money went, and the plan stays true to the bank (brief Part 3, principle 1). Each balance holds only what the person typed for that account.
+
+### D84. Plan periods
+
+Decided 29 Oct 2026 in step 1b. Adds to D14 and brief 4.8. The first point is for the owner to confirm.
+
+- Periods are worked out for each account. "Came in" is everything that arrives in that account in the period, including money moved in from the person's other accounts. Sam's first period shows £500.00 came in: the move from savings on Wed 28 Oct.
+- Periods show rows from today on. Unticked rows dated before today are in "Not ticked yet" (D11).
+- The first period starts on the last main payday on or before today, or today if there's none. Sam's first runs from Sun 25 Oct to Thu 29 Oct, because his pay starts on Fri 30 Oct. The last period is cut at the end of the plan, and "Left at the end" is the balance on the plan's last day.
+- Pay periods need a main pay. With none, the plan is grouped by calendar month.
+
+Why: it matches "Coming in £500.00" in the Home sketch (ARCHITECTURE.md 4.6), and each period ends on that account's own balance. Someone with no main pay still sees their plan in groups.
+
+### D85. Smaller rules in the balance rule
+
+Decided 29 Oct 2026 in step 1b.
+
+- When the lowest point is reached on more than one day, the first of them is shown.
+- The payment that caused a day's figure is the day's last row, or when the day has none, the last row before it.
+- Each row's Tight or Short comes from its own "Left after this", the number beside it. The lowest point, the first day under the warning level and shortfalls use end-of-day balances (brief 5.5).
+- The engine refuses a balance date after today, an account with no balance update, and two balance updates for one account at the same moment.
+- A main pay with no series left in the plan counts as no main pay.
+
+Why: the first day is the earliest warning, each row's word matches the number next to it, and refusing an impossible balance is safer than guessing which one is right. Phase 3 checks the first refusal for a couple in different time zones, where one person's today can be the other's tomorrow.

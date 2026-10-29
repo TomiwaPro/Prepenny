@@ -2,14 +2,40 @@
 // Sun 25 Oct 2026, nothing is ticked, the view runs to the end of February
 // 2027, and every payment keeps its date (no weekend or bank holiday moves).
 //
-// Step 1a uses the payments only. Balances (1b), debts (1d) and the rest come
-// in later steps. Debt links from brief 8.2 are noted on each series.
+// Step 1a used the payments. Step 1b adds the accounts, balances, payment
+// types (D79), families and main pay. Debts (1d) and the rest come in later
+// steps. Debt links from brief 8.2 are noted on each series.
 
-import type { PaymentChange, Series } from '../../src/index.ts';
+import type { Account, BalanceUpdate, PaymentChange, PlanInput, Series } from '../../src/index.ts';
 import { parsePounds as pounds } from '../../src/index.ts';
+import { englandAndWales } from './holidays.ts';
 
 export const samToday = '2026-10-25';
 export const samViewEnd = '2027-02-28';
+
+/** Brief 8.1. The brief gives the savings account no warning level, so it has none (£0). */
+export const samAccounts: readonly Account[] = [
+  { id: 'current', kind: 'current', overdraftLimit: 0, warningLevel: pounds('20.00') },
+  { id: 'savings', kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
+];
+
+/** Both balances were typed in on Sun 25 Oct 2026, before any payment was added (brief 8.1). */
+export const samBalanceUpdates: readonly BalanceUpdate[] = [
+  {
+    id: 'current-25-oct',
+    accountId: 'current',
+    balance: pounds('267.54'),
+    checkedOn: '2026-10-25',
+    checkedAt: '2026-10-25T08:30:00Z',
+  },
+  {
+    id: 'savings-25-oct',
+    accountId: 'savings',
+    balance: pounds('500.00'),
+    checkedOn: '2026-10-25',
+    checkedAt: '2026-10-25T08:30:00Z',
+  },
+];
 
 const base = {
   accountId: 'current',
@@ -18,10 +44,13 @@ const base = {
   end: { kind: 'never' },
 } as const satisfies Partial<Series>;
 
-export const samSeries: readonly Series[] = [
+type SeriesWithoutFamily = Omit<Series, 'familyId' | 'familyCreatedAt'>;
+
+const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
   {
     ...base,
     id: 'spending-until-payday',
+    type: 'spending-money',
     name: 'Spending money until payday',
     direction: 'out',
     amount: pounds('30.00'),
@@ -32,6 +61,7 @@ export const samSeries: readonly Series[] = [
     // Linked to the Family loan.
     ...base,
     id: 'family-loan-first',
+    type: 'debt',
     name: 'Family loan',
     direction: 'out',
     amount: pounds('125.00'),
@@ -41,6 +71,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'driving-lessons',
+    type: 'other',
     name: 'Driving lesson',
     direction: 'out',
     amount: pounds('100.00'),
@@ -53,6 +84,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'from-savings',
+    type: 'savings',
     accountId: 'savings',
     toAccountId: 'current',
     name: 'From savings',
@@ -65,6 +97,7 @@ export const samSeries: readonly Series[] = [
     // Linked to the Pay-later card (29 Oct only).
     ...base,
     id: 'pay-later-card-in-full',
+    type: 'debt',
     name: 'Pay-later card',
     direction: 'out',
     amount: pounds('466.07'),
@@ -74,6 +107,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'pay',
+    type: 'pay',
     name: 'Pay',
     direction: 'in',
     amount: pounds('452.17'),
@@ -86,6 +120,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'spending-money',
+    type: 'spending-money',
     name: 'Spending money',
     direction: 'out',
     amount: pounds('54.00'),
@@ -95,6 +130,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'rent',
+    type: 'rent',
     name: 'Rent',
     direction: 'out',
     amount: pounds('550.00'),
@@ -105,6 +141,7 @@ export const samSeries: readonly Series[] = [
     // Linked to Pay in 3.
     ...base,
     id: 'pay-in-3-165',
+    type: 'debt',
     name: 'Pay in 3 (£165.20 order)',
     direction: 'out',
     amount: pounds('41.30'),
@@ -116,6 +153,7 @@ export const samSeries: readonly Series[] = [
     // Linked to Pay in 3.
     ...base,
     id: 'pay-in-3-79',
+    type: 'debt',
     name: 'Pay in 3 (£79.99 order)',
     direction: 'out',
     amount: pounds('20.00'),
@@ -128,6 +166,7 @@ export const samSeries: readonly Series[] = [
     // Linked to the Laptop loan.
     ...base,
     id: 'laptop-loan-first',
+    type: 'debt',
     name: 'Laptop loan',
     direction: 'out',
     amount: pounds('150.00'),
@@ -138,6 +177,7 @@ export const samSeries: readonly Series[] = [
     // Linked to Sofa finance.
     ...base,
     id: 'sofa-finance-first',
+    type: 'debt',
     name: 'Sofa finance',
     direction: 'out',
     amount: pounds('77.00'),
@@ -147,6 +187,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'to-savings',
+    type: 'savings',
     toAccountId: 'savings',
     name: 'To savings',
     direction: 'transfer',
@@ -158,6 +199,7 @@ export const samSeries: readonly Series[] = [
     // Linked to the Credit card.
     ...base,
     id: 'credit-card',
+    type: 'debt',
     name: 'Credit card',
     direction: 'out',
     amount: pounds('25.00'),
@@ -169,6 +211,7 @@ export const samSeries: readonly Series[] = [
     // Linked to the Family loan.
     ...base,
     id: 'family-loan',
+    type: 'debt',
     name: 'Family loan',
     direction: 'out',
     amount: pounds('250.00'),
@@ -181,6 +224,7 @@ export const samSeries: readonly Series[] = [
     // Linked to Sofa finance.
     ...base,
     id: 'sofa-finance',
+    type: 'debt',
     name: 'Sofa finance',
     direction: 'out',
     amount: pounds('37.88'),
@@ -192,6 +236,9 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'pay-later-card-food',
+    // A monthly bill for food already bought on the card, so Bills, not
+    // Spending money: it doesn't count towards Left to spend (D61).
+    type: 'bills',
     name: 'Pay-later card (food)',
     direction: 'out',
     amount: pounds('200.00'),
@@ -201,6 +248,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'back-from-savings',
+    type: 'savings',
     accountId: 'savings',
     toAccountId: 'current',
     name: 'From savings',
@@ -212,6 +260,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'christmas-bonus',
+    type: 'pay',
     name: 'Christmas bonus',
     direction: 'in',
     amount: 0,
@@ -223,6 +272,7 @@ export const samSeries: readonly Series[] = [
     // Linked to the Laptop loan.
     ...base,
     id: 'laptop-loan',
+    type: 'debt',
     name: 'Laptop loan',
     direction: 'out',
     amount: pounds('150.00'),
@@ -234,6 +284,7 @@ export const samSeries: readonly Series[] = [
   {
     ...base,
     id: 'driving-test',
+    type: 'other',
     name: 'Driving test',
     direction: 'out',
     amount: 0,
@@ -242,9 +293,73 @@ export const samSeries: readonly Series[] = [
   },
 ];
 
+/**
+ * The order the series were made in: the order of the brief 8.2 table. Where
+ * one row of the table became two series (Laptop loan, Sofa finance and the
+ * £150 to savings and back), they are next to each other, first then second.
+ * So on Mon 26 Oct, Family loan goes before Driving lesson (D8, D12).
+ */
+const tableOrder = [
+  'spending-until-payday',
+  'family-loan-first',
+  'driving-lessons',
+  'from-savings',
+  'pay-later-card-in-full',
+  'pay',
+  'spending-money',
+  'rent',
+  'pay-in-3-165',
+  'pay-in-3-79',
+  'laptop-loan-first',
+  'laptop-loan',
+  'sofa-finance-first',
+  'sofa-finance',
+  'to-savings',
+  'back-from-savings',
+  'credit-card',
+  'family-loan',
+  'pay-later-card-food',
+  'christmas-bonus',
+  'driving-test',
+] as const;
+
+/** One minute apart, from 08:31 UTC on Sun 25 Oct 2026, in table order. Each series is its own family. */
+function createdAt(id: string): string {
+  const position = tableOrder.indexOf(id as (typeof tableOrder)[number]);
+  if (position < 0) {
+    throw new Error(`Series ${id} is missing from the table order.`);
+  }
+  return `2026-10-25T08:${(31 + position).toString().padStart(2, '0')}:00Z`;
+}
+
+export const samSeries: readonly Series[] = samSeriesWithoutFamilies.map((one) => ({
+  ...one,
+  familyId: one.id,
+  familyCreatedAt: createdAt(one.id),
+}));
+
+/** Sam's main pay is his weekly pay (D14). */
+export const samMainPay = 'pay';
+
 /** The first pay (overtime), the first spending money and the first rent are one-off changes. */
 export const samChanges: readonly PaymentChange[] = [
   { seriesId: 'pay', originalDate: '2026-10-30', amount: pounds('603.06') },
   { seriesId: 'spending-money', originalDate: '2026-10-30', amount: pounds('45.00') },
   { seriesId: 'rent', originalDate: '2026-11-01', amount: pounds('600.00') },
 ];
+
+/** Sam's whole plan, ready for workOutPlan. Any part can be swapped for a test. */
+export function samPlan(overrides: Partial<PlanInput> = {}): PlanInput {
+  return {
+    accounts: samAccounts,
+    balanceUpdates: samBalanceUpdates,
+    series: samSeries,
+    changes: samChanges,
+    ticks: [],
+    mainPayFamilyId: samMainPay,
+    holidays: englandAndWales,
+    today: samToday,
+    to: samViewEnd,
+    ...overrides,
+  };
+}

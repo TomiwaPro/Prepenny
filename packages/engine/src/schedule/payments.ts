@@ -122,6 +122,7 @@ export function paymentAtIndex(
     amount,
     name: change?.name ?? series.name,
     note: change?.note ?? series.note ?? null,
+    type: series.type,
     isEstimate: change?.isEstimate ?? series.isEstimate,
     isLast,
     movedByRule: ruleDay !== originalDay,

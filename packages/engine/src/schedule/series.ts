@@ -8,10 +8,11 @@ import {
   parseDate,
   weekdayOfMonth,
 } from '../dates/day.ts';
+import { parseTime } from '../dates/time.ts';
 import { type BankHolidayLookup, lastWorkingDayOfMonth } from '../dates/working-days.ts';
 import { EngineInputError } from '../errors.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
-import type { MonthlyDay, Schedule, Series } from './types.ts';
+import { type MonthlyDay, PAYMENT_TYPES, type Schedule, type Series } from './types.ts';
 
 /** A checked series, ready to give the date of any payment directly. */
 export interface PreparedSeries {
@@ -264,6 +265,13 @@ function checkSeries(series: Series): void {
   if (typeof series.isEstimate !== 'boolean') {
     fail(id, 'bad-series', 'it must say whether it is an estimate.');
   }
+  if (!(PAYMENT_TYPES as readonly unknown[]).includes(series.type)) {
+    fail(id, 'bad-series', `the type must be one of ${PAYMENT_TYPES.join(', ')}.`);
+  }
+  if (typeof series.familyId !== 'string' || series.familyId === '') {
+    fail(id, 'bad-series', 'it needs a family.');
+  }
+  parseTime(series.familyCreatedAt, `Series ${id}: when its family was created`);
   checkPenceNotNegative(series.amount, `Series ${id}: the amount`);
   if (series.lastAmount !== undefined) {
     checkPenceNotNegative(series.lastAmount, `Series ${id}: the last amount`);
