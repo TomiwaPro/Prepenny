@@ -288,7 +288,8 @@ The engine has a built-in copy of the official list from `https://www.gov.uk/ban
   - Each write names one record and its new `value`, or `value: null` for a removal: `{ kind: 'series' | 'balance-update', id, value }` or `{ kind: 'change' | 'tick', seriesId, originalDate, value }` (D87). `undo` lists the same records with their values before, null where one didn't exist. `applyWrites(records, writes)` saves them into a copy of the records.
   - New ids come with the command: `newSeriesId` for a split, `newOtherHalfSeriesId` for the second half of a private transfer, and the balance update's own id.
   - Refusals are `EngineInputError`s with a code (`no-payment`, `ticked`, `changed-since`, `date-not-in-schedule` and so on) and a message holding ids and dates only. `edit-breaks-plan` means the engine's own mistake, never the person's, and property tests check it never happens.
-  - A family is a series and every series split from it (D49). Its series cover payment numbers in order, with no gaps or overlaps, and only the family's last payment is last (D89). The shared half of a private transfer has its own family that mirrors the private one series for series (D94).
+  - A family is a series and every series split from it (D49). Its series cover payment numbers in order, with no gaps or overlaps, and only the family's last payment is last (D89). The shared half of a private transfer has its own family that mirrors the private one series for series (D94). The engine makes only families like that, but doesn't yet refuse stored data that breaks these rules, such as two halves sharing one family. Phase 3's server checks should.
+  - A tick's paid date uses the `today` passed in (D71). When Phase 3 runs an edit again on newer records after a clash (3.5), it must pass the `today` of the person who made the edit, not the day it's replayed.
 
 ## 3. The data model
 

@@ -755,7 +755,7 @@ Decided 29 Oct 2026 in step 1c. Adds to ARCHITECTURE.md 2.3.
 
 - One engine function makes every edit. It takes the stored records, one command and today, and gives back the records to save and the undo: how each of those records looked before, or a note that it didn't exist. The engine saves nothing itself.
 - One-off changes and ticks are found by their series and the payment's original date, as everywhere in the engine (brief 5.2). So the only new ids a command needs are for a new series (a split) and a new balance update, and they come in with the command, because the engine can't make random ids.
-- Undo saves the "before" copies as a new edit, so undoing an undo puts the edit back. Undo is refused when anything the edit saved has been changed since, or when it would take away a series that has a change or tick made on it since.
+- Undo saves the "before" copies as a new edit, so undoing an undo puts the edit back. Undo is refused when anything the edit saved has been changed since, when a change or tick it didn't make would no longer belong to the same payment afterwards, or when it would put a change or tick back on a payment that has been removed or moved since.
 - "Update balance", with everything ticked in its steps, is one edit, so one undo.
 - A command the engine can't carry out is refused with a short code and a message that names only ids and dates, never amounts, names or notes. As a safety check, any edit that would leave records the plan can't use is refused too.
 
@@ -797,6 +797,7 @@ Why: "this and all later ones" at £600 means each later one is £600. Changing 
 Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. Partly a question for the owner.
 
 - The engine takes the new date of the payment, and the schedule from that date on, from the app. It refuses a date the schedule doesn't give, such as the 3rd for a schedule on the 1st of each month.
+- The new date must come after the date of the payment before it. Otherwise payments would double up: rent moved from Fri 1 Jan 2027 back to Tue 1 Dec 2026 would be paid twice on 1 Dec.
 - Moving the dates never adds or loses a payment. A series that ended on a date now ends after the same number of payments.
 - One-off moved dates on this and later payments are dropped (D60). Notes, amounts and ticks stay.
 - Still to answer before Phase 2: which schedule the edit sheet sets when someone changes the date for this and all later ones. The proposal is in `PLAN.md`.
@@ -829,7 +830,7 @@ Decided 29 Oct 2026 in step 1c. Adds to D16 and ARCHITECTURE.md 3.6.
 - The shared half ("From Jess") records which private half it mirrors. Every command changes both halves in the same edit: amounts, dates, estimate labels, removals, splits and ticks.
 - Names and notes belong to the private half only. A name or note aimed at the shared half is refused.
 - Splitting a private transfer makes two new series, so the command carries a second new id.
-- An edit is refused when the two halves no longer match.
+- An edit is refused when the two halves no longer match: their series' amounts, pattern, dates, end, last amount, weekend rule or estimate label, or the payment being changed (its date, amount, estimate label, removal or tick).
 
 Why: D16 lets the shared plan see only the date and the amount, and both accounts must always show the same money moving.
 
