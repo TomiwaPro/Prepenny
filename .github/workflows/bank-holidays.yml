@@ -1,0 +1,82 @@
+name: Bank holidays
+
+# Downloads GOV.UK's bank holiday list into packages/engine/data, unchanged,
+# with a small file beside it giving the source link and the date downloaded.
+# Commits only when the list has changed, back to the branch it ran on.
+# The weekly schedule comes later with D57.
+
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bank-holidays-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Download the list from GOV.UK
+        run: |
+          curl --fail --silent --show-error --retry 3 \
+            --output "$RUNNER_TEMP/bank-holidays.json" \
+            https://www.gov.uk/bank-holidays.json
+          echo "Downloaded $(wc -c < "$RUNNER_TEMP/bank-holidays.json") bytes."
+
+      - name: Check it's valid JSON with all three nations
+        run: |
+          jq -e '
+            . as $root
+            | type == "object"
+              and (["england-and-wales", "scotland", "northern-ireland"]
+                   | all(. as $nation
+                         | ($root[$nation].events | type == "array" and length > 0)
+                           and all($root[$nation].events[];
+                                   (.date | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")))))
+          ' "$RUNNER_TEMP/bank-holidays.json"
+
+      - name: Save it and commit if it changed
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          data=packages/engine/data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            mkdir -p "$data"
+            cp "$RUNNER_TEMP/bank-holidays.json" "$data/bank-holidays.json"
+            if [ -z "$(git status --porcelain -- "$data/bank-holidays.json")" ]; then
+              echo "The list hasn't changed, so there's nothing to commit."
+              exit 0
+            fi
+            today=$(TZ=Europe/London date +%F)
+            sha=$(sha256sum "$data/bank-holidays.json" | cut -d' ' -f1)
+            jq -n --arg today "$today" --arg sha "$sha" \
+              '{source: "https://www.gov.uk/bank-holidays.json", downloaded_on: $today, sha256: $sha}' \
+              > "$data/bank-holidays.source.json"
+            git add "$data/bank-holidays.json" "$data/bank-holidays.source.json"
+            git commit -m "Update the bank holiday list from GOV.UK ($today)"
+            if git push origin "HEAD:$BRANCH"; then
+              exit 0
+            fi
+            echo "The push was refused, probably because the branch moved on. Trying again on its latest commit."
+            git fetch --depth=1 origin "$BRANCH"
+            git reset --hard FETCH_HEAD
+            sleep 5
+          done
+          echo "Couldn't push after 3 tries." >&2
+          exit 1
