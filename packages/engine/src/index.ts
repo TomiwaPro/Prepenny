@@ -81,6 +81,27 @@ export {
   workingDayOnOrAfter,
   workingDayOnOrBefore,
 } from './dates/working-days.ts';
+export { compareCardPayments } from './debts/compare.ts';
+export {
+  DEBTS_MONTHS_AHEAD,
+  debtsLookAhead,
+  workOutDebts,
+} from './debts/debts.ts';
+export {
+  type CardComparison,
+  type CardComparisonInput,
+  DEBT_KINDS,
+  type Debt,
+  type DebtKind,
+  type DebtPaymentRow,
+  type DebtPlan,
+  type DebtRow,
+  type DebtStatementRow,
+  type DebtsInput,
+  type DebtsPlan,
+  type MinimumRule,
+  type PayingOff,
+} from './debts/types.ts';
 export { editPlan } from './edit/edit.ts';
 export { scheduleForNewDate } from './edit/new-date.ts';
 export { applyWrites, sameValue } from './edit/records.ts';

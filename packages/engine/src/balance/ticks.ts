@@ -9,6 +9,7 @@ export interface CheckedTick {
   readonly tickedAt: Moment;
   readonly paidOn: Day;
   readonly inBalanceUpdate: string | null;
+  readonly inDebtUpdate: string | null;
 }
 
 /** Ticks, found by series and original date, like changes (brief 5.2, D48). */
@@ -34,6 +35,12 @@ export function indexTicks(ticks: readonly Tick[]): TickIndex {
     ) {
       throw new EngineInputError('bad-tick', `${what}: the balance update must be an id.`);
     }
+    if (
+      tick.inDebtUpdate !== undefined &&
+      (typeof tick.inDebtUpdate !== 'string' || tick.inDebtUpdate === '')
+    ) {
+      throw new EngineInputError('bad-tick', `${what}: the debt must be an id.`);
+    }
     const forSeries = index.get(tick.seriesId) ?? new Map<Day, CheckedTick>();
     if (forSeries.has(originalDay)) {
       throw new EngineInputError(
@@ -46,6 +53,7 @@ export function indexTicks(ticks: readonly Tick[]): TickIndex {
       tickedAt,
       paidOn,
       inBalanceUpdate: tick.inBalanceUpdate ?? null,
+      inDebtUpdate: tick.inDebtUpdate ?? null,
     });
     index.set(tick.seriesId, forSeries);
   });

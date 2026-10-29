@@ -89,6 +89,11 @@ export interface Series {
   readonly holidayRule: HolidayRule;
   /** What it's for (D79). */
   readonly type: PaymentType;
+  /**
+   * The debt it pays off, if it's linked to one (brief 4.4, 4.6). Only money
+   * going out can be linked, and never either half of a private transfer (D98).
+   */
+  readonly debtId?: string;
   readonly isEstimate: boolean;
   readonly note?: string;
   /**

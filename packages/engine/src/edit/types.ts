@@ -4,6 +4,7 @@
 
 import type { Account, BalanceUpdate, Tick } from '../balance/types.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
+import type { Debt } from '../debts/types.ts';
 import type { Pence } from '../money/pence.ts';
 import type { PaymentChange, Schedule, Series } from '../schedule/types.ts';
 
@@ -14,6 +15,8 @@ export interface PlanRecords {
   readonly series: readonly Series[];
   readonly changes?: readonly PaymentChange[];
   readonly ticks?: readonly Tick[];
+  /** The plan's debts (D98). When they're given, every series' link to a debt is checked too. */
+  readonly debts?: readonly Debt[];
 }
 
 /** What an edit needs: the stored records, the plan's settings and today. */

@@ -4,6 +4,8 @@ import {
   type BankHolidayLookup,
   LONGEST_RUN_WITHOUT_A_WORKING_DAY,
 } from '../dates/working-days.ts';
+import { type CheckedDebt, checkDebtLinks, checkDebts } from '../debts/check.ts';
+import type { Debt } from '../debts/types.ts';
 import { EngineInputError } from '../errors.ts';
 import { checkPence, checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { type MainPaydays, mainPaydaysOf } from '../periods/main-pay.ts';
@@ -188,7 +190,10 @@ function prepareAll(
 export type RecordsToCheck = Pick<
   PlanInput,
   'accounts' | 'balanceUpdates' | 'series' | 'changes' | 'ticks' | 'holidays'
->;
+> & {
+  /** The plan's debts. When they're given, every series' link to a debt is checked too (D98). */
+  readonly debts?: readonly Debt[];
+};
 
 /** A plan's records, checked and ready to work with. */
 export interface CheckedRecords {
@@ -202,6 +207,8 @@ export interface CheckedRecords {
   readonly familyTimes: ReadonlyMap<string, Moment>;
   readonly changes: ChangeIndex;
   readonly ticks: TickIndex;
+  /** The debts, by id. Empty when none were given. */
+  readonly debts: ReadonlyMap<string, CheckedDebt>;
 }
 
 /**
@@ -215,7 +222,9 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
   const { prepared, familyTimes } = prepareAll(input, accounts);
   const changes = indexChanges(input.changes ?? []);
   const ticks = indexTicks(input.ticks ?? []);
-  return { accounts, starts, accountOfUpdate, prepared, familyTimes, changes, ticks };
+  const debts = checkDebts(input.debts ?? [], today);
+  if (input.debts !== undefined) checkDebtLinks(input.series, debts);
+  return { accounts, starts, accountOfUpdate, prepared, familyTimes, changes, ticks, debts };
 }
 
 /**
