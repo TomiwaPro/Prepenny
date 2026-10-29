@@ -109,6 +109,16 @@ export interface Series {
    * (ARCHITECTURE.md 2.3). 0 for a series that was never split.
    */
   readonly firstNumber?: number;
+  /** The series this one was split from by "This and all later ones" (brief 5.4), if it was. */
+  readonly splitFrom?: string;
+  /**
+   * Set on the shared half of a private transfer: the id of the private half
+   * it mirrors (D16, ARCHITECTURE.md 3.6). The private half is money going
+   * out of (or into) the person's own account, and the shared half is the
+   * same money arriving in (or leaving) the shared account. Every edit
+   * changes both halves together.
+   */
+  readonly mirrorOf?: string;
 }
 
 /** A change to one payment, found by its series and original date (brief 5.2). */
@@ -144,7 +154,11 @@ export interface Payment {
   /** What it's for, from its series (D79). */
   readonly type: PaymentType;
   readonly isEstimate: boolean;
-  /** The last payment of a series that ends. */
+  /**
+   * The last payment of a series that ends. After a split it's the family's
+   * last payment: the old series' last one isn't last, because the new
+   * series carries on from it (D49).
+   */
   readonly isLast: boolean;
   /** The weekend and bank holiday rule moved it. */
   readonly movedByRule: boolean;

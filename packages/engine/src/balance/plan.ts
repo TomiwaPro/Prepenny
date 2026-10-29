@@ -15,7 +15,7 @@ import {
   paymentsOfSeriesBetween,
   paymentWithDates,
 } from '../schedule/payments.ts';
-import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
+import { markFamilies, type PreparedSeries, prepareSeries } from '../schedule/series.ts';
 import type { Payment } from '../schedule/types.ts';
 import { compareRows } from './order.ts';
 import { findShortfalls, lowestAndFirstUnder, statusOf } from './shortfalls.ts';
@@ -181,7 +181,7 @@ function prepareAll(
     familyTimes.set(series.familyId, created);
     prepared.push(one);
   }
-  return { prepared, familyTimes };
+  return { prepared: markFamilies(prepared), familyTimes };
 }
 
 /**

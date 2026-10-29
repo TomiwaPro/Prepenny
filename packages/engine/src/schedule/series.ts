@@ -27,6 +27,12 @@ export interface PreparedSeries {
    * which is payment number `firstNumber`.
    */
   readonly count: number;
+  /**
+   * A later series of the same family carries on from this one (D49): one
+   * split from it, with a higher first number. Its last payment isn't the
+   * family's last, so it isn't "last" and doesn't take a different last amount.
+   */
+  readonly continues: boolean;
   /** The original date of the payment at this index, worked out from the start. */
   dateAt(index: number): Day;
   /** The index of the first payment whose original date is on or after `day`. */
@@ -294,6 +300,12 @@ function checkSeries(series: Series): void {
   if (series.firstNumber !== undefined) {
     checkWholeNumber(id, series.firstNumber, 0, Number.MAX_SAFE_INTEGER, 'The first number');
   }
+  for (const field of ['splitFrom', 'mirrorOf'] as const) {
+    const value = series[field];
+    if (value !== undefined && (typeof value !== 'string' || value === '' || value === id)) {
+      fail(id, 'bad-series', `${field} must be the id of another series.`);
+    }
+  }
 }
 
 /**
@@ -343,7 +355,26 @@ export function prepareSeries(series: Series, holidays: BankHolidayLookup): Prep
     cycle: series.amountCycle ?? null,
     cycleOffset: series.cycleOffset ?? 0,
     count,
+    continues: false,
     dateAt: dates.dateAt,
     firstIndexOnOrAfter: dates.firstIndexOnOrAfter,
   };
+}
+
+/**
+ * Marks each prepared series that a later series of its family carries on
+ * from: one with a higher first number (D49, ARCHITECTURE.md 2.3). A family
+ * is a series and the series split from it, so after a split the old
+ * series' last payment isn't the family's last.
+ */
+export function markFamilies(prepared: readonly PreparedSeries[]): PreparedSeries[] {
+  const highest = new Map<string, number>();
+  for (const one of prepared) {
+    const family = one.series.familyId;
+    highest.set(family, Math.max(highest.get(family) ?? 0, one.firstNumber));
+  }
+  return prepared.map((one) => {
+    const continues = (highest.get(one.series.familyId) ?? 0) > one.firstNumber;
+    return continues === one.continues ? one : { ...one, continues };
+  });
 }
