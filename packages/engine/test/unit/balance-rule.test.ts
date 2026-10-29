@@ -358,6 +358,20 @@ describe('D33: balance updates store the time', () => {
     expect(formatPounds(accountOf(workOutPlan(unlinked)).expected)).toBe('86.00');
   });
 
+  it('counts a tick at exactly the same moment as the update as inside it ("at or before")', () => {
+    const sameMoment = {
+      ...base,
+      ticks: [tick(p('Ticked after the update'), '2026-10-25T00:30:00Z')],
+    };
+    const current = accountOf(workOutPlan(sameMoment));
+    expect(current.rows.map((row) => row.payment.name)).not.toContain('Ticked after the update');
+    const aMicrosecondLater = {
+      ...base,
+      ticks: [tick(p('Ticked after the update'), '2026-10-25T00:30:00.000001Z')],
+    };
+    expect(accountOf(workOutPlan(aMicrosecondLater)).rows.map((row) => row.ticked)).toContain(true);
+  });
+
   it('uses the latest update by time, not by the order given', () => {
     const later = balanceUpdate('current', '50.00', day, '2026-10-25T21:00:00Z', 'later');
     for (const updates of [
