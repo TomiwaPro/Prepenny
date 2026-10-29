@@ -5,6 +5,7 @@
 // Step 1a: money, dates, bank holidays and repeating payments.
 // Step 1b: the balance rule, lowest point, warnings, shortfalls and periods.
 // Step 1c: editing, moving, skipping, ticking and undo.
+// Step 1d: debts, currencies and credit cards, and "Only this week of the pattern".
 
 export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';
@@ -81,6 +82,7 @@ export {
   workingDayOnOrBefore,
 } from './dates/working-days.ts';
 export { editPlan } from './edit/edit.ts';
+export { scheduleForNewDate } from './edit/new-date.ts';
 export { applyWrites, sameValue } from './edit/records.ts';
 export type {
   Edit,

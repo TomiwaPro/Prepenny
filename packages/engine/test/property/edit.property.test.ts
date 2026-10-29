@@ -308,6 +308,8 @@ const commandWish = fc.record({
   series: fc.nat(),
   k: fc.nat({ max: 40 }),
   amount: fc.option(fc.integer({ min: 0, max: 60_000 })),
+  // For a series with a pattern: "Only this week of the pattern" (D97) instead of every payday.
+  toStep: fc.boolean(),
   name: fc.option(fc.constantFrom('Rent', 'New name')),
   note: fc.option(fc.constantFrom('', 'New note')),
   isEstimate: fc.option(fc.boolean()),
@@ -393,11 +395,12 @@ function commandFrom(
             ? { date, schedule: { ...one.schedule, on: { kind: 'day', day } } }
             : { date };
       }
+      const stepAmount = wish.toStep && one.amountCycle !== undefined ? wish.amount : null;
       return {
         ...ref,
         kind: 'this-and-later',
         edits: {
-          ...optional('amount', wish.amount),
+          ...(stepAmount === null ? optional('amount', wish.amount) : { stepAmount }),
           ...optional('name', one.mirrorOf === undefined ? wish.name : null),
           ...optional('note', one.mirrorOf === undefined ? wish.note : null),
           ...optional('isEstimate', wish.isEstimate),
@@ -479,6 +482,9 @@ describe('editing holds for any plan and any edits', () => {
             const edit = tryEdit(input, command);
             if (edit === null) return;
             made.set(command.kind, (made.get(command.kind) ?? 0) + 1);
+            if (command.kind === 'this-and-later' && command.edits.stepAmount !== undefined) {
+              made.set('step-amount', (made.get('step-amount') ?? 0) + 1);
+            }
             const after = applyWrites(input, edit.writes);
 
             // Undo gives back exactly the records from before.
@@ -517,7 +523,7 @@ describe('editing holds for any plan and any edits', () => {
       { numRuns: 1000 },
     );
     // Every kind of edit must really have been made, many times, for this to mean anything.
-    for (const kind of KINDS) {
+    for (const kind of [...KINDS, 'step-amount']) {
       expect(made.get(kind) ?? 0, kind).toBeGreaterThan(20);
     }
   });

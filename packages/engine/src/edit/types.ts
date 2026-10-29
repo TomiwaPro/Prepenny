@@ -54,8 +54,15 @@ export interface JustThisOneEdits {
  * this and later payments are dropped (D60).
  */
 export interface ThisAndLaterEdits {
-  /** One amount for this and every later payment, in place of any pattern (D90). */
+  /** "Every payday from now": one amount for this and every later payment, in place of any pattern (D90). */
   readonly amount?: Pence;
+  /**
+   * "Only this week of the pattern" (D97): a new amount for this payment's
+   * step of the amount pattern, so every payment on that step from here on
+   * gets it and the other steps keep theirs. Only for a series with a
+   * pattern, and never together with `amount`.
+   */
+  readonly stepAmount?: Pence;
   readonly name?: string;
   /** An empty note means no note. */
   readonly note?: string;
