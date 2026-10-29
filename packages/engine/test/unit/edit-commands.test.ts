@@ -780,3 +780,90 @@ describe('refusals hold no money data', () => {
     );
   });
 });
+
+describe('D87: undo never loses a change or tick made since', () => {
+  const toThe3rd: EditCommand = {
+    kind: 'this-and-later',
+    seriesId: 'rent',
+    originalDate: '2026-11-01',
+    edits: {
+      date: '2026-11-03',
+      schedule: { kind: 'monthly', every: 1, on: { kind: 'day', day: 3 } },
+    },
+    newSeriesId: 'unused',
+  };
+
+  it('refuses to undo a new date once a moved payment has its own change or tick', () => {
+    const moved = edited(plan, toThe3rd);
+    const changedSince = editedInTurn(moved.after, [
+      {
+        kind: 'just-this-one',
+        seriesId: 'rent',
+        originalDate: '2026-12-03',
+        edits: { amount: pounds('580.00') },
+      },
+      {
+        kind: 'tick',
+        seriesId: 'rent',
+        originalDate: '2027-01-03',
+        tickedAt: '2026-10-25T10:00:00Z',
+      },
+    ]);
+    refusedWith('changed-since', changedSince, { kind: 'undo', edit: moved.edit });
+  });
+
+  it('refuses to redo a removal once a payment it would remove has been ticked', () => {
+    const removed = edited(plan, {
+      kind: 'remove-this-and-later',
+      seriesId: 'rent',
+      originalDate: '2027-01-01',
+    });
+    const putBack = edited(removed.after, { kind: 'undo', edit: removed.edit });
+    const ticked = edited(putBack.after, {
+      kind: 'tick',
+      seriesId: 'rent',
+      originalDate: '2027-02-01',
+      tickedAt: '2026-10-25T10:00:00Z',
+    }).after;
+    refusedWith('changed-since', ticked, { kind: 'undo', edit: putBack.edit });
+  });
+
+  it('refuses to redo a split once a later payment has its own note', () => {
+    const split = edited(plan, {
+      kind: 'this-and-later',
+      seriesId: 'rent',
+      originalDate: '2027-01-01',
+      edits: { amount: pounds('560.00') },
+      newSeriesId: 'rent-2027',
+    });
+    const putBack = edited(split.after, { kind: 'undo', edit: split.edit });
+    const noted = edited(putBack.after, {
+      kind: 'just-this-one',
+      seriesId: 'rent',
+      originalDate: '2027-03-01',
+      edits: { note: 'Boiler' },
+    }).after;
+    refusedWith('changed-since', noted, { kind: 'undo', edit: putBack.edit });
+  });
+
+  it('still undoes when the change made since stays on its payment, and keeps it', () => {
+    const split = edited(plan, {
+      kind: 'this-and-later',
+      seriesId: 'rent',
+      originalDate: '2027-01-01',
+      edits: { amount: pounds('560.00') },
+      newSeriesId: 'rent-2027',
+    });
+    const noted = edited(split.after, {
+      kind: 'just-this-one',
+      seriesId: 'rent',
+      originalDate: '2026-11-01',
+      edits: { note: 'Boiler' },
+    }).after;
+    const back = edited(noted, { kind: 'undo', edit: split.edit }).after;
+    expect(back.series.find((one) => one.id === 'rent')).toEqual(rent);
+    expect(back.changes).toEqual([
+      { seriesId: 'rent', originalDate: '2026-11-01', note: 'Boiler' },
+    ]);
+  });
+});

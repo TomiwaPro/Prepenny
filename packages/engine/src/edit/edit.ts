@@ -11,24 +11,36 @@ import { parseTime } from '../dates/time.ts';
 import { EngineInputError } from '../errors.ts';
 import { checkPence, checkPenceNotNegative } from '../money/pence.ts';
 import { mainPaydaysOf } from '../periods/main-pay.ts';
+import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
 import {
   type Context,
   changeOne,
   type Found,
   findPayment,
+  indexOf,
   isSharedHalf,
   type OneOff,
   otherHalfPayment,
   refuse,
 } from './context.ts';
 import { removeThisAndLater, thisAndLater } from './later.ts';
-import { applyWrites, checkWrites, clean, Draft, keyOf, sameValue, tickWrite } from './records.ts';
+import {
+  applyWrites,
+  changeWrite,
+  checkWrites,
+  clean,
+  Draft,
+  keyOf,
+  sameValue,
+  tickWrite,
+} from './records.ts';
 import type {
   Edit,
   EditCommand,
   EditInput,
   JustThisOneEdits,
   PaymentRef,
+  RecordWrite,
   TickInUpdate,
 } from './types.ts';
 
@@ -230,20 +242,30 @@ function undo(context: Context, edit: Edit): void {
   for (const write of before) {
     context.draft.set(write);
   }
-  // A series the undo takes away mustn't leave behind a change or tick made
-  // on it since, or that later change would be lost without anyone knowing.
+  // Every change or tick made since, and not part of this edit, must still
+  // belong to the same payment once the undo puts the series back, or that
+  // later change would be lost without anyone knowing (D87).
+  const undone = new Set(before.map(keyOf));
+  const numberIn = (prepared: PreparedSeries | null, day: Day): number | null => {
+    const index = prepared === null ? -1 : indexOf(prepared, day);
+    return prepared === null || index < 0 ? null : prepared.firstNumber + index;
+  };
   for (const write of before) {
-    if (write.kind !== 'series' || write.value !== null) continue;
-    const days = [
-      ...(context.checked.changes.get(write.id)?.keys() ?? []),
-      ...(context.checked.ticks.get(write.id)?.keys() ?? []),
-    ];
-    for (const day of days) {
-      const date = formatDate(day);
-      if (
-        context.draft.change(write.id, date) !== null ||
-        context.draft.tick(write.id, date) !== null
-      ) {
+    if (write.kind !== 'series') continue;
+    const now = context.byId.get(write.id) ?? null;
+    const restored =
+      write.value === null ? null : prepareSeries(write.value, context.input.holidays);
+    const attached: [RecordWrite, Day][] = [];
+    for (const day of context.checked.changes.get(write.id)?.keys() ?? []) {
+      attached.push([changeWrite(write.id, formatDate(day), null), day]);
+    }
+    for (const day of context.checked.ticks.get(write.id)?.keys() ?? []) {
+      attached.push([tickWrite(write.id, formatDate(day), null), day]);
+    }
+    for (const [record, day] of attached) {
+      if (undone.has(keyOf(record))) continue;
+      const number = numberIn(now, day);
+      if (number !== null && number !== numberIn(restored, day)) {
         refuse(
           'changed-since',
           'Something this edit made has been changed since, so it can no longer be undone.',

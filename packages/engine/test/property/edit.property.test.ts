@@ -335,9 +335,13 @@ function commandFrom(
   wish: CommandWish,
   input: PlanInput,
   step: number,
-  lastEdit: Edit | null,
+  earlier: readonly Edit[],
 ): EditCommand | null {
-  if (wish.kind === 'undo') return lastEdit === null ? null : { kind: 'undo', edit: lastEdit };
+  if (wish.kind === 'undo') {
+    // Any earlier edit, not only the last: undo is refused if it would lose a later change.
+    const edit = earlier[earlier.length - 1 - (wish.k % Math.max(1, earlier.length))];
+    return edit === undefined ? null : { kind: 'undo', edit };
+  }
   if (wish.kind === 'update-balance') {
     const account = input.accounts[wish.series % input.accounts.length] as Account;
     return {
@@ -414,6 +418,35 @@ function commandFrom(
   }
 }
 
+/**
+ * Each change and tick that belongs to a payment, as "kind|series|original
+ * date", with the payment number it belongs to.
+ */
+function paymentOfRecord(input: PlanInput): Map<string, number> {
+  // A wider window than commands are picked from, so a payment moved just
+  // past its edge is still found.
+  const wide = workOutPayments({
+    series: input.series,
+    changes: input.changes ?? [],
+    holidays: input.holidays,
+    from: at(input.today, -400),
+    to: at(input.to, 400),
+  });
+  const numbers = new Map(wide.map((p) => [`${p.seriesId}|${p.originalDate}`, p.number]));
+  const found = new Map<string, number>();
+  for (const [kind, list] of [
+    ['change', input.changes ?? []],
+    ['tick', input.ticks ?? []],
+  ] as const) {
+    for (const record of list) {
+      const number = numbers.get(`${record.seriesId}|${record.originalDate}`);
+      if (number !== undefined)
+        found.set(`${kind}|${record.seriesId}|${record.originalDate}`, number);
+    }
+  }
+  return found;
+}
+
 /** Makes an edit, or null when the engine refuses it for a reason. */
 function tryEdit(input: PlanInput, command: EditCommand): Edit | null {
   try {
@@ -439,9 +472,9 @@ describe('editing holds for any plan and any edits', () => {
         (wish, wishes) => {
           let input = buildPlan(wish);
           expect(halves(input)).toEqual([]);
-          let lastEdit: Edit | null = null;
+          const earlier: Edit[] = [];
           wishes.forEach((commandWishOne, step) => {
-            const command = commandFrom(commandWishOne, input, step, lastEdit);
+            const command = commandFrom(commandWishOne, input, step, earlier);
             if (command === null) return;
             const edit = tryEdit(input, command);
             if (edit === null) return;
@@ -458,16 +491,30 @@ describe('editing holds for any plan and any edits', () => {
             expect(sameValue(again, edit)).toBe(true);
             expect(canonical(applyWrites(back, again.writes))).toEqual(canonical(after));
 
+            // A change or tick the edit didn't touch still belongs to the same payment.
+            const touched = new Set(
+              edit.writes.flatMap((w) =>
+                w.kind === 'change' || w.kind === 'tick'
+                  ? [`${w.kind}|${w.seriesId}|${w.originalDate}`]
+                  : [],
+              ),
+            );
+            const nowAt = paymentOfRecord(after);
+            for (const [key, number] of paymentOfRecord(input)) {
+              if (touched.has(key)) continue;
+              expect(nowAt.get(key), `${command.kind} left ${key} loose`).toBe(number);
+            }
+
             // Both halves of a private transfer still match, and the plan still works.
             expect(halves(after)).toEqual([]);
             workOutPlan(after);
 
             input = after;
-            lastEdit = edit;
+            earlier.push(edit);
           });
         },
       ),
-      { numRuns: 300 },
+      { numRuns: 1000 },
     );
     // Every kind of edit must really have been made, many times, for this to mean anything.
     for (const kind of KINDS) {
@@ -487,7 +534,7 @@ describe('editing holds for any plan and any edits', () => {
           // Some edits first, so splits of splits and moved changes are covered.
           let input = buildPlan(wish);
           wishes.forEach((one, step) => {
-            const command = commandFrom(one, input, step, null);
+            const command = commandFrom(one, input, step, []);
             const edit = command === null ? null : tryEdit(input, command);
             if (edit !== null) input = applyWrites(input, edit.writes);
           });
