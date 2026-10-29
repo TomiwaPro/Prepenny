@@ -3,7 +3,26 @@
 // passed in (brief Part 5, ARCHITECTURE.md section 2).
 //
 // Step 1a: money, dates, bank holidays and repeating payments.
+// Step 1b: the balance rule's inputs: accounts, balance updates, ticks and times.
 
+export { paidDate } from './balance/ticks.ts';
+export {
+  ACCOUNT_KINDS,
+  type Account,
+  type AccountKind,
+  type AccountPlan,
+  type BalanceStatus,
+  type BalanceUpdate,
+  type DayBalance,
+  type Flow,
+  type MainPayKind,
+  type Plan,
+  type PlanInput,
+  type PlanRow,
+  type Shortfall,
+  type ShortOnDay,
+  type Tick,
+} from './balance/types.ts';
 export {
   type BankHoliday,
   easterSunday,
@@ -49,6 +68,7 @@ export {
   weekday,
   weekdayOfMonth,
 } from './dates/day.ts';
+export { type Moment, parseTime } from './dates/time.ts';
 export {
   type BankHolidayLookup,
   isWeekend,
@@ -86,13 +106,15 @@ export {
   paymentByNumber,
   workOutPayments,
 } from './schedule/payments.ts';
-export type {
-  Direction,
-  EndRule,
-  HolidayRule,
-  MonthlyDay,
-  Payment,
-  PaymentChange,
-  Schedule,
-  Series,
+export {
+  type Direction,
+  type EndRule,
+  type HolidayRule,
+  type MonthlyDay,
+  PAYMENT_TYPES,
+  type Payment,
+  type PaymentChange,
+  type PaymentType,
+  type Schedule,
+  type Series,
 } from './schedule/types.ts';
