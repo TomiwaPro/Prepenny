@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -612,3 +612,44 @@ When the official bank holiday list doesn't reach a year the plan shows, the eng
 Why: GOV.UK's list only runs a year or so ahead, and the plan and the Debts screen can look 24 months ahead (D43).
 
 Note, 29 Oct 2026: the official list includes one-off bank holidays that no rule can predict. The test names them as known exceptions: VE Day (Fri 8 May 2020), the Platinum Jubilee (Thu 2 and Fri 3 Jun 2022), the Queen's funeral (Mon 19 Sep 2022) and the coronation (Mon 8 May 2023). Where a one-off moved a usual bank holiday, the usual day it replaced is part of the same exception: Mon 4 May 2020 for VE Day and Mon 30 May 2022 for the Jubilee. Every other day must match the official list exactly. PrePenny always uses the official list for the years it covers.
+
+## Made during step 1a
+
+D75 to D78 were decided on 29 Oct 2026 while building step 1a. D75 and D78 are for the owner to confirm.
+
+### D75. Scotland's World Cup bank holiday is a known exception too
+
+Decided 29 Oct 2026 in step 1a. Adds to D74's note. For the owner to confirm.
+
+The official list downloaded on 29 Oct 2026 has one more one-off day than D74's note names: Scotland's World Cup bank holiday on Mon 15 Jun 2026. The D74 test names it as a known exception too, for Scotland only. PrePenny uses the official list for 2026, so Scottish plans have it as a bank holiday.
+
+Why: no rule can predict it, like the days in D74's note, so without it the test could never pass.
+
+### D76. When the official list covers a year
+
+Decided 29 Oct 2026 in step 1a. Adds to D74.
+
+A year counts as covered for a nation when the official list has at least one of that nation's bank holidays in January and one in December of that year. Any other year uses the rules. The list downloaded on 29 Oct 2026 covers 2019 to 2028 for all three nations.
+
+Why: every year starts with New Year's Day (or its substitute) in January and ends with Christmas in December, so a year with both is complete, and a year GOV.UK has only started to fill in is never used half-empty.
+
+### D77. Exact tool versions
+
+Decided 29 Oct 2026 in step 1a. Adds to D56.
+
+Pinned exactly: Node 24.22.2, pnpm 12.16.1, TypeScript 6.0.3, Vitest 5.0.5, fast-check 4.10.2, Biome 2.6.3 and @types/node 24.19.2. TypeScript 7.0 is now the default download, but D56 keeps 6.0. Biome is 2.6.3, not 2.6.4, because 2.6.4 came out the day before and pnpm holds back releases that new; no exceptions were added to that rule. Node 26 became the newest long-term version this month, but Node 24 is supported until April 2028, so it stays.
+
+Why: the same versions everywhere, changed only on purpose, and brand-new releases are where attacks on software packages usually land first.
+
+### D78. Where a series' payments start and end
+
+Decided 29 Oct 2026 in step 1a. For the owner to confirm.
+
+- The first payment is the first date the schedule gives on or after the series' start date. Monthly on the 1st from Sun 25 Oct starts on Sun 1 Nov.
+- A payment's original date is the date its schedule gives, before the weekend and bank holiday rule. For "last working day" it's the last working day itself.
+- "After N payments" counts payments by number, and "ends on a date" includes a payment when its original date is on or before that date. So the weekend and bank holiday rule and moved dates never add or remove a payment, and a split by date divides the payments exactly (brief 5.4).
+- The different last amount goes on the last payment of a series that ends. A series that never ends has no last payment.
+- A moved date is used as it is: the weekend and bank holiday rule isn't applied to it again (brief 5.3 applies the rule first, then the changed date).
+- A series can't list the same chosen date twice, because changes and ticks find a payment by its original date (brief 5.2).
+
+Why: each follows from brief 5.3 and 5.4, and the engine needed one exact answer for each.
