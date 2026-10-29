@@ -3,6 +3,7 @@
 // review of step 1c.
 
 import { describe, expect, it } from 'vitest';
+import { scheduleForNewDay } from '../../src/edit/new-date.ts';
 import {
   type EditCommand,
   type EditInput,
@@ -10,8 +11,8 @@ import {
   editPlan,
   formatPounds,
   type Payment,
+  parseDate,
   type Schedule,
-  scheduleForNewDate,
   sumPence,
   workOutPayments,
   workOutPlan,
@@ -27,6 +28,10 @@ import { noBankHolidays } from '../fixtures/holidays.ts';
 import { account, accountOf, balanceUpdate, planInput, pounds } from '../fixtures/plan.ts';
 import { samPlan, samViewEnd } from '../fixtures/sam.ts';
 import { series } from '../fixtures/series.ts';
+
+/** The engine's own D96 schedule, with dates as text. */
+const scheduleForNewDate = (schedule: Schedule, original: string, date: string) =>
+  scheduleForNewDay(schedule, parseDate(original), parseDate(date));
 
 const sam = samPlan();
 
@@ -393,20 +398,29 @@ describe('D97: how only this week of the pattern works', () => {
 });
 
 describe('D96: where later payments go after a new date for this and all later ones', () => {
+  const dates = (input: EditInput, name: string, from = '2026-09-01', to = '2027-06-30') =>
+    workOutPayments({
+      series: input.series,
+      changes: input.changes ?? [],
+      holidays: noBankHolidays,
+      from,
+      to,
+    })
+      .filter((p) => p.name === name)
+      .map((p) => p.date);
+
   it('keeps a weekly schedule, so later payments take the new weekday', () => {
     const weekly: Schedule = { kind: 'weekly', every: 2 };
     expect(scheduleForNewDate(weekly, '2026-11-06', '2026-11-07')).toBe(weekly);
     expect(scheduleForNewDate({ kind: 'irregular' }, '2026-11-02', '2026-11-03')).toEqual({
       kind: 'irregular',
     });
+    // The edit sheet sends only the new date; the engine does the rest.
     const { after } = edited(sam, {
       kind: 'this-and-later',
       seriesId: 'pay',
       originalDate: '2026-12-04',
-      edits: {
-        date: '2026-12-03',
-        schedule: scheduleForNewDate({ kind: 'weekly', every: 1 }, '2026-12-04', '2026-12-03'),
-      },
+      edits: { date: '2026-12-03' },
       newSeriesId: 'pay-thursdays',
     });
     expect(
@@ -441,36 +455,35 @@ describe('D96: where later payments go after a new date for this and all later o
       kind: 'this-and-later',
       seriesId: 'rent',
       originalDate: '2027-01-01',
-      edits: {
-        date: '2027-01-03',
-        schedule: scheduleForNewDate(
-          { kind: 'monthly', every: 1, on: { kind: 'day', day: 1 } },
-          '2027-01-01',
-          '2027-01-03',
-        ),
-      },
+      edits: { date: '2027-01-03' },
       newSeriesId: 'rent-3rd',
     });
-    expect(
-      workOutPayments({
-        series: after.series,
-        holidays: noBankHolidays,
-        from: '2026-11-01',
-        to: '2027-03-31',
-      })
-        .filter((p) => p.name === 'Rent')
-        .map((p) => p.date),
-    ).toEqual(['2026-11-01', '2026-12-01', '2027-01-03', '2027-02-03', '2027-03-03']);
+    expect(dates(after, 'Rent', '2026-11-01', '2027-03-31')).toEqual([
+      '2026-11-01',
+      '2026-12-01',
+      '2027-01-03',
+      '2027-02-03',
+      '2027-03-03',
+    ]);
+    expect(after.series.find((one) => one.id === 'rent-3rd')?.schedule).toEqual({
+      kind: 'monthly',
+      every: 1,
+      on: { kind: 'day', day: 3 },
+    });
   });
 
-  it("changes only that one date for chosen dates, like Ali's student loan", () => {
-    const terms: Schedule = { kind: 'dates', dates: ['2026-09-21', '2027-01-11', '2027-04-26'] };
+  describe("chosen dates, like Ali's student loan: only that one date changes", () => {
+    const terms: Schedule = {
+      kind: 'dates',
+      dates: ['2026-11-02', '2026-12-07', '2027-01-11', '2027-02-15'],
+    };
     const loan = series({
-      id: 'student-loan',
+      id: 'loan',
+      name: 'Student loan',
       direction: 'in',
       type: 'other',
       amount: pounds('1500.00'),
-      start: '2026-09-21',
+      start: '2026-11-02',
       schedule: terms,
     });
     const input = planInput({
@@ -479,29 +492,93 @@ describe('D96: where later payments go after a new date for this and all later o
       balanceUpdates: [balanceUpdate('current', '800.00', '2026-10-25')],
       series: [loan],
     });
-    const schedule = scheduleForNewDate(terms, '2027-01-11', '2027-01-18');
-    expect(schedule).toEqual({ kind: 'dates', dates: ['2026-09-21', '2027-01-18', '2027-04-26'] });
-    const { after } = edited(input, {
+    const move = (originalDate: string, date: string, id: string): EditCommand => ({
       kind: 'this-and-later',
-      seriesId: 'student-loan',
-      originalDate: '2027-01-11',
-      edits: { date: '2027-01-18', schedule },
-      newSeriesId: 'student-loan-2',
+      seriesId: id,
+      originalDate,
+      edits: { date },
+      newSeriesId: `${id}-at-${originalDate}`,
     });
-    expect(
-      workOutPayments({
-        series: after.series,
-        holidays: noBankHolidays,
-        from: '2026-09-01',
-        to: '2027-06-30',
-      }).map((p) => p.date),
-    ).toEqual(['2026-09-21', '2027-01-18', '2027-04-26']);
-    expect(() => scheduleForNewDate(terms, '2027-01-12', '2027-01-18')).toThrow(EngineInputError);
+
+    it('moves one date and keeps the later ones', () => {
+      expect(scheduleForNewDate(terms, '2027-01-11', '2027-01-18')).toEqual({
+        kind: 'dates',
+        dates: ['2026-11-02', '2026-12-07', '2027-01-18', '2027-02-15'],
+      });
+      const { after } = edited(input, move('2027-01-11', '2027-01-18', 'loan'));
+      expect(dates(after, 'Student loan')).toEqual([
+        '2026-11-02',
+        '2026-12-07',
+        '2027-01-18',
+        '2027-02-15',
+      ]);
+    });
+
+    it('keeps a later date moved earlier when an earlier date moves (found by review)', () => {
+      const after = editedInTurn(input, [
+        move('2027-01-11', '2027-01-18', 'loan'),
+        move('2026-12-07', '2026-12-09', 'loan'),
+      ]);
+      expect(dates(after, 'Student loan')).toEqual([
+        '2026-11-02',
+        '2026-12-09',
+        '2027-01-18',
+        '2027-02-15',
+      ]);
+    });
+
+    it('keeps the one-off moved dates of later payments (D60)', () => {
+      const after = editedInTurn(input, [
+        { kind: 'move', seriesId: 'loan', originalDate: '2027-02-15', date: '2027-02-17' },
+        move('2026-12-07', '2026-12-09', 'loan'),
+      ]);
+      expect(dates(after, 'Student loan')).toEqual([
+        '2026-11-02',
+        '2026-12-09',
+        '2027-01-11',
+        '2027-02-17',
+      ]);
+    });
+
+    it('refuses a new date on or after the next payment, so no payment changes places', () => {
+      refusedWith('dates-dont-fit', input, move('2026-12-07', '2027-01-20', 'loan'));
+      const split = edited(input, move('2027-01-11', '2027-01-18', 'loan')).after;
+      refusedWith('date-after-later-payment', split, move('2026-12-07', '2027-01-18', 'loan'));
+      refusedWith('date-after-later-payment', split, move('2026-12-07', '2027-01-25', 'loan'));
+      // Just before the next payment is fine.
+      expect(
+        dates(edited(split, move('2026-12-07', '2027-01-17', 'loan')).after, 'Student loan'),
+      ).toEqual(['2026-11-02', '2027-01-17', '2027-01-18', '2027-02-15']);
+    });
+
+    it('refuses a date that is not in the list', () => {
+      expect(() => scheduleForNewDate(terms, '2027-01-12', '2027-01-18')).toThrow(EngineInputError);
+    });
   });
 
   it('keeps a payment that happens once as it is, so it moves to the new date', () => {
     expect(scheduleForNewDate({ kind: 'once' }, '2026-11-10', '2026-11-12')).toEqual({
       kind: 'once',
     });
+  });
+
+  it('still follows a schedule the command gives itself (D91)', () => {
+    const { after } = edited(sam, {
+      kind: 'this-and-later',
+      seriesId: 'rent',
+      originalDate: '2027-01-01',
+      edits: {
+        date: '2027-01-03',
+        schedule: { kind: 'monthly', every: 2, on: { kind: 'day', day: 3 } },
+      },
+      newSeriesId: 'rent-every-2-months',
+    });
+    expect(dates(after, 'Rent', '2026-11-01', '2027-05-31')).toEqual([
+      '2026-11-01',
+      '2026-12-01',
+      '2027-01-03',
+      '2027-03-03',
+      '2027-05-03',
+    ]);
   });
 });

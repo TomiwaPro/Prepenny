@@ -21,6 +21,7 @@ import {
   outOfStep,
   refuse,
 } from './context.ts';
+import { scheduleForNewDay } from './new-date.ts';
 import { changeWrite, clean, sameValue, seriesWrite, tickWrite } from './records.ts';
 import type { PaymentRef, RecordWrite, ThisAndLaterEdits } from './types.ts';
 
@@ -242,18 +243,35 @@ function previousDate(context: Context, stretch: Stretch): Day | null {
 }
 
 /**
+ * True when only this one payment's date changes (D96): a new date on chosen
+ * dates, with no schedule of the app's own. Later payments keep their dates.
+ */
+function oneDateOnly(stretch: Stretch, edits: LaterEdits): boolean {
+  return (
+    edits.day !== undefined &&
+    edits.schedule === undefined &&
+    stretch.first.series.schedule.kind === 'dates'
+  );
+}
+
+/**
  * Gives every piece the new date and schedule (D91): the first piece starts
  * on the new date, and each later one on the date the new schedule gives its
- * first payment number. The number of payments never changes, so a series
- * that ended on a date now ends after the same number of payments. Null when
- * the dates come out exactly as they were.
+ * first payment number. Given only a new date, the engine works out the
+ * schedule as the owner set out (D96); on chosen dates, only this payment's
+ * date changes and later series of the family keep theirs. The number of
+ * payments never changes, so a series that ended on a date now ends after
+ * the same number of payments. Null when the dates come out exactly as they
+ * were.
  */
 function redate(context: Context, stretch: Stretch, pieces: readonly Piece[], edits: LaterEdits) {
   const { first, index } = stretch;
   const id = first.series.id;
   const j = first.firstNumber + index;
-  const anchor = edits.day ?? first.dateAt(index);
-  const schedule = edits.schedule ?? first.series.schedule;
+  const original = first.dateAt(index);
+  const anchor = edits.day ?? original;
+  const schedule = edits.schedule ?? scheduleForNewDay(first.series.schedule, original, anchor);
+  const onlyThisDate = oneDateOnly(stretch, edits);
   const reference = prepareSeries(
     clean<Series>({
       ...first.series,
@@ -282,6 +300,7 @@ function redate(context: Context, stretch: Stretch, pieces: readonly Piece[], ed
   }
   let changed = false;
   const redated = pieces.map((piece): Piece => {
+    if (onlyThisDate && piece.old !== first) return piece;
     const firstNumber = piece.series.firstNumber ?? 0;
     const offset = firstNumber - j;
     const oldCount = piece.old.count - piece.from;
@@ -302,17 +321,29 @@ function redate(context: Context, stretch: Stretch, pieces: readonly Piece[], ed
     }
     return { ...piece, series };
   });
+  // Later series keep their dates, so this one must still come before them.
+  const next = pieces[1];
+  if (onlyThisDate && next !== undefined) {
+    const now = prepareSeries((redated[0] as Piece).series, context.input.holidays);
+    if (now.dateAt(now.count - 1) >= next.old.dateAt(next.from)) {
+      refuse(
+        'date-after-later-payment',
+        `Series ${id}: the new date must be before ${formatDate(next.old.dateAt(next.from))}, the date of the payment after it.`,
+      );
+    }
+  }
   return changed ? redated : null;
 }
 
 /**
  * A one-off change without the parts the edit replaces (D60). Ticks always
- * stay. `amountReplaced` says whether the edit gives this payment a new amount.
+ * stay. `dateReplaced` and `amountReplaced` say whether the edit gives this
+ * payment a new date or a new amount.
  */
 function withoutReplaced(
   change: PaymentChange,
   edits: LaterEdits,
-  datesChanged: boolean,
+  dateReplaced: boolean,
   amountReplaced: boolean,
 ): Draftable<PaymentChange> {
   return {
@@ -321,7 +352,7 @@ function withoutReplaced(
     name: edits.name === undefined ? change.name : undefined,
     note: edits.note === undefined ? change.note : undefined,
     isEstimate: edits.isEstimate === undefined ? change.isEstimate : undefined,
-    newDate: datesChanged ? undefined : change.newDate,
+    newDate: dateReplaced ? undefined : change.newDate,
   };
 }
 
@@ -395,6 +426,10 @@ function changeStretch(
   }
 
   let datesChanged = false;
+  // On chosen dates, a new date changes only this payment (D96), so only its
+  // one-off moved date is replaced (D60).
+  const onlyThisDate = oneDateOnly(stretch, edits);
+  const dateReplaced = (number: number): boolean => datesChanged && (!onlyThisDate || number === j);
   if (edits.day !== undefined || edits.schedule !== undefined) {
     const redated = redate(context, stretch, pieces, edits);
     if (redated !== null) {
@@ -432,7 +467,7 @@ function changeStretch(
         ...withoutReplaced(
           change,
           edits,
-          datesChanged,
+          dateReplaced(piece.old.firstNumber + oldIndex),
           amountReplaced(piece.old.firstNumber + oldIndex),
         ),
         seriesId: newId,

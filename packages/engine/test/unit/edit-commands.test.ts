@@ -561,12 +561,16 @@ describe('D91: a new date for this and all later ones', () => {
     ).not.toThrow();
   });
 
-  it('refuses a date the schedule never gives', () => {
+  it('refuses a date the schedule the command gives never gives', () => {
+    // Without a schedule, the engine works one out from the new date (D96).
     refusedWith('date-not-in-schedule', plan, {
       kind: 'this-and-later',
       seriesId: 'rent',
       originalDate: '2027-01-01',
-      edits: { date: '2027-01-03' },
+      edits: {
+        date: '2027-01-03',
+        schedule: { kind: 'monthly', every: 1, on: { kind: 'day', day: 1 } },
+      },
       newSeriesId: 'rent-on-the-3rd',
     });
   });

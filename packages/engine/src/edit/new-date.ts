@@ -1,8 +1,9 @@
 // Where later payments go when a payment's date changes for this and all
-// later ones (D91, D96). The app passes the result to a "this-and-later"
-// command as its schedule, so every phone follows the same rule.
+// later ones (D91, D96). The engine uses this itself when a "this-and-later"
+// command gives a new date and no schedule, so every phone, and every edit
+// replayed after a sync clash, follows the same rule.
 
-import { formatDate, parseDate, partsOfDay } from '../dates/day.ts';
+import { type Day, formatDate, parseDate, partsOfDay } from '../dates/day.ts';
 import { EngineInputError } from '../errors.ts';
 import type { Schedule } from '../schedule/types.ts';
 
@@ -13,20 +14,16 @@ import type { Schedule } from '../schedule/types.ts';
  *   the later ones go on the new date's weekday, every so many weeks from it
  * - monthly, on any kind of day: the new date's day of the month, with the
  *   same months left out
- * - on chosen dates: only this payment's date changes in the list
+ * - on chosen dates: only this payment's date changes in the list. Later
+ *   series of the family keep their own dates (`later.ts`).
  * - once: unchanged, so the payment moves to the new date.
  *
- * `originalDate` is the payment's date from its schedule and `newDate` the
- * new one, both before the weekend and bank holiday rule, "YYYY-MM-DD".
+ * `original` is the payment's date from its schedule and `day` the new one,
+ * both before the weekend and bank holiday rule. The schedule must be checked
+ * already, as a prepared series' schedule is.
  */
-export function scheduleForNewDate(
-  schedule: Schedule,
-  originalDate: string,
-  newDate: string,
-): Schedule {
-  const original = parseDate(originalDate, "the payment's original date");
-  const day = parseDate(newDate, 'the new date');
-  switch (schedule?.kind) {
+export function scheduleForNewDay(schedule: Schedule, original: Day, day: Day): Schedule {
+  switch (schedule.kind) {
     case 'once':
     case 'weekly':
     case 'irregular':
@@ -38,8 +35,7 @@ export function scheduleForNewDate(
         : { kind: 'monthly', every: schedule.every, on, leaveOut: schedule.leaveOut };
     }
     case 'dates': {
-      const dates = schedule.dates.map((date) => parseDate(date, 'a chosen date'));
-      const at = dates.indexOf(original);
+      const at = schedule.dates.findIndex((date) => parseDate(date) === original);
       if (at < 0) {
         throw new EngineInputError(
           'no-payment',
@@ -51,7 +47,5 @@ export function scheduleForNewDate(
         dates: schedule.dates.map((date, i) => (i === at ? formatDate(day) : date)),
       };
     }
-    default:
-      throw new EngineInputError('bad-schedule', 'The schedule is missing or unknown.');
   }
 }

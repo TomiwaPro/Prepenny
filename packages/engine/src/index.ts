@@ -103,7 +103,6 @@ export {
   type PayingOff,
 } from './debts/types.ts';
 export { editPlan } from './edit/edit.ts';
-export { scheduleForNewDate } from './edit/new-date.ts';
 export { applyWrites, sameValue } from './edit/records.ts';
 export type {
   Edit,
