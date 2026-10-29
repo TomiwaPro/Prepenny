@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -747,7 +747,7 @@ Why: asked for a first payment, someone might type the date their rent started y
 
 ## Made during step 1c
 
-D87 to D95 were decided on 29 Oct 2026 while building step 1c. D90, D91 and the last point of D92 are for the owner to confirm or answer.
+D87 to D95 were decided on 29 Oct 2026 while building step 1c. The owner confirmed D90 and the last point of D92 on 29 Oct 2026, added a second choice to D90 (D97), and answered the question in D91 (D96).
 
 ### D87. How an edit works
 
@@ -785,7 +785,7 @@ Why: these follow brief 5.4, and a test on thousands of made-up plans proves tha
 
 ### D90. A new amount for this and all later ones
 
-Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. For the owner to confirm.
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. Confirmed by the owner on 29 Oct 2026, who added a second choice for a pay pattern: D97.
 
 - A new amount for this and all later ones makes every one of them that amount. If the pay follows a pattern, the pattern is replaced by the one amount.
 - A different last amount stays, unless the payment being changed is the last one. Laptop loan: £150, £150, then £34. Changing the second to £100 for this and all later ones gives £150, £100, £34.
@@ -794,19 +794,19 @@ Why: "this and all later ones" at £600 means each later one is £600. Changing 
 
 ### D91. A new date for this and all later ones
 
-Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. Partly a question for the owner.
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. The question in it was answered by the owner on 29 Oct 2026: D96.
 
 - The engine takes the new date of the payment, and the schedule from that date on, from the app. It refuses a date the schedule doesn't give, such as the 3rd for a schedule on the 1st of each month.
 - The new date must come after the date of the payment before it. Otherwise payments would double up: rent moved from Fri 1 Jan 2027 back to Tue 1 Dec 2026 would be paid twice on 1 Dec.
 - Moving the dates never adds or loses a payment. A series that ended on a date now ends after the same number of payments.
 - One-off moved dates on this and later payments are dropped (D60). Notes, amounts and ticks stay.
-- Still to answer before Phase 2: which schedule the edit sheet sets when someone changes the date for this and all later ones. The proposal is in `PLAN.md`.
+- Which schedule the later payments follow was answered by the owner: D96.
 
 Why: brief Part 3, principle 4 lets people change the date for this and all later ones, but nothing says how the later dates follow. That decides the day money leaves, so it's a money rule for the owner.
 
 ### D92. Removing payments
 
-Decided 29 Oct 2026 in step 1c. Adds to brief 5.4 and D4. The last point is for the owner to confirm.
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4 and D4. The owner confirmed the last point on 29 Oct 2026.
 
 - "Remove this one" skips the payment (D4). Removing one that's already removed is refused.
 - "Remove this and later" ends the series just before the payment, the same way a split ends the old series (D89), and removes later series of the family (D88). On the first payment of a series, the series itself is removed. The one-off changes of the removed payments go too.
@@ -843,3 +843,37 @@ Decided 29 Oct 2026 in step 1c. Adds to D71 and D83.
 
 Why: one tick per payment (D83), and a second tick by another person in a shared plan should be reported, not saved on top.
 
+## From the owner's review of step 1c
+
+D96 and D97 were agreed by the owner on 29 Oct 2026, answering the questions left in `PLAN.md` at the end of step 1c. The owner also confirmed D90 and the last point of D92.
+
+### D96. A new date for this and all later ones: where the later ones go
+
+Agreed 29 Oct 2026, from the owner's review of step 1c. Answers the question left in D91.
+
+When someone changes a payment's date for this and all later ones, the later payments follow the new date like this:
+
+- Weekly or every few weeks: the new date's weekday, every so many weeks from it. An irregular weekly estimate works the same way.
+- Monthly (on a date, the last day, the last working day or "the first Monday"): the new date's day of the month, for example "the 3rd". Months left out, like Dee's February and March, stay left out.
+- On chosen dates, like Ali's student loan: only that one date changes, and the later chosen dates stay.
+- A payment that happens once simply moves.
+
+The new date is the date from the schedule, before the weekend and bank holiday rule. The engine works out the new schedule itself, so every phone and every later step uses the same rule. Everything else in D91 stays: no payment is added or lost, and a date before the payment before it is refused.
+
+Why: this is the proposal the owner accepted. The later payments keep the same kind of schedule, starting from the day the person chose.
+
+### D97. "Only this week of the pattern"
+
+Agreed 29 Oct 2026, from the owner's review of step 1c. Adds a second choice to D90. The points after the first were decided in step 1d, following the owner's description.
+
+When a series has an amount pattern and someone changes the amount for this and all later ones, the edit sheet asks "Every payday from now" (D90) or "Only this week of the pattern".
+
+- "Only this week of the pattern" splits the series at this payment and changes only this payment's step of the pattern. Every payment on that step from here on gets the new amount, and the others keep theirs. On a series' first payment, it changes the whole series instead (brief 5.4).
+- It reaches later series of the family too (D88). A later series that has one amount instead of a pattern, because of an earlier "Every payday from now", gets a pattern of the same length: its own amount on every step, and the new amount on this one.
+- One-off amount changes are dropped only on payments of that step, from this one on (D60). One-off amounts on the other steps stay.
+- A different last amount stays, unless the payment being changed is the last one (as in D90).
+- It's refused when the series has no pattern, when it comes with "Every payday from now" in the same edit, or when a later series of the family has a pattern of a different length.
+
+Test: Sam changes his Fri 6 Nov pay to £640.00 this way. Fri 6 Nov, 4 Dec, 1 Jan, 29 Jan and 26 Feb become £640.00, every other payday keeps its amount, and total pay in the view becomes £9,856.66.
+
+Why: Sam's pay follows a 4-week rota, so changing one week of the rota should change that week each time it comes round, and leave the other weeks alone.

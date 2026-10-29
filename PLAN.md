@@ -24,14 +24,7 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
-1. **A new date for this and all later ones (D91)** (before Phase 2, which builds the edit sheet). When someone changes a payment's date and picks "This and all later ones", which day should the later ones go on? The proposal:
-   - Weekly or every few weeks: the new date's weekday, every so many weeks from it.
-   - Monthly (on a date, the last day, the last working day or "the first Monday"): the new date's day of the month, for example "the 3rd".
-   - On chosen dates, like Ali's student loan: only that one date changes, and the later chosen dates stay.
-
-   The engine already does whichever the app asks for, never adds or loses a payment, and refuses a date that doesn't fit the schedule or comes before the payment before it. Say if any of these should work differently.
-2. **A new amount for this and all later ones (D90)** (before Phase 2). It sets one amount for every later payment, so it replaces a pay pattern like Sam's 4-week rota. A different last amount, like the Laptop loan's £34, stays. Say if changing one payday for this and all later ones should change only that step of the pattern instead.
-3. **Removing a ticked payment (D92)** (before Phase 2). "Remove this and later" is refused while a payment it would remove is ticked as paid, and the app will ask to untick it first. Say if it should remove it anyway. The money would then come back into the plan.
+Nothing is waiting right now. The owner answered the three step 1c questions on 29 Oct 2026: D96 and D97 in `docs/DECISIONS.md`, with D90 and D92 confirmed.
 
 ## Launch checklist (started)
 
