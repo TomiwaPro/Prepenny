@@ -637,7 +637,7 @@ Why: every year starts with New Year's Day (or its substitute) in January and en
 
 Decided 29 Oct 2026 in step 1a. Adds to D56.
 
-Pinned exactly: Node 24.22.2, pnpm 12.16.1, TypeScript 6.0.3, Vitest 5.0.5, fast-check 4.10.2, Biome 2.6.3 and @types/node 24.19.2. TypeScript 7.0 is now the default download, but D56 keeps 6.0. Biome is 2.6.3, not 2.6.4, because 2.6.4 came out the day before and pnpm holds back releases that new; no exceptions were added to that rule. Node 26 became the newest long-term version this month, but Node 24 is supported until April 2028, so it stays.
+Pinned exactly: Node 24.22.2, pnpm 12.16.1, TypeScript 6.0.3, Vitest 5.0.5, fast-check 4.10.2, Biome 2.6.3 and @types/node 24.19.2. TypeScript 7.0 is now the default download, but D56 keeps 6.0. Biome is 2.6.3, not 2.6.4, because 2.6.4 came out the day before and pnpm holds back releases that new; no exceptions were added to that rule. Node 26 became the newest long-term support version this month, but Node 24 is still a long-term support version (nodejs.org, 29 Oct 2026), so it stays.
 
 Why: the same versions everywhere, changed only on purpose, and brand-new releases are where attacks on software packages usually land first.
 
