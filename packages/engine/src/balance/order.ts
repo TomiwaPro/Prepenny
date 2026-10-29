@@ -1,0 +1,58 @@
+import type { Day } from '../dates/day.ts';
+import type { Moment } from '../dates/time.ts';
+import type { Flow } from './types.ts';
+
+/** What the same-day order needs to know about a row. */
+export interface OrderedRow {
+  readonly day: Day;
+  readonly flow: Flow;
+  readonly familyCreatedAt: Moment;
+  readonly familyId: string;
+  readonly seriesId: string;
+  readonly name: string;
+  readonly number: number;
+}
+
+/** Money in first, then transfers either way, then money out (brief 5.5, D12). */
+function group(flow: Flow): number {
+  switch (flow) {
+    case 'in':
+      return 0;
+    case 'transfer-in':
+    case 'transfer-out':
+      return 1;
+    case 'out':
+      return 2;
+  }
+}
+
+function compareText(a: string, b: string): number {
+  // Character by character, the same on every device: no language rules (D80).
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+function compareMoments(a: Moment, b: Moment): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+/**
+ * The order rows are applied in: by date, then the same-day order. Money in,
+ * then transfers, then money out (brief 5.5). Within each, the family made
+ * first goes first, then by name (D12, D49). Then by family id, series id and
+ * payment number, so the order is the same on every run and every device (D80).
+ */
+export function compareRows(a: OrderedRow, b: OrderedRow): number {
+  return (
+    a.day - b.day ||
+    group(a.flow) - group(b.flow) ||
+    compareMoments(a.familyCreatedAt, b.familyCreatedAt) ||
+    compareText(a.name, b.name) ||
+    compareText(a.familyId, b.familyId) ||
+    compareText(a.seriesId, b.seriesId) ||
+    a.number - b.number
+  );
+}

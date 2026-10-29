@@ -3,8 +3,9 @@
 // passed in (brief Part 5, ARCHITECTURE.md section 2).
 //
 // Step 1a: money, dates, bank holidays and repeating payments.
-// Step 1b: the balance rule's inputs: accounts, balance updates, ticks and times.
+// Step 1b: the balance rule, lowest point, warnings, shortfalls and periods.
 
+export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';
 export {
   ACCOUNT_KINDS,
@@ -99,6 +100,13 @@ export {
   poundsToPence,
   sumPence,
 } from './money/pence.ts';
+export {
+  type AccountPeriods,
+  groupIntoPeriods,
+  type PeriodGrouping,
+  type PlanPeriod,
+  type PlanPeriods,
+} from './periods/periods.ts';
 export {
   applyHolidayRule,
   type PaymentNumberRequest,
