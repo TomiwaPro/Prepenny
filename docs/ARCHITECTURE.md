@@ -805,7 +805,7 @@ Every step can be skipped and changed later (brief 4.1). Sketches are in 4.6.
 | Sheet | Brief | Who needs it most |
 | --- | --- | --- |
 | **Edit a payment**: mark as paid, move to next payday, skip, change amount, date, name or note, then "Just this one" or "This and all later ones", or remove | 4.4, 5.4 | Everyone |
-| Add a payment: in, out or transfer, how often, when it ends, a different last amount, weekend rule, type, linked debt or goal, estimate | 4.3, 4.4 | Everyone |
+| Add a payment: in, out or transfer, the next payment's date (labelled "Next payment", never "First payment", D86), how often, when it ends, a different last amount, weekend rule, type, linked debt or goal, estimate | 4.3, 4.4 | Everyone |
 | **Update balance**, in three steps | 4.2, D33 | Everyone |
 | I spent | 4.5 | Everyone |
 | I did overtime, and I missed a shift | 4.3, D5 | Sam; Dee for her wages |
@@ -1177,6 +1177,8 @@ On a weekend or bank holiday
 [            Next            ]
 ```
 
+Setup and "Add a payment" always ask for the next payment's date, labelled "Next payment", never "First payment" (D86), so nobody types the date their rent started years ago and finds every payment since in "Not ticked yet".
+
 Sam's example keeps every date (D15), so his pay stays on Fridays even on Christmas Day and New Year's Day. When pay follows a pattern, a short extra page offers to link each payday in the pattern to a saved pay week, for example "3-shift week" for paydays 1 and 3 (D5), with "Do this later". When there's more than one income, it asks which is the main pay (D14).
 
 **Setup, step 3: rent**
@@ -1186,7 +1188,7 @@ Step 3 of 8                   Skip
 Rent
 Amount
 [£ 550.00                    ]
-First payment
+Next payment
 [Sun 1 Nov                   ]
 How often
 [Monthly on the 1st         v]

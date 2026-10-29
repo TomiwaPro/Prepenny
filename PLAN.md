@@ -24,11 +24,7 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
-1. **Check the payment types (D79)** (before Phase 2). Every payment is one of: Pay, Benefits, Rent or mortgage, Bills, Debt, Spending money, Savings, Other. Only Spending money changes a sum (Left to spend). Say if you want a type added, removed or renamed.
-2. **A removed payday (D81)** (before step 1c, which builds "Move to next payday"). If a main pay payment is removed, that day stops being a payday: its pay period joins the one before, and "Move to next payday" goes to the payday after. Say if a removed payday should still count.
-3. **Shortfalls (D82)** (before Phase 2). Short days in a row count as one shortfall, shown with its first day: "£95.47 short on Sun 1 Nov". A payment is listed as one that could move only if moving it fixes every short day in that run. Say if you'd rather see each short day on its own.
-4. **A tick on a removed payment (D83)** (before Phase 3). In a shared plan, Jess could tick a payment just as Tom removes it. The plan then still takes the money off, because the tick says it went. Say if the removal should win instead.
-5. **Came in (D84)** (before Phase 2). In the plan view, "Came in" includes money moved in from your other accounts, so Sam's first period shows £500.00 came in from savings. Say if it should count pay and other money in only.
+Nothing is waiting right now. The owner confirmed D79 and D81 to D84 on 29 Oct 2026.
 
 ## Launch checklist (started)
 

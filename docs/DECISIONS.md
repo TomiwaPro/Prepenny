@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -656,11 +656,11 @@ Why: each follows from brief 5.3 and 5.4, and the engine needed one exact answer
 
 ## Made during step 1b
 
-D79 to D85 were decided on 29 Oct 2026 while building step 1b. D79 and D81 to D84 are for the owner to confirm.
+D79 to D85 were decided on 29 Oct 2026 while building step 1b. The owner confirmed D79 and D81 to D84 on 29 Oct 2026.
 
 ### D79. Payment types
 
-Decided 29 Oct 2026 in step 1b. Fixes the list that ARCHITECTURE.md 3.3 left open. For the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Fixes the list that ARCHITECTURE.md 3.3 left open. Confirmed by the owner on 29 Oct 2026.
 
 Every payment has one of eight types: **Pay, Benefits, Rent or mortgage, Bills, Debt, Spending money, Savings, Other.**
 
@@ -680,7 +680,7 @@ Why: setup can make several payments in the same instant, and D12 says the order
 
 ### D81. Main paydays
 
-Decided 29 Oct 2026 in step 1b. Adds to D14 and D66. For the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to D14 and D66. Confirmed by the owner on 29 Oct 2026.
 
 - A main payday is a day a payment of the main pay lands, after the weekend and bank holiday rule and any move. A payday that was moved counts on its new date.
 - A removed (skipped) main pay payment isn't a payday. The pay period it would have started joins the one before.
@@ -692,7 +692,7 @@ Why: a payday is the day money arrives, so a removed one brings nothing, and "Mo
 
 ### D82. Shortfalls
 
-Decided 29 Oct 2026 in step 1b. Adds to brief 5.5 and D69. For the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to brief 5.5 and D69. Confirmed by the owner on 29 Oct 2026.
 
 - A shortfall is a run of days in a row, from today on, that end below the floor. "£X short on [date]" uses the first of those days and how much short it ends that day: "£95.47 short on Sun 1 Nov".
 - The engine also gives the most it's short by during the run, and the last short day, for when it gets worse before payday.
@@ -703,7 +703,7 @@ Why: one warning for a stretch of short days rather than one a day, with the dat
 
 ### D83. Ticks
 
-Decided 29 Oct 2026 in step 1b. Adds to D1, D33, D48 and D71. The second point is for the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to D1, D33, D48 and D71. The owner confirmed the second point on 29 Oct 2026.
 
 - The paid date is worked out once, when the tick is made, as D71 says, and stored with the tick. Moving the payment afterwards doesn't change it.
 - A tick on a removed payment still takes the money off. This can happen in a shared plan when one person ticks a payment just as the other removes it (D48).
@@ -714,7 +714,7 @@ Why: the paid date is the day the money really left (D71), and that doesn't chan
 
 ### D84. Plan periods
 
-Decided 29 Oct 2026 in step 1b. Adds to D14 and brief 4.8. The first point is for the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to D14 and brief 4.8. The owner confirmed the first point on 29 Oct 2026.
 
 - Periods are worked out for each account. "Came in" is everything that arrives in that account in the period, including money moved in from the person's other accounts. Sam's first period shows £500.00 came in: the move from savings on Wed 28 Oct.
 - Periods show rows from today on. Unticked rows dated before today are in "Not ticked yet" (D11).
@@ -734,3 +734,13 @@ Decided 29 Oct 2026 in step 1b.
 - A main pay with no series left in the plan counts as no main pay.
 
 Why: the first day is the earliest warning, each row's word matches the number next to it, and refusing an impossible balance is safer than guessing which one is right. Phase 3 checks the first refusal for a couple in different time zones, where one person's today can be the other's tomorrow.
+
+## From the owner's review of step 1b
+
+### D86. "Next payment", never "First payment"
+
+Agreed 29 Oct 2026, from the owner's review of step 1b. Phase 2 builds it.
+
+Setup and "Add a payment" ask for the date of the next payment, labelled "Next payment", never "First payment". The series starts on that date (D78).
+
+Why: asked for a first payment, someone might type the date their rent started years ago. Every payment since then would show as "Not ticked yet" and come off the balance.
