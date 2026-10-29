@@ -8,7 +8,7 @@ import type { Pence } from '../money/pence.ts';
 import { type ChangeIndex, type PaymentOnDays, paymentAtIndex } from '../schedule/payments.ts';
 import type { PreparedSeries } from '../schedule/series.ts';
 import type { PaymentChange, Series } from '../schedule/types.ts';
-import { changeWrite, clean, type Draft, type Draftable } from './records.ts';
+import { changeWrite, clean, type Draft, type Draftable, sameValue } from './records.ts';
 import type { EditInput, PaymentRef } from './types.ts';
 
 export type { Draftable };
@@ -103,13 +103,53 @@ export function outOfStep(series: Series): never {
   );
 }
 
-/** The same payment, by number, in the other half of a private transfer, or null. */
+/** What both halves of a private transfer always share (D16, D94): the money and its timing. */
+function sharedParts(series: Series) {
+  return {
+    amount: series.amount,
+    amountCycle: series.amountCycle,
+    cycleOffset: series.cycleOffset ?? 0,
+    start: series.start,
+    schedule: series.schedule,
+    end: series.end,
+    lastAmount: series.lastAmount,
+    holidayRule: series.holidayRule,
+    isEstimate: series.isEstimate,
+    firstNumber: series.firstNumber ?? 0,
+  };
+}
+
+/** Refuses the edit unless two series of a private transfer share their money and timing (D94). */
+export function checkHalvesMatch(mine: Series, other: Series): void {
+  if (!sameValue(sharedParts(mine), sharedParts(other))) outOfStep(mine);
+}
+
+/**
+ * The same payment, by number, in the other half of a private transfer, or
+ * null. Refused unless both halves match: their series' money and timing,
+ * and this payment's date, amount, estimate label, removal and tick (D94).
+ */
 export function otherHalfPayment(context: Context, found: Found): Found | null {
-  const other = otherHalf(context, found.prepared.series);
+  const mine = found.prepared.series;
+  const other = otherHalf(context, mine);
   if (other === null) return null;
+  checkHalvesMatch(mine, other.series);
   const index = found.number - other.firstNumber;
-  if (index < 0 || index >= other.count) outOfStep(found.prepared.series);
-  return paymentAt(context, other, index);
+  if (index < 0 || index >= other.count) outOfStep(mine);
+  const theirs = paymentAt(context, other, index);
+  const shown = ({ payment, prepared, originalDate }: Found) => {
+    const tick = context.draft.tick(prepared.series.id, originalDate);
+    return {
+      originalDate,
+      day: payment.day,
+      amount: payment.amount,
+      isEstimate: payment.isEstimate,
+      skipped: payment.skipped,
+      tick: tick === null ? null : [tick.paidOn, tick.tickedAt, tick.inBalanceUpdate],
+    };
+  };
+  if (!sameValue(shown(found), shown(theirs))) outOfStep(mine);
+  return theirs;
 }
 
 /** True when a change still changes something about its payment. */

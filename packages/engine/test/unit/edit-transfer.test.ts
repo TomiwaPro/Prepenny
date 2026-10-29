@@ -258,6 +258,49 @@ describe('what a private transfer refuses', () => {
     );
   });
 
+  it('refuses any edit when the halves differ in amount or date (D94)', () => {
+    const withShared = (fields: Partial<typeof sharedHalf>) => ({
+      ...jess,
+      series: jess.series.map((one) => (one.id === 'from-jess' ? { ...one, ...fields } : one)),
+    });
+    const differentAmount = withShared({ amount: pounds('650.00') });
+    const movedShared = {
+      ...jess,
+      changes: [{ seriesId: 'from-jess', originalDate: '2026-11-28', newDate: '2026-11-27' }],
+    };
+    const commands: EditCommand[] = [
+      {
+        kind: 'tick',
+        seriesId: 'to-joint',
+        originalDate: '2026-11-28',
+        tickedAt: '2026-10-26T10:00:00Z',
+      },
+      {
+        kind: 'just-this-one',
+        seriesId: 'to-joint',
+        originalDate: '2026-11-28',
+        edits: { note: 'Bills' },
+      },
+      { kind: 'remove-this-one', seriesId: 'from-jess', originalDate: '2026-11-28' },
+      {
+        kind: 'this-and-later',
+        seriesId: 'to-joint',
+        originalDate: '2026-11-28',
+        edits: { amount: 1 },
+        newSeriesId: 'a',
+        newOtherHalfSeriesId: 'b',
+      },
+    ];
+    for (const input of [differentAmount, movedShared]) {
+      for (const command of commands) {
+        expect(problems(input)).not.toEqual([]);
+        expect(() => editPlan(input, command)).toThrow(
+          expect.objectContaining({ code: 'halves-out-of-step' }),
+        );
+      }
+    }
+  });
+
   it('refuses to change halves that no longer match', () => {
     const shorter = {
       ...jess,

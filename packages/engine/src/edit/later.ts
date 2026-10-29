@@ -9,6 +9,7 @@ import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
 import type { EndRule, PaymentChange, Schedule, Series } from '../schedule/types.ts';
 import {
   type Context,
+  checkHalvesMatch,
   type Draftable,
   type Found,
   findPayment,
@@ -95,6 +96,9 @@ function stretches(context: Context, found: Found): { mine: Stretch; other: Stre
   if ((other.index === 0) !== (mine.index === 0) || other.later.length !== mine.later.length) {
     outOfStep(found.prepared.series);
   }
+  mine.later.forEach((one, i) => {
+    checkHalvesMatch(one.series, (other.later[i] as PreparedSeries).series);
+  });
   return { mine, other };
 }
 
