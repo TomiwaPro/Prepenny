@@ -15,7 +15,7 @@ import {
   paymentsOfSeriesBetween,
   paymentWithDates,
 } from '../schedule/payments.ts';
-import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
+import { markFamilies, type PreparedSeries, prepareSeries } from '../schedule/series.ts';
 import type { Payment } from '../schedule/types.ts';
 import { compareRows } from './order.ts';
 import { findShortfalls, lowestAndFirstUnder, statusOf } from './shortfalls.ts';
@@ -43,7 +43,7 @@ interface PlannedPayment {
 }
 
 /** Where an account starts: its latest balance update (brief 5.5, D33). */
-interface Start {
+export interface Start {
   readonly update: BalanceUpdate;
   readonly day: Day;
   readonly at: Moment;
@@ -143,7 +143,7 @@ function latestBalances(
 }
 
 function prepareAll(
-  input: PlanInput,
+  input: RecordsToCheck,
   accounts: ReadonlyMap<string, Account>,
 ): { prepared: PreparedSeries[]; familyTimes: Map<string, Moment> } {
   if (!Array.isArray(input.series)) {
@@ -181,7 +181,41 @@ function prepareAll(
     familyTimes.set(series.familyId, created);
     prepared.push(one);
   }
-  return { prepared, familyTimes };
+  return { prepared: markFamilies(prepared), familyTimes };
+}
+
+/** The stored records of a plan, and what's needed to check them. */
+export type RecordsToCheck = Pick<
+  PlanInput,
+  'accounts' | 'balanceUpdates' | 'series' | 'changes' | 'ticks' | 'holidays'
+>;
+
+/** A plan's records, checked and ready to work with. */
+export interface CheckedRecords {
+  readonly accounts: ReadonlyMap<string, Account>;
+  /** Each account's latest balance update. */
+  readonly starts: ReadonlyMap<string, Start>;
+  /** The account of every balance update, by its id. */
+  readonly accountOfUpdate: ReadonlyMap<string, string>;
+  /** Every series, prepared, with its family marked (D49). */
+  readonly prepared: readonly PreparedSeries[];
+  readonly familyTimes: ReadonlyMap<string, Moment>;
+  readonly changes: ChangeIndex;
+  readonly ticks: TickIndex;
+}
+
+/**
+ * Checks every record of a plan the way the plan needs them: accounts, a
+ * balance update for each, series, changes and ticks. Refuses anything the
+ * engine can't work with (D85), with a message that holds no money data.
+ */
+export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords {
+  const accounts = checkAccounts(input.accounts);
+  const { starts, accountOfUpdate } = latestBalances(input.balanceUpdates, accounts, today);
+  const { prepared, familyTimes } = prepareAll(input, accounts);
+  const changes = indexChanges(input.changes ?? []);
+  const ticks = indexTicks(input.ticks ?? []);
+  return { accounts, starts, accountOfUpdate, prepared, familyTimes, changes, ticks };
 }
 
 /**
@@ -422,11 +456,10 @@ export function workOutPlan(input: PlanInput): Plan {
     throw new EngineInputError('bad-main-pay', 'The main pay must be a family id, or null.');
   }
 
-  const accounts = checkAccounts(input.accounts);
-  const { starts, accountOfUpdate } = latestBalances(input.balanceUpdates, accounts, today);
-  const { prepared, familyTimes } = prepareAll(input, accounts);
-  const changes = indexChanges(input.changes ?? []);
-  const ticks = indexTicks(input.ticks ?? []);
+  const { accounts, starts, accountOfUpdate, prepared, familyTimes, changes, ticks } = checkRecords(
+    input,
+    today,
+  );
   const payments = collectPayments(prepared, familyTimes, changes, ticks, to, input.holidays);
   const main = mainPaydaysOf(input.mainPayFamilyId, prepared, changes, input.holidays);
 

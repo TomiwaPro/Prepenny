@@ -7,7 +7,7 @@ import {
 } from '../dates/working-days.ts';
 import { EngineInputError } from '../errors.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
-import { type PreparedSeries, prepareSeries } from './series.ts';
+import { markFamilies, type PreparedSeries, prepareSeries } from './series.ts';
 import type { HolidayRule, Payment, PaymentChange, Series } from './types.ts';
 
 /** A payment with its dates as day numbers, for the engine's own use. */
@@ -95,7 +95,9 @@ export function paymentAtIndex(
   const originalDay = prepared.dateAt(index);
   const found = changes.get(series.id)?.get(originalDay);
   const change = found?.change;
-  const isLast = index === prepared.count - 1;
+  // The family's last payment: a later series of the family carries on after
+  // this series' last one (D49).
+  const isLast = index === prepared.count - 1 && !prepared.continues;
 
   let amount: Pence;
   if (change?.amount !== undefined) {
@@ -121,7 +123,8 @@ export function paymentAtIndex(
     direction: series.direction,
     amount,
     name: change?.name ?? series.name,
-    note: change?.note ?? series.note ?? null,
+    // An empty note is no note: a one-off change can clear the series' note.
+    note: (change?.note ?? series.note ?? '') || null,
     type: series.type,
     isEstimate: change?.isEstimate ?? series.isEstimate,
     isLast,
@@ -210,13 +213,16 @@ export function workOutPayments(request: PaymentsRequest): Payment[] {
   const seen = new Set<string>();
   const all: { payment: PaymentOnDays; order: number }[] = [];
 
-  request.series.forEach((series, order) => {
-    const prepared = prepareSeries(series, request.holidays);
+  const prepared = request.series.map((series) => {
+    const one = prepareSeries(series, request.holidays);
     if (seen.has(series.id)) {
       throw new EngineInputError('repeated-series', `Series ${series.id} is listed twice.`);
     }
     seen.add(series.id);
-    for (const payment of paymentsOfSeriesBetween(prepared, from, to, changes, request.holidays)) {
+    return one;
+  });
+  markFamilies(prepared).forEach((one, order) => {
+    for (const payment of paymentsOfSeriesBetween(one, from, to, changes, request.holidays)) {
       all.push({ payment, order });
     }
   });
@@ -238,7 +244,8 @@ export interface PaymentNumberRequest {
 
 /**
  * Payment number k of a series, worked out directly from the series start
- * (brief 5.3). `null` when the series has no payment with that number.
+ * (brief 5.3). `null` when the series has no payment with that number. Only
+ * this series is looked at, so `isLast` is its own last payment.
  */
 export function paymentByNumber(request: PaymentNumberRequest): Payment | null {
   const prepared = prepareSeries(request.series, request.holidays);

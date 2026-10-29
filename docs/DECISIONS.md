@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -656,11 +656,11 @@ Why: each follows from brief 5.3 and 5.4, and the engine needed one exact answer
 
 ## Made during step 1b
 
-D79 to D85 were decided on 29 Oct 2026 while building step 1b. D79 and D81 to D84 are for the owner to confirm.
+D79 to D85 were decided on 29 Oct 2026 while building step 1b. The owner confirmed D79 and D81 to D84 on 29 Oct 2026.
 
 ### D79. Payment types
 
-Decided 29 Oct 2026 in step 1b. Fixes the list that ARCHITECTURE.md 3.3 left open. For the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Fixes the list that ARCHITECTURE.md 3.3 left open. Confirmed by the owner on 29 Oct 2026.
 
 Every payment has one of eight types: **Pay, Benefits, Rent or mortgage, Bills, Debt, Spending money, Savings, Other.**
 
@@ -680,7 +680,7 @@ Why: setup can make several payments in the same instant, and D12 says the order
 
 ### D81. Main paydays
 
-Decided 29 Oct 2026 in step 1b. Adds to D14 and D66. For the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to D14 and D66. Confirmed by the owner on 29 Oct 2026.
 
 - A main payday is a day a payment of the main pay lands, after the weekend and bank holiday rule and any move. A payday that was moved counts on its new date.
 - A removed (skipped) main pay payment isn't a payday. The pay period it would have started joins the one before.
@@ -692,7 +692,7 @@ Why: a payday is the day money arrives, so a removed one brings nothing, and "Mo
 
 ### D82. Shortfalls
 
-Decided 29 Oct 2026 in step 1b. Adds to brief 5.5 and D69. For the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to brief 5.5 and D69. Confirmed by the owner on 29 Oct 2026.
 
 - A shortfall is a run of days in a row, from today on, that end below the floor. "£X short on [date]" uses the first of those days and how much short it ends that day: "£95.47 short on Sun 1 Nov".
 - The engine also gives the most it's short by during the run, and the last short day, for when it gets worse before payday.
@@ -703,7 +703,7 @@ Why: one warning for a stretch of short days rather than one a day, with the dat
 
 ### D83. Ticks
 
-Decided 29 Oct 2026 in step 1b. Adds to D1, D33, D48 and D71. The second point is for the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to D1, D33, D48 and D71. The owner confirmed the second point on 29 Oct 2026.
 
 - The paid date is worked out once, when the tick is made, as D71 says, and stored with the tick. Moving the payment afterwards doesn't change it.
 - A tick on a removed payment still takes the money off. This can happen in a shared plan when one person ticks a payment just as the other removes it (D48).
@@ -714,7 +714,7 @@ Why: the paid date is the day the money really left (D71), and that doesn't chan
 
 ### D84. Plan periods
 
-Decided 29 Oct 2026 in step 1b. Adds to D14 and brief 4.8. The first point is for the owner to confirm.
+Decided 29 Oct 2026 in step 1b. Adds to D14 and brief 4.8. The owner confirmed the first point on 29 Oct 2026.
 
 - Periods are worked out for each account. "Came in" is everything that arrives in that account in the period, including money moved in from the person's other accounts. Sam's first period shows £500.00 came in: the move from savings on Wed 28 Oct.
 - Periods show rows from today on. Unticked rows dated before today are in "Not ticked yet" (D11).
@@ -734,3 +734,112 @@ Decided 29 Oct 2026 in step 1b.
 - A main pay with no series left in the plan counts as no main pay.
 
 Why: the first day is the earliest warning, each row's word matches the number next to it, and refusing an impossible balance is safer than guessing which one is right. Phase 3 checks the first refusal for a couple in different time zones, where one person's today can be the other's tomorrow.
+
+## From the owner's review of step 1b
+
+### D86. "Next payment", never "First payment"
+
+Agreed 29 Oct 2026, from the owner's review of step 1b. Phase 2 builds it.
+
+Setup and "Add a payment" ask for the date of the next payment, labelled "Next payment", never "First payment". The series starts on that date (D78).
+
+Why: asked for a first payment, someone might type the date their rent started years ago. Every payment since then would show as "Not ticked yet" and come off the balance.
+
+## Made during step 1c
+
+D87 to D95 were decided on 29 Oct 2026 while building step 1c. D90, D91 and the last point of D92 are for the owner to confirm or answer.
+
+### D87. How an edit works
+
+Decided 29 Oct 2026 in step 1c. Adds to ARCHITECTURE.md 2.3.
+
+- One engine function makes every edit. It takes the stored records, one command and today, and gives back the records to save and the undo: how each of those records looked before, or a note that it didn't exist. The engine saves nothing itself.
+- One-off changes and ticks are found by their series and the payment's original date, as everywhere in the engine (brief 5.2). So the only new ids a command needs are for a new series (a split) and a new balance update, and they come in with the command, because the engine can't make random ids.
+- Undo saves the "before" copies as a new edit, so undoing an undo puts the edit back. Undo is refused when anything the edit saved has been changed since, when a change or tick it didn't make would no longer belong to the same payment afterwards, or when it would put a change or tick back on a payment that has been removed or moved since.
+- "Update balance", with everything ticked in its steps, is one edit, so one undo.
+- A command the engine can't carry out is refused with a short code and a message that names only ids and dates, never amounts, names or notes. As a safety check, any edit that would leave records the plan can't use is refused too.
+
+Why: ARCHITECTURE.md 2.3 asks for exactly this, and the same function can run again on newer records when two phones clash (ARCHITECTURE.md 3.5). People see Update balance as one thing, so one undo should take all of it back, and an undo must never quietly lose a change someone made afterwards.
+
+### D88. "This and all later ones" reaches the whole family
+
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4 and D49.
+
+After a split, the later payments live in a new series of the same family. A later edit "for this and all later ones", or "Remove this and later", reaches every later series of the family too. Each later series keeps whatever the new edit doesn't change.
+
+Example: rent becomes £560 from January (a split). Then December's rent is changed to £555 for this and all later ones: December, January and every month after are £555. If instead only December's note is changed for this and all later ones, January stays £560 and gets the note. Removing rent from December and later removes the January series as well.
+
+Why: the person sees one list of rent payments, so "all later ones" means all of them, whichever series holds them.
+
+### D89. How a split works
+
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4, D49 and D78. Changes the last two steps of the D80 order.
+
+- The old series ends just before the payment: by count if it ends after a number of payments, otherwise by date, on the day before the payment's original date. Rent changed from Fri 1 Jan 2027 ends the old series on Thu 31 Dec 2026.
+- The new series starts on the payment's original date, in the same family (D49), with the payment number it starts at and the id of the series it was split from. The amount pattern and "after N payments" carry on.
+- A different last amount goes with the new series, and the old series loses it. Only the family's last payment counts as last.
+- One-off changes and ticks from this payment on move to the new series by payment number. Ticks keep their paid date (D83). A one-off change is dropped only when the parts the edit replaces (D60) were everything it changed.
+- On the same day, a family's payments go in payment-number order before series id, so a split never changes the order. D80 said series id, then payment number.
+
+Why: these follow brief 5.4, and a test on thousands of made-up plans proves that splitting a series without changing anything gives exactly the same payments and balances (brief 5.8).
+
+### D90. A new amount for this and all later ones
+
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. For the owner to confirm.
+
+- A new amount for this and all later ones makes every one of them that amount. If the pay follows a pattern, the pattern is replaced by the one amount.
+- A different last amount stays, unless the payment being changed is the last one. Laptop loan: £150, £150, then £34. Changing the second to £100 for this and all later ones gives £150, £100, £34.
+
+Why: "this and all later ones" at £600 means each later one is £600. Changing a pay pattern itself, step by step, would be its own option on the edit sheet in Phase 2.
+
+### D91. A new date for this and all later ones
+
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. Partly a question for the owner.
+
+- The engine takes the new date of the payment, and the schedule from that date on, from the app. It refuses a date the schedule doesn't give, such as the 3rd for a schedule on the 1st of each month.
+- The new date must come after the date of the payment before it. Otherwise payments would double up: rent moved from Fri 1 Jan 2027 back to Tue 1 Dec 2026 would be paid twice on 1 Dec.
+- Moving the dates never adds or loses a payment. A series that ended on a date now ends after the same number of payments.
+- One-off moved dates on this and later payments are dropped (D60). Notes, amounts and ticks stay.
+- Still to answer before Phase 2: which schedule the edit sheet sets when someone changes the date for this and all later ones. The proposal is in `PLAN.md`.
+
+Why: brief Part 3, principle 4 lets people change the date for this and all later ones, but nothing says how the later dates follow. That decides the day money leaves, so it's a money rule for the owner.
+
+### D92. Removing payments
+
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4 and D4. The last point is for the owner to confirm.
+
+- "Remove this one" skips the payment (D4). Removing one that's already removed is refused.
+- "Remove this and later" ends the series just before the payment, the same way a split ends the old series (D89), and removes later series of the family (D88). On the first payment of a series, the series itself is removed. The one-off changes of the removed payments go too.
+- The payments left keep their amounts: a different last amount is removed, not moved onto an earlier payment. Laptop loan: removing the £34 payment leaves £150 and £150, not £150 and £34.
+- "Remove this and later" is refused when a payment it would remove is ticked as paid. The app asks the person to untick it first.
+
+Why: removing payments should never change the ones left. A tick says the money really went (D83); removing a ticked payment would put that money back into the plan without the person noticing.
+
+### D93. "Just this one" keeps only what differs
+
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4.
+
+Each part of a one-off change is saved only where it differs from what the series alone would give. A part set back to the series' own value is cleared, and a change with nothing left in it is removed. So moving a payment back to its own date undoes the move.
+
+Why: a payment moved back then follows its series again, even if the weekend rule or the bank holiday list changes later, and the stored records stay small.
+
+### D94. Private transfers
+
+Decided 29 Oct 2026 in step 1c. Adds to D16 and ARCHITECTURE.md 3.6.
+
+- The shared half ("From Jess") records which private half it mirrors. Every command changes both halves in the same edit: amounts, dates, estimate labels, removals, splits and ticks.
+- Names and notes belong to the private half only. A name or note aimed at the shared half is refused.
+- Splitting a private transfer makes two new series, so the command carries a second new id.
+- An edit is refused when the two halves no longer match: their series' amounts, pattern, dates, end, last amount, weekend rule or estimate label, or the payment being changed (its date, amount, estimate label, removal or tick).
+
+Why: D16 lets the shared plan see only the date and the amount, and both accounts must always show the same money moving.
+
+### D95. Ticking and unticking
+
+Decided 29 Oct 2026 in step 1c. Adds to D71 and D83.
+
+- A tick's paid date is worked out when it's made: the day it's ticked, if that's before the payment's date, otherwise the payment's date after any weekend, bank holiday or moved-date change (D71). It doesn't change if the payment moves later (D83).
+- Ticking a payment that's already ticked, or unticking one that isn't, is refused.
+
+Why: one tick per payment (D83), and a second tick by another person in a shared plan should be reported, not saved on top.
+

@@ -42,8 +42,10 @@ function compareMoments(a: Moment, b: Moment): number {
 /**
  * The order rows are applied in: by date, then the same-day order. Money in,
  * then transfers, then money out (brief 5.5). Within each, the family made
- * first goes first, then by name (D12, D49). Then by family id, series id and
- * payment number, so the order is the same on every run and every device (D80).
+ * first goes first, then by name (D12, D49). Then by family id, payment
+ * number and series id, so the order is the same on every run and every
+ * device (D80). Payment numbers carry on across a split, so comparing them
+ * before the series id means a split never changes the order (D89).
  */
 export function compareRows(a: OrderedRow, b: OrderedRow): number {
   return (
@@ -52,7 +54,7 @@ export function compareRows(a: OrderedRow, b: OrderedRow): number {
     compareMoments(a.familyCreatedAt, b.familyCreatedAt) ||
     compareText(a.name, b.name) ||
     compareText(a.familyId, b.familyId) ||
-    compareText(a.seriesId, b.seriesId) ||
-    a.number - b.number
+    a.number - b.number ||
+    compareText(a.seriesId, b.seriesId)
   );
 }

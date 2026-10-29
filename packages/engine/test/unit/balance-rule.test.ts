@@ -289,6 +289,42 @@ describe('D12: the same-day order', () => {
     ]);
   });
 
+  it('keeps a family in payment-number order on one day, whatever its series ids (D89)', () => {
+    // Weekly rent, split at payment 1 into a series whose id sorts first.
+    // Payment 0 is moved onto payment 1's day, so both land on Fri 13 Nov.
+    const weekly = { kind: 'weekly', every: 1 } as const;
+    const old = series({
+      id: 'rent',
+      name: 'Rent',
+      start: '2026-11-06',
+      schedule: weekly,
+      end: { kind: 'after', payments: 1 },
+    });
+    const rest = series({
+      id: 'a-split',
+      familyId: 'rent',
+      name: 'Rent',
+      start: '2026-11-13',
+      schedule: weekly,
+      end: { kind: 'after', payments: 2 },
+      firstNumber: 1,
+      splitFrom: 'rent',
+    });
+    const plan = workOutPlan(
+      planInput({
+        today: '2026-11-06',
+        to: '2026-11-13',
+        balanceUpdates: [balanceUpdate('current', '100.00', '2026-11-06')],
+        series: [rest, old],
+        changes: [{ seriesId: 'rent', originalDate: '2026-11-06', newDate: '2026-11-13' }],
+      }),
+    );
+    expect(accountOf(plan).rows.map((row) => [row.date, row.payment.number])).toEqual([
+      ['2026-11-13', 0],
+      ['2026-11-13', 1],
+    ]);
+  });
+
   it('never changes between runs, whatever order the series are given in', () => {
     const first = workOutPlan(input(all));
     const orders = [

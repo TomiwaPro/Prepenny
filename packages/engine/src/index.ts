@@ -4,6 +4,7 @@
 //
 // Step 1a: money, dates, bank holidays and repeating payments.
 // Step 1b: the balance rule, lowest point, warnings, shortfalls and periods.
+// Step 1c: editing, moving, skipping, ticking and undo.
 
 export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';
@@ -79,6 +80,19 @@ export {
   workingDayOnOrAfter,
   workingDayOnOrBefore,
 } from './dates/working-days.ts';
+export { editPlan } from './edit/edit.ts';
+export { applyWrites, sameValue } from './edit/records.ts';
+export type {
+  Edit,
+  EditCommand,
+  EditInput,
+  JustThisOneEdits,
+  PaymentRef,
+  PlanRecords,
+  RecordWrite,
+  ThisAndLaterEdits,
+  TickInUpdate,
+} from './edit/types.ts';
 export { EngineInputError } from './errors.ts';
 export { fromOtherCurrency, type MinorUnits, toOtherCurrency } from './money/currency.ts';
 export {

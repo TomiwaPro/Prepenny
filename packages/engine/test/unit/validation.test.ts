@@ -93,6 +93,9 @@ describe('the engine refuses what it cannot work with', () => {
     ['a transfer to the same account', { direction: 'transfer', toAccountId: 'current' }],
     ['money out with a second account', { toAccountId: 'savings' }],
     ['a first number below zero', { firstNumber: -1 }],
+    ['a split from no series', { splitFrom: '' }],
+    ['a shared half that mirrors itself', { mirrorOf: 'test-series' }],
+    ['a shared half that mirrors something that is not an id', { mirrorOf: 7 as never }],
     ['a missing account', { accountId: '' }],
   ])('refuses %s', (_what, fields) => {
     refusal({ ...good, ...fields } as Series);

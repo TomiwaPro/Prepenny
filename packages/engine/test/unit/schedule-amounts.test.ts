@@ -3,7 +3,7 @@
 // (brief 5.3, D38). Plus first_number for split series.
 
 import { describe, expect, it } from 'vitest';
-import { type PaymentChange, paymentByNumber } from '../../src/index.ts';
+import { type PaymentChange, paymentByNumber, workOutPayments } from '../../src/index.ts';
 import { noBankHolidays } from '../fixtures/holidays.ts';
 import { paymentsOf, series } from '../fixtures/series.ts';
 
@@ -105,6 +105,46 @@ describe('a split series carries on from its first number', () => {
     expect(found.map((p) => [p.number, p.date, p.amount])).toEqual([[3, '2027-01-01', 20615]]);
     expect(paymentByNumber({ series: rest, holidays: noBankHolidays, number: 2 })).toBeNull();
     expect(paymentByNumber({ series: rest, holidays: noBankHolidays, number: 4 })).toBeNull();
+  });
+
+  it("makes only the family's last payment last, so the old series' last one takes no last amount (D49)", () => {
+    // Family loan, split at payment 2: the old series keeps payments 0 and 1.
+    const old = series({
+      id: 'family-loan',
+      start: '2026-11-20',
+      schedule: { kind: 'weekly', every: 2 },
+      amount: 25000,
+      lastAmount: 20615,
+      end: { kind: 'after', payments: 2 },
+    });
+    const rest = series({
+      id: 'family-loan-rest',
+      familyId: 'family-loan',
+      start: '2026-12-18',
+      schedule: { kind: 'weekly', every: 2 },
+      amount: 25000,
+      lastAmount: 20615,
+      end: { kind: 'after', payments: 4 },
+      firstNumber: 2,
+      splitFrom: 'family-loan',
+    });
+    const found = workOutPayments({
+      series: [old, rest],
+      holidays: noBankHolidays,
+      from: '2026-11-01',
+      to: '2027-01-31',
+    });
+    expect(found.map((p) => [p.number, p.date, p.amount, p.isLast])).toEqual([
+      [0, '2026-11-20', 25000, false],
+      [1, '2026-12-04', 25000, false],
+      [2, '2026-12-18', 25000, false],
+      [3, '2027-01-01', 20615, true],
+    ]);
+    // On its own, with nothing after it, the old series' last payment is last.
+    expect(paymentsOf(old, window).map((p) => [p.amount, p.isLast])).toEqual([
+      [25000, false],
+      [20615, true],
+    ]);
   });
 });
 
