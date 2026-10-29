@@ -250,6 +250,20 @@ function undo(context: Context, edit: Edit): void {
     const index = prepared === null ? -1 : indexOf(prepared, day);
     return prepared === null || index < 0 ? null : prepared.firstNumber + index;
   };
+  // A change or tick it puts back must still have its payment, unless the
+  // undo puts back its series too. A payment removed since can't take it back.
+  const seriesPutBack = new Set(before.flatMap((w) => (w.kind === 'series' ? [w.id] : [])));
+  for (const write of before) {
+    if (write.kind !== 'change' && write.kind !== 'tick') continue;
+    if (write.value === null || seriesPutBack.has(write.seriesId)) continue;
+    const series = context.byId.get(write.seriesId) ?? null;
+    if (numberIn(series, parseDate(write.originalDate)) === null) {
+      refuse(
+        'changed-since',
+        'The payment this edit changed has been removed or moved since, so it can no longer be undone.',
+      );
+    }
+  }
   for (const write of before) {
     if (write.kind !== 'series') continue;
     const now = context.byId.get(write.id) ?? null;

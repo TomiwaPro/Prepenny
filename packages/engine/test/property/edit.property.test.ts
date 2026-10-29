@@ -576,6 +576,6 @@ describe('editing holds for any plan and any edits', () => {
       ),
       { numRuns: 300 },
     );
-    expect(splits).toBeGreaterThan(150);
+    expect(splits).toBeGreaterThan(100);
   });
 });

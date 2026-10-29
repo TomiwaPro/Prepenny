@@ -846,6 +846,22 @@ describe('D87: undo never loses a change or tick made since', () => {
     refusedWith('changed-since', noted, { kind: 'undo', edit: putBack.edit });
   });
 
+  it('refuses to put a tick back on a payment removed since', () => {
+    const ticked = edited(plan, {
+      kind: 'tick',
+      seriesId: 'rent',
+      originalDate: '2027-01-01',
+      tickedAt: '2026-10-25T10:00:00Z',
+    }).after;
+    const untick = edited(ticked, { kind: 'untick', seriesId: 'rent', originalDate: '2027-01-01' });
+    const removed = edited(untick.after, {
+      kind: 'remove-this-and-later',
+      seriesId: 'rent',
+      originalDate: '2026-12-01',
+    }).after;
+    refusedWith('changed-since', removed, { kind: 'undo', edit: untick.edit });
+  });
+
   it('still undoes when the change made since stays on its payment, and keeps it', () => {
     const split = edited(plan, {
       kind: 'this-and-later',
