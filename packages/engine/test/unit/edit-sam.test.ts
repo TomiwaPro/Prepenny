@@ -331,3 +331,84 @@ describe('a split on a series that ends after a number of payments', () => {
     });
   });
 });
+
+describe('D90 and D92: amounts after a change or a removal on the Laptop loan', () => {
+  const loan = (input: PlanInput) =>
+    workOutPayments({
+      series: input.series,
+      changes: input.changes ?? [],
+      holidays: input.holidays,
+      from: '2026-12-01',
+      to: '2028-12-31',
+    })
+      .filter((p) => p.name === 'Laptop loan')
+      .map((p) => [p.date, formatPounds(p.amount)]);
+
+  it('keeps the different last amount when an earlier payment changes for this and all later ones', () => {
+    const { after } = edited(sam, {
+      kind: 'this-and-later',
+      seriesId: 'laptop-loan',
+      originalDate: '2027-01-20',
+      edits: { amount: pounds('100.00') },
+      newSeriesId: 'laptop-loan-from-jan',
+    });
+    expect(loan(after)).toEqual([
+      ['2026-12-20', '150.00'],
+      ['2027-01-20', '100.00'],
+      ['2027-02-20', '34.00'],
+    ]);
+  });
+
+  it('changes the last payment itself when that is the one changed', () => {
+    const { after } = edited(sam, {
+      kind: 'this-and-later',
+      seriesId: 'laptop-loan',
+      originalDate: '2027-02-20',
+      edits: { amount: pounds('40.00') },
+      newSeriesId: 'laptop-loan-last',
+    });
+    expect(loan(after)).toEqual([
+      ['2026-12-20', '150.00'],
+      ['2027-01-20', '150.00'],
+      ['2027-02-20', '40.00'],
+    ]);
+  });
+
+  it('leaves £150 and £150 when the £34 payment is removed', () => {
+    const { after } = edited(sam, {
+      kind: 'remove-this-and-later',
+      seriesId: 'laptop-loan',
+      originalDate: '2027-02-20',
+    });
+    expect(loan(after)).toEqual([
+      ['2026-12-20', '150.00'],
+      ['2027-01-20', '150.00'],
+    ]);
+  });
+
+  it("replaces Sam's pay pattern with one amount when pay changes for this and all later ones", () => {
+    const { after } = edited(sam, {
+      kind: 'this-and-later',
+      seriesId: 'pay',
+      originalDate: '2026-12-04',
+      edits: { amount: pounds('600.00') },
+      newSeriesId: 'pay-from-4-dec',
+    });
+    const pays = workOutPayments({
+      series: after.series,
+      changes: after.changes ?? [],
+      holidays: after.holidays,
+      from: '2026-11-20',
+      to: '2026-12-25',
+    }).filter((p) => p.name === 'Pay');
+    expect(pays.map((p) => [p.date, formatPounds(p.amount)])).toEqual([
+      // Payments 3 and 4 keep the pattern: cycle[3] and cycle[0].
+      ['2026-11-20', '592.17'],
+      ['2026-11-27', '452.17'],
+      ['2026-12-04', '600.00'],
+      ['2026-12-11', '600.00'],
+      ['2026-12-18', '600.00'],
+      ['2026-12-25', '600.00'],
+    ]);
+  });
+});
