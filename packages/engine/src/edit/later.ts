@@ -349,7 +349,8 @@ function changeStretch(
         seriesId: newId,
         originalDate,
       };
-      if (hasEffect(moved)) {
+      // Dropped only when the parts it replaces were all it changed (D60).
+      if (hasEffect(moved) || !hasEffect(change)) {
         saves.push(changeWrite(newId, originalDate, clean<PaymentChange>(moved)));
       }
     }
