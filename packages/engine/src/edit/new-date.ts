@@ -14,7 +14,7 @@ import type { Schedule } from '../schedule/types.ts';
  * - monthly, on any kind of day: the new date's day of the month, with the
  *   same months left out
  * - on chosen dates: only this payment's date changes in the list
- * - once: unchanged, so the payment simply moves.
+ * - once: unchanged, so the payment moves to the new date.
  *
  * `originalDate` is the payment's date from its schedule and `newDate` the
  * new one, both before the weekend and bank holiday rule, "YYYY-MM-DD".

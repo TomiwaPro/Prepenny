@@ -193,10 +193,12 @@ Every edit goes in as a command and comes out as records to save. The engine nev
   - Brief 8.4 test 1: rent £560 from 1 Jan 2027. The old series never ended, so it now ends by date, on Thu 31 Dec 2026, and keeps the November £600 change. The new series is £560 from 1 Jan 2027.
   - Brief 8.4 test 2: a new note on pay from Fri 4 Dec. The new series starts at payment 5, so its pattern position is (0 + 5) mod 4 = 1: £618.46, the same as before. Every amount stays the same.
   - **Built in step 1c:** "this and all later ones" also changes every later series of the family, so a payment split off earlier changes too (D88). How the split works is D89. A new amount replaces any amount pattern, and a different last amount stays unless the last payment is the one changed (D90). A new date comes from the app with the schedule from that date on, and never adds or loses a payment (D91).
+  - **Built in step 1d:** when pay follows a pattern, the edit sheet asks "Every payday from now" (D90) or "Only this week of the pattern" (D97), which changes only this payment's step of the pattern, so every payment on that step from here on gets the new amount. Where later payments go after a new date follows the owner's answer in D96: the new weekday for weekly payments, the new day of the month for monthly ones, and only that one date for chosen dates. The engine works the schedule out (`scheduleForNewDate`).
 - **Remove this one:** mark it skipped. **Remove this and later:** end the series before it, and remove later series of the family. The payments left keep their amounts, and it's refused while a payment it would remove is ticked (D92).
 - **Move:** a changed date. **Move to next payday:** a changed date on the first main payday after the payment's current date (D14, D81). A "just this one" change keeps only what differs from the series, so moving a payment back to its own date undoes the move (D93).
 - **Tick:** a tick record with the paid date and time (D1, D33), worked out when the tick is made (D71, D95). **Untick** removes it.
 - **Update balance:** a new balance update, with everything ticked in its steps, as one edit (D33, D87).
+- **Update from statement:** a debt's new balance, date and time, with the linked payments ticked in its steps, as one edit. Those ticks count as before the update for that debt (D62, D103).
 - **Private transfers:** every command changes both halves in the same edit. Names and notes stay on the private half (D94).
 
 **Undo.** Each edit returns two lists: the records to save, and a copy of how those records looked before (or a note that they didn't exist). Undo saves the "before" copy as a new edit. This means:
@@ -240,12 +242,20 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
 
 ### 2.6 Debts
 
-- **Left now** = the balance on its date, minus every linked payment ticked as paid with a paid date after that date (brief 5.6, D27). Each payment is converted with the debt's rate and rounded once (D9).
+- **Left now** = the balance on its date, minus every linked payment ticked as paid after the balance was typed in or updated from a statement, by time, even on the same day (brief 5.6, D27, D62). Each payment is converted with the debt's rate and rounded once (D9).
 - **Paid off on** = the first date where the balance minus the planned linked payments after its date, in order, reaches 1p or less. **Agreed (D42):** 1 cent, or the smallest unit, for a debt in another currency. If that never happens in the view, show what will still be left at the end.
 - **Never less than nothing** (D34): 1p or less, including a small minus from rounding, shows "Paid off" and £0.00. Family loan: €1,400.57 minus 6 payments converted at €1.1612 per £1 leaves −€0.01, so it shows "Paid off on Fri 1 Jan 2027".
 - **Credit cards with an interest rate:** monthly interest (balance × yearly rate ÷ 12) is added on the statement day (D13), rounded once (D9), and the minimum is worked out from the rule, for example interest plus 1% of the balance, at least £5. Both are labelled as estimates. When a planned payment is more than what's left, D63 applies.
 - **Compare** minimum, fixed amount and full balance: months to clear and interest paid. Numbers only (brief Part 3, principle 10).
 - **Agreed (D43):** the Debts screen looks 24 months ahead for "Paid off on", whatever the Plan screen shows, and after that says how much is left on the last day it looks at. The brief 8.3 tests keep their own view to the end of February 2027.
+- **Built in step 1d** (D98 to D103):
+  - A debt has the fields in 3.3. Only money going out can be linked to it, never either half of a private transfer, and only a credit card has an interest rate, a statement day or a minimum (D98).
+  - Left now in pounds, progress (nearest whole percent, 99% until paid off) and Owed now across every open debt (D99).
+  - Paid off on: ticked payments on their paid date, planned ones after the balance date, in the same-day order; "24 months ahead" is the same date 24 months on; a payment more than 1p or 1 cent over what's left says by how much, in the debt's currency; and Paid off on is labelled an estimate when interest or an estimated payment goes into it (D100).
+  - Credit card interest on each statement day after the balance date, after that day's payments, and never once paid off. The minimum is the owner's rule: the interest plus 1% of the balance before it, at least the floor, never more than the balance (D101).
+  - The comparison counts payments and interest for the minimum, a fixed amount and the full balance, from Left now, with 100 years as "never clears it" (D102).
+  - Update from statement is one edit with its ticks (D103).
+  - Two questions wait for the owner in `PLAN.md`: estimated interest in a credit card's Left now, and a payment due on the statement date itself.
 
 ### 2.7 Take-home pay
 
@@ -283,9 +293,11 @@ The engine has a built-in copy of the official list from `https://www.gov.uk/ban
 - **Dates** are `Day` numbers inside the engine and `"YYYY-MM-DD"` strings at its edges. Never `new Date("2026-10-25")`: that is midnight UTC and lands on the wrong day in some time zones.
 - **Times** (balance updates, ticks, spends, D33) are ISO strings in UTC. The engine only compares stored times with each other, so it still needs no clock.
 - **Pure:** no `Date.now()`, no `Math.random()`, no network, no storage. A lint rule blocks them inside the package.
-- **Edits** are commands: `editPlan(input, command) → { writes, undo }`, where `input` is the stored records (accounts, balance updates, series, changes, ticks) with the main pay, the bank holidays and `today`. Built in step 1c, in `packages/engine/src/edit`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
-  - Commands: `just-this-one`, `this-and-later`, `remove-this-one`, `remove-this-and-later`, `move`, `move-to-next-payday`, `tick`, `untick`, `update-balance` and `undo`.
-  - Each write names one record and its new `value`, or `value: null` for a removal: `{ kind: 'series' | 'balance-update', id, value }` or `{ kind: 'change' | 'tick', seriesId, originalDate, value }` (D87). `undo` lists the same records with their values before, null where one didn't exist. `applyWrites(records, writes)` saves them into a copy of the records.
+- **Debts** (step 1d, `packages/engine/src/debts`): `workOutDebts({ debts, series, changes, ticks, holidays, today, to }) → { owedNow, debts }`, one `DebtPlan` per debt with Left now, Paid off on or `leftAtEnd`, progress and every row (linked payments and credit card statement days). Use `to: debtsLookAhead(today)` for the Debts screen (D43, D100). `compareCardPayments({ card, left, from, paysOn, fixed })` gives the minimum, fixed and full comparison (D102). Debt amounts are the debt's own minor units (`MinorUnits`); `leftNowInPounds` and `owedNow` are pence. A series links to a debt with `debtId`; a tick made inside a debt's statement update has `inDebtUpdate` set to the debt's id (D62).
+- **Edits** are commands: `editPlan(input, command) → { writes, undo }`, where `input` is the stored records (accounts, balance updates, series, changes, ticks and, from step 1d, debts) with the main pay, the bank holidays and `today`. Built in step 1c, in `packages/engine/src/edit`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
+  - Commands: `just-this-one`, `this-and-later`, `remove-this-one`, `remove-this-and-later`, `move`, `move-to-next-payday`, `tick`, `untick`, `update-balance`, `update-from-statement` (step 1d) and `undo`. A `this-and-later` edit takes `amount` for "Every payday from now" (D90) or `stepAmount` for "Only this week of the pattern" (D97), never both. For a new date, the app passes `scheduleForNewDate(schedule, originalDate, newDate)` as the schedule (D96).
+  - Debts in the records are optional: when they're given, every series' link to a debt is checked, and `applyWrites` keeps them as given unless an edit changes one.
+  - Each write names one record and its new `value`, or `value: null` for a removal: `{ kind: 'series' | 'balance-update' | 'debt', id, value }` or `{ kind: 'change' | 'tick', seriesId, originalDate, value }` (D87). `undo` lists the same records with their values before, null where one didn't exist. `applyWrites(records, writes)` saves them into a copy of the records.
   - New ids come with the command: `newSeriesId` for a split, `newOtherHalfSeriesId` for the second half of a private transfer, and the balance update's own id.
   - Refusals are `EngineInputError`s with a code (`no-payment`, `ticked`, `changed-since`, `date-not-in-schedule` and so on) and a message holding ids and dates only. `edit-breaks-plan` means the engine's own mistake, never the person's, and property tests check it never happens.
   - A family is a series and every series split from it (D49). Its series cover payment numbers in order, with no gaps or overlaps, and only the family's last payment is last (D89). The shared half of a private transfer has its own family that mirrors the private one series for series (D94). The engine makes only families like that, but doesn't yet refuse stored data that breaks these rules, such as two halves sharing one family. Phase 3's server checks should.
@@ -466,6 +478,7 @@ Changes and ticks have their own `id` in the database (3.1), but the engine find
 | `paid_on` | date | The day it was ticked, if that was before the payment was due (D1); otherwise the payment's own date after any weekend, bank holiday or moved-date change (D71). Used for the bank balance and for debts (D27, brief 5.6) |
 | `ticked_at` | time | Compared with the balance update's time (D33) |
 | `in_balance_update` | id, or empty | Set when ticked inside the Update balance steps, so it counts as before that update (D33) |
+| `in_debt_update` | id, or empty | The debt, when ticked inside its Update from statement steps, so it counts as before that update for that debt (D62, D103) |
 | `ticked_by` | person id | Either person can tick (brief 4.14) |
 | `source` | choice: typed, bank | "bank" is ready for bank connections (3.10) |
 
@@ -478,14 +491,14 @@ Unticking deletes the tick.
 | `name` | text | |
 | `kind` | choice: pay-later plan, credit card, loan, overdraft, owed to a person | Brief 4.6 |
 | `currency` | text | `"GBP"`, `"EUR"` and so on |
-| `rate` | decimal, or empty | Units of that currency per £1, set by the person (brief 4.6): `"1.1612"` |
+| `rate` | decimal, or empty | Units of that currency per £1, set by the person (brief 4.6): `"1.1612"`. Needed for any currency but pounds, and empty for pounds (D98) |
 | `balance` | minor units | What's owed on `balance_on` |
 | `balance_on` | date | |
 | `balance_at` | time | When "Update from statement" was used (D62) |
 | `starting_balance` | minor units | For the progress bar: "Started at €2,396.93" |
-| `interest_rate` | decimal, or empty | Yearly %, for credit cards |
-| `statement_day` | 1 to 31 | D13 |
-| `minimum_rule` | a typed amount, or a rule: interest plus a % of the balance, at least an amount | Brief 4.6 |
+| `interest_rate` | decimal, or empty | Yearly %, credit cards only (D98) |
+| `statement_day` | 1 to 31, or empty | Credit cards only, needed with an interest rate or a minimum rule (D13, D98) |
+| `minimum_rule` | a typed amount, or a rule: interest plus a % of the balance, at least an amount | Brief 4.6, credit cards only. How the rule works is D101 |
 | `belongs_to` | person id, or empty | Empty means shared (brief 4.14) |
 | `closed` | yes/no | |
 
@@ -1542,8 +1555,8 @@ No expected number in these tests is ever changed to make a test pass (CLAUDE.md
 | 47 | Sam: lowest end-of-day balance £4.53 on Sun 1 Nov 2026, after Rent | 8.3 | 1b, and again in 1g |
 | 48 | Sam: current account at the end of Oct, Nov, Dec, Jan, Feb is £604.53, £732.91, £1,024.60, £2,235.89, £3,304.87 | 8.3 | 1b, and again in 1g |
 | 49 | Sam: total pay £9,748.96 from 18 paydays | 8.3 | 1g |
-| 50 | Sam: Pay-later card paid off on 29 Oct 2026, Pay in 3 on 6 Dec 2026, Family loan on 1 Jan 2027, Laptop loan on 20 Feb 2027 | 8.3, D15 | 1g |
-| 51 | Sam: still owed at the end of Feb 2027: Sofa finance £225.25 (paid off 23 Aug 2027 when the view is extended), Credit card £320.99 | 8.3, D15 | 1g |
+| 50 | Sam: Pay-later card paid off on 29 Oct 2026, Pay in 3 on 6 Dec 2026, Family loan on 1 Jan 2027, Laptop loan on 20 Feb 2027 | 8.3, D15 | 1d (brought forward), and again in 1g |
+| 51 | Sam: still owed at the end of Feb 2027: Sofa finance £225.25 (paid off 23 Aug 2027 when the view is extended), Credit card £320.99 | 8.3, D15 | 1d (brought forward), and again in 1g |
 | 52 | Sam: savings £0 from 28 Oct, £150 from 13 Nov, £0 from 30 Nov | 8.3 | 1b, and again in 1g |
 | 53 | Kofi: in what if, removing next week's estimated income shows the new lowest point beside the real one; throwing it away leaves the real plan exactly as before | 8.5 | 1g |
 | 54 | Speed: 24 months of 100 series in under 50 milliseconds on a mid-range phone (under 12 on the test machine; a real phone in Phase 4) | 5.8 | 1g |
@@ -1603,6 +1616,13 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | A private transfer's two halves still match after every kind of edit, and its undo | D16, D94 | 1c |
 | Property: making an edit, undoing it, then making it again gives the same records as the first time | 5.4 | 1c |
 | Property: a private transfer's two halves still match after any run of edits | D94 | 1c |
+| The Debts sketch: Owed now £3,214.86, counting the Family loan's €1,400.57 as £1,206.14; the Family loan 42% paid, €996.36 of €2,396.93; its payments come off as €145.15, €145.15, €290.30, €290.30, €290.30 and €239.38, leaving €1,255.42, €1,110.27, €819.97, €529.67, €239.37, then Paid off | 4.6, D9, D34, D99 | 1d |
+| The Family loan: a tick at 9am on Mon 26 Oct leaves €1,255.42; a statement at 6pm showing €1,255.42 still leaves €1,255.42; a statement at 9am then the tick at 6pm leaves €1,255.42; ticks made inside the statement update count as before it | D27, D62, D103 | 1d |
+| A credit card of £420.99 at 24.9% a year, statement day the 10th, payments on the 15th: £8.74 interest and a £12.95 minimum on Tue 10 Nov; the minimum takes 150 payments and £647.14, £25 a month takes 21 and £102.32, the full balance takes 1 and £8.74 | D101, D102 | 1d |
+| Only this week of the pattern: Sam's Fri 6 Nov pay at £640.00 changes 6 Nov, 4 Dec, 1 Jan, 29 Jan and 26 Feb, every other payday keeps its amount, and total pay is £9,856.66 | D97 | 1d |
+| A new date for this and all later ones follows D96: the new weekday, the new day of the month, or only that one chosen date | D96 | 1d |
+| Property: every debt row follows from the one before; Paid off on, More than what's left and Left now agree with the rows; the order of the records changes nothing | D34, D63, D100 | 1d |
+| Property: Update from statement and Only this week of the pattern are undone exactly and made again the same way, alongside every other edit | D97, D103 | 1d |
 
 **After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
 

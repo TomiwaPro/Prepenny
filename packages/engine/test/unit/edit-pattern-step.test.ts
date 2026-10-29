@@ -499,7 +499,7 @@ describe('D96: where later payments go after a new date for this and all later o
     expect(() => scheduleForNewDate(terms, '2027-01-12', '2027-01-18')).toThrow(EngineInputError);
   });
 
-  it('keeps a payment that happens once as it is, so it simply moves', () => {
+  it('keeps a payment that happens once as it is, so it moves to the new date', () => {
     expect(scheduleForNewDate({ kind: 'once' }, '2026-11-10', '2026-11-12')).toEqual({
       kind: 'once',
     });
