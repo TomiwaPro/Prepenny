@@ -188,6 +188,20 @@ interface Piece {
   readonly series: Series;
 }
 
+/** The original date of the family's payment just before the stretch, or null when there's none. */
+function previousDate(context: Context, stretch: Stretch): Day | null {
+  const { first, index } = stretch;
+  if (index > 0) return first.dateAt(index - 1);
+  const number = first.firstNumber - 1;
+  const holder = context.checked.prepared.find(
+    (one) =>
+      one.series.familyId === first.series.familyId &&
+      one.firstNumber <= number &&
+      number < one.firstNumber + one.count,
+  );
+  return holder === undefined ? null : holder.dateAt(number - holder.firstNumber);
+}
+
 /**
  * Gives every piece the new date and schedule (D91): the first piece starts
  * on the new date, and each later one on the date the new schedule gives its
@@ -212,6 +226,15 @@ function redate(context: Context, stretch: Stretch, pieces: readonly Piece[], ed
     }),
     context.input.holidays,
   );
+  // The payment before this one keeps its date, so the new date must come
+  // after it, or payments would double up on the same days (D91).
+  const previous = previousDate(context, stretch);
+  if (previous !== null && anchor <= previous) {
+    refuse(
+      'date-before-earlier-payment',
+      `Series ${id}: the new date must be after ${formatDate(previous)}, the date of the payment before it.`,
+    );
+  }
   if (reference.count === 0 || reference.dateAt(0) !== anchor) {
     refuse(
       'date-not-in-schedule',

@@ -123,7 +123,8 @@ export function paymentAtIndex(
     direction: series.direction,
     amount,
     name: change?.name ?? series.name,
-    note: change?.note ?? series.note ?? null,
+    // An empty note is no note: a one-off change can clear the series' note.
+    note: (change?.note ?? series.note ?? '') || null,
     type: series.type,
     isEstimate: change?.isEstimate ?? series.isEstimate,
     isLast,

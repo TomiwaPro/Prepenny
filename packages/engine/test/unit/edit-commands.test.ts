@@ -136,6 +136,27 @@ describe('test 19: just this one', () => {
     ]);
   });
 
+  it("clears the series' note for just this one with an empty note", () => {
+    const noted = {
+      ...plan,
+      series: plan.series.map((one) =>
+        one.id === 'rent' ? { ...one, note: 'Standing order' } : one,
+      ),
+    };
+    const { after } = edited(noted, {
+      kind: 'just-this-one',
+      seriesId: 'rent',
+      originalDate: '2026-12-01',
+      edits: { note: '' },
+    });
+    expect(after.changes).toEqual([{ seriesId: 'rent', originalDate: '2026-12-01', note: '' }]);
+    expect(paymentsOfSeries(after, 'rent', '2026-11-01', '2027-01-31').map((p) => p.note)).toEqual([
+      'Standing order',
+      null,
+      'Standing order',
+    ]);
+  });
+
   it('clears a part that comes out the same as the series would give (D93)', () => {
     const { after } = edited(plan, {
       kind: 'just-this-one',
@@ -496,6 +517,48 @@ describe('D91: a new date for this and all later ones', () => {
         .filter((p) => p.name === 'Rent')
         .map((p) => p.date),
     ).toEqual(['2026-11-01', '2026-12-01', '2027-01-03', '2027-02-03', '2027-03-03']);
+  });
+
+  it('refuses a new date on or before the payment before it, so no payment doubles up', () => {
+    refusedWith('date-before-earlier-payment', plan, {
+      kind: 'this-and-later',
+      seriesId: 'rent',
+      originalDate: '2027-01-01',
+      edits: { date: '2026-12-01' },
+      newSeriesId: 'rent-early',
+    });
+    refusedWith('date-before-earlier-payment', plan, {
+      kind: 'this-and-later',
+      seriesId: 'pay',
+      originalDate: '2026-11-20',
+      edits: { date: '2026-11-02' },
+      newSeriesId: 'pay-early',
+    });
+    // The payment before can be in an earlier series of the family.
+    const split = edited(plan, {
+      kind: 'this-and-later',
+      seriesId: 'pay',
+      originalDate: '2026-11-20',
+      edits: { note: 'Split' },
+      newSeriesId: 'pay-2',
+    }).after;
+    refusedWith('date-before-earlier-payment', split, {
+      kind: 'this-and-later',
+      seriesId: 'pay-2',
+      originalDate: '2026-11-20',
+      edits: { date: '2026-11-13' },
+      newSeriesId: 'unused',
+    });
+    // The day after the payment before is fine.
+    expect(() =>
+      editPlan(split, {
+        kind: 'this-and-later',
+        seriesId: 'pay-2',
+        originalDate: '2026-11-20',
+        edits: { date: '2026-11-14' },
+        newSeriesId: 'unused',
+      }),
+    ).not.toThrow();
   });
 
   it('refuses a date the schedule never gives', () => {

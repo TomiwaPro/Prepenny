@@ -130,6 +130,7 @@ export interface PaymentChange {
   readonly newDate?: string;
   readonly amount?: Pence;
   readonly name?: string;
+  /** An empty note clears the series' note for this payment. */
   readonly note?: string;
   readonly isEstimate?: boolean;
   /** Removed, just this one (D4). It still counts towards "after N payments". */
