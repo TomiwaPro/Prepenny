@@ -402,7 +402,7 @@ An account's balance and date (brief 5.2) are its latest balance update. Keeping
 | `to_account_id` | id, or empty | The other account, for transfers |
 | `name` | text | |
 | `direction` | choice: in, out, transfer | |
-| `type` | choice | For example Pay, Rent, Bills, Debt, Spending money, Savings, Other. The full list is fixed in step 1b. "Spending money" counts towards Left to spend (D28) |
+| `type` | choice | Pay, Benefits, Rent or mortgage, Bills, Debt, Spending money, Savings or Other, fixed in step 1b (D79). "Spending money" counts towards Left to spend (D28) |
 | `amount` | pence | |
 | `amount_cycle` | list of pence, up to 8 | "My pay changes in a pattern" (brief 4.1) |
 | `cycle_offset` | number | Where in the pattern payment 0 sits |
@@ -1523,15 +1523,15 @@ No expected number in these tests is ever changed to make a test pass (CLAUDE.md
 | 41 | "I did overtime": 11.5 hours at £19.07 worked Mon 26 Oct 2026, with pay one week behind, lands on Fri 6 Nov 2026 | 8.6, D5 | 1f |
 | 42 | With week 27's lines it raises that payday by about £155: £155.23, within £1 (D7) | 8.6, D5 | 1f |
 | 43 | The same overtime on week 26's lines gives £150.89, which is how 30 Oct became £603.06 | D5 | 1f |
-| 44 | Property: the end balance equals the start balance plus every applied payment | 5.8 | 1g |
+| 44 | Property: the end balance equals the start balance plus every applied payment | 5.8 | 1b, and again in 1g |
 | 45 | Property: splitting a series without changing anything gives exactly the same payments | 5.8 | 1g |
 | 46 | Property: undo returns the exact earlier state | 5.8 | 1g |
-| 47 | Sam: lowest end-of-day balance £4.53 on Sun 1 Nov 2026, after Rent | 8.3 | 1g |
-| 48 | Sam: current account at the end of Oct, Nov, Dec, Jan, Feb is £604.53, £732.91, £1,024.60, £2,235.89, £3,304.87 | 8.3 | 1g |
+| 47 | Sam: lowest end-of-day balance £4.53 on Sun 1 Nov 2026, after Rent | 8.3 | 1b, and again in 1g |
+| 48 | Sam: current account at the end of Oct, Nov, Dec, Jan, Feb is £604.53, £732.91, £1,024.60, £2,235.89, £3,304.87 | 8.3 | 1b, and again in 1g |
 | 49 | Sam: total pay £9,748.96 from 18 paydays | 8.3 | 1g |
 | 50 | Sam: Pay-later card paid off on 29 Oct 2026, Pay in 3 on 6 Dec 2026, Family loan on 1 Jan 2027, Laptop loan on 20 Feb 2027 | 8.3, D15 | 1g |
 | 51 | Sam: still owed at the end of Feb 2027: Sofa finance £225.25 (paid off 23 Aug 2027 when the view is extended), Credit card £320.99 | 8.3, D15 | 1g |
-| 52 | Sam: savings £0 from 28 Oct, £150 from 13 Nov, £0 from 30 Nov | 8.3 | 1g |
+| 52 | Sam: savings £0 from 28 Oct, £150 from 13 Nov, £0 from 30 Nov | 8.3 | 1b, and again in 1g |
 | 53 | Kofi: in what if, removing next week's estimated income shows the new lowest point beside the real one; throwing it away leaves the real plan exactly as before | 8.5 | 1g |
 | 54 | Speed: 24 months of 100 series in under 50 milliseconds on a mid-range phone (under 12 on the test machine; a real phone in Phase 4) | 5.8 | 1g |
 | 55 | Jess invites Tom with "Can edit"; Tom changes rent and it appears on Jess's phone within 5 seconds, marked "Changed by Tom" | 8.7 | Phase 3 |
@@ -1554,7 +1554,7 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | "Not ticked yet" lists unticked payments dated before today, whatever the balance date | D11 | 1b |
 | Plan periods run from one main payday to the day before the next; irregular main pay uses Monday-to-Sunday weeks | D14 | 1b |
 | The same-day order never changes between runs | D12 | 1b |
-| A payment ticked, or a spend recorded, after a balance update on the same day isn't inside that balance; a tick made inside the Update balance steps is | D33 | 1b |
+| A payment ticked, or a spend recorded, after a balance update on the same day isn't inside that balance; a tick made inside the Update balance steps is | D33 | 1b (ticks), 1e (spends) |
 | A skipped payment still counts towards "after N payments" and nothing is added at the end | D4 | 1c |
 | "Move to next payday" moves to the first main payday after the payment's date | D14 | 1c |
 | A payment ticked early comes off a debt once, even after "Update from statement" | D27 | 1d |
@@ -1571,6 +1571,14 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | The lint rules keep the engine pure: no Date, no Math.random, no network, no storage and no imports from outside the package | CLAUDE.md | 1a |
 | Sam with the Fri 30 Oct pay at £503.06 is £95.47 short on Sun 1 Nov; the payments that could move are Pay-later card −£466.07, Family loan −£125.00 and Driving lesson −£100.00, not Spending money −£30.00 | D69 | 1b |
 | Looking 24 months ahead, Sam's Credit card is paid off on Wed 15 Mar 2028, and that payment shows "£4.01 more than what's left" | D70, D63 | 1d |
+| Sam's series are made in the order of the brief 8.2 table, so on Mon 26 Oct Family loan goes before Driving lesson | D8, D12 | 1b |
+| On Fri 30 Oct, before anything is ticked, Update balance expects £604.53 | D46 | 1b |
+| A payment dated before the balance date but ticked after the update goes out at the start with the overdue payments; balances from today on match it going out today | D39 | 1b |
+| The next main payday: Sam on Sun 25 Oct gets Fri 30 Oct; Kofi on Wed 28 Oct 2026 gets Mon 2 Nov | D14, D66 | 1b |
+| Sam's pay periods on Sun 25 Oct: to Thu 29 Oct ends at £46.47; Fri 30 Oct to Thu 5 Nov came in £603.06 and ends at £4.53; Fri 6 Nov to Thu 12 Nov came in £618.46 and ends at £155.69 | D14, 4.8 | 1b |
+| Property: a transfer never changes the total across all accounts | 8.5 | 1b |
+| Property: "Payments that could move" matches moving each payment and looking at the new plan | D69 | 1b |
+| Property: the plan is the same whatever order its records are given in | D12 | 1b |
 
 **After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
 
