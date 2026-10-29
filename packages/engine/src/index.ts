@@ -2,7 +2,7 @@
 // no network, no storage and no clock: "today" and the bank holiday list are
 // passed in (brief Part 5, ARCHITECTURE.md section 2).
 //
-// Step 1a: money, dates and bank holidays.
+// Step 1a: money, dates, bank holidays and repeating payments.
 
 export {
   type BankHoliday,
@@ -79,3 +79,20 @@ export {
   poundsToPence,
   sumPence,
 } from './money/pence.ts';
+export {
+  applyHolidayRule,
+  type PaymentNumberRequest,
+  type PaymentsRequest,
+  paymentByNumber,
+  workOutPayments,
+} from './schedule/payments.ts';
+export type {
+  Direction,
+  EndRule,
+  HolidayRule,
+  MonthlyDay,
+  Payment,
+  PaymentChange,
+  Schedule,
+  Series,
+} from './schedule/types.ts';
