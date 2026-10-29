@@ -192,15 +192,18 @@ Every edit goes in as a command and comes out as records to save. The engine nev
 - **This and all later ones:** split the series. The old series now ends just before this payment: by count if it ends after a number of payments, otherwise by date. A new series starts at this payment with the edits. It remembers which payment number it starts at, so the amount pattern and the "after N payments" count carry on. Later changes and ticks move across to it by payment number. Changes that the edit replaces are dropped (brief 5.4); exactly which ones is D60. The new series joins the old one's family (3.3), so main pay and the same-day order stay as they were. On the first payment of a series, this edits the whole series instead.
   - Brief 8.4 test 1: rent £560 from 1 Jan 2027. The old series never ended, so it now ends by date, on Thu 31 Dec 2026, and keeps the November £600 change. The new series is £560 from 1 Jan 2027.
   - Brief 8.4 test 2: a new note on pay from Fri 4 Dec. The new series starts at payment 5, so its pattern position is (0 + 5) mod 4 = 1: £618.46, the same as before. Every amount stays the same.
-- **Remove this one:** mark it skipped. **Remove this and later:** end the series before it.
-- **Move:** a changed date. **Move to next payday:** a changed date on the first main payday after the payment's current date (D14).
-- **Tick:** a tick record with the paid date and time (D1, D33).
+  - **Built in step 1c:** "this and all later ones" also changes every later series of the family, so a payment split off earlier changes too (D88). How the split works is D89. A new amount replaces any amount pattern, and a different last amount stays unless the last payment is the one changed (D90). A new date comes from the app with the schedule from that date on, and never adds or loses a payment (D91).
+- **Remove this one:** mark it skipped. **Remove this and later:** end the series before it, and remove later series of the family. The payments left keep their amounts, and it's refused while a payment it would remove is ticked (D92).
+- **Move:** a changed date. **Move to next payday:** a changed date on the first main payday after the payment's current date (D14, D81). A "just this one" change keeps only what differs from the series, so moving a payment back to its own date undoes the move (D93).
+- **Tick:** a tick record with the paid date and time (D1, D33), worked out when the tick is made (D71, D95). **Untick** removes it.
+- **Update balance:** a new balance update, with everything ticked in its steps, as one edit (D33, D87).
+- **Private transfers:** every command changes both halves in the same edit. Names and notes stay on the private half (D94).
 
 **Undo.** Each edit returns two lists: the records to save, and a copy of how those records looked before (or a note that they didn't exist). Undo saves the "before" copy as a new edit. This means:
 
 - one edit is one undo step, however many records it touched (brief 5.4)
 - an undo reaches the other phone like any other change
-- in a shared plan you can undo your own change as long as nobody has changed the same records since. Otherwise the app says "Tom has changed Rent since, so this can't be undone", and nothing is lost
+- in a shared plan you can undo your own change as long as nobody has changed the same records since. Otherwise the app says "Tom has changed Rent since, so this can't be undone", and nothing is lost. Undo is also refused when it would take away a split series that has a change or tick made on it since (D87)
 - the change history (brief 4.12) is the list of edits.
 
 A property test proves that an edit followed by its undo gives back exactly the records from before (brief 5.8).
@@ -280,7 +283,12 @@ The engine has a built-in copy of the official list from `https://www.gov.uk/ban
 - **Dates** are `Day` numbers inside the engine and `"YYYY-MM-DD"` strings at its edges. Never `new Date("2026-10-25")`: that is midnight UTC and lands on the wrong day in some time zones.
 - **Times** (balance updates, ticks, spends, D33) are ISO strings in UTC. The engine only compares stored times with each other, so it still needs no clock.
 - **Pure:** no `Date.now()`, no `Math.random()`, no network, no storage. A lint rule blocks them inside the package.
-- **Edits** are commands: `editPlan(plan, command, today) → { writes, undo }`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
+- **Edits** are commands: `editPlan(input, command) → { writes, undo }`, where `input` is the stored records (accounts, balance updates, series, changes, ticks) with the main pay, the bank holidays and `today`. Built in step 1c, in `packages/engine/src/edit`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
+  - Commands: `just-this-one`, `this-and-later`, `remove-this-one`, `remove-this-and-later`, `move`, `move-to-next-payday`, `tick`, `untick`, `update-balance` and `undo`.
+  - Each write names one record and its new `value`, or `value: null` for a removal: `{ kind: 'series' | 'balance-update', id, value }` or `{ kind: 'change' | 'tick', seriesId, originalDate, value }` (D87). `undo` lists the same records with their values before, null where one didn't exist. `applyWrites(records, writes)` saves them into a copy of the records.
+  - New ids come with the command: `newSeriesId` for a split, `newOtherHalfSeriesId` for the second half of a private transfer, and the balance update's own id.
+  - Refusals are `EngineInputError`s with a code (`no-payment`, `ticked`, `changed-since`, `date-not-in-schedule` and so on) and a message holding ids and dates only. `edit-breaks-plan` means the engine's own mistake, never the person's, and property tests check it never happens.
+  - A family is a series and every series split from it (D49). Its series cover payment numbers in order, with no gaps or overlaps, and only the family's last payment is last (D89). The shared half of a private transfer has its own family that mirrors the private one series for series (D94).
 
 ## 3. The data model
 
@@ -416,10 +424,10 @@ An account's balance and date (brief 5.2) are its latest balance update. Keeping
 | `is_estimate` | yes/no | |
 | `note` | text | |
 | `pay_profile_id` | id, or empty | For pay: which job's tax settings to use |
-| `split_from` | id, or empty | The series this one was split from (brief 5.4) |
+| `split_from` | id, or empty | The series this one was split from (brief 5.4, D89) |
 | `family_id` | id | The first series in its chain of splits (its own id if never split). Main pay and the same-day order (D12) use the family, so a split changes neither |
 | `first_number` | number | The payment number this series starts at, counted from the original series, so patterns and "after N payments" carry on after a split. 0 for a new series |
-| `mirror_of` | id, or empty | Set on the shared half of a private transfer (D16, 3.6) |
+| `mirror_of` | id, or empty | Set on the shared half of a private transfer (D16, 3.6): the private half it mirrors. Both halves change together (D94) |
 | `locked_to` | person id, or empty | Only this person can change it (D16) |
 
 The `schedule` is one of:
@@ -445,6 +453,8 @@ Kofi's 25% for tax is D64: a series coming in gets an optional percentage to set
 | `skipped` | yes/no | Removed, just this one (D4) |
 
 **Agreed (D48):** the paid tick, which brief 5.2 lists as part of a change, is its own record. Then Jess ticking Rent and Tom changing Rent's amount at the same moment never clash with each other.
+
+Changes and ticks have their own `id` in the database (3.1), but the engine finds them by series and original date, so an edit names them that way (D87). Moving one to another series in a split is a removal and a new record in the same edit.
 
 **Tick**
 
@@ -1526,8 +1536,8 @@ No expected number in these tests is ever changed to make a test pass (CLAUDE.md
 | 42 | With week 27's lines it raises that payday by about £155: £155.23, within £1 (D7) | 8.6, D5 | 1f |
 | 43 | The same overtime on week 26's lines gives £150.89, which is how 30 Oct became £603.06 | D5 | 1f |
 | 44 | Property: the end balance equals the start balance plus every applied payment | 5.8 | 1b, and again in 1g |
-| 45 | Property: splitting a series without changing anything gives exactly the same payments | 5.8 | 1g |
-| 46 | Property: undo returns the exact earlier state | 5.8 | 1g |
+| 45 | Property: splitting a series without changing anything gives exactly the same payments | 5.8 | 1c (brought forward), and again in 1g |
+| 46 | Property: undo returns the exact earlier state | 5.8 | 1c (brought forward), and again in 1g |
 | 47 | Sam: lowest end-of-day balance £4.53 on Sun 1 Nov 2026, after Rent | 8.3 | 1b, and again in 1g |
 | 48 | Sam: current account at the end of Oct, Nov, Dec, Jan, Feb is £604.53, £732.91, £1,024.60, £2,235.89, £3,304.87 | 8.3 | 1b, and again in 1g |
 | 49 | Sam: total pay £9,748.96 from 18 paydays | 8.3 | 1g |
@@ -1581,6 +1591,17 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | Property: a transfer never changes the total across all accounts | 8.5 | 1b |
 | Property: "Payments that could move" matches moving each payment and looking at the new plan | D69 | 1b |
 | Property: the plan is the same whatever order its records are given in | D12 | 1b |
+| Brief 8.4 tests 1 to 4 on Sam's plan, with balances: rent £560 lowers balances by £10 from the January rent and £20 from the February rent; a new note on pay changes no amount or balance; £640 real pay raises every balance from that pay on by exactly £21.54; removing spending money from Fri 8 Jan raises each later balance by £54 a week | 8.4 | 1c |
+| March's rent changed on its own to £580, then rent £560 for this and all later ones from January: March is £560, and a later moved date, note and tick stay | D60 | 1c |
+| Move to next payday on Sun 25 Oct: Driving lesson Mon 26 Oct to Fri 30 Oct, Rent Sun 1 Nov to Fri 6 Nov | D14, D81 | 1c |
+| Laptop loan's 3 payments from Sun 20 Dec, with the note changed from the second payment for this and all later ones, still give 3 payments, the last £34.00 | 5.4, D89 | 1c |
+| "This and all later ones" and "Remove this and later" reach the whole family | D88 | 1c |
+| A new amount replaces a pattern but keeps a different last amount; removing the last payment leaves the others' amounts | D90, D92 | 1c |
+| A new date for this and all later ones: a new weekday, a new day of the month, a refused date, and an end date kept as the same number of payments | D91 | 1c |
+| Update balance on Fri 30 Oct with its ticks is one edit, undone in one step | D33, D87 | 1c |
+| A private transfer's two halves still match after every kind of edit, and its undo | D16, D94 | 1c |
+| Property: making an edit, undoing it, then making it again gives the same records as the first time | 5.4 | 1c |
+| Property: a private transfer's two halves still match after any run of edits | D94 | 1c |
 
 **After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
 
