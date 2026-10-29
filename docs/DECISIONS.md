@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -615,11 +615,11 @@ Note, 29 Oct 2026: the official list includes one-off bank holidays that no rule
 
 ## Made during step 1a
 
-D75 to D78 were decided on 29 Oct 2026 while building step 1a. D75 and D78 are for the owner to confirm.
+D75 to D78 were decided on 29 Oct 2026 while building step 1a. The owner confirmed D75 and D78 on 29 Oct 2026.
 
 ### D75. Scotland's World Cup bank holiday is a known exception too
 
-Decided 29 Oct 2026 in step 1a. Adds to D74's note. For the owner to confirm.
+Decided 29 Oct 2026 in step 1a. Adds to D74's note. Confirmed by the owner on 29 Oct 2026.
 
 The official list downloaded on 29 Oct 2026 has one more one-off day than D74's note names: Scotland's World Cup bank holiday on Mon 15 Jun 2026. The D74 test names it as a known exception too, for Scotland only. PrePenny uses the official list for 2026, so Scottish plans have it as a bank holiday.
 
@@ -643,7 +643,7 @@ Why: the same versions everywhere, changed only on purpose, and brand-new releas
 
 ### D78. Where a series' payments start and end
 
-Decided 29 Oct 2026 in step 1a. For the owner to confirm.
+Decided 29 Oct 2026 in step 1a. Confirmed by the owner on 29 Oct 2026.
 
 - The first payment is the first date the schedule gives on or after the series' start date. Monthly on the 1st from Sun 25 Oct starts on Sun 1 Nov.
 - A payment's original date is the date its schedule gives, before the weekend and bank holiday rule. For "last working day" it's the last working day itself.

@@ -24,7 +24,7 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
-1. **Check D75 and D78** (before step 1b). Both were decided in step 1a. D75 adds Scotland's World Cup bank holiday (Mon 15 Jun 2026) to the D74 test's known exceptions. D78 sets where a series' payments start and end. Say if either is wrong.
+Nothing waiting right now.
 
 ## Launch checklist (started)
 
