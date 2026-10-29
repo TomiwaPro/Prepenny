@@ -2,18 +2,26 @@
 // what they are after. Nothing here is stored or sent anywhere.
 
 import type { BalanceUpdate, Tick } from '../balance/types.ts';
+import type { Debt } from '../debts/types.ts';
 import { EngineInputError } from '../errors.ts';
 import type { PaymentChange, Series } from '../schedule/types.ts';
 import type { Edit, PlanRecords, RecordWrite } from './types.ts';
 
 /** The kinds of record, in the order an edit lists them. */
-const KIND_ORDER: readonly RecordWrite['kind'][] = ['series', 'change', 'tick', 'balance-update'];
+const KIND_ORDER: readonly RecordWrite['kind'][] = [
+  'series',
+  'change',
+  'tick',
+  'balance-update',
+  'debt',
+];
 
 /** One text that names a record: its kind, then its id, or its series and original date. */
 export function keyOf(write: RecordWrite): string {
   switch (write.kind) {
     case 'series':
     case 'balance-update':
+    case 'debt':
       return JSON.stringify([write.kind, write.id]);
     case 'change':
     case 'tick':
@@ -27,7 +35,7 @@ function checkWrite(write: RecordWrite, what: string): void {
     write !== null &&
     typeof write === 'object' &&
     KIND_ORDER.includes(write.kind) &&
-    (write.kind === 'series' || write.kind === 'balance-update'
+    (write.kind === 'series' || write.kind === 'balance-update' || write.kind === 'debt'
       ? text(write.id)
       : text(write.seriesId) && text(write.originalDate));
   if (
@@ -102,6 +110,10 @@ export class Draft {
     }
     for (const value of records.balanceUpdates) {
       const write: RecordWrite = { kind: 'balance-update', id: value.id, value };
+      this.#now.set(keyOf(write), write);
+    }
+    for (const value of records.debts ?? []) {
+      const write: RecordWrite = { kind: 'debt', id: value.id, value };
       this.#now.set(keyOf(write), write);
     }
   }
@@ -208,8 +220,18 @@ function applyToList<T>(
  * tests; it changes nothing it's given.
  */
 export function applyWrites<T extends PlanRecords>(records: T, writes: readonly RecordWrite[]): T {
+  // Debts are left as they were given, missing or not, unless the edit changes one.
+  const debts =
+    records.debts === undefined && !writes.some((write) => write.kind === 'debt')
+      ? {}
+      : {
+          debts: applyToList<Debt>(records.debts ?? [], writes, 'debt', (one) =>
+            keyOf({ kind: 'debt', id: one.id, value: null }),
+          ),
+        };
   return {
     ...records,
+    ...debts,
     series: applyToList<Series>(records.series, writes, 'series', (one) =>
       keyOf(seriesWrite(one.id, null)),
     ),
