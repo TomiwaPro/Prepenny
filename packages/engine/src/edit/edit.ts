@@ -230,6 +230,27 @@ function undo(context: Context, edit: Edit): void {
   for (const write of before) {
     context.draft.set(write);
   }
+  // A series the undo takes away mustn't leave behind a change or tick made
+  // on it since, or that later change would be lost without anyone knowing.
+  for (const write of before) {
+    if (write.kind !== 'series' || write.value !== null) continue;
+    const days = [
+      ...(context.checked.changes.get(write.id)?.keys() ?? []),
+      ...(context.checked.ticks.get(write.id)?.keys() ?? []),
+    ];
+    for (const day of days) {
+      const date = formatDate(day);
+      if (
+        context.draft.change(write.id, date) !== null ||
+        context.draft.tick(write.id, date) !== null
+      ) {
+        refuse(
+          'changed-since',
+          'Something this edit made has been changed since, so it can no longer be undone.',
+        );
+      }
+    }
+  }
 }
 
 function run(context: Context, command: EditCommand): void {
