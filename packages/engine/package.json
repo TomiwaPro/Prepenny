@@ -1,0 +1,22 @@
+{
+  "name": "@prepenny/engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PrePenny's money engine: pure TypeScript, no screens, no network, no clock.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./data/bank-holidays.json": "./data/bank-holidays.json",
+    "./data/bank-holidays.source.json": "./data/bank-holidays.source.json"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --project tsconfig.json && tsc --project tsconfig.test.json"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "fast-check": "4.10.2",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}
