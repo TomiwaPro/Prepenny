@@ -8,11 +8,14 @@ import {
   addDays,
   addMonths,
   type Day,
+  dayFromParts,
   dayOfMonthOrLast,
   formatDate,
+  LAST_YEAR,
   monthFromNumber,
   monthNumberOfDay,
   parseDate,
+  partsOfDay,
 } from '../dates/day.ts';
 import { type Moment, parseTime } from '../dates/time.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
@@ -40,10 +43,14 @@ export const DEBTS_MONTHS_AHEAD = 24;
 /**
  * The last day the Debts screen looks at (D43, D100): the same date 24
  * months after today, or that month's last day when it's shorter. Sun 25 Oct
- * 2026 gives Wed 25 Oct 2028.
+ * 2026 gives Wed 25 Oct 2028. Never past 31 Dec 2999, the engine's last day.
  */
 export function debtsLookAhead(today: string): string {
-  return formatDate(addMonths(parseDate(today, 'today'), DEBTS_MONTHS_AHEAD));
+  const day = parseDate(today, 'today');
+  if (partsOfDay(day).year + DEBTS_MONTHS_AHEAD / 12 > LAST_YEAR) {
+    return formatDate(dayFromParts(LAST_YEAR, 12, 31));
+  }
+  return formatDate(addMonths(day, DEBTS_MONTHS_AHEAD));
 }
 
 /** 1p, or 1 cent, or less left counts as paid off, including a small minus from rounding (D34, D42). */
@@ -87,6 +94,7 @@ function statementDays(card: CheckedDebt, to: Day): Day[] {
   const statementDay = card.statementDay as number;
   for (let month = monthNumberOfDay(card.balanceOn); ; month += 1) {
     const { year, month: m } = monthFromNumber(month);
+    if (year > LAST_YEAR) break;
     const day = dayOfMonthOrLast(year, m, statementDay);
     if (day > to) break;
     if (day > card.balanceOn) days.push(day);
@@ -188,12 +196,14 @@ function workOutDebt(
       });
       continue;
     }
-    // More than what's left (D63): what's left is never below zero, and a
-    // penny or cent over is only rounding (D34).
-    const over = event.amount - Math.max(0, balance);
+    // More than what's left (D63, D100): what's left counts as nothing once
+    // it's 1p or less, and a penny or cent over is only rounding (D34).
+    const over = event.amount - left(balance);
     if (paidOffOn === null && event.payment.isEstimate) isEstimate = true;
     balance = checkPence(balance - event.amount, `Debt ${debt.id}: what's left`);
-    if (paidOffOn === null && balance <= PAID_OFF_AT) paidOffOn = event.day;
+    // A payment that comes off at the start pays it off on the balance date,
+    // never before it (as D39).
+    if (paidOffOn === null && balance <= PAID_OFF_AT) paidOffOn = Math.max(event.day, balanceOn);
     rows.push({
       kind: 'payment',
       payment: paymentWithDates(event.payment),
@@ -265,6 +275,9 @@ function prepareAll(series: readonly Series[], holidays: BankHolidayLookup): Pre
  * says how much more it is.
  */
 export function workOutDebts(input: DebtsInput): DebtsPlan {
+  if (input === null || typeof input !== 'object') {
+    throw new EngineInputError('bad-input', 'Working out debts needs the plan.');
+  }
   const today = parseDate(input.today, 'today');
   const to = parseDate(input.to, 'to');
   if (to < today) {

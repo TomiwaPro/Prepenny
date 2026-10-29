@@ -5,7 +5,7 @@
 //   plus the interest (brief 5.6).
 // - "Paid off on" is the first row that leaves 1p, or 1 cent, or less (D34,
 //   D42), with no interest after it, and "left at the end" only when there's none.
-// - "More than what's left" is what a payment has over what was left (D63).
+// - "More than what's left" is what a payment has over what was left (D63, D100).
 // - Left now is never below zero or above the balance, and progress is 100%
 //   only when it's paid off (D34, D99).
 // - The answer is the same whatever order the records are given in.
@@ -187,11 +187,15 @@ describe('debts hold for any debt, payments, ticks and changes', () => {
               expect(row.minimum).toBeLessThanOrEqual(Math.max(0, balance));
             }
           } else {
-            const over = row.amount - Math.max(0, balance);
+            // What's left counts as nothing once it's 1p or less (D100).
+            const over = row.amount - (balance <= 1 ? 0 : balance);
             expect(row.moreThanLeft).toBe(over > 1 ? over : null);
             balance -= row.amount;
             expect(row.paidOff).toBe(balance <= 1);
-            if (firstPaidOff === null && balance <= 1) firstPaidOff = row.date;
+            // Never before the balance date: a row at the start pays it off on that date.
+            if (firstPaidOff === null && balance <= 1) {
+              firstPaidOff = [row.date, debt.balanceOn].sort()[1] as string;
+            }
             if (!row.ticked) {
               expect(row.date > debt.balanceOn && row.date <= input.to).toBe(true);
             }

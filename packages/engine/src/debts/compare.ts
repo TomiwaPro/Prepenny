@@ -82,6 +82,9 @@ function payOff(
  * goes out on the next `paysOn` day. All of it is an estimate.
  */
 export function compareCardPayments(input: CardComparisonInput): CardComparison {
+  if (input === null || typeof input !== 'object') {
+    throw new EngineInputError('bad-input', 'The comparison needs the card.');
+  }
   const from = parseDate(input.from, 'from');
   const card = checkDebt(input.card, from);
   if (card.debt.kind !== 'credit-card') {

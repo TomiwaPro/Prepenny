@@ -26,6 +26,9 @@ export type ChangeIndex = ReadonlyMap<string, ReadonlyMap<Day, CheckedChange>>;
 
 /** Checks the changes and indexes them by series and original date. */
 export function indexChanges(changes: readonly PaymentChange[]): ChangeIndex {
+  if (!Array.isArray(changes)) {
+    throw new EngineInputError('bad-change', 'The changes must be a list.');
+  }
   const index = new Map<string, Map<Day, CheckedChange>>();
   changes.forEach((change, i) => {
     const what = `Change ${i + 1}`;

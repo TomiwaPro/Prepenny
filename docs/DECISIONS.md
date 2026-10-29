@@ -855,10 +855,10 @@ When someone changes a payment's date for this and all later ones, the later pay
 
 - Weekly or every few weeks: the new date's weekday, every so many weeks from it. An irregular weekly estimate works the same way.
 - Monthly (on a date, the last day, the last working day or "the first Monday"): the new date's day of the month, for example "the 3rd". Months left out, like Dee's February and March, stay left out.
-- On chosen dates, like Ali's student loan: only that one date changes, and the later chosen dates stay.
+- On chosen dates, like Ali's student loan: only that one date changes, and the later chosen dates stay, with any one-off moves they have. The new date must come before the next payment, so no payment changes places.
 - A payment that happens once moves to the new date.
 
-The new date is the date from the schedule, before the weekend and bank holiday rule. The engine works out the new schedule itself, so every phone and every later step uses the same rule. Everything else in D91 stays: no payment is added or lost, and a date before the payment before it is refused.
+The new date is the date from the schedule, before the weekend and bank holiday rule. The edit sheet sends only the new date, and the engine works out where the later ones go, so every phone uses the same rule, and an edit made again after a sync clash uses the records as they are then. Everything else in D91 stays: no payment is added or lost, and a date before the payment before it is refused. A command can still give a schedule of its own, for a later "how often" change, and then it's refused when the new date doesn't fit it.
 
 Why: this is the proposal the owner accepted. The later payments keep the same kind of schedule, starting from the day the person chose.
 
@@ -911,9 +911,9 @@ Why: the brief and the owner define Left now this way. A bar at 100% beside "£2
 Decided 29 Oct 2026 in step 1d. Adds to brief 5.6, D27, D34, D42, D43 and D63.
 
 - The engine starts from the balance on its date and takes off, in date order: every linked payment ticked after the balance was typed in, on its paid date (D27), and every planned payment dated after the balance date (brief 5.6). A payment ticked after the update but paid before the balance date comes off first, as D39 does for a bank balance. A removed payment takes nothing off unless it's ticked (D4, D83). On the same day, payments go in the plan's same-day order (D12).
-- Paid off on is the date of the payment that leaves 1p, or 1 cent, or less (D34, D42). A debt with 1p or less on its balance date is paid off on that date.
+- Paid off on is the date of the payment that leaves 1p, or 1 cent, or less (D34, D42), and never before the balance date: a payment that comes off at the start pays it off on the balance date. A debt with 1p or less on its balance date is paid off on that date.
 - Looking 24 months ahead (D43) means up to and including the same date 24 months after today, or that month's last day when it's shorter. On Sun 25 Oct 2026 the Debts screen looks to Wed 25 Oct 2028.
-- More than what's left (D63) is a payment's amount minus what was left before it, counting what was left as never below zero, in the debt's own currency. A penny or cent over is only rounding (D34), so it isn't shown: the Family loan's last payment is €0.01 over and says Paid off. A payment still planned after a debt is paid off is all more than what's left, and says so. Nothing changes on its own (D63).
+- More than what's left (D63) is a payment's amount minus what was left before it, in the debt's own currency, counting what was left as nothing once it's 1p or 1 cent or less, as the screen shows it. A penny or cent over is only rounding (D34), so it isn't shown: the Family loan's last payment is €0.01 over and says Paid off. A payment still planned after a debt is paid off is all more than what's left, and says so. Nothing changes on its own (D63).
 - Paid off on, or what's still left at the end, is labelled as an estimate when it depends on one: credit card interest added before it's paid off, or a payment marked as an estimate. Sam's Credit card is an estimate because its £25.00 payments are; the Family loan isn't.
 
 Why: these follow brief 5.6 and the decisions it names, and the engine needed one exact answer for each. The 24 months match the furthest the plan can show (brief 4.8).

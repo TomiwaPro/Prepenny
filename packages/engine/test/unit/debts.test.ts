@@ -686,3 +686,87 @@ describe('D98: what a debt and its links must be', () => {
     expect(reversed).toEqual(atEndOfFebruary);
   });
 });
+
+describe('edge cases found by review', () => {
+  const small: Debt = {
+    id: 'small',
+    name: 'Secret Shop',
+    kind: 'loan',
+    currency: 'GBP',
+    balance: pounds('26.01'),
+    balanceOn: '2026-10-25',
+    balanceAt: '2026-10-25T08:00:00Z',
+    startingBalance: pounds('26.01'),
+  };
+  const once = (id: string, date: string, amount: string): Series =>
+    series({
+      id,
+      debtId: 'small',
+      type: 'debt',
+      amount: pounds(amount),
+      start: date,
+      schedule: { kind: 'once' },
+    });
+  const input = (fields: Partial<DebtsInput>): DebtsInput => ({
+    debts: [small],
+    series: [],
+    holidays: noBankHolidays,
+    today: '2026-10-25',
+    to: '2026-12-31',
+    ...fields,
+  });
+
+  it('counts a payment after a debt is paid off with 1p left as all more than what is left (D100)', () => {
+    const plan = debtOf(
+      input({
+        series: [once('first', '2026-11-01', '26.00'), once('second', '2026-12-01', '25.00')],
+      }),
+      'small',
+    );
+    expect(paymentRows(plan).map((row) => [row.leftAfter, row.moreThanLeft])).toEqual([
+      [0, null],
+      [0, pounds('25.00')],
+    ]);
+  });
+
+  it('never gives a Paid off on before the balance date: a late tick comes off at the start (as D39)', () => {
+    const plan = debtOf(
+      input({
+        debts: [{ ...small, balance: pounds('100.00') }],
+        series: [once('paid', '2026-10-20', '100.00')],
+        ticks: [samTick('paid', '2026-10-20', '2026-10-25T10:00:00Z')],
+      }),
+      'small',
+    );
+    expect(paymentRows(plan)[0]).toMatchObject({
+      date: '2026-10-20',
+      atStart: true,
+      paidOff: true,
+    });
+    expect([plan.leftNow, plan.paidOffOn]).toEqual([0, '2026-10-25']);
+  });
+
+  it('works up to the last day the engine knows, 31 Dec 2999', () => {
+    const card: Debt = {
+      ...small,
+      kind: 'credit-card',
+      balanceOn: '2999-11-01',
+      balanceAt: '2999-11-01T08:00:00Z',
+      interestRate: '24.9',
+      statementDay: 10,
+    };
+    const plan = workOutDebts(input({ debts: [card], today: '2999-12-01', to: '2999-12-31' }));
+    expect(plan.debts[0]?.rows.map((row) => row.date)).toEqual(['2999-11-10', '2999-12-10']);
+    expect(debtsLookAhead('2998-06-01')).toBe('2999-12-31');
+  });
+
+  it('refuses input that is not records with an engine error, not a crash', () => {
+    for (const bad of [
+      null,
+      { ...input({}), changes: {} as never },
+      { ...input({}), debts: null as never },
+    ]) {
+      expect(() => workOutDebts(bad as DebtsInput)).toThrow(EngineInputError);
+    }
+  });
+});
