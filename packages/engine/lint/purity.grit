@@ -1,0 +1,12 @@
+// Keeps the engine pure (CLAUDE.md, ARCHITECTURE.md "For future sessions: the engine").
+// Biome runs this only on packages/engine/src (see biome.json).
+language js
+
+or {
+  `Math.random` as $random where {
+    register_diagnostic(span=$random, message="The engine must give the same answer every time: no Math.random.")
+  },
+  `import($source)` as $dynamic where {
+    register_diagnostic(span=$dynamic, message="The engine can't load code while it runs: no import().")
+  }
+}

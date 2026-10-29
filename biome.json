@@ -1,0 +1,109 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!**/*.md", "!pnpm-lock.yaml", "!packages/engine/data"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "all",
+      "semicolons": "always"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "path": "./packages/engine/lint/purity.grit",
+      "includes": ["packages/engine/src/**"]
+    }
+  ],
+  "overrides": [
+    {
+      "includes": ["packages/engine/src/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noNodejsModules": "error",
+            "noUndeclaredDependencies": {
+              "level": "error",
+              "options": {
+                "devDependencies": false,
+                "peerDependencies": false,
+                "optionalDependencies": false
+              }
+            },
+            "useImportExtensions": "error"
+          },
+          "suspicious": {
+            "noConsole": "error"
+          },
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "Date": "The engine has no clock: pass today in as a YYYY-MM-DD date.",
+                  "performance": "The engine has no clock.",
+                  "setTimeout": "The engine has no clock.",
+                  "setInterval": "The engine has no clock.",
+                  "setImmediate": "The engine has no clock.",
+                  "requestAnimationFrame": "The engine has no clock.",
+                  "requestIdleCallback": "The engine has no clock.",
+                  "Intl": "The engine has no clock or locale: formatting belongs to the app.",
+                  "crypto": "The engine must give the same answer every time: no random numbers.",
+                  "fetch": "The engine has no network.",
+                  "XMLHttpRequest": "The engine has no network.",
+                  "WebSocket": "The engine has no network.",
+                  "WebTransport": "The engine has no network.",
+                  "EventSource": "The engine has no network.",
+                  "navigator": "The engine has no network or device access.",
+                  "importScripts": "The engine has no network.",
+                  "BroadcastChannel": "The engine talks to nothing outside itself.",
+                  "localStorage": "The engine has no storage.",
+                  "sessionStorage": "The engine has no storage.",
+                  "indexedDB": "The engine has no storage.",
+                  "caches": "The engine has no storage.",
+                  "cookieStore": "The engine has no storage.",
+                  "document": "The engine has no screens or storage.",
+                  "window": "The engine runs without a browser window.",
+                  "self": "The engine runs without a browser window.",
+                  "globalThis": "The engine uses no globals.",
+                  "process": "The engine runs without Node.",
+                  "Deno": "The engine runs without Deno's own features.",
+                  "Bun": "The engine runs without Bun's own features.",
+                  "require": "The engine imports only its own files.",
+                  "Function": "The engine runs no code made from text.",
+                  "console": "Never log from the engine: logs could hold amounts or names."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
