@@ -47,7 +47,7 @@ describe('the standard rules', () => {
     expect(rules('england-and-wales', 2026).slice(-2)).toEqual(['2026-12-25', '2026-12-28']);
   });
 
-  it("give Scotland 2 January, with its own substitute days", () => {
+  it('give Scotland 2 January, with its own substitute days', () => {
     expect(rules('scotland', 2022).slice(0, 2)).toEqual(['2022-01-03', '2022-01-04']);
     expect(rules('scotland', 2023).slice(0, 2)).toEqual(['2023-01-02', '2023-01-03']);
     expect(rules('scotland', 2027).slice(0, 2)).toEqual(['2027-01-01', '2027-01-04']);
@@ -126,7 +126,8 @@ describe('the rules against the official list (D74)', () => {
         const fromList = new Set((list.byYear.get(year) ?? []).map((h) => formatDate(h.day)));
         const fromRules = new Set(rules(nation, year));
         for (const date of fromList) {
-          if (!fromRules.has(date)) differences.push(`${nation} ${date}: only in the official list`);
+          if (!fromRules.has(date))
+            differences.push(`${nation} ${date}: only in the official list`);
         }
         for (const date of fromRules) {
           if (!fromList.has(date)) differences.push(`${nation} ${date}: only in the rules`);

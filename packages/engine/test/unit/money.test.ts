@@ -53,7 +53,7 @@ describe('money is whole pence', () => {
     expect(sumPence([])).toBe(0);
   });
 
-  it("never puts an amount in an error message, so errors are safe to report", () => {
+  it('never puts an amount in an error message, so errors are safe to report', () => {
     try {
       checkPence(123.45, 'Rent amount');
     } catch (error) {
@@ -111,7 +111,7 @@ describe('currency conversion, rounded once per payment (D9)', () => {
     expect(toOtherCurrency(parsePounds('206.15'), rate)).toBe(23938);
   });
 
-  it("leaves the Family loan at −€0.01 after its six payments (ARCHITECTURE.md 2.6)", () => {
+  it('leaves the Family loan at −€0.01 after its six payments (ARCHITECTURE.md 2.6)', () => {
     const payments = ['125.00', '125.00', '250.00', '250.00', '250.00', '206.15'];
     const paidInEuros = sumPence(payments.map((p) => toOtherCurrency(parsePounds(p), rate)));
     expect(paidInEuros).toBe(140058); // €1,400.58
