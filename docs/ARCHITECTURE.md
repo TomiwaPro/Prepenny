@@ -63,7 +63,7 @@ The D32 pay-later proposal and how a pay-later budget meets Left to spend (2.5),
 
 **In plain words.** These are every tool and service PrePenny will use. Most are free. Before launch, three things start to cost money: Supabase's paid plan (about £20 a month, D19), the web address (about £10 a year, needed from Phase 3 because sign-in emails must come from it) and, in Phase 6, the Apple and Google developer accounts. Stripe takes a share of each payment instead of a monthly fee.
 
-Versions are the latest at the time of writing (27 Oct 2026). Phase 1 fixes the exact versions in the project's files, and they only change on purpose. Facts about free plans were checked on the services' own pages on 27 Oct 2026 and should be checked again before launch.
+Versions are the latest at the time of writing (27 Oct 2026). Step 1a pinned the exact versions in the project's files (D77), and they only change on purpose. Facts about free plans were checked on the services' own pages on 27 Oct 2026 and should be checked again before launch.
 
 ### 1.1 Building the app
 
@@ -271,7 +271,7 @@ How the engine stays fast:
 
 ### 2.9 Bank holidays
 
-The engine has a built-in copy of the official list from `https://www.gov.uk/bank-holidays.json` for England and Wales, Scotland and Northern Ireland (brief 5.7). For a year the official list doesn't reach yet, the engine works out the usual bank holidays by the standard rules, substitute days included, and switches to the official list once it covers that year (D74). **Agreed (D57):** the app also fetches a fresher copy of that same file from PrePenny's own website, which a weekly job refreshes from GOV.UK, and keeps it on the phone, so the phone never contacts another site. Each plan has one nation, chosen in setup.
+The engine has a built-in copy of the official list from `https://www.gov.uk/bank-holidays.json` for England and Wales, Scotland and Northern Ireland (brief 5.7). The built-in copy is `packages/engine/data/bank-holidays.json`, saved unchanged by the Bank holidays workflow on GitHub (`.github/workflows/bank-holidays.yml`), with `bank-holidays.source.json` beside it giving the source link, the date downloaded and a checksum. The engine takes the list as an input, so the app can pass in a fresher one. For a year the official list doesn't cover (D76), the engine works out the usual bank holidays by the standard rules, substitute days included, and switches to the official list once it covers that year (D74). **Agreed (D57):** the app also fetches a fresher copy of that same file from PrePenny's own website, which a weekly job refreshes from GOV.UK, and keeps it on the phone, so the phone never contacts another site. Each plan has one nation, chosen in setup.
 
 ### For future sessions: the engine
 
@@ -1564,7 +1564,11 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | Budget periods: Sam's weekly budgets start on Friday; a monthly budget runs payday to payday for monthly pay and by calendar month otherwise | D29 | 1e |
 | Roll-over adds last period's unspent amount, shown as "£25 + £7 from last week"; off means nothing moves | D30 | 1e |
 | Pay-later bills: a bill covers spends from the day after the last statement day up to this one | D32, D61 | 1e |
-| Bank holidays worked out by the rules match the official list for every year it covers; years it doesn't reach use the rules | D74 | 1a |
+| Bank holidays worked out by the rules match the official list for every year it covers, apart from the named one-off days; years it doesn't cover use the rules | D74, D75, D76 | 1a |
+| With "working day before", a Friday pay lands on Thu 24 Dec 2026 instead of Christmas Day and on Thu 31 Dec 2026 instead of New Year's Day 2027; with "keep the date" it stays on the Fridays | 4.3, D15 | 1a |
+| Sam's pay series gives 18 paydays from Fri 30 Oct 2026 to Fri 26 Feb 2027, totalling £9,748.96: first £603.06, then the pattern | 8.3 | 1a |
+| Property: a monthly payment never drifts off its day over 10 years, and payment k comes out the same whatever order payments are asked for in | 5.3 | 1a |
+| The lint rules keep the engine pure: no Date, no Math.random, no network, no storage and no imports from outside the package | CLAUDE.md | 1a |
 | Sam with the Fri 30 Oct pay at £503.06 is £95.47 short on Sun 1 Nov; the payments that could move are Pay-later card −£466.07, Family loan −£125.00 and Driving lesson −£100.00, not Spending money −£30.00 | D69 | 1b |
 | Looking 24 months ahead, Sam's Credit card is paid off on Wed 15 Mar 2028, and that payment shows "£4.01 more than what's left" | D70, D63 | 1d |
 

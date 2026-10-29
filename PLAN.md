@@ -7,7 +7,7 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 - [x] **Step 0: foundations.** Done 27 Oct 2026. The brief, decisions, voice, design and this plan are in the repository. No app code.
 - [x] **Phase 0: plan.** Done 27 Oct 2026. `docs/ARCHITECTURE.md` was approved by the owner. Its 21 proposals are D38 to D58 in `docs/DECISIONS.md`, the answers to the Phase 0 questions are D59 to D68, and the owner's review added D69 to D74.
 - [ ] **Phase 1: the money engine**
-  - [ ] 1a Dates, repeats, month ends and UK bank holidays
+  - [x] 1a Dates, repeats, month ends and UK bank holidays. Done 29 Oct 2026: money, dates, bank holidays and the schedule in `packages/engine`, with the GitHub check and the bank holiday download. D75 to D78 were decided along the way.
   - [ ] 1b The balance rule, lowest point, warnings and shortfalls
   - [ ] 1c Editing: just this one, this and all later, skip, move, undo
   - [ ] 1d Debts, currencies and credit cards
@@ -24,7 +24,7 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
-1. **The bank holiday download is still blocked** (step 1a). On 27 and 29 Oct 2026 this session's network settings refused www.gov.uk, so `https://www.gov.uk/bank-holidays.json` couldn't be downloaded. Step 1a stopped before any code, as the owner asked. *Needed:* the environment's network access set to Custom, with `www.gov.uk` under Allowed domains and the package managers box ticked, saved. Then run step 1a's Part 2 again.
+1. **Check D75 and D78** (before step 1b). Both were decided in step 1a. D75 adds Scotland's World Cup bank holiday (Mon 15 Jun 2026) to the D74 test's known exceptions. D78 sets where a series' payments start and end. Say if either is wrong.
 
 ## Launch checklist (started)
 
