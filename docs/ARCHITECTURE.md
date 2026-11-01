@@ -157,7 +157,7 @@ It's built first, in Phase 1, before any screen (brief Part 9).
 | **Left to spend** | The plan and today | The amount, the payday it lasts until (D28), and the "Spend no more than" line when it's needed (D3) |
 | **Debts** | A debt, its linked payments, today | Left now, Paid off on (or what's still left at the end), progress, and for credit cards the interest and minimum estimates and the minimum, fixed and full comparison |
 | **Budgets** | A budget, its spends, today | The rows it puts in the plan, spent and left this period, and any roll-over |
-| **Savings goals** | A goal and the transfers linked to it | Saved so far, the date it's reached at the current plan, and what each person has put in |
+| **Savings goals** | A goal and the transfers linked to it | Saved so far, the date it's reached at the current plan, and, from Phase 3 with shared plans, what each person has put in (D114) |
 | **Make an edit** | The plan and one command, for example "change this and all later ones from 1 Jan 2027 to £560" | The records to save, and the records that put everything back (the undo) |
 | **Take-home pay** | Pay lines, tax settings, year-so-far figures, the tax year file | Take-home pay and the breakdown: tax, National Insurance, pension, student loan, other deductions |
 | **Overtime** | The payday's linked pay week, the extra hours and rate | How much that payday changes (D5) |
@@ -239,6 +239,17 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
 - **Roll-over** (D30): when on, a period's budget is the budget plus the unspent amount at the end of the period before, shown as "£25 + £7 from last week". Future periods in the plan assume the current one is spent in full, so roll-over appears once a period has ended.
 - **Left to spend** (D28): all spending money due to leave from today to the day before the next main payday. That's unspent budget rows (including spread days and any full future period that starts inside that window) plus payments of the type Spending money. The extra line from D3 appears only when spending it all would take the balance under the warning level: X = max(0, L + M − W).
 - **A balance checked in an earlier budget period** follows D67.
+- **Built in step 1e** (D107 to D115):
+  - A budget's first period is the one with its start day in it, at the full amount. Its rows count as Spending money, and a pay-later budget's bills as Bills (D107).
+  - Weekly periods start on the main pay's weekday or on Monday. Monthly ones run payday to payday for monthly pay, carrying on in whole months before the first payday and after the last, or by calendar month otherwise (D108).
+  - D2 applies to every period from the one with today in it: spends recorded after the update are rows on their days, and what's left leaves today, or on the first day of a later period. Budget rows and spends are never ticked (D109).
+  - Roll-over adds what's left of an ended period to the next, never takes off an overspend, and can start from the day it was switched on (D110).
+  - A pay-later bill is a payment of its own, found by the budget's id and the bill's date, so it's ticked, moved and given its real amount like rent. Without the card's statement day, it covers spends from the bill before it to the day before it (D111).
+  - Left to spend is worked out for each account, and the pay-later card's line sits under it (D112).
+  - Set aside moves part of money coming in to another account the same day, and goes with its payment (D113).
+  - Savings goals: saved so far from ticked payments, and the date the plan reaches the target (D114).
+  - "I spent", changing and removing a spend are undoable edits (D115).
+  - Three questions wait for the owner in `PLAN.md`: whether money set aside is ticked on its own, two points about the "Spend no more than" line, and whether "I spent" takes a date after today.
 
 ### 2.6 Debts
 
@@ -297,10 +308,12 @@ The engine has a built-in copy of the official list from `https://www.gov.uk/ban
 - **Times** (balance updates, ticks, spends, D33) are ISO strings in UTC. The engine only compares stored times with each other, so it still needs no clock.
 - **Pure:** no `Date.now()`, no `Math.random()`, no network, no storage. A lint rule blocks them inside the package.
 - **Debts** (step 1d, `packages/engine/src/debts`): `workOutDebts({ debts, series, changes, ticks, holidays, today, to }) → { owedNow, owedNowIsEstimate, debts }`, one `DebtPlan` per debt with Left now (with `interestSinceUpdate`, `leftNowIsEstimate` and `interestNotIncluded`, D104), Paid off on or `leftAtEnd`, progress and every row (linked payments and credit card statement days). A card's `zeroInterestUntil` is its "0% until" date (D106). Use `to: debtsLookAhead(today)` for the Debts screen (D43, D100). `compareCardPayments({ card, left, from, paysOn, fixed })` gives the minimum, fixed and full comparison (D102). Debt amounts are the debt's own minor units (`MinorUnits`); `leftNowInPounds` and `owedNow` are pence. A series links to a debt with `debtId`; a tick made inside a debt's statement update has `inDebtUpdate` set to the debt's id (D62).
+- **Budgets, Left to spend and Set aside** (step 1e, `packages/engine/src/budgets`): `PlanInput` takes optional `budgets`, `spends` and `goals`. `workOutPlan` gives back `plan.budgets` (one `BudgetPlan` per budget: `current` and `periods`, each with `base`, `rolledOver`, `amount`, `spent`, `left`, `perDay` for spread budgets and `bill` for pay-later ones) and `account.leftToSpend` (`until`, `amount`, `lowest`, `spendNoMoreThan`, `canKeepWarningLevel` and the `payLater` lines). Every `PlanRow` has a `kind`: `payment`, `bill`, `set-aside`, `budget` or `spend`, with `budgetId` and `spendId`. A pay-later budget's bills are a series made inside the engine with the budget's id (`billSeriesOf`), so ticks, changes and edits find them like any payment. A series' `setAside` is `{ percent, accountId }`.
+- **Savings goals** (step 1e, `packages/engine/src/goals`): `workOutGoals({ goals, series, changes, ticks, holidays, today, to }) → { goals }`, one `GoalPlan` per goal with saved so far, progress, `reachedOn` and `reachedWith`, and every linked payment. Use `to: debtsLookAhead(today)` to look 24 months ahead (D114). A series links to a goal with `goalId`.
 - **Edits** are commands: `editPlan(input, command) → { writes, undo }`, where `input` is the stored records (accounts, balance updates, series, changes, ticks and, from step 1d, debts) with the main pay, the bank holidays and `today`. Built in step 1c, in `packages/engine/src/edit`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
-  - Commands: `just-this-one`, `this-and-later`, `remove-this-one`, `remove-this-and-later`, `move`, `move-to-next-payday`, `tick`, `untick`, `update-balance`, `update-from-statement` (step 1d) and `undo`. A `this-and-later` edit takes `amount` for "Every payday from now" (D90) or `stepAmount` for "Only this week of the pattern" (D97), never both. For a new date, the app sends only `date`, and the engine works out the schedule from it (D96, `src/edit/new-date.ts`). A `schedule` in the command is for a later "how often" change.
+  - Commands: `just-this-one`, `this-and-later`, `remove-this-one`, `remove-this-and-later`, `move`, `move-to-next-payday`, `tick`, `untick`, `update-balance`, `update-from-statement` (step 1d), `spend`, `change-spend` and `remove-spend` (step 1e) and `undo`. A pay-later bill takes every payment command except `this-and-later` and `remove-this-and-later` (D111). A `this-and-later` edit takes `amount` for "Every payday from now" (D90) or `stepAmount` for "Only this week of the pattern" (D97), never both. For a new date, the app sends only `date`, and the engine works out the schedule from it (D96, `src/edit/new-date.ts`). A `schedule` in the command is for a later "how often" change.
   - Debts in the records are optional: when they're given, every series' link to a debt is checked, and `applyWrites` keeps them as given unless an edit changes one.
-  - Each write names one record and its new `value`, or `value: null` for a removal: `{ kind: 'series' | 'balance-update' | 'debt', id, value }` or `{ kind: 'change' | 'tick', seriesId, originalDate, value }` (D87). `undo` lists the same records with their values before, null where one didn't exist. `applyWrites(records, writes)` saves them into a copy of the records.
+  - Each write names one record and its new `value`, or `value: null` for a removal: `{ kind: 'series' | 'balance-update' | 'debt' | 'spend', id, value }` or `{ kind: 'change' | 'tick', seriesId, originalDate, value }` (D87). `undo` lists the same records with their values before, null where one didn't exist. `applyWrites(records, writes)` saves them into a copy of the records.
   - New ids come with the command: `newSeriesId` for a split, `newOtherHalfSeriesId` for the second half of a private transfer, and the balance update's own id.
   - Refusals are `EngineInputError`s with a code (`no-payment`, `ticked`, `changed-since`, `date-not-in-schedule` and so on) and a message holding ids and dates only. `edit-breaks-plan` means the engine's own mistake, never the person's, and property tests check it never happens.
   - A family is a series and every series split from it (D49). Its series cover payment numbers in order, with no gaps or overlaps, and only the family's last payment is last (D89). The shared half of a private transfer has its own family that mirrors the private one series for series (D94). The engine makes only families like that, but doesn't yet refuse stored data that breaks these rules, such as two halves sharing one family. Phase 3's server checks should.
@@ -436,7 +449,8 @@ An account's balance and date (brief 5.2) are its latest balance update. Keeping
 | `end_rule` | never; after N payments, with N; or on a date, with the date | Brief 4.4 |
 | `last_amount` | pence, or empty | A different last payment (brief 4.4) |
 | `holiday_rule` | choice: keep the date, working day before, working day after | Brief 4.3 |
-| `debt_id`, `budget_id`, `goal_id` | id, or empty | The linked debt, budget or goal |
+| `debt_id`, `budget_id`, `goal_id` | id, or empty | The linked debt, budget or goal. A goal's series must move money into or out of the goal's account (D114) |
+| `set_aside` | a percentage (decimal) and an account, or empty | Money coming in only: part of each payment moved to another account the same day (D64, D113) |
 | `is_estimate` | yes/no | |
 | `note` | text | |
 | `pay_profile_id` | id, or empty | For pay: which job's tax settings to use |
@@ -454,7 +468,7 @@ The `schedule` is one of:
 - **on chosen dates:** a list of dates (Ali's student loan)
 - **irregular:** a weekly estimate on a chosen weekday (Kofi). It's its own kind, so D14's Monday-to-Sunday weeks can tell it apart from weekly pay. The next main payday is the next Monday (D66).
 
-Kofi's 25% for tax is D64: a series coming in gets an optional percentage to set aside and the account it goes to, added in step 1e.
+Kofi's 25% for tax is D64: a series coming in gets an optional `set_aside`, a percentage and the account it moves to, built in step 1e (D113).
 
 **Payment change** (a change to one payment, brief 5.2)
 
@@ -519,7 +533,9 @@ Unticking deletes the tick.
 | `starts_on` | date | |
 | `ends_on` | date, or empty | |
 | `bill_day` | 1 to 31, or empty | Pay-later bill only (D32) |
-| `statement_day` | 1 to 31, or empty | Pay-later bill only (the D32 proposal in 2.5) |
+| `statement_day` | 1 to 31, or empty | Pay-later bill only, the card's own statement day. Empty means each bill covers spends up to the day before it (D61, D111) |
+
+A pay-later budget's bills are ticked and given their real amount like payments: the tick and the payment change name the budget's id and the bill's date (D111). A budget's `created_at` (3.1) sets its place in the same-day order (D12, D107).
 
 **Spend** ("I spent")
 
@@ -540,7 +556,7 @@ Unticking deletes the tick.
 | `target` | pence | |
 | `target_date` | date, or empty | Brief 4.7 |
 | `account_id` | id | Where the money is kept |
-| `starting_amount` | pence | Already saved when the goal was made |
+| `starting_amount` | pence | Already saved when the goal was made. Saved so far adds every linked payment ticked as paid (D114) |
 | `belongs_to` | person id, or empty | Empty means shared. A shared goal shows what each person put in, worked out from whose account each linked transfer came from (brief 4.14) |
 
 Planned transfers into a goal are series with `goal_id` set.
@@ -1626,6 +1642,20 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | A new date for this and all later ones follows D96: the new weekday, the new day of the month, or only that one chosen date | D96 | 1d |
 | Property: every debt row follows from the one before; Paid off on, More than what's left and Left now agree with the rows; the order of the records changes nothing | D34, D63, D100 | 1d |
 | Property: Update from statement and Only this week of the pattern are undone exactly and made again the same way, alongside every other edit | D97, D103 | 1d |
+| On Fri 20 Nov, owner test 5's card with the £25.00 on 15 Nov ticked shows £404.73 left now, as an estimate; a card with no rate says "Interest not included" | D104 | 1e |
+| A payment due on the statement date itself comes off the debt unless it was ticked at or before the update | D105 | 1e |
+| 0% until Mon 30 Nov: Tue 10 Nov adds nothing (£395.99 after 15 Nov), Thu 10 Dec adds £8.22 (£404.21, then £379.21) | D106 | 1e |
+| Owner test 1: Travel £25 a week all at the start: −£6.00 and −£15.00 on Sun 25 Oct; ends of day £216.54, −£8.46, £25.47, £558.53, −£41.47; November £586.91, February £2,833.87; short £8.46 on Mon 26 Oct and £41.47 on Sun 1 Nov; Left to spend £45.00, "Spend no more than £16.54" | D2, D3, D28 | 1e |
+| Owner test 2: the same budget spread: £3.20 a day from Sun 25 to Wed 28 Oct, £3.21 on Thu 29 Oct; then £3.57 a day and £3.58 on Thu 5 Nov | D31 | 1e |
+| Owner test 3: a pay-later food budget keeps every figure in brief 8.3; £230.00 spent makes the bill £230.00 (£702.91 end of November, £3,274.87 end of February); £120.00 spent gives "£80.00 left until Sat 28 Nov", not in Left to spend; February's bill on Sun 28 Feb covers Fri 29 Jan to Sat 27 Feb | D32, D61, D111 | 1e |
+| Owner test 4: roll-over makes this week "£25 + £7 from last week", £32.00, and £28.00 leaves on Sun 25 Oct; later weeks are £25.00 | D30, D110 | 1e |
+| Owner test 5: balance checked Thu 29 Oct at 8pm, today Sat 31 Oct: −£3.00 on Fri 30 Oct, −£22.00 on Sat 31 Oct, nothing else from Travel before Fri 6 Nov | D67 | 1e |
+| Owner test 6: Sam's weekly budgets run Friday to Thursday, Kofi's Monday to Sunday, Priya's monthly one Thu 31 Dec 2026 to Thu 28 Jan 2027 | D29, D108 | 1e |
+| Owner test 7: Kofi's £400.00 with 25% set aside moves £100.00 to his Tax account on Mon 2 Nov, and £109.38 when the real £437.50 is typed in | D64, D113 | 1e |
+| Owner test 8: a £1,200.00 Holiday goal with £50.00 every Friday from Fri 30 Oct is reached on Fri 9 Apr 2027, with the 24th move | 4.7, D114 | 1e |
+| "I spent", changing and removing a spend are each one undo; a pay-later bill is ticked, moved and given its real amount, but not changed for this and all later ones | D111, D115 | 1e |
+| Property: budget periods follow on with no gaps; what's left leaves in full from today; spread days add up; spends after the update are rows and those before aren't; bills are the budget or what was spent; Left to spend follows D3 and D28; record order changes nothing; spend and bill edits are undone exactly | D2, D3, D28, D30, D31, D32, D115 | 1e |
+| Property: a credit card's Left now matches a second working of the interest since the update | D104 | 1e |
 
 **After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
 
