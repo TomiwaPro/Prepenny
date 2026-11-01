@@ -103,6 +103,8 @@ const seriesWish = fc.record({
   name: fc.constantFrom('Rent', 'Pay', 'Bills', 'A', 'a'),
   // Money going out can pay off one of the plan's two debts (D98).
   debt: fc.option(fc.integer({ min: 0, max: 1 })),
+  // Money coming in usually has 25% set aside to another account here (D64), so set-aside ticks are common.
+  setAside: fc.integer({ min: 0, max: 3 }).map((n) => n > 0),
 });
 
 const changeWish = fc.record({
@@ -120,6 +122,8 @@ const tickWish = fc.record({
   tickedAfterDue: fc.integer({ min: -15, max: 15 }),
   minute: fc.integer({ min: 0, max: 1439 }),
   inUpdate: fc.boolean(),
+  // The tick for the money set aside, when the series has some (D116).
+  setAside: fc.boolean(),
 });
 
 const planWish = fc.record({
@@ -210,6 +214,9 @@ function buildPlan(wish: PlanWish): PlanWithDebts {
       direction,
       ...(transfer ? { toAccountId: `account-${other}` } : {}),
       ...(direction === 'out' && s.debt !== null ? { debtId: `debt-${s.debt}` } : {}),
+      ...(direction === 'in' && s.setAside && accounts.length > 1
+        ? { setAside: { percent: '25', accountId: `account-${other}` } }
+        : {}),
     });
   });
   const debts: Debt[] = [
@@ -293,8 +300,10 @@ function buildPlan(wish: PlanWish): PlanWithDebts {
     const one = pickable[t.series % pickable.length] as Series;
     const list = paymentsOf(one, changes);
     const payment = list[t.k % Math.max(1, list.length)];
-    if (payment === undefined || ticked.has(`${one.id} ${payment.originalDate}`)) continue;
-    ticked.add(`${one.id} ${payment.originalDate}`);
+    const setAside = t.setAside && one.setAside !== undefined;
+    const key = `${one.id} ${payment?.originalDate}${setAside ? ' set-aside' : ''}`;
+    if (payment === undefined || ticked.has(key)) continue;
+    ticked.add(key);
     const tickedOn = [at(payment.date, t.tickedAfterDue), today].sort()[0] as string;
     const tick: Tick = {
       seriesId: one.id,
@@ -302,6 +311,7 @@ function buildPlan(wish: PlanWish): PlanWithDebts {
       tickedAt: timeOn(tickedOn, t.minute, 30),
       paidOn: paidDate(payment.date, tickedOn),
       ...(t.inUpdate ? { inBalanceUpdate: 'update-0' } : {}),
+      ...(setAside ? { setAside: true } : {}),
     };
     ticks.push(tick);
     const shared = sharedOf(one);
@@ -422,13 +432,25 @@ function commandFrom(
   }
   if (wish.kind === 'untick') {
     // Aimed at a ticked payment, or there would be little to untick.
-    const ticks = input.ticks ?? [];
+    // Half the time a set-aside tick, when there is one (D116).
+    const all = input.ticks ?? [];
+    const setAsideTicks = all.filter((one) => one.setAside === true);
+    const ticks = wish.toStep && setAsideTicks.length > 0 ? setAsideTicks : all;
     const tick = ticks[wish.k % Math.max(1, ticks.length)];
     return tick === undefined
       ? null
-      : { kind: 'untick', seriesId: tick.seriesId, originalDate: tick.originalDate };
+      : {
+          kind: 'untick',
+          seriesId: tick.seriesId,
+          originalDate: tick.originalDate,
+          ...(tick.setAside === true ? { setAside: true } : {}),
+        };
   }
-  const one = input.series[wish.series % input.series.length] as Series;
+  // Half the ticks are for money set aside, on a series that has some (D116).
+  const withSetAside = input.series.filter((one) => one.setAside !== undefined);
+  const pool =
+    wish.kind === 'tick' && wish.toStep && withSetAside.length > 0 ? withSetAside : input.series;
+  const one = pool[wish.series % pool.length] as Series;
   const list = allPayments(input).filter((p) => p.seriesId === one.id);
   const payment = list[wish.k % Math.max(1, list.length)];
   if (payment === undefined) return null;
@@ -480,7 +502,13 @@ function commandFrom(
     case 'move':
       return { ...ref, kind: 'move', date: at(payment.date, wish.moveBy) };
     case 'tick':
-      return { ...ref, kind: 'tick', tickedAt: timeOn(input.today, wish.minute, 45) };
+      // Sometimes the money set aside instead of the payment (D116).
+      return {
+        ...ref,
+        kind: 'tick',
+        tickedAt: timeOn(input.today, wish.minute, 45),
+        ...(wish.toStep && one.setAside !== undefined ? { setAside: true } : {}),
+      };
   }
 }
 
@@ -506,8 +534,9 @@ function paymentOfRecord(input: PlanInput): Map<string, number> {
   ] as const) {
     for (const record of list) {
       const number = numbers.get(`${record.seriesId}|${record.originalDate}`);
+      const part = 'setAside' in record && record.setAside ? '|set-aside' : '';
       if (number !== undefined)
-        found.set(`${kind}|${record.seriesId}|${record.originalDate}`, number);
+        found.set(`${kind}|${record.seriesId}|${record.originalDate}${part}`, number);
     }
   }
   return found;
@@ -548,6 +577,20 @@ describe('editing holds for any plan and any edits', () => {
             if (command.kind === 'this-and-later' && command.edits.stepAmount !== undefined) {
               made.set('step-amount', (made.get('step-amount') ?? 0) + 1);
             }
+            if ((command.kind === 'tick' || command.kind === 'untick') && command.setAside) {
+              made.set(
+                `set-aside-${command.kind}`,
+                (made.get(`set-aside-${command.kind}`) ?? 0) + 1,
+              );
+            }
+            // Edits that carried a set-aside tick along: splits, removals and undo (D116).
+            if (
+              command.kind !== 'tick' &&
+              command.kind !== 'untick' &&
+              edit.writes.some((w) => w.kind === 'tick' && w.setAside)
+            ) {
+              made.set('set-aside-carried', (made.get('set-aside-carried') ?? 0) + 1);
+            }
             const after = applyWrites(input, edit.writes);
 
             // Undo gives back exactly the records from before.
@@ -564,7 +607,9 @@ describe('editing holds for any plan and any edits', () => {
             const touched = new Set(
               edit.writes.flatMap((w) =>
                 w.kind === 'change' || w.kind === 'tick'
-                  ? [`${w.kind}|${w.seriesId}|${w.originalDate}`]
+                  ? [
+                      `${w.kind}|${w.seriesId}|${w.originalDate}${w.kind === 'tick' && w.setAside ? '|set-aside' : ''}`,
+                    ]
                   : [],
               ),
             );
@@ -590,6 +635,11 @@ describe('editing holds for any plan and any edits', () => {
     for (const kind of [...KINDS, 'step-amount']) {
       expect(made.get(kind) ?? 0, kind).toBeGreaterThan(20);
     }
+    // Set-aside ticks are rarer: usually about 45 ticks, 30 unticks and 10 carried along.
+    for (const kind of ['set-aside-tick', 'set-aside-untick']) {
+      expect(made.get(kind) ?? 0, kind).toBeGreaterThan(8);
+    }
+    expect(made.get('set-aside-carried') ?? 0, 'set-aside-carried').toBeGreaterThan(1);
   });
 
   it('gives exactly the same payments and balances after splitting a series without changing anything', () => {

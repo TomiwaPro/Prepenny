@@ -57,6 +57,12 @@ export interface Tick {
    * `paidDate` when the tick is made (D1, D71).
    */
   readonly paidOn: string;
+  /**
+   * Set on the tick for the money set aside from this payment, not the
+   * payment itself. Money set aside is ticked on its own, so it stays in
+   * Not ticked yet until it has really been moved (D116).
+   */
+  readonly setAside?: true;
 }
 
 /** Everything the plan needs (ARCHITECTURE.md 2.1, "Work out the plan"). */
@@ -100,7 +106,8 @@ export type Flow = 'in' | 'out' | 'transfer-in' | 'transfer-out';
  * - `bill`: a pay-later budget's bill (D32, D111). It's ticked, moved and
  *   given its real amount like a payment, found by the budget's id.
  * - `set-aside`: part of money coming in, moved to another account (D64, D113).
- *   It goes with its payment: the same tick, date and estimate label.
+ *   It goes with its payment's date, removal and estimate label, but has a
+ *   tick of its own (D116).
  * - `budget`: what's left of a budget period leaving the account (D2), all
  *   at once or one day of it spread across the days (D31).
  * - `spend`: "I spent", recorded after the account's latest balance update (D2, D33).

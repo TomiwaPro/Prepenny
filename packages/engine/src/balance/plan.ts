@@ -255,7 +255,10 @@ export interface CheckedRecords {
   readonly prepared: readonly PreparedSeries[];
   readonly familyTimes: ReadonlyMap<string, Moment>;
   readonly changes: ChangeIndex;
+  /** The payments' own ticks. */
   readonly ticks: TickIndex;
+  /** The ticks for money set aside, kept apart from the payments' own (D116). */
+  readonly setAsideTicks: TickIndex;
   /** The debts, by id. Empty when none were given. */
   readonly debts: ReadonlyMap<string, CheckedDebt>;
   /**
@@ -283,6 +286,7 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
   const { prepared, familyTimes } = prepareAll(input, accounts, bills);
   const changes = indexChanges(input.changes ?? []);
   const ticks = indexTicks(input.ticks ?? []);
+  const setAsideTicks = indexTicks(input.ticks ?? [], 'set-aside');
   const debts = checkDebts(input.debts ?? [], today);
   if (input.debts !== undefined) checkDebtLinks(input.series, debts);
   const goals = checkGoals(input.goals ?? []);
@@ -305,6 +309,7 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
     familyTimes,
     changes,
     ticks,
+    setAsideTicks,
     debts,
     budgets,
     spends,
@@ -323,12 +328,18 @@ function setAsideAmount(amount: Pence, percent: Decimal): Pence {
 /**
  * The set-aside that goes with a payment of money coming in (D64, D113): a
  * transfer of the amount set aside, from the payment's account to the one
- * it's set aside in, on the same day, with the payment's tick.
+ * it's set aside in, on the same day. It has a tick of its own (D116).
  */
-function setAsideOf(movement: Movement, setAside: SetAside, percent: Decimal): Movement {
+function setAsideOf(
+  movement: Movement,
+  setAside: SetAside,
+  percent: Decimal,
+  tick: CheckedTick | null,
+): Movement {
   return {
     ...movement,
     kind: 'set-aside',
+    tick,
     payment: {
       ...movement.payment,
       direction: 'transfer',
@@ -354,7 +365,7 @@ function collectPayments(
   to: Day,
   holidays: BankHolidayLookup,
 ): Movement[] {
-  const { prepared, familyTimes, changes, ticks } = checked;
+  const { prepared, familyTimes, changes, ticks, setAsideTicks } = checked;
   const all: Movement[] = [];
   for (const one of prepared) {
     const id = one.series.id;
@@ -366,6 +377,8 @@ function collectPayments(
     const familyCreatedAt = familyTimes.get(one.series.familyId) as Moment;
     const bill = worked.get(id) ?? null;
     const setAside = one.series.setAside;
+    // A set-aside tick on a series with no money set aside is ignored (D83, D116).
+    const setAsideTicksOfSeries = setAside === undefined ? undefined : setAsideTicks.get(id);
     const percent =
       setAside === undefined ? null : parseDecimal(setAside.percent, `Series ${id}: set aside`);
     const found = new Set<Day>();
@@ -390,7 +403,8 @@ function collectPayments(
       };
       all.push(movement);
       if (setAside !== undefined && percent !== null) {
-        all.push(setAsideOf(movement, setAside, percent));
+        const tick = setAsideTicksOfSeries?.get(payment.originalDay) ?? null;
+        all.push(setAsideOf(movement, setAside, percent, tick));
       }
     };
     if (from <= to) {
@@ -398,8 +412,11 @@ function collectPayments(
         add(payment);
       }
     }
-    // Ticked payments dated after the plan's last day.
-    for (const originalDay of ticksOfSeries?.keys() ?? []) {
+    // Ticked payments, and ticked money set aside, dated after the plan's last day.
+    for (const originalDay of [
+      ...(ticksOfSeries?.keys() ?? []),
+      ...(setAsideTicksOfSeries?.keys() ?? []),
+    ]) {
       if (found.has(originalDay)) continue;
       const index = one.firstIndexOnOrAfter(originalDay);
       if (index < one.count && one.dateAt(index) === originalDay) {
@@ -475,7 +492,7 @@ interface WorkingRow {
   readonly within: number;
 }
 
-/** Only payments, bills and their set-asides can be ticked (D109). */
+/** Only payments, bills and their set-asides can be ticked (D109, D116). */
 function tickable(kind: RowKind): boolean {
   return kind === 'payment' || kind === 'bill' || kind === 'set-aside';
 }

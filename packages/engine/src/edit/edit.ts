@@ -117,33 +117,75 @@ function nextPayday(context: Context, found: Found): Day {
   );
 }
 
+/** True when a tick command is for the money set aside (D116). Anything else but true is refused. */
+function setAsideOf(command: { readonly setAside?: true } | null | undefined): boolean {
+  const value = command?.setAside;
+  if (value !== undefined && value !== true) {
+    refuse('bad-command', 'Set aside must be true, or left out.');
+  }
+  return value === true;
+}
+
+/** Refuses a set-aside tick for a series with no money set aside (D116). */
+function refuseNoSetAside(found: Found, setAside: boolean): void {
+  if (setAside && found.prepared.series.setAside === undefined) {
+    refuse(
+      'no-set-aside',
+      `Series ${found.prepared.series.id} sets no money aside, so there's nothing to tick for it.`,
+    );
+  }
+}
+
 /**
  * Ticks a payment as paid, and the same payment in the other half of a
  * private transfer. The paid date is worked out once, now (D71, D83): the
  * day it's ticked if that's before the payment's date, otherwise the
  * payment's own date after any weekend, bank holiday or move.
+ *
+ * With `setAside`, it ticks the payment's money set aside instead, on its
+ * own (D116). A series with money set aside is never half of a private
+ * transfer (D113), so there's no other half to tick.
  */
 function tick(
   context: Context,
   ref: PaymentRef,
   tickedAt: string,
   inside: { readonly inBalanceUpdate?: string; readonly inDebtUpdate?: string },
+  setAside = false,
 ): void {
   const found = findPayment(context, ref);
   parseTime(tickedAt, `Series ${ref.seriesId}: when it was ticked`);
-  if (inside.inDebtUpdate !== undefined && found.prepared.series.debtId !== inside.inDebtUpdate) {
+  if (
+    inside.inDebtUpdate !== undefined &&
+    (setAside || found.prepared.series.debtId !== inside.inDebtUpdate)
+  ) {
     refuse(
       'not-linked',
       `Series ${ref.seriesId} isn't linked to debt ${inside.inDebtUpdate}, so it can't be ticked in its statement update.`,
     );
   }
-  if (context.draft.tick(found.prepared.series.id, found.originalDate) !== null) {
+  refuseNoSetAside(found, setAside);
+  if (context.draft.tick(found.prepared.series.id, found.originalDate, setAside) !== null) {
     refuse(
       'already-ticked',
-      `Series ${ref.seriesId}: the payment first due on ${found.originalDate} is already ticked.`,
+      setAside
+        ? `Series ${ref.seriesId}: the money set aside on ${found.originalDate} is already ticked.`
+        : `Series ${ref.seriesId}: the payment first due on ${found.originalDate} is already ticked.`,
     );
   }
   const paidOn = paidDate(formatDate(found.payment.day), context.input.today);
+  if (setAside) {
+    const value = clean<Tick>({
+      seriesId: found.prepared.series.id,
+      originalDate: found.originalDate,
+      tickedAt,
+      paidOn,
+      inBalanceUpdate: inside.inBalanceUpdate,
+      setAside: true,
+    });
+    context.draft.set(tickWrite(value.seriesId, value.originalDate, value, true));
+    return;
+  }
   for (const one of bothHalves(context, found)) {
     const value = clean<Tick>({
       seriesId: one.prepared.series.id,
@@ -157,13 +199,20 @@ function tick(
   }
 }
 
-function untick(context: Context, ref: PaymentRef): void {
+function untick(context: Context, ref: PaymentRef, setAside = false): void {
   const found = findPayment(context, ref);
-  if (context.draft.tick(found.prepared.series.id, found.originalDate) === null) {
+  refuseNoSetAside(found, setAside);
+  if (context.draft.tick(found.prepared.series.id, found.originalDate, setAside) === null) {
     refuse(
       'not-ticked',
-      `Series ${ref.seriesId}: the payment first due on ${found.originalDate} isn't ticked.`,
+      setAside
+        ? `Series ${ref.seriesId}: the money set aside on ${found.originalDate} isn't ticked.`
+        : `Series ${ref.seriesId}: the payment first due on ${found.originalDate} isn't ticked.`,
     );
+  }
+  if (setAside) {
+    context.draft.set(tickWrite(found.prepared.series.id, found.originalDate, null, true));
+    return;
   }
   for (const one of bothHalves(context, found)) {
     context.draft.set(tickWrite(one.prepared.series.id, one.originalDate, null));
@@ -218,7 +267,7 @@ function updateBalance(
     refuse('bad-command', `${what}: the ticks must be a list.`);
   }
   for (const one of ticks) {
-    tick(context, one, one?.tickedAt, { inBalanceUpdate: update.id });
+    tick(context, one, one?.tickedAt, { inBalanceUpdate: update.id }, setAsideOf(one));
   }
 }
 
@@ -258,7 +307,7 @@ function updateFromStatement(
     refuse('bad-command', `${what}: the ticks must be a list.`);
   }
   for (const one of ticks) {
-    tick(context, one, one?.tickedAt, { inDebtUpdate: id });
+    tick(context, one, one?.tickedAt, { inDebtUpdate: id }, setAsideOf(one));
   }
 }
 
@@ -422,6 +471,9 @@ function undo(context: Context, edit: Edit): void {
     for (const day of context.checked.ticks.get(write.id)?.keys() ?? []) {
       attached.push([tickWrite(write.id, formatDate(day), null), day]);
     }
+    for (const day of context.checked.setAsideTicks.get(write.id)?.keys() ?? []) {
+      attached.push([tickWrite(write.id, formatDate(day), null, true), day]);
+    }
     for (const [record, day] of attached) {
       if (undone.has(keyOf(record))) continue;
       const number = numberIn(now, day);
@@ -495,10 +547,11 @@ function run(context: Context, command: EditCommand): void {
         command,
         command.tickedAt,
         command.inBalanceUpdate === undefined ? {} : { inBalanceUpdate: command.inBalanceUpdate },
+        setAsideOf(command),
       );
       break;
     case 'untick':
-      untick(context, command);
+      untick(context, command, setAsideOf(command));
       break;
     case 'update-balance':
       updateBalance(context, command.update, command.ticks ?? []);

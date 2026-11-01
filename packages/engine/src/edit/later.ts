@@ -86,6 +86,9 @@ function removeSeries(context: Context, prepared: PreparedSeries): void {
   for (const day of context.checked.ticks.get(id)?.keys() ?? []) {
     context.draft.set(tickWrite(id, formatDate(day), null));
   }
+  for (const day of context.checked.setAsideTicks.get(id)?.keys() ?? []) {
+    context.draft.set(tickWrite(id, formatDate(day), null, true));
+  }
 }
 
 /** Both halves of a private transfer, or just the one stretch, after checking they match. */
@@ -116,7 +119,11 @@ export function removeThisAndLater(context: Context, ref: PaymentRef): void {
   const all = other === null ? [mine] : [mine, other];
   for (const stretch of all) {
     for (const [prepared, from] of partsOf(stretch)) {
-      for (const day of context.checked.ticks.get(prepared.series.id)?.keys() ?? []) {
+      // Money set aside that's ticked has really moved too (D116).
+      for (const day of [
+        ...(context.checked.ticks.get(prepared.series.id)?.keys() ?? []),
+        ...(context.checked.setAsideTicks.get(prepared.series.id)?.keys() ?? []),
+      ]) {
         if (indexOf(prepared, day) >= from) {
           refuse(
             'ticked',
@@ -478,16 +485,26 @@ function changeStretch(
         saves.push(changeWrite(newId, originalDate, clean<PaymentChange>(moved)));
       }
     }
-    for (const [day, { tick }] of context.checked.ticks.get(oldId) ?? []) {
-      const oldIndex = indexOf(piece.old, day);
-      if (oldIndex < 0) {
-        if (inPlace && datesChanged) removals.push(tickWrite(oldId, formatDate(day), null));
-        continue;
+    // Payments' ticks, then ticks for money set aside (D116).
+    for (const [index, setAside] of [
+      [context.checked.ticks, false],
+      [context.checked.setAsideTicks, true],
+    ] as const) {
+      for (const [day, { tick }] of index.get(oldId) ?? []) {
+        const oldIndex = indexOf(piece.old, day);
+        if (oldIndex < 0) {
+          if (inPlace && datesChanged) {
+            removals.push(tickWrite(oldId, formatDate(day), null, setAside));
+          }
+          continue;
+        }
+        if (oldIndex < piece.from) continue;
+        removals.push(tickWrite(oldId, formatDate(day), null, setAside));
+        const originalDate = newDate(oldIndex);
+        saves.push(
+          tickWrite(newId, originalDate, { ...tick, seriesId: newId, originalDate }, setAside),
+        );
       }
-      if (oldIndex < piece.from) continue;
-      removals.push(tickWrite(oldId, formatDate(day), null));
-      const originalDate = newDate(oldIndex);
-      saves.push(tickWrite(newId, originalDate, { ...tick, seriesId: newId, originalDate }));
     }
   }
   for (const write of removals) context.draft.set(write);

@@ -96,6 +96,8 @@ export interface ThisAndLaterEdits {
 export interface TickInUpdate extends PaymentRef {
   /** When it was ticked, a UTC time such as "2026-10-30T09:15:00Z". */
   readonly tickedAt: string;
+  /** Ticks the payment's money set aside instead of the payment (D116). */
+  readonly setAside?: true;
 }
 
 /** One edit the person makes. */
@@ -129,9 +131,11 @@ export type EditCommand =
       readonly tickedAt: string;
       /** The id of the balance update whose steps it's ticked in, if it is (D33). */
       readonly inBalanceUpdate?: string;
+      /** Ticks the payment's money set aside instead of the payment (D116). */
+      readonly setAside?: true;
     })
-  /** Unticks a payment: its tick is removed. */
-  | (PaymentRef & { readonly kind: 'untick' })
+  /** Unticks a payment, or with `setAside` its money set aside: the tick is removed. */
+  | (PaymentRef & { readonly kind: 'untick'; readonly setAside?: true })
   /**
    * A new balance update (brief 4.2, D33), with anything ticked in its steps,
    * so the whole Update balance is one undo step (D87).
@@ -180,7 +184,8 @@ export type EditCommand =
  * `value` is null. In an undo list, null means the record didn't exist.
  *
  * Series, balance updates, debts and spends are found by id. Changes and ticks are found by
- * series and original date, as everywhere in the engine (brief 5.2, D87).
+ * series and original date, as everywhere in the engine (brief 5.2, D87), and a tick
+ * also by whether it's for the money set aside (D116).
  */
 export type RecordWrite =
   | { readonly kind: 'series'; readonly id: string; readonly value: Series | null }
@@ -194,6 +199,8 @@ export type RecordWrite =
       readonly kind: 'tick';
       readonly seriesId: string;
       readonly originalDate: string;
+      /** Set for the tick of the payment's money set aside (D116). */
+      readonly setAside?: true;
       readonly value: Tick | null;
     }
   | { readonly kind: 'balance-update'; readonly id: string; readonly value: BalanceUpdate | null }
