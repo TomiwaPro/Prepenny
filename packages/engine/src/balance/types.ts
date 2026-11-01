@@ -1,4 +1,6 @@
+import type { Budget, BudgetPlan, Spend } from '../budgets/types.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
+import type { Goal } from '../goals/types.ts';
 import type { Pence } from '../money/pence.ts';
 import type { Payment, PaymentChange, Series } from '../schedule/types.ts';
 
@@ -65,6 +67,12 @@ export interface PlanInput {
   readonly series: readonly Series[];
   readonly changes?: readonly PaymentChange[];
   readonly ticks?: readonly Tick[];
+  /** Budgets (brief 4.5): the rows they put in the plan follow D2, D31 and D32. */
+  readonly budgets?: readonly Budget[];
+  /** "I spent" (brief 4.5). Each is for one of the budgets. */
+  readonly spends?: readonly Spend[];
+  /** Savings goals (brief 4.7). When they're given, every series' link to a goal is checked. */
+  readonly goals?: readonly Goal[];
   /** The family of the main pay of the person viewing (D14), or null when there's none. */
   readonly mainPayFamilyId: string | null;
   /** The plan's bank holidays, usually a BankHolidayCalendar for its nation. */
@@ -85,9 +93,34 @@ export type BalanceStatus = 'ok' | 'tight' | 'short';
 /** How a row moves money for its account. A transfer is out of one account and into the other. */
 export type Flow = 'in' | 'out' | 'transfer-in' | 'transfer-out';
 
+/**
+ * What a row is:
+ *
+ * - `payment`: a payment of a series.
+ * - `bill`: a pay-later budget's bill (D32, D111). It's ticked, moved and
+ *   given its real amount like a payment, found by the budget's id.
+ * - `set-aside`: part of money coming in, moved to another account (D64, D113).
+ *   It goes with its payment: the same tick, date and estimate label.
+ * - `budget`: what's left of a budget period leaving the account (D2), all
+ *   at once or one day of it spread across the days (D31).
+ * - `spend`: "I spent", recorded after the account's latest balance update (D2, D33).
+ */
+export type RowKind = 'payment' | 'bill' | 'set-aside' | 'budget' | 'spend';
+
 /** One row of an account's plan: a payment, and what's left after it. */
 export interface PlanRow {
+  readonly kind: RowKind;
+  /**
+   * The payment. For a bill, its `seriesId` is the budget's id. For a
+   * set-aside, it's the payment it's set aside from, as a transfer of the
+   * amount set aside. For a budget row or a spend, it describes the row:
+   * the budget's id and name, the type Spending money (D79), and the spend's note.
+   */
   readonly payment: Payment;
+  /** The budget of a bill, a budget row or a spend. Otherwise null. */
+  readonly budgetId: string | null;
+  /** The spend, for a spend row. Otherwise null. */
+  readonly spendId: string | null;
   /** The account this row is for. A transfer has a row in each of its two accounts. */
   readonly accountId: string;
   /**
@@ -109,7 +142,10 @@ export interface PlanRow {
    * with an earlier paid date (D39).
    */
   readonly atStart: boolean;
-  /** Not ticked, and dated before today (D11). */
+  /**
+   * Not ticked, and dated before today (D11). Only payments, bills and
+   * set-asides can be ticked: budget rows and spends never need a tick (D109).
+   */
   readonly notTickedYet: boolean;
 }
 
@@ -154,6 +190,44 @@ export interface Shortfall extends ShortOnDay {
   readonly couldMove: readonly PlanRow[];
 }
 
+/** What's left on a pay-later budget this period: spent on the card, not from the account (D61). */
+export interface PayLaterLeft {
+  readonly budgetId: string;
+  /** "On the pay-later card: £80.00 left until Sat 28 Nov". */
+  readonly left: Pence;
+  /** The last day of the card's statement period, "YYYY-MM-DD". */
+  readonly until: string;
+}
+
+/** Left to spend (D3, D28, D112). */
+export interface LeftToSpend {
+  /** The next main payday, "YYYY-MM-DD": "Left to spend until Fri 30 Oct" (D28). */
+  readonly until: string;
+  /**
+   * L: spending money still due to leave the account from today to the day
+   * before the next main payday. Budget rows, and payments of the type
+   * Spending money not ticked yet. Spends already made and pay-later bills
+   * aren't in it (D28, D61).
+   */
+  readonly amount: Pence;
+  /** M: the lowest end-of-day balance from today to the day before the next main payday. */
+  readonly lowest: DayBalance;
+  /**
+   * X in "Spend no more than £X to keep at least £20 until Fri 30 Oct":
+   * max(0, L + M − W), where W is the warning level (D3). Only when spending
+   * all of L takes the balance under the warning level (M < W). Otherwise null.
+   */
+  readonly spendNoMoreThan: Pence | null;
+  /**
+   * L + M is at least the warning level: spending nothing of L would keep
+   * the balance at or above it. When this is false, X is 0 and even spending
+   * nothing doesn't keep the warning level (a question for the owner, D112).
+   */
+  readonly canKeepWarningLevel: boolean;
+  /** Each pay-later budget on this account, shown on its own line under Left to spend (D61). */
+  readonly payLater: readonly PayLaterLeft[];
+}
+
 /** One account's plan (ARCHITECTURE.md 2.4). */
 export interface AccountPlan {
   readonly account: Account;
@@ -174,6 +248,8 @@ export interface AccountPlan {
   /** The first day from today on that ends strictly under the warning level (D8, D10). */
   readonly firstUnderWarning: DayBalance | null;
   readonly shortfalls: readonly Shortfall[];
+  /** Left to spend until the next main payday (D28), or null when there's no main pay. */
+  readonly leftToSpend: LeftToSpend | null;
 }
 
 /** What kind of main pay the person viewing has (D14). */
@@ -193,4 +269,6 @@ export interface Plan {
   readonly mainPaydays: readonly string[];
   /** One for each account, in the order given. */
   readonly accounts: readonly AccountPlan[];
+  /** One for each budget, in the order given: this period's spent and left, and the periods ahead. */
+  readonly budgets: readonly BudgetPlan[];
 }

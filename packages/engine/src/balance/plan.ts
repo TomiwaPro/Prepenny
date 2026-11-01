@@ -1,3 +1,18 @@
+import {
+  type BudgetRow,
+  billSeriesOf,
+  budgetPlanOf,
+  type WorkedBudget,
+  workOutBudget,
+} from '../budgets/budgets.ts';
+import {
+  type CheckedBudget,
+  type CheckedSpend,
+  checkBudgets,
+  checkSpends,
+} from '../budgets/check.ts';
+import { budgetPay } from '../budgets/periods.ts';
+import type { BudgetBill } from '../budgets/types.ts';
 import { addDays, type Day, formatDate, parseDate } from '../dates/day.ts';
 import { type Moment, parseTime } from '../dates/time.ts';
 import {
@@ -7,7 +22,9 @@ import {
 import { type CheckedDebt, checkDebtLinks, checkDebts } from '../debts/check.ts';
 import type { Debt } from '../debts/types.ts';
 import { EngineInputError } from '../errors.ts';
-import { checkPence, checkPenceNotNegative, type Pence } from '../money/pence.ts';
+import { type CheckedGoal, checkGoalLinks, checkGoals } from '../goals/goals.ts';
+import { type Decimal, divideRounded, parseDecimal, powerOfTen } from '../money/decimal.ts';
+import { checkPence, checkPenceNotNegative, type Pence, penceFromBigInt } from '../money/pence.ts';
 import { type MainPaydays, mainPaydaysOf } from '../periods/main-pay.ts';
 import {
   type ChangeIndex,
@@ -18,7 +35,7 @@ import {
   paymentWithDates,
 } from '../schedule/payments.ts';
 import { markFamilies, type PreparedSeries, prepareSeries } from '../schedule/series.ts';
-import type { Payment } from '../schedule/types.ts';
+import type { Payment, Series, SetAside } from '../schedule/types.ts';
 import { compareRows } from './order.ts';
 import { findShortfalls, lowestAndFirstUnder, statusOf } from './shortfalls.ts';
 import { type CheckedTick, indexTicks, type TickIndex } from './ticks.ts';
@@ -29,17 +46,31 @@ import {
   type BalanceUpdate,
   type DayBalance,
   type Flow,
+  type LeftToSpend,
+  type PayLaterLeft,
   type Plan,
   type PlanInput,
   type PlanRow,
+  type RowKind,
 } from './types.ts';
 
-/** A payment the plan looks at, with its tick if it has one. */
-interface PlannedPayment {
+/**
+ * Something that moves money in the plan: a payment, a pay-later bill, a
+ * set-aside, part of a budget leaving, or a spend (see `RowKind`).
+ */
+interface Movement {
+  readonly kind: RowKind;
   readonly payment: PaymentOnDays;
-  readonly prepared: PreparedSeries;
   readonly familyCreatedAt: Moment;
+  readonly familyId: string;
+  /** On the same day, inside one budget: its spends first, then the budget row. */
+  readonly within: number;
+  /** A payment's, bill's or set-aside's tick, if it has one. */
   readonly tick: CheckedTick | null;
+  /** A spend's time, compared with each account's balance update (D2, D33). */
+  readonly recordedAt: Moment | null;
+  readonly budgetId: string | null;
+  readonly spendId: string | null;
   /** Written out once, and shared by both rows of a transfer. */
   withDates: Payment | null;
 }
@@ -147,6 +178,7 @@ function latestBalances(
 function prepareAll(
   input: RecordsToCheck,
   accounts: ReadonlyMap<string, Account>,
+  bills: readonly Series[],
 ): { prepared: PreparedSeries[]; familyTimes: Map<string, Moment> } {
   if (!Array.isArray(input.series)) {
     throw new EngineInputError('bad-series', 'The series must be a list.');
@@ -154,10 +186,19 @@ function prepareAll(
   const prepared: PreparedSeries[] = [];
   const seen = new Set<string>();
   const familyTimes = new Map<string, Moment>();
-  for (const series of input.series) {
+  for (const series of [...input.series, ...bills]) {
     const one = prepareSeries(series, input.holidays);
     if (seen.has(series.id)) {
-      throw new EngineInputError('repeated-series', `Series ${series.id} is listed twice.`);
+      throw new EngineInputError(
+        'repeated-series',
+        `Series ${series.id} is listed twice, or a budget has the same id as a series.`,
+      );
+    }
+    if (series.setAside !== undefined && !accounts.has(series.setAside.accountId)) {
+      throw new EngineInputError(
+        'unknown-account',
+        `Series ${series.id} sets money aside to an account not in the plan.`,
+      );
     }
     seen.add(series.id);
     if (!accounts.has(series.accountId)) {
@@ -189,7 +230,15 @@ function prepareAll(
 /** The stored records of a plan, and what's needed to check them. */
 export type RecordsToCheck = Pick<
   PlanInput,
-  'accounts' | 'balanceUpdates' | 'series' | 'changes' | 'ticks' | 'holidays'
+  | 'accounts'
+  | 'balanceUpdates'
+  | 'series'
+  | 'changes'
+  | 'ticks'
+  | 'budgets'
+  | 'spends'
+  | 'goals'
+  | 'holidays'
 > & {
   /** The plan's debts. When they're given, every series' link to a debt is checked too (D98). */
   readonly debts?: readonly Debt[];
@@ -209,6 +258,15 @@ export interface CheckedRecords {
   readonly ticks: TickIndex;
   /** The debts, by id. Empty when none were given. */
   readonly debts: ReadonlyMap<string, CheckedDebt>;
+  /**
+   * The budgets, by id. A pay-later budget's bills are a series in
+   * `prepared` with the budget's id (D111). Empty when none were given.
+   */
+  readonly budgets: ReadonlyMap<string, CheckedBudget>;
+  /** Each budget's spends. */
+  readonly spends: ReadonlyMap<string, readonly CheckedSpend[]>;
+  /** The goals, by id. Empty when none were given. */
+  readonly goals: ReadonlyMap<string, CheckedGoal>;
 }
 
 /**
@@ -219,29 +277,85 @@ export interface CheckedRecords {
 export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords {
   const accounts = checkAccounts(input.accounts);
   const { starts, accountOfUpdate } = latestBalances(input.balanceUpdates, accounts, today);
-  const { prepared, familyTimes } = prepareAll(input, accounts);
+  const budgets = checkBudgets(input.budgets ?? [], new Set(accounts.keys()));
+  const spends = checkSpends(input.spends ?? [], budgets);
+  const bills = [...budgets.values()].flatMap((budget) => billSeriesOf(budget) ?? []);
+  const { prepared, familyTimes } = prepareAll(input, accounts, bills);
   const changes = indexChanges(input.changes ?? []);
   const ticks = indexTicks(input.ticks ?? []);
   const debts = checkDebts(input.debts ?? [], today);
   if (input.debts !== undefined) checkDebtLinks(input.series, debts);
-  return { accounts, starts, accountOfUpdate, prepared, familyTimes, changes, ticks, debts };
+  const goals = checkGoals(input.goals ?? []);
+  if (input.goals !== undefined) {
+    for (const { goal } of goals.values()) {
+      if (!accounts.has(goal.accountId)) {
+        throw new EngineInputError(
+          'unknown-account',
+          `Goal ${goal.id} is kept in an account not in the plan.`,
+        );
+      }
+    }
+    checkGoalLinks(input.series, goals);
+  }
+  return {
+    accounts,
+    starts,
+    accountOfUpdate,
+    prepared,
+    familyTimes,
+    changes,
+    ticks,
+    debts,
+    budgets,
+    spends,
+    goals,
+  };
+}
+
+/** The amount set aside from a payment (D64): its percentage, rounded to the nearest penny (D9). */
+function setAsideAmount(amount: Pence, percent: Decimal): Pence {
+  return penceFromBigInt(
+    divideRounded(BigInt(amount) * percent.units, 100n * powerOfTen(percent.scale)),
+    'the amount set aside',
+  );
+}
+
+/**
+ * The set-aside that goes with a payment of money coming in (D64, D113): a
+ * transfer of the amount set aside, from the payment's account to the one
+ * it's set aside in, on the same day, with the payment's tick.
+ */
+function setAsideOf(movement: Movement, setAside: SetAside, percent: Decimal): Movement {
+  return {
+    ...movement,
+    kind: 'set-aside',
+    payment: {
+      ...movement.payment,
+      direction: 'transfer',
+      toAccountId: setAside.accountId,
+      amount: setAsideAmount(movement.payment.amount, percent),
+      type: 'savings',
+    },
+    withDates: null,
+  };
 }
 
 /**
  * Every payment the plan could need: all of each series' payments from its
  * start to the plan's last day (unticked ones before a balance date are
  * overdue, brief 5.5), plus every ticked payment, wherever its date, because
- * a payment paid early goes on the day it was paid (D1).
+ * a payment paid early goes on the day it was paid (D1). A pay-later bill
+ * without its real amount yet is the budget's estimate (D32), and money
+ * coming in brings its set-aside with it (D64).
  */
 function collectPayments(
-  prepared: readonly PreparedSeries[],
-  familyTimes: ReadonlyMap<string, Moment>,
-  changes: ChangeIndex,
-  ticks: TickIndex,
+  checked: CheckedRecords,
+  worked: ReadonlyMap<string, WorkedBudget>,
   to: Day,
   holidays: BankHolidayLookup,
-): PlannedPayment[] {
-  const all: PlannedPayment[] = [];
+): Movement[] {
+  const { prepared, familyTimes, changes, ticks } = checked;
+  const all: Movement[] = [];
   for (const one of prepared) {
     const id = one.series.id;
     let from = addDays(one.start, -LONGEST_RUN_WITHOUT_A_WORKING_DAY);
@@ -250,16 +364,33 @@ function collectPayments(
     }
     const ticksOfSeries = ticks.get(id);
     const familyCreatedAt = familyTimes.get(one.series.familyId) as Moment;
+    const bill = worked.get(id) ?? null;
+    const setAside = one.series.setAside;
+    const percent =
+      setAside === undefined ? null : parseDecimal(setAside.percent, `Series ${id}: set aside`);
     const found = new Set<Day>();
     const add = (payment: PaymentOnDays) => {
       found.add(payment.originalDay);
-      all.push({
-        payment,
-        prepared: one,
+      const real = changes.get(id)?.get(payment.originalDay)?.change.amount !== undefined;
+      const movement: Movement = {
+        kind: bill === null ? 'payment' : 'bill',
+        payment:
+          bill === null || real
+            ? payment
+            : { ...payment, amount: bill.billEstimate(payment.originalDay) },
         familyCreatedAt,
+        familyId: one.series.familyId,
+        within: 0,
         tick: ticksOfSeries?.get(payment.originalDay) ?? null,
+        recordedAt: null,
+        budgetId: bill === null ? null : id,
+        spendId: null,
         withDates: null,
-      });
+      };
+      all.push(movement);
+      if (setAside !== undefined && percent !== null) {
+        all.push(setAsideOf(movement, setAside, percent));
+      }
     };
     if (from <= to) {
       for (const payment of paymentsOfSeriesBetween(one, from, to, changes, holidays)) {
@@ -279,6 +410,42 @@ function collectPayments(
   return all;
 }
 
+/** The rows a budget puts in the plan (D2, D31): parts of it leaving, and its spends. */
+function budgetMovements(worked: WorkedBudget): Movement[] {
+  const { budget, createdAt } = worked.checked;
+  return worked.rows.map((row: BudgetRow) => ({
+    kind: row.kind,
+    payment: {
+      seriesId: budget.id,
+      number: row.period,
+      originalDay: row.day,
+      day: row.day,
+      accountId: budget.accountId,
+      toAccountId: null,
+      direction: 'out',
+      amount: row.amount,
+      name: budget.name,
+      note: (row.spend?.spend.note ?? '') || null,
+      // A budget's rows count as Spending money (D28, D79).
+      type: 'spending-money',
+      isEstimate: false,
+      isLast: false,
+      movedByRule: false,
+      moved: false,
+      skipped: false,
+      changed: false,
+    },
+    familyCreatedAt: createdAt,
+    familyId: budget.id,
+    within: row.within,
+    tick: null,
+    recordedAt: row.spend?.recordedAt ?? null,
+    budgetId: budget.id,
+    spendId: row.spend?.spend.id ?? null,
+    withDates: null,
+  }));
+}
+
 /** True when a tick is already inside the account's latest balance (brief 5.5, D33, D83). */
 function insideBalance(
   tick: CheckedTick,
@@ -293,7 +460,7 @@ function insideBalance(
 }
 
 interface WorkingRow {
-  readonly planned: PlannedPayment;
+  readonly planned: Movement;
   readonly day: Day;
   readonly flow: Flow;
   readonly change: Pence;
@@ -304,9 +471,15 @@ interface WorkingRow {
   readonly seriesId: string;
   readonly name: string;
   readonly number: number;
+  readonly within: number;
 }
 
-function rowFor(planned: PlannedPayment, accountId: string): { flow: Flow; change: Pence } | null {
+/** Only payments, bills and their set-asides can be ticked (D109). */
+function tickable(kind: RowKind): boolean {
+  return kind === 'payment' || kind === 'bill' || kind === 'set-aside';
+}
+
+function rowFor(planned: Movement, accountId: string): { flow: Flow; change: Pence } | null {
   const { payment } = planned;
   if (payment.accountId === accountId) {
     switch (payment.direction) {
@@ -328,7 +501,7 @@ function rowFor(planned: PlannedPayment, accountId: string): { flow: Flow; chang
 function workOutAccount(
   account: Account,
   start: Start,
-  payments: readonly PlannedPayment[],
+  payments: readonly Movement[],
   accountOfUpdate: ReadonlyMap<string, string>,
   today: Day,
   to: Day,
@@ -340,11 +513,21 @@ function workOutAccount(
     const effect = rowFor(planned, account.id);
     if (effect === null) continue;
     const { payment, tick } = planned;
-    // A removed payment moves no money, unless it was ticked: a tick says the
-    // money really went, and the plan stays true to the bank (D83).
-    if (payment.skipped && tick === null) continue;
     let day: Day;
-    if (tick !== null) {
+    if (planned.kind === 'spend') {
+      // Recorded at or before the balance update: already inside the
+      // balance, so ignored. Recorded after it: a row on its day, or at the
+      // start when that's before the balance date (D2, D33, D109).
+      if ((planned.recordedAt as Moment) <= start.at) continue;
+      day = payment.day;
+    } else if (planned.kind === 'budget') {
+      // Worked out from today, so never inside the balance (D2, D67).
+      day = payment.day;
+    } else if (payment.skipped && tick === null) {
+      // A removed payment moves no money, unless it was ticked: a tick says the
+      // money really went, and the plan stays true to the bank (D83).
+      continue;
+    } else if (tick !== null) {
       // 1. Ticked at or before the balance update, or inside its steps:
       //    already inside the balance, so ignored (brief 5.5, D1, D33).
       if (insideBalance(tick, account.id, start, accountOfUpdate)) continue;
@@ -362,10 +545,11 @@ function workOutAccount(
       change: effect.change,
       ticked: tick !== null,
       familyCreatedAt: planned.familyCreatedAt,
-      familyId: planned.prepared.series.familyId,
+      familyId: planned.familyId,
       seriesId: payment.seriesId,
       name: payment.name,
       number: payment.number,
+      within: planned.within,
     });
   }
 
@@ -389,7 +573,10 @@ function workOutAccount(
     const planned = row.planned;
     planned.withDates ??= paymentWithDates(planned.payment);
     const planRow: PlanRow = {
+      kind: planned.kind,
       payment: planned.withDates,
+      budgetId: planned.budgetId,
+      spendId: planned.spendId,
       accountId: account.id,
       date: formatDate(row.day),
       flow: row.flow,
@@ -398,7 +585,7 @@ function workOutAccount(
       status: statusOf(balance, account.warningLevel, floor),
       ticked: row.ticked,
       atStart,
-      notTickedYet: !row.ticked && row.day < today,
+      notTickedYet: tickable(planned.kind) && !row.ticked && row.day < today,
     };
     rows.push(planRow);
     rowDays.push(row.day);
@@ -446,11 +633,55 @@ function mainPaydayList(main: MainPaydays | null, today: Day, to: Day): Day[] {
 }
 
 /**
+ * Left to spend until the next main payday (D3, D28, D112): spending money
+ * still due to leave from today to the day before it, the lowest end-of-day
+ * balance in that time, and the "Spend no more than" amount.
+ */
+function leftToSpendOf(
+  work: AccountWork,
+  nextPayday: Day | null,
+  today: Day,
+  to: Day,
+  payLater: readonly PayLaterLeft[],
+): LeftToSpend | null {
+  if (nextPayday === null) return null;
+  const last = Math.min(addDays(nextPayday, -1), to);
+  let amount = 0;
+  work.rows.forEach((row, i) => {
+    const day = work.rowDays[i] as Day;
+    if (day < today || day > last || row.change >= 0) return;
+    // Budget rows, and Spending money not ticked yet: spends already made
+    // and pay-later bills aren't spending still to do (D28, D61).
+    const spending =
+      row.kind === 'budget' ||
+      (row.kind === 'payment' && row.payment.type === 'spending-money' && !row.ticked);
+    if (spending) amount = checkPence(amount - row.change, 'Left to spend');
+  });
+  let lowest = dayBalanceOf(work, today);
+  for (let day = today + 1; day <= last; day += 1) {
+    const balance = dayBalanceOf(work, day);
+    if (balance.balance < lowest.balance) lowest = balance;
+  }
+  const warning = work.account.warningLevel;
+  return {
+    until: formatDate(nextPayday),
+    amount,
+    lowest,
+    // X = max(0, L + M − W), only when spending it all goes under W (D3, D10).
+    spendNoMoreThan:
+      lowest.balance < warning ? Math.max(0, amount + lowest.balance - warning) : null,
+    canKeepWarningLevel: amount + lowest.balance >= warning,
+    payLater,
+  };
+}
+
+/**
  * Works out the plan (ARCHITECTURE.md 2.1 and 2.4): for each account, every
  * row with "Left after this", each day's closing balance, "Not ticked yet",
  * the lowest point ahead, the first day under the warning level, each
- * shortfall with the payments that could move, and what Update balance
- * expects. Also the next main payday and the main paydays for plan periods.
+ * shortfall with the payments that could move, what Update balance expects,
+ * and Left to spend. Also each budget's spent and left, the next main
+ * payday and the main paydays for plan periods.
  *
  * Pure: the same input always gives the same plan, and nothing is read from
  * a clock. "today" and "to" are passed in.
@@ -465,21 +696,58 @@ export function workOutPlan(input: PlanInput): Plan {
     throw new EngineInputError('bad-main-pay', 'The main pay must be a family id, or null.');
   }
 
-  const { accounts, starts, accountOfUpdate, prepared, familyTimes, changes, ticks } = checkRecords(
-    input,
-    today,
-  );
-  const payments = collectPayments(prepared, familyTimes, changes, ticks, to, input.holidays);
+  const checked = checkRecords(input, today);
+  const { accounts, starts, accountOfUpdate, prepared, changes, ticks } = checked;
   const main = mainPaydaysOf(input.mainPayFamilyId, prepared, changes, input.holidays);
+
+  // Budgets (D2, D29 to D32): their periods follow the main pay.
+  const pay = budgetPay(main, input.mainPayFamilyId, prepared, today);
+  const worked = new Map<string, WorkedBudget>();
+  for (const [id, budget] of checked.budgets) {
+    worked.set(id, workOutBudget(budget, checked.spends.get(id) ?? [], pay, today, to));
+  }
+  const bills = new Map([...worked].filter(([, one]) => one.checked.billDay !== null));
+  const movements = [
+    ...collectPayments(checked, bills, to, input.holidays),
+    ...[...worked.values()].flatMap(budgetMovements),
+  ];
 
   const works = new Map<string, AccountWork>();
   for (const account of accounts.values()) {
     const start = starts.get(account.id) as Start;
-    works.set(account.id, workOutAccount(account, start, payments, accountOfUpdate, today, to));
+    works.set(account.id, workOutAccount(account, start, movements, accountOfUpdate, today, to));
   }
 
+  // A pay-later bill as the budget shows it (D32, D111).
+  const preparedById = new Map(prepared.map((one) => [one.series.id, one]));
+  const billOf =
+    (worked: WorkedBudget) =>
+    (billDay: Day): BudgetBill | null => {
+      const id = worked.checked.budget.id;
+      const one = preparedById.get(id) as PreparedSeries;
+      const index = one.firstIndexOnOrAfter(billDay);
+      if (index >= one.count || one.dateAt(index) !== billDay) return null;
+      const payment = paymentAtIndex(one, index, changes, input.holidays);
+      const real = changes.get(id)?.get(billDay)?.change.amount !== undefined;
+      return {
+        originalDate: formatDate(billDay),
+        date: formatDate(payment.day),
+        amount: real ? payment.amount : worked.billEstimate(billDay),
+        isEstimate: payment.isEstimate,
+        ticked: ticks.get(id)?.has(billDay) === true,
+        skipped: payment.skipped,
+      };
+    };
+  const budgetPlans = [...worked.values()].map((one) => budgetPlanOf(one, billOf(one)));
+
+  const nextMainPayday = main?.firstAfter(today) ?? null;
   const accountPlans: AccountPlan[] = [...works.values()].map((work) => {
     const { lowestPoint, firstUnderWarning } = lowestAndFirstUnder(work, today);
+    const payLater: PayLaterLeft[] = budgetPlans.flatMap(({ budget, current }) =>
+      budget.leaves === 'pay-later' && budget.accountId === work.account.id && current !== null
+        ? [{ budgetId: budget.id, left: current.left, until: current.end }]
+        : [],
+    );
     return {
       account: work.account,
       floor: work.floor,
@@ -491,10 +759,10 @@ export function workOutPlan(input: PlanInput): Plan {
       lowestPoint,
       firstUnderWarning,
       shortfalls: findShortfalls(work, works, main, today, to),
+      leftToSpend: leftToSpendOf(work, nextMainPayday, today, to, payLater),
     };
   });
 
-  const nextMainPayday = main?.firstAfter(today) ?? null;
   return {
     today: formatDate(today),
     to: formatDate(to),
@@ -502,6 +770,7 @@ export function workOutPlan(input: PlanInput): Plan {
     nextMainPayday: nextMainPayday === null ? null : formatDate(nextMainPayday),
     mainPaydays: mainPaydayList(main, today, to).map(formatDate),
     accounts: accountPlans,
+    budgets: budgetPlans,
   };
 }
 

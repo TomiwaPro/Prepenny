@@ -11,6 +11,8 @@ export interface OrderedRow {
   readonly seriesId: string;
   readonly name: string;
   readonly number: number;
+  /** Inside one budget on the same day: its spends first, then the budget row. 0 for anything else. */
+  readonly within?: number;
 }
 
 /** Money in first, then transfers either way, then money out (brief 5.5, D12). */
@@ -55,6 +57,7 @@ export function compareRows(a: OrderedRow, b: OrderedRow): number {
     compareText(a.name, b.name) ||
     compareText(a.familyId, b.familyId) ||
     a.number - b.number ||
-    compareText(a.seriesId, b.seriesId)
+    compareText(a.seriesId, b.seriesId) ||
+    (a.within ?? 0) - (b.within ?? 0)
   );
 }

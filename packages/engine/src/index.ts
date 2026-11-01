@@ -6,6 +6,7 @@
 // Step 1b: the balance rule, lowest point, warnings, shortfalls and periods.
 // Step 1c: editing, moving, skipping, ticking and undo.
 // Step 1d: debts, currencies and credit cards, and "Only this week of the pattern".
+// Step 1e: budgets, spends, Left to spend, savings goals and "Set aside".
 
 export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';
@@ -18,14 +19,28 @@ export {
   type BalanceUpdate,
   type DayBalance,
   type Flow,
+  type LeftToSpend,
   type MainPayKind,
+  type PayLaterLeft,
   type Plan,
   type PlanInput,
   type PlanRow,
+  type RowKind,
   type Shortfall,
   type ShortOnDay,
   type Tick,
 } from './balance/types.ts';
+export {
+  BUDGET_EVERY,
+  BUDGET_LEAVES,
+  type Budget,
+  type BudgetBill,
+  type BudgetEvery,
+  type BudgetLeaves,
+  type BudgetPeriod,
+  type BudgetPlan,
+  type Spend,
+} from './budgets/types.ts';
 export {
   type BankHoliday,
   easterSunday,
@@ -116,6 +131,8 @@ export type {
   TickInUpdate,
 } from './edit/types.ts';
 export { EngineInputError } from './errors.ts';
+export { workOutGoals } from './goals/goals.ts';
+export type { Goal, GoalPlan, GoalRow, GoalsInput, GoalsPlan } from './goals/types.ts';
 export { fromOtherCurrency, type MinorUnits, toOtherCurrency } from './money/currency.ts';
 export {
   type Decimal,
@@ -161,4 +178,5 @@ export {
   type PaymentType,
   type Schedule,
   type Series,
+  type SetAside,
 } from './schedule/types.ts';
