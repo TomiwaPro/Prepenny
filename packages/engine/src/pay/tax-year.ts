@@ -3,7 +3,7 @@
 // file reads and checks them, finds the tax year of a payday, and says from
 // 1 March whether next year's file is missing (D45).
 
-import { addDays, type Day, dayFromParts, parseDate, partsOfDay } from '../dates/day.ts';
+import { type Day, dayFromParts, parseDate, partsOfDay } from '../dates/day.ts';
 import { EngineInputError } from '../errors.ts';
 import { type Decimal, parseDecimal } from '../money/decimal.ts';
 import { type Pence, parsePounds } from '../money/pence.ts';
@@ -316,9 +316,4 @@ export function checkTaxYearFiles(
     needed.push(taxYearName(nextStart));
   }
   return { needed, missing: needed.filter((name) => !have.has(name)) };
-}
-
-/** The first day of the tax year after this one. */
-export function nextTaxYearStart(year: TaxYear): Day {
-  return addDays(year.lastDay, 1);
 }
