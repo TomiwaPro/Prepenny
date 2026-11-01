@@ -1,7 +1,9 @@
 # GOV.UK pages the take-home pay calculator is built from (brief 4.15).
 # The "Fetch sources" workflow (.github/workflows/fetch-sources.yml) saves each
 # page unchanged in sources/gov-uk/, with the date it was fetched beside it.
-# One address per line. Lines starting with # are notes. Only www.gov.uk.
+# One address per line. Lines starting with # are notes. Only www.gov.uk, and
+# GOV.UK's own files on assets.publishing.service.gov.uk that a www.gov.uk page
+# on this list links to (D120).
 
 # Rates and thresholds: income tax (with Scottish and Welsh rates), National Insurance, student loans
 https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027
@@ -17,6 +19,13 @@ https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye70025
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11015
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11085
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11095
+
+# HMRC's files for the tax-free pay rules, linked from the pages above:
+# the Specification for PAYE tax table routines v24.0, Tables A, and the
+# 2026 to 2027 taxable pay tables (manual method)
+https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt
+https://assets.publishing.service.gov.uk/media/5c7fde8be5274a3f90f75580/Tables_A_Pay_adjustment.pdf
+https://assets.publishing.service.gov.uk/media/69a05a803e672177d0bc773f/Tax_Tables_B-D_2026_to_2027.pdf
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye13080
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye70030
 https://www.gov.uk/guidance/work-out-an-employees-income-tax
@@ -35,6 +44,8 @@ https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim11002
 https://www.gov.uk/national-insurance-rates-letters
 https://www.gov.uk/government/publications/payroll-technical-specifications-national-insurance
 https://www.gov.uk/government/publications/ca38-national-insurance-contributions-tables-a-and-j
+# HMRC's National Insurance guidance for software developers 2026 to 2027, linked from the specification page
+https://assets.publishing.service.gov.uk/media/6a3bc1fe4c7605ab567238ff/NI-Guidance-2026-27_v1.1.odt
 
 # Student loans and Postgraduate loans
 https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026
@@ -44,6 +55,9 @@ https://www.gov.uk/government/publications/payroll-technical-specifications-stud
 
 # HMRC's own test data for payroll software, for worked examples
 https://www.gov.uk/government/publications/software-developers-payroll-test-data-2026-to-2027
+https://assets.publishing.service.gov.uk/media/696f9b5f2b64f0e8c32e33a4/Tax-test-data-examples-2026-27-v1-1.zip
+https://assets.publishing.service.gov.uk/media/69676c2297d42030a67b0d60/NI-test-data-examples-from-April-2026-v1-0__1_.zip
+https://assets.publishing.service.gov.uk/media/6968fd1f5fd54abe6531a807/2026-27-Student-Loan-Threshold-Examples-v1-0__1_.ods
 
 # GOV.UK's own search, to find the exact addresses of HMRC's specifications
 https://www.gov.uk/api/search.json?q=specification+for+paye+tax+table+routines&count=20

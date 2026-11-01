@@ -3,9 +3,14 @@ name: Fetch sources
 # Saves the GOV.UK pages listed in sources/gov-uk.txt into sources/gov-uk/,
 # unchanged, each with a small file beside it giving the address, the date it
 # was fetched and a checksum. Commits back to the branch it ran on, only when a
-# page has changed. Only www.gov.uk is ever contacted: an address anywhere else,
-# or a redirect to anywhere else, is refused. The tax year files in
-# packages/engine/src/pay/tax-years are built from these copies (brief 4.15).
+# page has changed. The tax year files in packages/engine/src/pay/tax-years
+# are built from these copies (brief 4.15).
+#
+# Only two places are ever contacted (D120):
+# - www.gov.uk, for any address on the list
+# - assets.publishing.service.gov.uk, GOV.UK's file store, only for a file
+#   that one of the www.gov.uk pages fetched in the same run links to.
+# Any other address, or a redirect to another place, is refused.
 
 on:
   push:
@@ -41,18 +46,20 @@ jobs:
           work="$RUNNER_TEMP/pages"
           mkdir -p "$work"
           : > "$work/fetched.tsv"
+          : > "$work/files.txt"
           failures=0
 
           # Fetch one address, following redirects by hand so that every hop
-          # is checked to be on www.gov.uk before anything is asked of it.
+          # is checked before anything is asked of it: a www.gov.uk page stays
+          # on www.gov.uk, and a GOV.UK file stays on GOV.UK's file store.
           fetch_page() {
-            local url="$1" out="$2" hop result status next
+            local url="$1" out="$2" host="$3" hop result status next
             for hop in 1 2 3 4 5 6; do
               case "$url" in
-                https://www.gov.uk/*) ;;
-                *) echo "Refused, not on www.gov.uk: $url"; return 1 ;;
+                "$host"*) ;;
+                *) echo "Refused, not on $host: $url"; return 1 ;;
               esac
-              result=$(curl --silent --show-error --proto '=https' --max-time 60 \
+              result=$(curl --silent --show-error --proto '=https' --max-time 120 \
                 --retry 3 --retry-delay 5 \
                 --user-agent "PrePenny source copy (github.com/TomiwaPro/Prepenny)" \
                 --output "$out" \
@@ -75,24 +82,32 @@ jobs:
           }
 
           # A file name made from the address: the path with / as __, and any
-          # question mark part with its symbols made safe.
+          # question mark part with its symbols made safe. GOV.UK's files
+          # start with assets__ and keep their own extension.
           name_for() {
-            local rest="${1#https://www.gov.uk/}"
+            local rest
+            case "$1" in
+              https://www.gov.uk/*) rest="${1#https://www.gov.uk/}" ;;
+              *) rest="assets/${1#https://assets.publishing.service.gov.uk/}" ;;
+            esac
             printf '%s' "$rest" | sed -e 's#/#__#g' -e 's#[^A-Za-z0-9._-]#_#g'
           }
 
-          while IFS= read -r line || [ -n "$line" ]; do
-            url=$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-            case "$url" in ''|'#'*) continue ;; esac
+          save_one() {
+            local url="$1" host="$2" name final type ext
             name=$(name_for "$url")
-            if fetch_page "$url" "$work/$name"; then
+            if fetch_page "$url" "$work/$name" "$host"; then
               final=$(cut -f1 "$work/$name.meta")
               type=$(cut -f2 "$work/$name.meta")
-              case "$type" in
-                *json*) ext=json ;;
-                *html*) ext=html ;;
-                *pdf*) ext=pdf ;;
-                *) ext=txt ;;
+              case "$name" in
+                *.odt|*.ods|*.pdf|*.zip|*.xls|*.xlsx|*.csv) ext="" ;;
+                *)
+                  case "$type" in
+                    *json*) ext=.json ;;
+                    *html*) ext=.html ;;
+                    *pdf*) ext=.pdf ;;
+                    *) ext=.txt ;;
+                  esac ;;
               esac
               printf '%s\t%s\t%s\t%s\t%s\n' "$url" "$final" "$type" "$name" "$ext" >> "$work/fetched.tsv"
               echo "Fetched $url ($(wc -c < "$work/$name") bytes, $type)"
@@ -101,7 +116,40 @@ jobs:
               echo "::error::Couldn't fetch $url"
             fi
             sleep 1
+          }
+
+          # The www.gov.uk pages first.
+          while IFS= read -r line || [ -n "$line" ]; do
+            url=$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            case "$url" in
+              ''|'#'*) ;;
+              https://www.gov.uk/*) save_one "$url" "https://www.gov.uk/" ;;
+              https://assets.publishing.service.gov.uk/*) printf '%s\n' "$url" >> "$work/files.txt" ;;
+              *)
+                failures=$((failures + 1))
+                echo "::error::Refused, not on GOV.UK: $url" ;;
+            esac
           done < "$list"
+
+          # Then GOV.UK's files, each only when a page just fetched links to it.
+          while IFS= read -r url; do
+            linked=no
+            while IFS=$'\t' read -r _ _ type name _; do
+              case "$type" in
+                *html*)
+                  if grep -qF "\"$url\"" "$work/$name"; then
+                    linked=yes
+                    break
+                  fi ;;
+              esac
+            done < "$work/fetched.tsv"
+            if [ "$linked" = yes ]; then
+              save_one "$url" "https://assets.publishing.service.gov.uk/"
+            else
+              failures=$((failures + 1))
+              echo "::error::Refused, no www.gov.uk page on the list links to it: $url"
+            fi
+          done < "$work/files.txt"
 
           echo "failures=$failures" >> "$GITHUB_ENV"
 
@@ -119,7 +167,7 @@ jobs:
             today=$(TZ=Europe/London date +%F)
             changed=0
             while IFS=$'\t' read -r url final type name ext; do
-              page="$out/$name.$ext"
+              page="$out/$name$ext"
               if [ -f "$page" ] && cmp -s "$work/$name" "$page"; then
                 continue
               fi
