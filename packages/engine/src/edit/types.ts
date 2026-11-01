@@ -4,6 +4,8 @@
 
 import type { Account, BalanceUpdate, Tick } from '../balance/types.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
+import type { Debt } from '../debts/types.ts';
+import type { MinorUnits } from '../money/currency.ts';
 import type { Pence } from '../money/pence.ts';
 import type { PaymentChange, Schedule, Series } from '../schedule/types.ts';
 
@@ -14,6 +16,8 @@ export interface PlanRecords {
   readonly series: readonly Series[];
   readonly changes?: readonly PaymentChange[];
   readonly ticks?: readonly Tick[];
+  /** The plan's debts (D98). When they're given, every series' link to a debt is checked too. */
+  readonly debts?: readonly Debt[];
 }
 
 /** What an edit needs: the stored records, the plan's settings and today. */
@@ -54,8 +58,15 @@ export interface JustThisOneEdits {
  * this and later payments are dropped (D60).
  */
 export interface ThisAndLaterEdits {
-  /** One amount for this and every later payment, in place of any pattern (D90). */
+  /** "Every payday from now": one amount for this and every later payment, in place of any pattern (D90). */
   readonly amount?: Pence;
+  /**
+   * "Only this week of the pattern" (D97): a new amount for this payment's
+   * step of the amount pattern, so every payment on that step from here on
+   * gets it and the other steps keep theirs. Only for a series with a
+   * pattern, and never together with `amount`.
+   */
+  readonly stepAmount?: Pence;
   readonly name?: string;
   /** An empty note means no note. */
   readonly note?: string;
@@ -122,6 +133,23 @@ export type EditCommand =
       readonly update: BalanceUpdate;
       readonly ticks?: readonly TickInUpdate[];
     }
+  /**
+   * "Update from statement" (brief 4.6, D62, D103): the debt's balance from
+   * a statement, with anything ticked in its steps, as one undo step. Those
+   * ticks count as before the update for that debt.
+   */
+  | {
+      readonly kind: 'update-from-statement';
+      readonly debtId: string;
+      /** What the statement shows, in the debt's own currency. */
+      readonly balance: MinorUnits;
+      /** "YYYY-MM-DD", never after today: usually today (brief 4.6). */
+      readonly balanceOn: string;
+      /** When the update was made, a UTC time, later than the debt's last one (D103). */
+      readonly balanceAt: string;
+      /** Payments linked to this debt, ticked in the update's steps. */
+      readonly ticks?: readonly TickInUpdate[];
+    }
   /** Puts back the records from before an earlier edit, as a new edit (ARCHITECTURE.md 2.3). */
   | { readonly kind: 'undo'; readonly edit: Edit };
 
@@ -129,7 +157,7 @@ export type EditCommand =
  * One record as an edit leaves it: saved with `value`, or removed when
  * `value` is null. In an undo list, null means the record didn't exist.
  *
- * Series and balance updates are found by id. Changes and ticks are found by
+ * Series, balance updates and debts are found by id. Changes and ticks are found by
  * series and original date, as everywhere in the engine (brief 5.2, D87).
  */
 export type RecordWrite =
@@ -146,7 +174,8 @@ export type RecordWrite =
       readonly originalDate: string;
       readonly value: Tick | null;
     }
-  | { readonly kind: 'balance-update'; readonly id: string; readonly value: BalanceUpdate | null };
+  | { readonly kind: 'balance-update'; readonly id: string; readonly value: BalanceUpdate | null }
+  | { readonly kind: 'debt'; readonly id: string; readonly value: Debt | null };
 
 /**
  * One edit: one undo step, however many records it touched (brief 5.4).

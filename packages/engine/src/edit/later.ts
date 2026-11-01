@@ -21,6 +21,7 @@ import {
   outOfStep,
   refuse,
 } from './context.ts';
+import { scheduleForNewDay } from './new-date.ts';
 import { changeWrite, clean, sameValue, seriesWrite, tickWrite } from './records.ts';
 import type { PaymentRef, RecordWrite, ThisAndLaterEdits } from './types.ts';
 
@@ -143,6 +144,7 @@ export function removeThisAndLater(context: Context, ref: PaymentRef): void {
 /** "This and all later ones" edits, checked. */
 interface LaterEdits {
   readonly amount?: Pence | undefined;
+  readonly stepAmount?: Pence | undefined;
   readonly name?: string | undefined;
   readonly note?: string | undefined;
   readonly isEstimate?: boolean | undefined;
@@ -168,16 +170,54 @@ function checkEdits(edits: ThisAndLaterEdits, what: string): LaterEdits {
   ) {
     refuse('bad-command', `${what}: the schedule is missing or unknown.`);
   }
+  if (edits.amount !== undefined && edits.stepAmount !== undefined) {
+    refuse(
+      'bad-command',
+      `${what}: a new amount is for every payday from now or only this week of the pattern, not both.`,
+    );
+  }
   return {
     amount:
       edits.amount === undefined
         ? undefined
         : checkPenceNotNegative(edits.amount, `${what}: the amount`),
+    stepAmount:
+      edits.stepAmount === undefined
+        ? undefined
+        : checkPenceNotNegative(edits.stepAmount, `${what}: the amount for this step`),
     name: edits.name,
     note: edits.note,
     isEstimate: edits.isEstimate,
     day: edits.date === undefined ? undefined : parseDate(edits.date, `${what}: the date`),
     schedule: edits.schedule,
+  };
+}
+
+function mod(a: number, b: number): number {
+  return ((a % b) + b) % b;
+}
+
+/**
+ * "Only this week of the pattern" (D97) for one series: the payments with
+ * the same step as payment number `j` get `amount`, and every other step
+ * keeps its own. A series with one amount instead of a pattern (from "every
+ * payday from now", D90) gets a pattern of `length` with its own amount on
+ * every other step.
+ */
+function withStepAmount(series: Series, j: number, length: number, amount: Pence) {
+  const cycle = series.amountCycle ?? new Array<Pence>(length).fill(series.amount);
+  if (cycle.length !== length) {
+    refuse(
+      'patterns-differ',
+      `Series ${series.id} has a pattern of a different length, so this step can't be changed in it.`,
+    );
+  }
+  const offset = series.amountCycle === undefined ? 0 : (series.cycleOffset ?? 0);
+  const next = [...cycle];
+  next[mod(j + offset, length)] = amount;
+  return {
+    amountCycle: next,
+    cycleOffset: series.amountCycle === undefined ? undefined : series.cycleOffset,
   };
 }
 
@@ -203,18 +243,35 @@ function previousDate(context: Context, stretch: Stretch): Day | null {
 }
 
 /**
+ * True when only this one payment's date changes (D96): a new date on chosen
+ * dates, with no schedule of the app's own. Later payments keep their dates.
+ */
+function oneDateOnly(stretch: Stretch, edits: LaterEdits): boolean {
+  return (
+    edits.day !== undefined &&
+    edits.schedule === undefined &&
+    stretch.first.series.schedule.kind === 'dates'
+  );
+}
+
+/**
  * Gives every piece the new date and schedule (D91): the first piece starts
  * on the new date, and each later one on the date the new schedule gives its
- * first payment number. The number of payments never changes, so a series
- * that ended on a date now ends after the same number of payments. Null when
- * the dates come out exactly as they were.
+ * first payment number. Given only a new date, the engine works out the
+ * schedule as the owner set out (D96); on chosen dates, only this payment's
+ * date changes and later series of the family keep theirs. The number of
+ * payments never changes, so a series that ended on a date now ends after
+ * the same number of payments. Null when the dates come out exactly as they
+ * were.
  */
 function redate(context: Context, stretch: Stretch, pieces: readonly Piece[], edits: LaterEdits) {
   const { first, index } = stretch;
   const id = first.series.id;
   const j = first.firstNumber + index;
-  const anchor = edits.day ?? first.dateAt(index);
-  const schedule = edits.schedule ?? first.series.schedule;
+  const original = first.dateAt(index);
+  const anchor = edits.day ?? original;
+  const schedule = edits.schedule ?? scheduleForNewDay(first.series.schedule, original, anchor);
+  const onlyThisDate = oneDateOnly(stretch, edits);
   const reference = prepareSeries(
     clean<Series>({
       ...first.series,
@@ -243,6 +300,7 @@ function redate(context: Context, stretch: Stretch, pieces: readonly Piece[], ed
   }
   let changed = false;
   const redated = pieces.map((piece): Piece => {
+    if (onlyThisDate && piece.old !== first) return piece;
     const firstNumber = piece.series.firstNumber ?? 0;
     const offset = firstNumber - j;
     const oldCount = piece.old.count - piece.from;
@@ -263,22 +321,38 @@ function redate(context: Context, stretch: Stretch, pieces: readonly Piece[], ed
     }
     return { ...piece, series };
   });
+  // Later series keep their dates, so this one must still come before them.
+  const next = pieces[1];
+  if (onlyThisDate && next !== undefined) {
+    const now = prepareSeries((redated[0] as Piece).series, context.input.holidays);
+    if (now.dateAt(now.count - 1) >= next.old.dateAt(next.from)) {
+      refuse(
+        'date-after-later-payment',
+        `Series ${id}: the new date must be before ${formatDate(next.old.dateAt(next.from))}, the date of the payment after it.`,
+      );
+    }
+  }
   return changed ? redated : null;
 }
 
-/** A one-off change without the parts the edit replaces (D60). Ticks always stay. */
+/**
+ * A one-off change without the parts the edit replaces (D60). Ticks always
+ * stay. `dateReplaced` and `amountReplaced` say whether the edit gives this
+ * payment a new date or a new amount.
+ */
 function withoutReplaced(
   change: PaymentChange,
   edits: LaterEdits,
-  datesChanged: boolean,
+  dateReplaced: boolean,
+  amountReplaced: boolean,
 ): Draftable<PaymentChange> {
   return {
     ...change,
-    amount: edits.amount === undefined ? change.amount : undefined,
+    amount: amountReplaced ? undefined : change.amount,
     name: edits.name === undefined ? change.name : undefined,
     note: edits.note === undefined ? change.note : undefined,
     isEstimate: edits.isEstimate === undefined ? change.isEstimate : undefined,
-    newDate: datesChanged ? undefined : change.newDate,
+    newDate: dateReplaced ? undefined : change.newDate,
   };
 }
 
@@ -299,6 +373,12 @@ function changeStretch(
   const holidays = context.input.holidays;
   const j = first.firstNumber + index;
   const editedIsLast = paymentAtIndex(first, index, NO_CHANGES, holidays).isLast;
+  // "Only this week of the pattern" (D97): the length of the pattern, and
+  // whether a payment number is on the same step as this payment.
+  const stepLength = first.cycle?.length ?? 0;
+  const amountReplaced = (number: number): boolean =>
+    edits.amount !== undefined ||
+    (edits.stepAmount !== undefined && mod(number - j, stepLength) === 0);
 
   const edited = (series: Series, holdsThisPayment: boolean): Series => {
     const next: Draftable<Series> = { ...series };
@@ -311,6 +391,14 @@ function changeStretch(
       next.amount = edits.amount;
       next.amountCycle = undefined;
       next.cycleOffset = undefined;
+      if (holdsThisPayment && editedIsLast) next.lastAmount = undefined;
+    }
+    if (edits.stepAmount !== undefined) {
+      const { amountCycle, cycleOffset } = withStepAmount(series, j, stepLength, edits.stepAmount);
+      next.amountCycle = amountCycle;
+      next.cycleOffset = cycleOffset;
+      // As with every payday from now (D90): the different last amount stays,
+      // unless this is the last payment.
       if (holdsThisPayment && editedIsLast) next.lastAmount = undefined;
     }
     return clean<Series>(next);
@@ -338,6 +426,10 @@ function changeStretch(
   }
 
   let datesChanged = false;
+  // On chosen dates, a new date changes only this payment (D96), so only its
+  // one-off moved date is replaced (D60).
+  const onlyThisDate = oneDateOnly(stretch, edits);
+  const dateReplaced = (number: number): boolean => datesChanged && (!onlyThisDate || number === j);
   if (edits.day !== undefined || edits.schedule !== undefined) {
     const redated = redate(context, stretch, pieces, edits);
     if (redated !== null) {
@@ -372,7 +464,12 @@ function changeStretch(
       removals.push(changeWrite(oldId, formatDate(day), null));
       const originalDate = newDate(oldIndex);
       const moved = {
-        ...withoutReplaced(change, edits, datesChanged),
+        ...withoutReplaced(
+          change,
+          edits,
+          dateReplaced(piece.old.firstNumber + oldIndex),
+          amountReplaced(piece.old.firstNumber + oldIndex),
+        ),
         seriesId: newId,
         originalDate,
       };
@@ -429,6 +526,12 @@ export function thisAndLater(
 ): void {
   const found = findPayment(context, ref);
   const edits = checkEdits(rawEdits, `Series ${ref.seriesId}`);
+  if (edits.stepAmount !== undefined && found.prepared.cycle === null) {
+    refuse(
+      'no-pattern',
+      `Series ${ref.seriesId} has no amount pattern, so there's no week of the pattern to change.`,
+    );
+  }
   const shared = isSharedHalf(found.prepared.series);
   if (shared && (edits.name !== undefined || edits.note !== undefined)) {
     refuse(

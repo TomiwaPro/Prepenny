@@ -45,6 +45,12 @@ export interface Tick {
    */
   readonly inBalanceUpdate?: string;
   /**
+   * The id of the debt whose "Update from statement" steps it was ticked in,
+   * if it was. It then counts as before that update, so it's already inside
+   * that debt's balance (D62). It changes nothing for the bank balance.
+   */
+  readonly inDebtUpdate?: string;
+  /**
    * The day the money left or arrived, "YYYY-MM-DD", worked out with
    * `paidDate` when the tick is made (D1, D71).
    */

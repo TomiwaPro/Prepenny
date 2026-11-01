@@ -300,6 +300,18 @@ function checkSeries(series: Series): void {
   if (series.firstNumber !== undefined) {
     checkWholeNumber(id, series.firstNumber, 0, Number.MAX_SAFE_INTEGER, 'The first number');
   }
+  if (series.debtId !== undefined) {
+    if (typeof series.debtId !== 'string' || series.debtId === '') {
+      fail(id, 'bad-series', 'the linked debt must be the id of a debt.');
+    }
+    // Paying a debt is money going out (D98).
+    if (series.direction !== 'out') {
+      fail(id, 'bad-debt-link', 'only money going out can be linked to a debt.');
+    }
+    if (series.mirrorOf !== undefined) {
+      fail(id, 'bad-debt-link', 'the shared half of a private transfer has no debt (D16).');
+    }
+  }
   for (const field of ['splitFrom', 'mirrorOf'] as const) {
     const value = series[field];
     if (value !== undefined && (typeof value !== 'string' || value === '' || value === id)) {

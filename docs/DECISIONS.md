@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -747,7 +747,7 @@ Why: asked for a first payment, someone might type the date their rent started y
 
 ## Made during step 1c
 
-D87 to D95 were decided on 29 Oct 2026 while building step 1c. D90, D91 and the last point of D92 are for the owner to confirm or answer.
+D87 to D95 were decided on 29 Oct 2026 while building step 1c. The owner confirmed D90 and the last point of D92 on 29 Oct 2026, added a second choice to D90 (D97), and answered the question in D91 (D96).
 
 ### D87. How an edit works
 
@@ -785,7 +785,7 @@ Why: these follow brief 5.4, and a test on thousands of made-up plans proves tha
 
 ### D90. A new amount for this and all later ones
 
-Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. For the owner to confirm.
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. Confirmed by the owner on 29 Oct 2026, who added a second choice for a pay pattern: D97.
 
 - A new amount for this and all later ones makes every one of them that amount. If the pay follows a pattern, the pattern is replaced by the one amount.
 - A different last amount stays, unless the payment being changed is the last one. Laptop loan: £150, £150, then £34. Changing the second to £100 for this and all later ones gives £150, £100, £34.
@@ -794,19 +794,19 @@ Why: "this and all later ones" at £600 means each later one is £600. Changing 
 
 ### D91. A new date for this and all later ones
 
-Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. Partly a question for the owner.
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4. The question in it was answered by the owner on 29 Oct 2026: D96.
 
 - The engine takes the new date of the payment, and the schedule from that date on, from the app. It refuses a date the schedule doesn't give, such as the 3rd for a schedule on the 1st of each month.
 - The new date must come after the date of the payment before it. Otherwise payments would double up: rent moved from Fri 1 Jan 2027 back to Tue 1 Dec 2026 would be paid twice on 1 Dec.
 - Moving the dates never adds or loses a payment. A series that ended on a date now ends after the same number of payments.
 - One-off moved dates on this and later payments are dropped (D60). Notes, amounts and ticks stay.
-- Still to answer before Phase 2: which schedule the edit sheet sets when someone changes the date for this and all later ones. The proposal is in `PLAN.md`.
+- Which schedule the later payments follow was answered by the owner: D96.
 
 Why: brief Part 3, principle 4 lets people change the date for this and all later ones, but nothing says how the later dates follow. That decides the day money leaves, so it's a money rule for the owner.
 
 ### D92. Removing payments
 
-Decided 29 Oct 2026 in step 1c. Adds to brief 5.4 and D4. The last point is for the owner to confirm.
+Decided 29 Oct 2026 in step 1c. Adds to brief 5.4 and D4. The owner confirmed the last point on 29 Oct 2026.
 
 - "Remove this one" skips the payment (D4). Removing one that's already removed is refused.
 - "Remove this and later" ends the series just before the payment, the same way a split ends the old series (D89), and removes later series of the family (D88). On the first payment of a series, the series itself is removed. The one-off changes of the removed payments go too.
@@ -843,3 +843,118 @@ Decided 29 Oct 2026 in step 1c. Adds to D71 and D83.
 
 Why: one tick per payment (D83), and a second tick by another person in a shared plan should be reported, not saved on top.
 
+## From the owner's review of step 1c
+
+D96 and D97 were agreed by the owner on 29 Oct 2026, answering the questions left in `PLAN.md` at the end of step 1c. The owner also confirmed D90 and the last point of D92.
+
+### D96. A new date for this and all later ones: where the later ones go
+
+Agreed 29 Oct 2026, from the owner's review of step 1c. Answers the question left in D91.
+
+When someone changes a payment's date for this and all later ones, the later payments follow the new date like this:
+
+- Weekly or every few weeks: the new date's weekday, every so many weeks from it. An irregular weekly estimate works the same way.
+- Monthly (on a date, the last day, the last working day or "the first Monday"): the new date's day of the month, for example "the 3rd". Months left out, like Dee's February and March, stay left out.
+- On chosen dates, like Ali's student loan: only that one date changes, and the later chosen dates stay, with any one-off moves they have. The new date must come before the next payment, so no payment changes places.
+- A payment that happens once moves to the new date.
+
+The new date is the date from the schedule, before the weekend and bank holiday rule. The edit sheet sends only the new date, and the engine works out where the later ones go, so every phone uses the same rule, and an edit made again after a sync clash uses the records as they are then. Everything else in D91 stays: no payment is added or lost, and a date before the payment before it is refused. A command can still give a schedule of its own, for a later "how often" change, and then it's refused when the new date doesn't fit it.
+
+Why: this is the proposal the owner accepted. The later payments keep the same kind of schedule, starting from the day the person chose.
+
+### D97. "Only this week of the pattern"
+
+Agreed 29 Oct 2026, from the owner's review of step 1c. Adds a second choice to D90. The points after the first were decided in step 1d, following the owner's description.
+
+When a series has an amount pattern and someone changes the amount for this and all later ones, the edit sheet asks "Every payday from now" (D90) or "Only this week of the pattern".
+
+- "Only this week of the pattern" splits the series at this payment and changes only this payment's step of the pattern. Every payment on that step from here on gets the new amount, and the others keep theirs. On a series' first payment, it changes the whole series instead (brief 5.4).
+- It reaches later series of the family too (D88). A later series that has one amount instead of a pattern, because of an earlier "Every payday from now", gets a pattern of the same length: its own amount on every step, and the new amount on this one.
+- One-off amount changes are dropped only on payments of that step, from this one on (D60). One-off amounts on the other steps stay.
+- A different last amount stays, unless the payment being changed is the last one (as in D90).
+- It's refused when the series has no pattern, when it comes with "Every payday from now" in the same edit, or when a later series of the family has a pattern of a different length.
+
+Test: Sam changes his Fri 6 Nov pay to £640.00 this way. Fri 6 Nov, 4 Dec, 1 Jan, 29 Jan and 26 Feb become £640.00, every other payday keeps its amount, and total pay in the view becomes £9,856.66.
+
+Why: Sam's pay follows a 4-week rota, so changing one week of the rota should change that week each time it comes round, and leave the other weeks alone.
+
+## Made during step 1d
+
+D98 to D103 were decided on 29 Oct 2026 while building step 1d. The minimum rule in D101 is the owner's, recorded as the owner asked. Two questions for the owner are in `PLAN.md`: whether Left now on a credit card should include the interest added since the last update (D101), and whether a payment due on the statement date itself should come off the debt (D100).
+
+### D98. Debts and the payments linked to them
+
+Decided 29 Oct 2026 in step 1d. Adds to brief 4.6 and 5.2, D13 and D65.
+
+- A debt has the fields in ARCHITECTURE.md 3.3: name, kind, currency, rate, the balance with its date and the time it was typed in or updated from a statement (D62), the starting balance, and for credit cards the interest rate, statement day and minimum (D13). It also says who it belongs to (D65) and whether it's closed.
+- Only a credit card has an interest rate, a statement day or a minimum. A loan's or a pay-later plan's instalments already include any interest, so adding interest would count it twice. A credit card needs a statement day when it has an interest rate or a minimum rule (D13).
+- A debt in pounds has no rate. A debt in any other currency needs one, above zero. Every currency is counted in hundredths, like pence and cents. Currencies without hundredths, like the yen, are for later (brief Part 10), so until then the app offers only currencies that have them.
+- Only money going out can be linked to a debt, because paying a debt is money going out. Neither half of a private transfer can be linked: the shared half has no debt (D16), and the private half's money goes to the joint account, not to the debt.
+- A series split from a linked series stays linked (D49), so a split never changes a debt.
+- As with an account's balance (D85), a debt's balance date can't be after today.
+
+Why: the debt sums only take payments off, so money coming in linked to a debt would have no clear meaning, and refusing it is safer than guessing. Interest belongs to credit cards in the brief (4.6, 5.6).
+
+### D99. Left now, progress and Owed now
+
+Decided 29 Oct 2026 in step 1d. Adds to brief 5.6, D27, D34 and D62.
+
+- Left now is the balance minus every linked payment ticked after the balance was typed in, by time (D62), whatever the payment's own date. A tick made inside that debt's Update from statement steps counts as before it (D103). Each payment is converted at the debt's rate and rounded once (D9). A tick on a removed payment still comes off (D83).
+- For another currency, Left now is also given in pounds, converted once at the debt's rate (D9): €1,400.57 is about £1,206.14 at €1.1612 per £1.
+- Progress: paid so far is the starting balance minus Left now, never below zero. The percentage is rounded to the nearest whole percent, halves up, but stays at 99% until the debt is paid off, so a full bar always means Paid off. The Family loan's €996.36 of €2,396.93 is 41.57%, so 42%.
+- Owed now adds up every debt that isn't closed, each converted to pounds at its own rate and rounded once. A closed debt is still worked out, but left out of the total.
+
+Why: the brief and the owner define Left now this way. A bar at 100% beside "£2.00 left" would contradict itself, and a closed debt is one the person has finished with.
+
+### D100. Paid off on
+
+Decided 29 Oct 2026 in step 1d. Adds to brief 5.6, D27, D34, D42, D43 and D63.
+
+- The engine starts from the balance on its date and takes off, in date order: every linked payment ticked after the balance was typed in, on its paid date (D27), and every planned payment dated after the balance date (brief 5.6). A payment ticked after the update but paid before the balance date comes off first, as D39 does for a bank balance. A removed payment takes nothing off unless it's ticked (D4, D83). On the same day, payments go in the plan's same-day order (D12).
+- Paid off on is the date of the payment that leaves 1p, or 1 cent, or less (D34, D42), and never before the balance date: a payment that comes off at the start pays it off on the balance date. A debt with 1p or less on its balance date is paid off on that date.
+- Looking 24 months ahead (D43) means up to and including the same date 24 months after today, or that month's last day when it's shorter. On Sun 25 Oct 2026 the Debts screen looks to Wed 25 Oct 2028.
+- More than what's left (D63) is a payment's amount minus what was left before it, in the debt's own currency, counting what was left as nothing once it's 1p or 1 cent or less, as the screen shows it. A penny or cent over is only rounding (D34), so it isn't shown: the Family loan's last payment is €0.01 over and says Paid off. A payment still planned after a debt is paid off is all more than what's left, and says so. Nothing changes on its own (D63).
+- Paid off on, or what's still left at the end, is labelled as an estimate when it depends on one: credit card interest added before it's paid off, or a payment marked as an estimate. Sam's Credit card is an estimate because its £25.00 payments are; the Family loan isn't.
+
+Why: these follow brief 5.6 and the decisions it names, and the engine needed one exact answer for each. The 24 months match the furthest the plan can show (brief 4.8).
+
+### D101. Credit card interest and the minimum
+
+Decided 29 Oct 2026 in step 1d. Adds to brief 5.6 and D13. The minimum rule is the owner's, recorded here as the owner asked.
+
+- On each statement day after the balance date, the month's interest is the balance × the yearly rate ÷ 12, rounded once (D9), and it's added to the balance. Nothing is added on a balance of zero or less, or once the debt is paid off.
+- The statement day falls on that day of each month, or on the month's last day when the month is shorter, like a monthly payment (brief 5.3). A statement day on the balance date itself adds nothing: the balance typed in already includes it.
+- On a statement day, that day's payments come off before the interest is worked out.
+- The minimum from a rule like "interest plus 1% of the balance, at least £5" is 1% of the balance before that month's interest is added, rounded once (D9), plus the interest, at least the floor amount, and never more than the balance once the interest is added. £420.99 at 24.9% a year: the interest is £8.74, and the minimum is £4.21 + £8.74 = £12.95.
+- A minimum typed from the statement stays as typed. Later months' minimums aren't known, so the statement days ahead don't show one.
+- Left now doesn't include estimated interest. It's the balance minus ticked payments, as the brief and the owner set it out (D99). The interest is only in the statement days ahead and in Paid off on. Whether Left now should include it is a question for the owner in `PLAN.md`.
+- The interest, and every minimum worked out from a rule, are labelled as estimates (brief 5.6).
+
+Test: owner test 5, below in D102.
+
+Why: the owner set out the rule and the brief sets out the interest. The statement day's own payments come off first because a card's statement includes that day's payments.
+
+### D102. Comparing the minimum, a fixed amount and the full balance
+
+Decided 29 Oct 2026 in step 1d. Adds to brief 4.6.
+
+- The comparison starts from what's left on a day, usually Left now and today, and needs the day of the month payments go out, which the app takes from the card's linked payment. It leaves out the payments already in the plan.
+- Each month the statement adds the interest and sets the minimum (D101), and the payment goes out on the next payment day. Paying the minimum pays that statement's minimum. Before the comparison's first statement, the minimum is the rule on what's left, with no interest. A fixed amount pays that amount, or what's left if that's less. The full balance pays everything left.
+- It counts the payments until 1p or less is left, and adds up the interest on the way. Payments are monthly, so the number of payments is the number of months to clear it (brief 4.6).
+- A way of paying that doesn't clear the card within 100 years shows as never clearing it, for example £5.00 a month against £8.74 interest.
+- With a typed minimum, there's no minimum to compare, because later minimums aren't known.
+- Numbers only: it never says which way is best (brief Part 3, principle 10).
+
+Test (owner test 5): £420.99 on Sun 25 Oct 2026, 24.9% a year, statement day the 10th, payments on the 15th. Paying the minimum takes 150 payments and £647.14 in interest, £25 a month takes 21 payments and £102.32, and the full balance takes 1 payment and £8.74.
+
+Why: it gives exactly the owner's figures worked out by hand. Taking each payment day as it comes means a comparison started between a statement and its payment still counts that payment.
+
+### D103. Update from statement
+
+Decided 29 Oct 2026 in step 1d. Adds to brief 4.6, D62 and D87.
+
+- Update from statement is one edit: the debt's new balance, its date and the time of the update, with any linked payments ticked in its steps, so one undo takes all of it back (D87).
+- A payment ticked in its steps carries the debt's id, so it counts as before the update for that debt, even though it was ticked a few seconds after (D62). For the bank account it's an ordinary tick, compared with that account's own latest update (D83).
+- The balance date can't be after today, and the time must be later than the debt's last update, so it's always clear which ticks came before it. Only payments linked to that debt can be ticked in its steps.
+
+Why: people see Update from statement as one thing, as with Update balance (D87), and D62 says ticks made in its steps count as before it.

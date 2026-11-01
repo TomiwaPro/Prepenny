@@ -3,10 +3,19 @@
 // 2027, and every payment keeps its date (no weekend or bank holiday moves).
 //
 // Step 1a used the payments. Step 1b adds the accounts, balances, payment
-// types (D79), families and main pay. Debts (1d) and the rest come in later
-// steps. Debt links from brief 8.2 are noted on each series.
+// types (D79), families and main pay. Step 1d adds the debts (brief 8.1) and
+// links each debt payment to its debt (brief 8.2). Budgets and the rest come
+// in later steps.
 
-import type { Account, BalanceUpdate, PaymentChange, PlanInput, Series } from '../../src/index.ts';
+import type {
+  Account,
+  BalanceUpdate,
+  Debt,
+  DebtsInput,
+  PaymentChange,
+  PlanInput,
+  Series,
+} from '../../src/index.ts';
 import { parsePounds as pounds } from '../../src/index.ts';
 import { englandAndWales } from './holidays.ts';
 
@@ -58,9 +67,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     schedule: { kind: 'once' },
   },
   {
-    // Linked to the Family loan.
     ...base,
     id: 'family-loan-first',
+    debtId: 'family-loan',
     type: 'debt',
     name: 'Family loan',
     direction: 'out',
@@ -94,9 +103,10 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     schedule: { kind: 'once' },
   },
   {
-    // Linked to the Pay-later card (29 Oct only).
+    // Linked to the Pay-later card. Its monthly food bill isn't (brief 8.2).
     ...base,
     id: 'pay-later-card-in-full',
+    debtId: 'pay-later-card',
     type: 'debt',
     name: 'Pay-later card',
     direction: 'out',
@@ -138,9 +148,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     schedule: { kind: 'monthly', every: 1, on: { kind: 'day', day: 1 } },
   },
   {
-    // Linked to Pay in 3.
     ...base,
     id: 'pay-in-3-165',
+    debtId: 'pay-in-3',
     type: 'debt',
     name: 'Pay in 3 (£165.20 order)',
     direction: 'out',
@@ -150,9 +160,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     end: { kind: 'after', payments: 3 },
   },
   {
-    // Linked to Pay in 3.
     ...base,
     id: 'pay-in-3-79',
+    debtId: 'pay-in-3',
     type: 'debt',
     name: 'Pay in 3 (£79.99 order)',
     direction: 'out',
@@ -163,9 +173,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     end: { kind: 'after', payments: 3 },
   },
   {
-    // Linked to the Laptop loan.
     ...base,
     id: 'laptop-loan-first',
+    debtId: 'laptop-loan',
     type: 'debt',
     name: 'Laptop loan',
     direction: 'out',
@@ -174,9 +184,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     schedule: { kind: 'once' },
   },
   {
-    // Linked to Sofa finance.
     ...base,
     id: 'sofa-finance-first',
+    debtId: 'sofa-finance',
     type: 'debt',
     name: 'Sofa finance',
     direction: 'out',
@@ -196,9 +206,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     schedule: { kind: 'once' },
   },
   {
-    // Linked to the Credit card.
     ...base,
     id: 'credit-card',
+    debtId: 'credit-card',
     type: 'debt',
     name: 'Credit card',
     direction: 'out',
@@ -208,9 +218,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     isEstimate: true,
   },
   {
-    // Linked to the Family loan.
     ...base,
     id: 'family-loan',
+    debtId: 'family-loan',
     type: 'debt',
     name: 'Family loan',
     direction: 'out',
@@ -221,9 +231,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     end: { kind: 'after', payments: 4 },
   },
   {
-    // Linked to Sofa finance.
     ...base,
     id: 'sofa-finance',
+    debtId: 'sofa-finance',
     type: 'debt',
     name: 'Sofa finance',
     direction: 'out',
@@ -269,9 +279,9 @@ const samSeriesWithoutFamilies: readonly SeriesWithoutFamily[] = [
     isEstimate: true,
   },
   {
-    // Linked to the Laptop loan.
     ...base,
     id: 'laptop-loan',
+    debtId: 'laptop-loan',
     type: 'debt',
     name: 'Laptop loan',
     direction: 'out',
@@ -357,6 +367,91 @@ export function samPlan(overrides: Partial<PlanInput> = {}): PlanInput {
     changes: samChanges,
     ticks: [],
     mainPayFamilyId: samMainPay,
+    holidays: englandAndWales,
+    today: samToday,
+    to: samViewEnd,
+    ...overrides,
+  };
+}
+
+/**
+ * Sam's debts on Sun 25 Oct 2026 (brief 8.1), with the D15 names. Each was
+ * typed in with the balances, before any payment was added. Every starting
+ * balance is the balance typed in, except the Family loan, which started at
+ * €2,396.93. The Credit card has no interest in this test (brief 8.1).
+ */
+export const samDebts: readonly Debt[] = [
+  {
+    id: 'pay-later-card',
+    name: 'Pay-later card',
+    kind: 'pay-later',
+    currency: 'GBP',
+    balance: pounds('466.07'),
+    balanceOn: '2026-10-25',
+    balanceAt: '2026-10-25T08:30:00Z',
+    startingBalance: pounds('466.07'),
+  },
+  {
+    id: 'pay-in-3',
+    name: 'Pay in 3',
+    kind: 'pay-later',
+    currency: 'GBP',
+    balance: pounds('183.89'),
+    balanceOn: '2026-10-25',
+    balanceAt: '2026-10-25T08:30:00Z',
+    startingBalance: pounds('183.89'),
+  },
+  {
+    id: 'laptop-loan',
+    name: 'Laptop loan',
+    kind: 'loan',
+    currency: 'GBP',
+    balance: pounds('484.00'),
+    balanceOn: '2026-10-25',
+    balanceAt: '2026-10-25T08:30:00Z',
+    startingBalance: pounds('484.00'),
+  },
+  {
+    id: 'sofa-finance',
+    name: 'Sofa finance',
+    kind: 'pay-later',
+    currency: 'GBP',
+    balance: pounds('453.77'),
+    balanceOn: '2026-10-25',
+    balanceAt: '2026-10-25T08:30:00Z',
+    startingBalance: pounds('453.77'),
+  },
+  {
+    id: 'credit-card',
+    name: 'Credit card',
+    kind: 'credit-card',
+    currency: 'GBP',
+    balance: pounds('420.99'),
+    balanceOn: '2026-10-25',
+    balanceAt: '2026-10-25T08:30:00Z',
+    startingBalance: pounds('420.99'),
+  },
+  {
+    // Euro cents work like pence: €1,400.57 is 140057.
+    id: 'family-loan',
+    name: 'Family loan',
+    kind: 'owed-to-a-person',
+    currency: 'EUR',
+    rate: '1.1612',
+    balance: pounds('1400.57'),
+    balanceOn: '2026-10-25',
+    balanceAt: '2026-10-25T08:30:00Z',
+    startingBalance: pounds('2396.93'),
+  },
+];
+
+/** Sam's debts with his whole plan, ready for workOutDebts. Any part can be swapped for a test. */
+export function samDebtsInput(overrides: Partial<DebtsInput> = {}): DebtsInput {
+  return {
+    debts: samDebts,
+    series: samSeries,
+    changes: samChanges,
+    ticks: [],
     holidays: englandAndWales,
     today: samToday,
     to: samViewEnd,

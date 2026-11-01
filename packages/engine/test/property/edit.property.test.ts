@@ -9,6 +9,7 @@
 // - A private transfer's two halves still match after every edit (D94).
 // - An edit is only ever refused for a reason, never because it would leave
 //   records the plan can't use.
+// - Debts still work out after every edit, "Update from statement" included (step 1d).
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -17,6 +18,7 @@ import {
   addDays,
   applyWrites,
   type BalanceUpdate,
+  type Debt,
   dayFromParts,
   type Edit,
   type EditCommand,
@@ -31,6 +33,7 @@ import {
   type Series,
   sameValue,
   type Tick,
+  workOutDebts,
   workOutPayments,
   workOutPlan,
 } from '../../src/index.ts';
@@ -98,6 +101,8 @@ const seriesWish = fc.record({
   note: fc.option(fc.constant('A note')),
   familyTime: fc.integer({ min: 0, max: 3 }),
   name: fc.constantFrom('Rent', 'Pay', 'Bills', 'A', 'a'),
+  // Money going out can pay off one of the plan's two debts (D98).
+  debt: fc.option(fc.integer({ min: 0, max: 1 })),
 });
 
 const changeWish = fc.record({
@@ -174,8 +179,11 @@ function seriesFrom(wish: SeriesWish, id: string, today: string, fields: Partial
   };
 }
 
+/** A plan with its debts. */
+type PlanWithDebts = PlanInput & { readonly debts: readonly Debt[] };
+
 /** Turns a wish into a plan, with each series its own family and any private transfer in step. */
-function buildPlan(wish: PlanWish): PlanInput {
+function buildPlan(wish: PlanWish): PlanWithDebts {
   const today = formatDate(wish.today);
   const to = at(today, wish.length);
   const accounts: Account[] = Array.from({ length: wish.accounts }, (_, i) => ({
@@ -196,12 +204,40 @@ function buildPlan(wish: PlanWish): PlanInput {
     const from = s.account % accounts.length;
     const other = (from + 1 + (s.other % Math.max(1, accounts.length - 1))) % accounts.length;
     const transfer = s.direction === 'transfer' && accounts.length > 1;
+    const direction = transfer ? 'transfer' : s.direction === 'transfer' ? 'out' : s.direction;
     return seriesFrom(s, `series-${i}`, today, {
       accountId: `account-${from}`,
-      direction: transfer ? 'transfer' : s.direction === 'transfer' ? 'out' : s.direction,
+      direction,
       ...(transfer ? { toAccountId: `account-${other}` } : {}),
+      ...(direction === 'out' && s.debt !== null ? { debtId: `debt-${s.debt}` } : {}),
     });
   });
+  const debts: Debt[] = [
+    {
+      id: 'debt-0',
+      name: 'Card',
+      kind: 'credit-card',
+      currency: 'GBP',
+      balance: 42099,
+      balanceOn: today,
+      balanceAt: timeOn(today, 60 * 8),
+      startingBalance: 50000,
+      interestRate: '24.9',
+      statementDay: 10,
+      minimumRule: { kind: 'rule', percent: '1', atLeast: 500 },
+    },
+    {
+      id: 'debt-1',
+      name: 'Loan',
+      kind: 'owed-to-a-person',
+      currency: 'EUR',
+      rate: '1.1612',
+      balance: 140057,
+      balanceOn: today,
+      balanceAt: timeOn(today, 60 * 8),
+      startingBalance: 239693,
+    },
+  ];
   const halves: [Series, Series][] = [];
   if (wish.privateTransfer !== null && accounts.length > 1) {
     const t = wish.privateTransfer;
@@ -283,6 +319,7 @@ function buildPlan(wish: PlanWish): PlanInput {
     series,
     changes,
     ticks,
+    debts,
     mainPayFamilyId: main,
     holidays: englandAndWales,
     today,
@@ -300,6 +337,7 @@ const KINDS = [
   'tick',
   'untick',
   'update-balance',
+  'update-from-statement',
   'undo',
 ] as const;
 
@@ -308,6 +346,8 @@ const commandWish = fc.record({
   series: fc.nat(),
   k: fc.nat({ max: 40 }),
   amount: fc.option(fc.integer({ min: 0, max: 60_000 })),
+  // For a series with a pattern: "Only this week of the pattern" (D97) instead of every payday.
+  toStep: fc.boolean(),
   name: fc.option(fc.constantFrom('Rent', 'New name')),
   note: fc.option(fc.constantFrom('', 'New note')),
   isEstimate: fc.option(fc.boolean()),
@@ -333,7 +373,7 @@ function allPayments(input: PlanInput) {
 /** A real command from a wish, aimed at a payment of the plan as it is now. */
 function commandFrom(
   wish: CommandWish,
-  input: PlanInput,
+  input: PlanWithDebts,
   step: number,
   earlier: readonly Edit[],
 ): EditCommand | null {
@@ -353,6 +393,31 @@ function commandFrom(
         checkedOn: input.today,
         checkedAt: timeOn(input.today, wish.minute, step),
       },
+    };
+  }
+  if (wish.kind === 'update-from-statement') {
+    const debt = input.debts[wish.series % input.debts.length] as Debt;
+    // Sometimes with a payment of this debt ticked in its steps (D62).
+    const linked = allPayments(input).filter(
+      (p) => input.series.find((one) => one.id === p.seriesId)?.debtId === debt.id,
+    );
+    const payment = wish.toStep ? linked[wish.k % Math.max(1, linked.length)] : undefined;
+    return {
+      kind: 'update-from-statement',
+      debtId: debt.id,
+      balance: Math.abs(wish.balance),
+      balanceOn: input.today,
+      balanceAt: timeOn(input.today, wish.minute, step),
+      ticks:
+        payment === undefined
+          ? []
+          : [
+              {
+                seriesId: payment.seriesId,
+                originalDate: payment.originalDate,
+                tickedAt: timeOn(input.today, wish.minute, step + 1),
+              },
+            ],
     };
   }
   if (wish.kind === 'untick') {
@@ -393,11 +458,12 @@ function commandFrom(
             ? { date, schedule: { ...one.schedule, on: { kind: 'day', day } } }
             : { date };
       }
+      const stepAmount = wish.toStep && one.amountCycle !== undefined ? wish.amount : null;
       return {
         ...ref,
         kind: 'this-and-later',
         edits: {
-          ...optional('amount', wish.amount),
+          ...(stepAmount === null ? optional('amount', wish.amount) : { stepAmount }),
           ...optional('name', one.mirrorOf === undefined ? wish.name : null),
           ...optional('note', one.mirrorOf === undefined ? wish.note : null),
           ...optional('isEstimate', wish.isEstimate),
@@ -448,7 +514,7 @@ function paymentOfRecord(input: PlanInput): Map<string, number> {
 }
 
 /** Makes an edit, or null when the engine refuses it for a reason. */
-function tryEdit(input: PlanInput, command: EditCommand): Edit | null {
+function tryEdit(input: PlanWithDebts, command: EditCommand): Edit | null {
   try {
     return editPlan(input, command);
   } catch (error) {
@@ -459,7 +525,7 @@ function tryEdit(input: PlanInput, command: EditCommand): Edit | null {
   }
 }
 
-const halves = (input: PlanInput) =>
+const halves = (input: PlanWithDebts) =>
   halvesProblems(input, at(input.today, -250), at(input.to, 250));
 
 describe('editing holds for any plan and any edits', () => {
@@ -479,6 +545,9 @@ describe('editing holds for any plan and any edits', () => {
             const edit = tryEdit(input, command);
             if (edit === null) return;
             made.set(command.kind, (made.get(command.kind) ?? 0) + 1);
+            if (command.kind === 'this-and-later' && command.edits.stepAmount !== undefined) {
+              made.set('step-amount', (made.get('step-amount') ?? 0) + 1);
+            }
             const after = applyWrites(input, edit.writes);
 
             // Undo gives back exactly the records from before.
@@ -505,9 +574,10 @@ describe('editing holds for any plan and any edits', () => {
               expect(nowAt.get(key), `${command.kind} left ${key} loose`).toBe(number);
             }
 
-            // Both halves of a private transfer still match, and the plan still works.
+            // Both halves of a private transfer still match, and the plan and its debts still work.
             expect(halves(after)).toEqual([]);
             workOutPlan(after);
+            workOutDebts(after);
 
             input = after;
             earlier.push(edit);
@@ -517,7 +587,7 @@ describe('editing holds for any plan and any edits', () => {
       { numRuns: 1000 },
     );
     // Every kind of edit must really have been made, many times, for this to mean anything.
-    for (const kind of KINDS) {
+    for (const kind of [...KINDS, 'step-amount']) {
       expect(made.get(kind) ?? 0, kind).toBeGreaterThan(20);
     }
   });

@@ -8,6 +8,7 @@ import { paidDate } from '../balance/ticks.ts';
 import type { BalanceUpdate, Tick } from '../balance/types.ts';
 import { type Day, formatDate, parseDate } from '../dates/day.ts';
 import { parseTime } from '../dates/time.ts';
+import type { Debt } from '../debts/types.ts';
 import { EngineInputError } from '../errors.ts';
 import { checkPence, checkPenceNotNegative } from '../money/pence.ts';
 import { mainPaydaysOf } from '../periods/main-pay.ts';
@@ -124,10 +125,16 @@ function tick(
   context: Context,
   ref: PaymentRef,
   tickedAt: string,
-  inBalanceUpdate: string | undefined,
+  inside: { readonly inBalanceUpdate?: string; readonly inDebtUpdate?: string },
 ): void {
   const found = findPayment(context, ref);
   parseTime(tickedAt, `Series ${ref.seriesId}: when it was ticked`);
+  if (inside.inDebtUpdate !== undefined && found.prepared.series.debtId !== inside.inDebtUpdate) {
+    refuse(
+      'not-linked',
+      `Series ${ref.seriesId} isn't linked to debt ${inside.inDebtUpdate}, so it can't be ticked in its statement update.`,
+    );
+  }
   if (context.draft.tick(found.prepared.series.id, found.originalDate) !== null) {
     refuse(
       'already-ticked',
@@ -141,7 +148,8 @@ function tick(
       originalDate: one.originalDate,
       tickedAt,
       paidOn,
-      inBalanceUpdate,
+      inBalanceUpdate: inside.inBalanceUpdate,
+      inDebtUpdate: inside.inDebtUpdate,
     });
     context.draft.set(tickWrite(value.seriesId, value.originalDate, value));
   }
@@ -208,7 +216,47 @@ function updateBalance(
     refuse('bad-command', `${what}: the ticks must be a list.`);
   }
   for (const one of ticks) {
-    tick(context, one, one?.tickedAt, update.id);
+    tick(context, one, one?.tickedAt, { inBalanceUpdate: update.id });
+  }
+}
+
+/**
+ * "Update from statement" (brief 4.6, D62, D103): the debt's balance, its
+ * date and the time of the update, with anything ticked in its steps. Those
+ * ticks count as before the update, so they're already inside the new
+ * balance (D62), and the whole update is one undo step (D87).
+ */
+function updateFromStatement(
+  context: Context,
+  command: Extract<EditCommand, { kind: 'update-from-statement' }>,
+): void {
+  const id = command.debtId;
+  const checked =
+    context.checked.debts.get(id) ?? refuse('unknown-debt', `Debt ${id} isn't in the plan.`);
+  const what = `Debt ${id}`;
+  const balance = checkPenceNotNegative(command.balance, `${what}: the balance`);
+  if (parseDate(command.balanceOn, `${what}: the balance date`) > context.today) {
+    refuse('balance-after-today', `${what}: the balance date is after today.`);
+  }
+  if (parseTime(command.balanceAt, `${what}: when it was updated`) <= checked.balanceAt) {
+    refuse(
+      'statement-not-newer',
+      `${what}: the update must be later than its last one, so it's clear which ticks are inside it.`,
+    );
+  }
+  const value = clean<Debt>({
+    ...checked.debt,
+    balance,
+    balanceOn: command.balanceOn,
+    balanceAt: command.balanceAt,
+  });
+  context.draft.set({ kind: 'debt', id, value });
+  const ticks = command.ticks ?? [];
+  if (!Array.isArray(ticks)) {
+    refuse('bad-command', `${what}: the ticks must be a list.`);
+  }
+  for (const one of ticks) {
+    tick(context, one, one?.tickedAt, { inDebtUpdate: id });
   }
 }
 
@@ -342,13 +390,21 @@ function run(context: Context, command: EditCommand): void {
           `Balance update ${command.inBalanceUpdate} isn't in the plan.`,
         );
       }
-      tick(context, command, command.tickedAt, command.inBalanceUpdate);
+      tick(
+        context,
+        command,
+        command.tickedAt,
+        command.inBalanceUpdate === undefined ? {} : { inBalanceUpdate: command.inBalanceUpdate },
+      );
       break;
     case 'untick':
       untick(context, command);
       break;
     case 'update-balance':
       updateBalance(context, command.update, command.ticks ?? []);
+      break;
+    case 'update-from-statement':
+      updateFromStatement(context, command);
       break;
     case 'undo':
       undo(context, command.edit);
