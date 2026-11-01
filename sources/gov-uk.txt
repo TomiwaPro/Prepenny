@@ -17,6 +17,9 @@ https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye70025
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11015
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11085
 https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11095
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye13080
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye70030
+https://www.gov.uk/guidance/work-out-an-employees-income-tax
 
 # What each tax code means, emergency codes, Scotland and Wales
 https://www.gov.uk/tax-codes/what-your-tax-code-means
@@ -24,15 +27,23 @@ https://www.gov.uk/tax-codes/emergency-tax-codes
 https://www.gov.uk/employee-tax-codes/letters
 https://www.gov.uk/scottish-income-tax
 https://www.gov.uk/welsh-income-tax
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye100035
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye100040
 
 # National Insurance by the exact percentage method
 https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim11002
 https://www.gov.uk/national-insurance-rates-letters
+https://www.gov.uk/government/publications/payroll-technical-specifications-national-insurance
+https://www.gov.uk/government/publications/ca38-national-insurance-contributions-tables-a-and-j
 
 # Student loans and Postgraduate loans
 https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026
 https://www.gov.uk/government/publications/sl3-student-loan-deduction-tables/2026-to-2027-student-and-postgraduate-loan-deduction-tables
 https://www.gov.uk/hmrc-internal-manuals/collection-of-student-loans-manual/cslm18025
+https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans
+
+# HMRC's own test data for payroll software, for worked examples
+https://www.gov.uk/government/publications/software-developers-payroll-test-data-2026-to-2027
 
 # GOV.UK's own search, to find the exact addresses of HMRC's specifications
 https://www.gov.uk/api/search.json?q=specification+for+paye+tax+table+routines&count=20
