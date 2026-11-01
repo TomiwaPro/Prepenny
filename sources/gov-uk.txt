@@ -1,0 +1,39 @@
+# GOV.UK pages the take-home pay calculator is built from (brief 4.15).
+# The "Fetch sources" workflow (.github/workflows/fetch-sources.yml) saves each
+# page unchanged in sources/gov-uk/, with the date it was fetched beside it.
+# One address per line. Lines starting with # are notes. Only www.gov.uk.
+
+# Rates and thresholds: income tax (with Scottish and Welsh rates), National Insurance, student loans
+https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027
+
+# How tax-free pay is worked out from a tax code, the tax tables, K codes and rounding
+https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax
+https://www.gov.uk/government/publications/tables-a-pay-adjustment-tables
+https://www.gov.uk/government/publications/taxable-pay-tables-manual-method
+https://www.gov.uk/government/publications/cwg2-further-guide-to-paye-and-national-insurance-contributions/2026-to-2027-employer-further-guide-to-paye-and-national-insurance-contributions
+https://www.gov.uk/government/collections/how-to-manually-check-your-payroll-calculations
+https://www.gov.uk/government/collections/paye-online-support-for-software-developers
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye70025
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11015
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11085
+https://www.gov.uk/hmrc-internal-manuals/paye-manual/paye11095
+
+# What each tax code means, emergency codes, Scotland and Wales
+https://www.gov.uk/tax-codes/what-your-tax-code-means
+https://www.gov.uk/tax-codes/emergency-tax-codes
+https://www.gov.uk/employee-tax-codes/letters
+https://www.gov.uk/scottish-income-tax
+https://www.gov.uk/welsh-income-tax
+
+# National Insurance by the exact percentage method
+https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim11002
+https://www.gov.uk/national-insurance-rates-letters
+
+# Student loans and Postgraduate loans
+https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026
+https://www.gov.uk/government/publications/sl3-student-loan-deduction-tables/2026-to-2027-student-and-postgraduate-loan-deduction-tables
+https://www.gov.uk/hmrc-internal-manuals/collection-of-student-loans-manual/cslm18025
+
+# GOV.UK's own search, to find the exact addresses of HMRC's specifications
+https://www.gov.uk/api/search.json?q=specification+for+paye+tax+table+routines&count=20
+https://www.gov.uk/api/search.json?q=national+insurance+exact+percentage+method&count=20

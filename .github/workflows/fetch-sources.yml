@@ -1,0 +1,158 @@
+name: Fetch sources
+
+# Saves the GOV.UK pages listed in sources/gov-uk.txt into sources/gov-uk/,
+# unchanged, each with a small file beside it giving the address, the date it
+# was fetched and a checksum. Commits back to the branch it ran on, only when a
+# page has changed. Only www.gov.uk is ever contacted: an address anywhere else,
+# or a redirect to anywhere else, is refused. The tax year files in
+# packages/engine/src/pay/tax-years are built from these copies (brief 4.15).
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - sources/gov-uk.txt
+      - .github/workflows/fetch-sources.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-sources-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Fetch every page on the list
+        run: |
+          set -uo pipefail
+          list=sources/gov-uk.txt
+          work="$RUNNER_TEMP/pages"
+          mkdir -p "$work"
+          : > "$work/fetched.tsv"
+          failures=0
+
+          # Fetch one address, following redirects by hand so that every hop
+          # is checked to be on www.gov.uk before anything is asked of it.
+          fetch_page() {
+            local url="$1" out="$2" hop result status next
+            for hop in 1 2 3 4 5 6; do
+              case "$url" in
+                https://www.gov.uk/*) ;;
+                *) echo "Refused, not on www.gov.uk: $url"; return 1 ;;
+              esac
+              result=$(curl --silent --show-error --proto '=https' --max-time 60 \
+                --retry 3 --retry-delay 5 \
+                --user-agent "PrePenny source copy (github.com/TomiwaPro/Prepenny)" \
+                --output "$out" \
+                --write-out '%{http_code}\t%{content_type}\t%{redirect_url}' \
+                "$url") || return 1
+              status=$(printf '%s' "$result" | cut -f1)
+              next=$(printf '%s' "$result" | cut -f3)
+              case "$status" in
+                200)
+                  printf '%s\t%s\n' "$url" "$(printf '%s' "$result" | cut -f2)" > "$out.meta"
+                  return 0 ;;
+                301|302|303|307|308)
+                  echo "Redirected: $url -> $next"
+                  url="$next" ;;
+                *) echo "HTTP $status for $url"; return 1 ;;
+              esac
+            done
+            echo "Too many redirects for $1"
+            return 1
+          }
+
+          # A file name made from the address: the path with / as __, and any
+          # question mark part with its symbols made safe.
+          name_for() {
+            local rest="${1#https://www.gov.uk/}"
+            printf '%s' "$rest" | sed -e 's#/#__#g' -e 's#[^A-Za-z0-9._-]#_#g'
+          }
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            url=$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            case "$url" in ''|'#'*) continue ;; esac
+            name=$(name_for "$url")
+            if fetch_page "$url" "$work/$name"; then
+              final=$(cut -f1 "$work/$name.meta")
+              type=$(cut -f2 "$work/$name.meta")
+              case "$type" in
+                *json*) ext=json ;;
+                *html*) ext=html ;;
+                *pdf*) ext=pdf ;;
+                *) ext=txt ;;
+              esac
+              printf '%s\t%s\t%s\t%s\t%s\n' "$url" "$final" "$type" "$name" "$ext" >> "$work/fetched.tsv"
+              echo "Fetched $url ($(wc -c < "$work/$name") bytes, $type)"
+            else
+              failures=$((failures + 1))
+              echo "::error::Couldn't fetch $url"
+            fi
+            sleep 1
+          done < "$list"
+
+          echo "failures=$failures" >> "$GITHUB_ENV"
+
+      - name: Save the pages and commit any that changed
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/pages"
+          out=sources/gov-uk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            mkdir -p "$out"
+            today=$(TZ=Europe/London date +%F)
+            changed=0
+            while IFS=$'\t' read -r url final type name ext; do
+              page="$out/$name.$ext"
+              if [ -f "$page" ] && cmp -s "$work/$name" "$page"; then
+                continue
+              fi
+              cp "$work/$name" "$page"
+              sha=$(sha256sum "$page" | cut -d' ' -f1)
+              jq -n --arg source "$url" --arg final "$final" --arg type "$type" \
+                --arg today "$today" --arg sha "$sha" \
+                '{source: $source, fetched_from: $final, content_type: $type, fetched_on: $today, sha256: $sha}' \
+                > "$out/$name.source.json"
+              changed=$((changed + 1))
+            done < "$work/fetched.tsv"
+            if [ "$changed" -eq 0 ]; then
+              echo "No page has changed, so there's nothing to commit."
+              break
+            fi
+            git add "$out"
+            git commit -m "Save $changed GOV.UK page(s) unchanged from the source list ($today)"
+            if git push origin "HEAD:$BRANCH"; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Couldn't push after 3 tries." >&2
+              exit 1
+            fi
+            echo "The push was refused, probably because the branch moved on. Trying again on its latest commit."
+            git fetch --depth=1 origin "$BRANCH"
+            git reset --hard FETCH_HEAD
+            sleep 5
+          done
+
+      - name: Fail if any address couldn't be fetched
+        run: |
+          if [ "${failures:-0}" -gt 0 ]; then
+            echo "::error::$failures address(es) couldn't be fetched. The log above names them."
+            exit 1
+          fi
