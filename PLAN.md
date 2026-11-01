@@ -24,8 +24,7 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
-1. **A credit card's Left now and the interest since the last update (D101)** (before Phase 2, which builds the Debts screen). Left now is the balance typed in minus the payments ticked since, as the brief and your step 1d note define it, so it leaves out the interest the card adds on each statement day until the next Update from statement. Example: the card from owner test 5, £420.99 typed in on Sun 25 Oct at 24.9% a year with statements on the 10th. After £25.00 is ticked on Sun 15 Nov, Left now on Fri 20 Nov says £395.99, but the card added £8.74 interest on Tue 10 Nov, so its own balance is £404.73. Paid off on already counts the interest. The proposal: from the first statement day after the update, Left now includes the estimated interest up to today, labelled as an estimate, until the next Update from statement. Say if Left now should stay as it is.
-2. **A payment due on the statement date itself (D100)** (before Phase 2). Brief 5.6 takes off only the payments dated after the statement's date. So if Sam updates from his statement on the morning of Sun 15 Nov, before that day's £25.00 has gone, and doesn't tick it, the debt never takes that £25.00 off, although his bank balance does. The proposal: take it off unless it was ticked at or before the update, the same rule as the bank balance (brief 5.5). Say if it should stay as the brief says.
+Nothing waiting right now.
 
 ## Launch checklist (started)
 

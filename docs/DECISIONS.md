@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -880,7 +880,7 @@ Why: Sam's pay follows a 4-week rota, so changing one week of the rota should ch
 
 ## Made during step 1d
 
-D98 to D103 were decided on 29 Oct 2026 while building step 1d. The minimum rule in D101 is the owner's, recorded as the owner asked. Two questions for the owner are in `PLAN.md`: whether Left now on a credit card should include the interest added since the last update (D101), and whether a payment due on the statement date itself should come off the debt (D100).
+D98 to D103 were decided on 29 Oct 2026 while building step 1d. The minimum rule in D101 is the owner's, recorded as the owner asked. Two questions for the owner are in `PLAN.md`: whether Left now on a credit card should include the interest added since the last update (D101), and whether a payment due on the statement date itself should come off the debt (D100). The owner answered both on 1 Nov 2026: D104 and D105.
 
 ### D98. Debts and the payments linked to them
 
@@ -958,3 +958,40 @@ Decided 29 Oct 2026 in step 1d. Adds to brief 4.6, D62 and D87.
 - The balance date can't be after today, and the time must be later than the debt's last update, so it's always clear which ticks came before it. Only payments linked to that debt can be ticked in its steps.
 
 Why: people see Update from statement as one thing, as with Update balance (D87), and D62 says ticks made in its steps count as before it.
+
+## From the owner's review of step 1d
+
+D104 to D106 were agreed by the owner on 1 Nov 2026, answering the questions left in `PLAN.md` at the end of step 1d and adding one rule. The owner also confirmed D98 to D103.
+
+### D104. A credit card's Left now includes the interest since the last update
+
+Agreed 1 Nov 2026, from the owner's review of step 1d. Answers the question in D101 and replaces its point that Left now doesn't include estimated interest. Adds to D99.
+
+- A credit card's Left now includes the interest added on each statement day since the last Update from statement, up to and including today, labelled as an estimate.
+- It's worked out from the balance on its date: payments ticked after the update come off on their paid dates, and each statement day after the balance date adds the month's interest (D101) on what's left then. On a statement day, that day's payments come off first. Payments not ticked yet don't come off, because the card hasn't seen them. No interest is added once it's paid off.
+- Progress and Owed now use this Left now. Owed now is labelled as an estimate when any Left now in it is.
+- A card with no rate or a 0% rate never gets interest. A credit card with no rate says "Interest not included". Other kinds of debt don't, because their payments already include any interest (D98).
+
+Test: on Fri 20 Nov, owner test 5's card, with the £25.00 on Sun 15 Nov ticked, shows £404.73: £420.99, plus £8.74 on Tue 10 Nov, minus £25.00.
+
+Why: the card adds interest whether or not the person updates from a statement, so Left now shows what the card itself will say, marked as an estimate until the next statement.
+
+### D105. A payment due on the statement date itself
+
+Agreed 1 Nov 2026, from the owner's review of step 1d. Answers the question in D100. Changes "after its date" in brief 5.6, and "dated after the balance date" in D100, to "on or after".
+
+A payment due on a debt's balance date comes off the debt, unless it was ticked at or before that statement update, or inside its steps (D62, D103). This is the same rule as D33 for the bank balance.
+
+Test: £100.00 typed in at 9am on Sun 1 Nov, with £25.00 due that day: £75.00 is left after it. Ticked at 10am, it comes off once. Ticked at 8am, before the update, it's already inside the balance and never comes off.
+
+Why: a statement typed in on the morning a payment is due doesn't include that payment, so otherwise the debt would never take it off, although the bank balance does.
+
+### D106. 0% until a date
+
+Agreed 1 Nov 2026, from the owner's review of step 1d. Adds to D101 and D102.
+
+A credit card can have "0% until [date]" before its normal rate. A statement day on or before that date adds no interest, and later ones use the normal rate. It applies everywhere interest does: the statement days ahead, Paid off on, Left now (D104) and the comparison (D102). Only a credit card has it (D98). The minimum rule still applies while the card is at 0%: 1% of the balance, at least the floor amount.
+
+Test (the owner's): £420.99 on Sun 25 Oct 2026, 0% until Mon 30 Nov 2026, then 24.9% a year, statement day the 10th, £25.00 paid on the 15th. Tue 10 Nov adds nothing, leaving £395.99 after the 15 Nov payment. Thu 10 Dec adds £8.22, so £404.21, then £379.21 after 15 Dec.
+
+Why: many cards start with a 0% offer, and working out interest at the normal rate during it would show more owed than the card does.

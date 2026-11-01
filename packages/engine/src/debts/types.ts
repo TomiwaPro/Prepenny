@@ -55,6 +55,11 @@ export interface Debt {
   /** Credit cards only: the yearly interest rate as a percentage, "24.9". */
   readonly interestRate?: string;
   /**
+   * Credit cards only: "0% until" this date, "YYYY-MM-DD" (D106). A statement
+   * day on or before it adds no interest; later ones use the interest rate.
+   */
+  readonly zeroInterestUntil?: string;
+  /**
    * Credit cards only: the day of the month the statement is made, 1 to 31,
    * or the month's last day when the month is shorter (D13). Needed with an
    * interest rate or a minimum rule.
@@ -127,10 +132,17 @@ export type DebtRow = DebtPaymentRow | DebtStatementRow;
 export interface DebtPlan {
   readonly debt: Debt;
   /**
-   * Left now (D27, D62): the balance minus every linked payment ticked after
-   * the balance was typed in, never below zero (D34).
+   * Left now (D27, D62, D104): the balance minus every linked payment ticked
+   * after the balance was typed in, plus a credit card's estimated interest
+   * on each statement day since then, up to today. Never below zero (D34).
    */
   readonly leftNow: MinorUnits;
+  /** The estimated interest inside Left now (D104): 0 for anything but a credit card with a rate. */
+  readonly interestSinceUpdate: MinorUnits;
+  /** Left now includes estimated interest, so it's labelled as an estimate (D104). */
+  readonly leftNowIsEstimate: boolean;
+  /** A credit card with no interest rate: the screen says "Interest not included" (D104). */
+  readonly interestNotIncluded: boolean;
   /** Left now in pounds, converted at the debt's rate and rounded once (D9). */
   readonly leftNowInPounds: Pence;
   /** 1p, or 1 cent, or less is left now (D34, D42). */
@@ -158,6 +170,8 @@ export interface DebtsPlan {
   readonly to: string;
   /** Owed now across every debt that isn't closed, in pounds: each converted at its own rate (D99). */
   readonly owedNow: Pence;
+  /** Owed now includes a credit card's estimated interest, so it's an estimate too (D104). */
+  readonly owedNowIsEstimate: boolean;
   /** One for each debt, in the order given. */
   readonly debts: readonly DebtPlan[];
 }

@@ -26,6 +26,8 @@ export interface CheckedDebt {
   readonly rate: Decimal | null;
   /** Null when there's no interest rate. */
   readonly interestRate: Decimal | null;
+  /** "0% until" this day (D106), or null. */
+  readonly zeroInterestUntil: Day | null;
   readonly statementDay: number | null;
   readonly minimum: CheckedMinimum | null;
 }
@@ -99,7 +101,12 @@ export function checkDebt(debt: Debt, today: Day): CheckedDebt {
   }
 
   const card = debt.kind === 'credit-card';
-  for (const field of ['interestRate', 'statementDay', 'minimumRule'] as const) {
+  for (const field of [
+    'interestRate',
+    'zeroInterestUntil',
+    'statementDay',
+    'minimumRule',
+  ] as const) {
     if (debt[field] !== undefined && !card) {
       fail(id, 'credit-card-only', `only a credit card has ${field} (D98).`);
     }
@@ -108,6 +115,10 @@ export function checkDebt(debt: Debt, today: Day): CheckedDebt {
     debt.interestRate === undefined
       ? null
       : notNegativeDecimal(id, debt.interestRate, 'the interest rate');
+  const zeroInterestUntil =
+    debt.zeroInterestUntil === undefined
+      ? null
+      : parseDate(debt.zeroInterestUntil, `Debt ${id}: the date 0% ends`);
   const minimum = debt.minimumRule === undefined ? null : checkMinimum(id, debt.minimumRule);
   let statementDay: number | null = null;
   if (debt.statementDay !== undefined) {
@@ -124,7 +135,16 @@ export function checkDebt(debt: Debt, today: Day): CheckedDebt {
   if (statementDay === null && (interestRate !== null || minimum?.kind === 'rule')) {
     fail(id, 'needs-statement-day', 'interest and a minimum rule need a statement day (D13).');
   }
-  return { debt, balanceOn, balanceAt, rate, interestRate, statementDay, minimum };
+  return {
+    debt,
+    balanceOn,
+    balanceAt,
+    rate,
+    interestRate,
+    zeroInterestUntil,
+    statementDay,
+    minimum,
+  };
 }
 
 /** Checks every debt, and that no two share an id. */
