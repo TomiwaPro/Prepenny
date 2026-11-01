@@ -113,6 +113,14 @@ export interface Series {
   readonly goalId?: string;
   /** Money coming in only: part of each payment moved to another account the same day (D64). */
   readonly setAside?: SetAside;
+  /** For pay: the pay profile with the job's tax settings (ARCHITECTURE.md 3.4). */
+  readonly payProfileId?: string;
+  /**
+   * For pay: the saved pay week each payday is worked out from (D5), one for
+   * each step of the amount pattern, or one for every payday when there's no
+   * pattern. Sam's are "3-shift week", "4-shift week", "3-shift week", "4-shift week".
+   */
+  readonly cyclePayWeeks?: readonly string[];
   readonly isEstimate: boolean;
   readonly note?: string;
   /**
@@ -193,4 +201,9 @@ export interface Payment {
   readonly skipped: boolean;
   /** It has a one-off change. */
   readonly changed: boolean;
+  /**
+   * For pay: what "I did overtime" and "I missed a shift" add to it, already
+   * in `amount`. Only there while the payday is an estimate (D44, D123).
+   */
+  readonly payAdjustment?: Pence;
 }

@@ -25,6 +25,7 @@ import { EngineInputError } from '../errors.ts';
 import { type CheckedGoal, checkGoalLinks, checkGoals } from '../goals/goals.ts';
 import { type Decimal, divideRounded, parseDecimal, powerOfTen } from '../money/decimal.ts';
 import { checkPence, checkPenceNotNegative, type Pence, penceFromBigInt } from '../money/pence.ts';
+import { type CheckedPay, checkPay } from '../pay/records.ts';
 import { type MainPaydays, mainPaydaysOf } from '../periods/main-pay.ts';
 import {
   type ChangeIndex,
@@ -238,6 +239,9 @@ export type RecordsToCheck = Pick<
   | 'budgets'
   | 'spends'
   | 'goals'
+  | 'payProfiles'
+  | 'payWeeks'
+  | 'payAdjustments'
   | 'holidays'
 > & {
   /** The plan's debts. When they're given, every series' link to a debt is checked too (D98). */
@@ -270,6 +274,8 @@ export interface CheckedRecords {
   readonly spends: ReadonlyMap<string, readonly CheckedSpend[]>;
   /** The goals, by id. Empty when none were given. */
   readonly goals: ReadonlyMap<string, CheckedGoal>;
+  /** Pay profiles, pay weeks and pay adjustments, with each payday's adjustments added up (D123). */
+  readonly pay: CheckedPay;
 }
 
 /**
@@ -301,6 +307,7 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
     }
     checkGoalLinks(input.series, goals);
   }
+  const pay = checkPay(input, input.series);
   return {
     accounts,
     starts,
@@ -314,6 +321,7 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
     budgets,
     spends,
     goals,
+    pay,
   };
 }
 
@@ -366,6 +374,7 @@ function collectPayments(
   holidays: BankHolidayLookup,
 ): Movement[] {
   const { prepared, familyTimes, changes, ticks, setAsideTicks } = checked;
+  const adjustments = checked.pay.index;
   const all: Movement[] = [];
   for (const one of prepared) {
     const id = one.series.id;
@@ -408,7 +417,14 @@ function collectPayments(
       }
     };
     if (from <= to) {
-      for (const payment of paymentsOfSeriesBetween(one, from, to, changes, holidays)) {
+      for (const payment of paymentsOfSeriesBetween(
+        one,
+        from,
+        to,
+        changes,
+        holidays,
+        adjustments,
+      )) {
         add(payment);
       }
     }
@@ -420,7 +436,7 @@ function collectPayments(
       if (found.has(originalDay)) continue;
       const index = one.firstIndexOnOrAfter(originalDay);
       if (index < one.count && one.dateAt(index) === originalDay) {
-        add(paymentAtIndex(one, index, changes, holidays));
+        add(paymentAtIndex(one, index, changes, holidays, adjustments));
       }
       // A tick on a date that isn't one of the series' payments is ignored.
     }

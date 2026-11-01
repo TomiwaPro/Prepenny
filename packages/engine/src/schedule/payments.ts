@@ -7,8 +7,19 @@ import {
 } from '../dates/working-days.ts';
 import { EngineInputError } from '../errors.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
+import { checkPay } from '../pay/records.ts';
+import type { PayAdjustment } from '../pay/types.ts';
 import { markFamilies, type PreparedSeries, prepareSeries } from './series.ts';
 import type { HolidayRule, Payment, PaymentChange, Series } from './types.ts';
+
+/**
+ * Each payday's pay adjustments added up, by the pay series' family and the
+ * payday's payment number (D123). Made by the pay records check.
+ */
+export type AdjustmentIndex = ReadonlyMap<string, ReadonlyMap<number, Pence>>;
+
+/** No pay adjustments: for what the series and its changes alone give. */
+export const NO_ADJUSTMENTS: AdjustmentIndex = new Map();
 
 /** A payment with its dates as day numbers, for the engine's own use. */
 export interface PaymentOnDays extends Omit<Payment, 'originalDate' | 'date'> {
@@ -85,13 +96,15 @@ function mod(a: number, b: number): number {
  * The payment at a local index of a prepared series. In order (brief 5.3, D4,
  * D38): the date from the schedule; the amount from the change, else the last
  * amount on the last payment, else the pattern, else the series amount; then
- * the weekend and bank holiday rule; then a moved date and a skip.
+ * the weekend and bank holiday rule; then a moved date and a skip. While
+ * a payday is an estimate, its pay adjustments are added on top (D44, D123).
  */
 export function paymentAtIndex(
   prepared: PreparedSeries,
   index: number,
   changes: ChangeIndex,
   holidays: BankHolidayLookup,
+  adjustments: AdjustmentIndex = NO_ADJUSTMENTS,
 ): PaymentOnDays {
   const { series, cycle } = prepared;
   const number = prepared.firstNumber + index;
@@ -115,6 +128,12 @@ export function paymentAtIndex(
 
   const ruleDay = applyHolidayRule(originalDay, series.holidayRule, holidays);
   const newDay = found?.newDay ?? null;
+  const isEstimate = change?.isEstimate ?? series.isEstimate;
+  // "I did overtime" and "I missed a shift" change a payday only while it's
+  // an estimate: once the real amount is in, it stands (D44). A payday never
+  // goes below nothing.
+  const adjustment = isEstimate ? adjustments.get(series.familyId)?.get(number) : undefined;
+  if (adjustment !== undefined) amount = Math.max(0, amount + adjustment);
 
   return {
     seriesId: series.id,
@@ -129,12 +148,13 @@ export function paymentAtIndex(
     // An empty note is no note: a one-off change can clear the series' note.
     note: (change?.note ?? series.note ?? '') || null,
     type: series.type,
-    isEstimate: change?.isEstimate ?? series.isEstimate,
+    isEstimate,
     isLast,
     movedByRule: ruleDay !== originalDay,
     moved: newDay !== null && newDay !== ruleDay,
     skipped: change?.skipped ?? false,
     changed: change !== undefined,
+    ...(adjustment === undefined ? {} : { payAdjustment: adjustment }),
   };
 }
 
@@ -148,6 +168,7 @@ export function paymentsOfSeriesBetween(
   to: Day,
   changes: ChangeIndex,
   holidays: BankHolidayLookup,
+  adjustments: AdjustmentIndex = NO_ADJUSTMENTS,
 ): PaymentOnDays[] {
   // The weekend and bank holiday rule moves a date by at most this many days,
   // so these are all the payments it could bring into the window.
@@ -161,7 +182,7 @@ export function paymentsOfSeriesBetween(
     index < prepared.count && prepared.dateAt(index) <= lastCandidate;
     index += 1
   ) {
-    const payment = paymentAtIndex(prepared, index, changes, holidays);
+    const payment = paymentAtIndex(prepared, index, changes, holidays, adjustments);
     if (payment.day >= from && payment.day <= to) {
       found.push(payment);
     }
@@ -177,7 +198,7 @@ export function paymentsOfSeriesBetween(
     }
     const index = prepared.firstIndexOnOrAfter(originalDay);
     if (index < prepared.count && prepared.dateAt(index) === originalDay) {
-      found.push(paymentAtIndex(prepared, index, changes, holidays));
+      found.push(paymentAtIndex(prepared, index, changes, holidays, adjustments));
     }
   }
   return found;
@@ -192,6 +213,8 @@ export function paymentWithDates(payment: PaymentOnDays): Payment {
 export interface PaymentsRequest {
   readonly series: readonly Series[];
   readonly changes?: readonly PaymentChange[];
+  /** "I did overtime" and "I missed a shift", added to paydays that are estimates (D44). */
+  readonly payAdjustments?: readonly PayAdjustment[];
   /** The plan's bank holidays, usually a BankHolidayCalendar for its nation. */
   readonly holidays: BankHolidayLookup;
   /** "YYYY-MM-DD", included. */
@@ -213,6 +236,10 @@ export function workOutPayments(request: PaymentsRequest): Payment[] {
     throw new EngineInputError('bad-window', '"to" must be on or after "from".');
   }
   const changes = indexChanges(request.changes ?? []);
+  const adjustments = checkPay(
+    { payAdjustments: request.payAdjustments ?? [] },
+    request.series,
+  ).index;
   const seen = new Set<string>();
   const all: { payment: PaymentOnDays; order: number }[] = [];
 
@@ -225,7 +252,14 @@ export function workOutPayments(request: PaymentsRequest): Payment[] {
     return one;
   });
   markFamilies(prepared).forEach((one, order) => {
-    for (const payment of paymentsOfSeriesBetween(one, from, to, changes, request.holidays)) {
+    for (const payment of paymentsOfSeriesBetween(
+      one,
+      from,
+      to,
+      changes,
+      request.holidays,
+      adjustments,
+    )) {
       all.push({ payment, order });
     }
   });

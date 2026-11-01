@@ -2,6 +2,7 @@ import type { Budget, BudgetPlan, Spend } from '../budgets/types.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Goal } from '../goals/types.ts';
 import type { Pence } from '../money/pence.ts';
+import type { PayAdjustment, PayProfile, PayWeek } from '../pay/types.ts';
 import type { Payment, PaymentChange, Series } from '../schedule/types.ts';
 
 /** The kinds of account (brief 4.2, 5.2). */
@@ -79,6 +80,12 @@ export interface PlanInput {
   readonly spends?: readonly Spend[];
   /** Savings goals (brief 4.7). When they're given, every series' link to a goal is checked. */
   readonly goals?: readonly Goal[];
+  /** Pay profiles (brief 4.15). When they're given, every series' link to one is checked. */
+  readonly payProfiles?: readonly PayProfile[];
+  /** Saved pay weeks (D5). */
+  readonly payWeeks?: readonly PayWeek[];
+  /** "I did overtime" and "I missed a shift": added to their payday while it's an estimate (D44). */
+  readonly payAdjustments?: readonly PayAdjustment[];
   /** The family of the main pay of the person viewing (D14), or null when there's none. */
   readonly mainPayFamilyId: string | null;
   /** The plan's bank holidays, usually a BankHolidayCalendar for its nation. */

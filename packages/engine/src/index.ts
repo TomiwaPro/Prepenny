@@ -7,6 +7,7 @@
 // Step 1c: editing, moving, skipping, ticking and undo.
 // Step 1d: debts, currencies and credit cards, and "Only this week of the pattern".
 // Step 1e: budgets, spends, Left to spend, savings goals and "Set aside".
+// Step 1f: the take-home pay calculator, "I did overtime" and "I missed a shift".
 
 export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';
@@ -153,6 +154,72 @@ export {
   poundsToPence,
   sumPence,
 } from './money/pence.ts';
+export {
+  payAdjustmentForOne,
+  type TaxForPeriod,
+  type TaxTable,
+  taxForPeriod,
+} from './pay/income-tax.ts';
+export { employeeNationalInsurance, niRound } from './pay/national-insurance.ts';
+export {
+  checkPayslip,
+  PAYSLIP_FIGURES,
+  type Payslip,
+  type PayslipCheck,
+  type PayslipDifference,
+  type PayslipFigure,
+  takeHomeAsEstimate,
+} from './pay/payslip.ts';
+export { type PayChange, shiftPaidFrom, workOutPayChange, workWeekStart } from './pay/shifts.ts';
+export {
+  checkStudentLoans,
+  studentLoanDeduction,
+  studentLoanThreshold,
+} from './pay/student-loans.ts';
+export {
+  checkSettings,
+  type PayPeriod,
+  payPeriodOf,
+  pensionOn,
+  workOutTakeHome,
+} from './pay/take-home.ts';
+export { parseTaxCode, type TaxCode } from './pay/tax-code.ts';
+export {
+  checkTaxYear,
+  checkTaxYearFiles,
+  PAY_FREQUENCIES,
+  type PayFrequency,
+  type SourcedFigure,
+  STUDENT_LOAN_PLANS,
+  type StudentLoanPlan,
+  TAX_REGIMES,
+  TAX_YEAR_FILES,
+  type TaxBand,
+  type TaxRegime,
+  type TaxYear,
+  type TaxYearCheck,
+  type TaxYearFile,
+  taxYearFor,
+  taxYearName,
+  taxYearsOf,
+} from './pay/tax-year.ts';
+export {
+  type EstimateReason,
+  type FixedPay,
+  type OtherDeduction,
+  PAY_LINE_KINDS,
+  type PayAdjustment,
+  type PayLine,
+  type PayLineKind,
+  type PayProfile,
+  type PaySettings,
+  type PayWeek,
+  type Pension,
+  type TakeHome,
+  type TakeHomeInput,
+  type WorkedPayLine,
+  type YearSoFar,
+} from './pay/types.ts';
 export {
   type AccountPeriods,
   groupIntoPeriods,

@@ -27,6 +27,7 @@ import {
   refuse,
 } from './context.ts';
 import { removeThisAndLater, thisAndLater } from './later.ts';
+import { recordPayAdjustment, removePayAdjustment } from './pay.ts';
 import {
   applyWrites,
   changeWrite,
@@ -567,6 +568,13 @@ function run(context: Context, command: EditCommand): void {
       break;
     case 'remove-spend':
       removeSpend(context, command.spendId);
+      break;
+    case 'overtime':
+    case 'missed-shift':
+      recordPayAdjustment(context, command);
+      break;
+    case 'remove-pay-adjustment':
+      removePayAdjustment(context, command.id);
       break;
     case 'undo':
       undo(context, command.edit);
