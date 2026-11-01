@@ -158,6 +158,37 @@ describe('test 32 and D3: Sam on Sun 25 Oct, with no budgets', () => {
     expect(current(richer).leftToSpend).toMatchObject({ amount: 3000, spendNoMoreThan: null });
   });
 
+  it('says "You\'ll go under £20 on Mon 26 Oct, even if you spend nothing." with £217.54 on Sun 25 Oct (D117)', () => {
+    // −£7.46 at the end of Mon 26 Oct even with none of the £30.00 spent (−£37.46 with it spent).
+    const poorer = workOutPlan(
+      samPlan({
+        balanceUpdates: [
+          {
+            id: 'current-25-oct',
+            accountId: 'current',
+            balance: 21754,
+            checkedOn: '2026-10-25',
+            checkedAt: '2026-10-25T08:30:00Z',
+          },
+          {
+            id: 'savings-25-oct',
+            accountId: 'savings',
+            balance: 50000,
+            checkedOn: '2026-10-25',
+            checkedAt: '2026-10-25T08:30:00Z',
+          },
+        ],
+      }),
+    );
+    const left = current(poorer).leftToSpend;
+    expect(left).toMatchObject({
+      amount: 3000,
+      spendNoMoreThan: null,
+      underEvenSpendingNothing: '2026-10-26',
+    });
+    expect(at(poorer, '2026-10-26')).toBe('-37.46');
+  });
+
   it('runs to the day before the next main payday, and is labelled with that payday (D28)', () => {
     // On payday itself, Fri 30 Oct, it runs to Thu 5 Nov: the £45.00 spending money that day.
     const payday = workOutPlan(samPlan({ today: '2026-10-30' }));
@@ -208,6 +239,16 @@ describe('owner test 2 and test 33: the same budget spread across the days (D31)
   it('counts the spread days to Thu 29 Oct in Left to spend', () => {
     // £30.00 spending money and the £16.01 spread from Sun 25 to Thu 29 Oct.
     expect(current(plan).leftToSpend?.amount).toBe(4601);
+  });
+
+  it('says "Spend no more than £17.55", counting only the spending money due by each day (D118)', () => {
+    // The lowest day is Tue 27 Oct (−£2.05), but £6.41 of the £46.01 is due
+    // after it, on Wed 28 and Thu 29 Oct. Mon 26 Oct ends at £1.15 with
+    // £36.40 due by then (£30.00 and two days of £3.20): £1.15 + £36.40 −
+    // £20.00 = £17.55. Tue 27 Oct gives the same: −£2.05 + £39.60 − £20.00.
+    const left = current(plan).leftToSpend;
+    expect(formatPounds(left?.spendNoMoreThan ?? -1)).toBe('17.55');
+    expect(left?.underEvenSpendingNothing).toBeNull();
   });
 });
 

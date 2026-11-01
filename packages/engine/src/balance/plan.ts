@@ -634,9 +634,16 @@ function mainPaydayList(main: MainPaydays | null, today: Day, to: Day): Day[] {
 }
 
 /**
- * Left to spend until the next main payday (D3, D28, D112): spending money
- * still due to leave from today to the day before it, the lowest end-of-day
- * balance in that time, and the "Spend no more than" amount.
+ * Left to spend until the next main payday (D3, D28, D112, D117, D118): spending
+ * money still due to leave from today to the day before it, the lowest
+ * end-of-day balance in that time, and the line under it.
+ *
+ * "Spend no more than £X" counts, for each day, only the spending money due
+ * by that day: X is the smallest, over each day from today to the day before
+ * the next main payday, of that day's end balance + the Left to spend due by
+ * that day − the warning level, and never below 0 (D118). When that's below
+ * 0 on some day, even spending nothing takes the balance under the warning
+ * level, and the line says so with the first such day instead (D117).
  */
 function leftToSpendOf(
   work: AccountWork,
@@ -648,6 +655,7 @@ function leftToSpendOf(
   if (nextPayday === null) return null;
   const last = Math.min(addDays(nextPayday, -1), to);
   let amount = 0;
+  const dueOn = new Map<Day, Pence>();
   work.rows.forEach((row, i) => {
     const day = work.rowDays[i] as Day;
     if (day < today || day > last || row.change >= 0) return;
@@ -656,22 +664,34 @@ function leftToSpendOf(
     const spending =
       row.kind === 'budget' ||
       (row.kind === 'payment' && row.payment.type === 'spending-money' && !row.ticked);
-    if (spending) amount = checkPence(amount - row.change, 'Left to spend');
+    if (spending) {
+      amount = checkPence(amount - row.change, 'Left to spend');
+      dueOn.set(day, (dueOn.get(day) ?? 0) - row.change);
+    }
   });
+  const warning = work.account.warningLevel;
   let lowest = dayBalanceOf(work, today);
-  for (let day = today + 1; day <= last; day += 1) {
+  // The smallest room over the days, and the first day with no room at all.
+  let room: Pence | null = null;
+  let underOn: Day | null = null;
+  let dueSoFar = 0;
+  for (let day = today; day <= last; day += 1) {
     const balance = dayBalanceOf(work, day);
     if (balance.balance < lowest.balance) lowest = balance;
+    dueSoFar += dueOn.get(day) ?? 0;
+    const roomThatDay = balance.balance + dueSoFar - warning;
+    if (room === null || roomThatDay < room) room = roomThatDay;
+    // Strictly under the warning level even spending nothing (D10).
+    if (roomThatDay < 0 && underOn === null) underOn = day;
   }
-  const warning = work.account.warningLevel;
+  // A line only when spending it all goes under the warning level (D3, D10).
+  const needsLine = lowest.balance < warning;
   return {
     until: formatDate(nextPayday),
     amount,
     lowest,
-    // X = max(0, L + M − W), only when spending it all goes under W (D3, D10).
-    spendNoMoreThan:
-      lowest.balance < warning ? Math.max(0, amount + lowest.balance - warning) : null,
-    canKeepWarningLevel: amount + lowest.balance >= warning,
+    spendNoMoreThan: needsLine && underOn === null ? Math.max(0, room ?? 0) : null,
+    underEvenSpendingNothing: needsLine && underOn !== null ? formatDate(underOn) : null,
     payLater,
   };
 }

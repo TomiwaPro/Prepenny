@@ -199,7 +199,7 @@ export interface PayLaterLeft {
   readonly until: string;
 }
 
-/** Left to spend (D3, D28, D112). */
+/** Left to spend (D3, D28, D112, D117, D118). */
 export interface LeftToSpend {
   /** The next main payday, "YYYY-MM-DD": "Left to spend until Fri 30 Oct" (D28). */
   readonly until: string;
@@ -213,17 +213,21 @@ export interface LeftToSpend {
   /** M: the lowest end-of-day balance from today to the day before the next main payday. */
   readonly lowest: DayBalance;
   /**
-   * X in "Spend no more than £X to keep at least £20 until Fri 30 Oct":
-   * max(0, L + M − W), where W is the warning level (D3). Only when spending
-   * all of L takes the balance under the warning level (M < W). Otherwise null.
+   * X in "Spend no more than £X to keep at least £20 until Fri 30 Oct": the
+   * smallest, over each day from today to the day before the next main
+   * payday, of that day's end balance + the Left to spend due by that day −
+   * the warning level, never below 0 (D118). Only when spending all of L
+   * takes the balance under the warning level (M < W), and spending nothing
+   * wouldn't. Otherwise null.
    */
   readonly spendNoMoreThan: Pence | null;
   /**
-   * L + M is at least the warning level: spending nothing of L would keep
-   * the balance at or above it. When this is false, X is 0 and even spending
-   * nothing doesn't keep the warning level (a question for the owner, D112).
+   * The first day, "YYYY-MM-DD", that the balance goes under the warning
+   * level even if none of L is spent, for "You'll go under £20 on Mon 26 Oct,
+   * even if you spend nothing." It replaces the "Spend no more than" line
+   * (D117). Otherwise null.
    */
-  readonly canKeepWarningLevel: boolean;
+  readonly underEvenSpendingNothing: string | null;
   /** Each pay-later budget on this account, shown on its own line under Left to spend (D61). */
   readonly payLater: readonly PayLaterLeft[];
 }

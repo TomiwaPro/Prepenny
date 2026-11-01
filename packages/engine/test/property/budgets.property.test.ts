@@ -10,7 +10,7 @@
 // - Every spend recorded after the update is a row on its day, and none
 //   recorded at or before it is (D2, D33).
 // - A pay-later bill is the budget, or what was spent if that's more (D32).
-// - Left to spend and "Spend no more than" follow D3 and D28.
+// - Left to spend follows D28, and its line follows D117 and D118.
 // - The plan is the same whatever order the records come in.
 // - "I spent", changing and removing a spend, and ticking, changing, moving
 //   or removing a pay-later bill are each undone exactly (D111, D115).
@@ -294,10 +294,22 @@ function checkPlan(input: PlanInput, plan: Plan): void {
     expect(left.amount).toBe(spending.reduce((sum, row) => sum - row.change, 0));
     const window = account.days.filter((day) => day.date >= today && day.date <= last);
     expect(left.lowest.balance).toBe(Math.min(...window.map((day) => day.balance)));
+    // The line (D117, D118): for each day, its end balance + the spending
+    // money due by then − the warning level. Under 0 on any day means even
+    // spending nothing goes under, from the first such day.
     const warning = account.account.warningLevel;
+    const rooms = window.map((day) => {
+      const dueBy = spending
+        .filter((row) => row.date <= day.date)
+        .reduce((sum, row) => sum - row.change, 0);
+      return { date: day.date, room: day.balance + dueBy - warning };
+    });
+    const needsLine = left.lowest.balance < warning;
+    const firstUnder = rooms.find((one) => one.room < 0)?.date ?? null;
+    expect(left.underEvenSpendingNothing).toBe(needsLine ? firstUnder : null);
     expect(left.spendNoMoreThan).toBe(
-      left.lowest.balance < warning
-        ? Math.max(0, left.amount + left.lowest.balance - warning)
+      needsLine && firstUnder === null
+        ? Math.max(0, Math.min(...rooms.map((one) => one.room)))
         : null,
     );
   }
