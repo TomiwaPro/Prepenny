@@ -371,13 +371,14 @@ function collectPayments(
     const found = new Set<Day>();
     const add = (payment: PaymentOnDays) => {
       found.add(payment.originalDay);
-      const real = changes.get(id)?.get(payment.originalDay)?.change.amount !== undefined;
+      // A bill without its real amount yet is the budget's estimate (D32).
+      const estimate =
+        bill !== null && changes.get(id)?.get(payment.originalDay)?.change.amount === undefined;
       const movement: Movement = {
         kind: bill === null ? 'payment' : 'bill',
-        payment:
-          bill === null || real
-            ? payment
-            : { ...payment, amount: bill.billEstimate(payment.originalDay) },
+        payment: estimate
+          ? { ...payment, amount: bill.billEstimate(payment.originalDay) }
+          : payment,
         familyCreatedAt,
         familyId: one.series.familyId,
         within: 0,
