@@ -13,7 +13,8 @@
 // - Left to spend follows D28, and its line follows D117 and D118.
 // - The plan is the same whatever order the records come in.
 // - "I spent", changing and removing a spend, and ticking, changing, moving
-//   or removing a pay-later bill are each undone exactly (D111, D115).
+//   or removing a pay-later bill are each undone exactly (D111, D115), and
+//   "I spent" refuses a day after today (D119).
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -429,6 +430,17 @@ describe('budgets hold for any budgets, spends, balance updates and main pay', (
               };
             } else {
               command = { kind: 'remove-spend', spendId: existing.id };
+            }
+            // "I spent" takes today or an earlier day only (D119).
+            const later =
+              (command.kind === 'spend' && command.spend.spentOn > records.today) ||
+              (command.kind === 'change-spend' &&
+                (command.edits.spentOn ?? records.today) > records.today);
+            if (later) {
+              expect(() => editPlan(records, command)).toThrow(
+                expect.objectContaining({ code: 'spend-after-today' }),
+              );
+              continue;
             }
             const edit = editPlan(records, command);
             const after = applyWrites(records, edit.writes);

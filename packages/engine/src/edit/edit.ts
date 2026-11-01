@@ -268,6 +268,7 @@ function recordSpend(context: Context, spend: Spend): void {
     refuse('bad-command', 'The command needs the spend.');
   }
   const checked = checkSpend(spend, context.checked.budgets);
+  refuseLaterSpend(context, spend.id, checked.spentOn);
   const write: RecordWrite = { kind: 'spend', id: spend.id, value: null };
   if (context.draft.get(write) !== null) {
     refuse('id-taken', `Spend ${spend.id} already exists.`);
@@ -314,8 +315,27 @@ function changeSpend(
     spentOn: edits.spentOn ?? spend.spentOn,
     note: edits.note === undefined ? spend.note : edits.note === '' ? undefined : edits.note,
   });
-  checkSpend(value, context.checked.budgets);
+  const checked = checkSpend(value, context.checked.budgets);
+  // Only a new day is checked: a spend stored with a later day, from a
+  // partner whose today is already tomorrow (D85), can still have its
+  // amount or note changed.
+  if (edits.spentOn !== undefined) refuseLaterSpend(context, spend.id, checked.spentOn);
   context.draft.set({ kind: 'spend', id: spend.id, value });
+}
+
+/**
+ * "I spent" takes today or an earlier day only (D119): a spend dated later
+ * would count as inside the next balance update before the money has gone.
+ * The plan itself still takes stored spends dated after today, because in a
+ * shared plan a partner's today can be a day ahead (D85).
+ */
+function refuseLaterSpend(context: Context, id: string, spentOn: Day): void {
+  if (spentOn > context.today) {
+    refuse(
+      'spend-after-today',
+      `Spend ${id}: the day it was spent, ${formatDate(spentOn)}, is after today.`,
+    );
+  }
 }
 
 /** Removes a spend (D115). */

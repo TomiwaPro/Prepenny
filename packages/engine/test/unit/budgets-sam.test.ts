@@ -253,8 +253,8 @@ describe('owner test 2 and test 33: the same budget spread across the days (D31)
 });
 
 describe('owner test 3: a pay-later budget in place of the Pay-later card (food) series (D32, D61)', () => {
-  const foodPlan = (spends: readonly Spend[] = []) =>
-    workOutPlan(samPlan({ series: samSeriesWithoutFood, budgets: [samFood], spends }));
+  const foodPlan = (spends: readonly Spend[] = [], today = '2026-10-25') =>
+    workOutPlan(samPlan({ series: samSeriesWithoutFood, budgets: [samFood], spends, today }));
   const original = workOutPlan(samPlan());
 
   describe('with no spends, every figure in brief 8.3 stays exactly the same', () => {
@@ -352,21 +352,33 @@ describe('owner test 3: a pay-later budget in place of the Pay-later card (food)
   });
 
   it('makes the 29 Nov bill £230.00 with £230.00 spent: £702.91 at the end of November, £3,274.87 at the end of February', () => {
-    const plan = foodPlan([
-      samSpend('shop-29-oct', '100.00', '2026-10-29', '2026-10-29T18:00:00Z', 'food'),
-      samSpend('shop-28-nov', '130.00', '2026-11-28', '2026-11-28T18:00:00Z', 'food'),
-    ]);
+    // Today is Sat 28 Nov, after both spends: "I spent" takes no later day (D119).
+    const plan = foodPlan(
+      [
+        samSpend('shop-29-oct', '100.00', '2026-10-29', '2026-10-29T18:00:00Z', 'food'),
+        samSpend('shop-28-nov', '130.00', '2026-11-28', '2026-11-28T18:00:00Z', 'food'),
+      ],
+      '2026-11-28',
+    );
     expect(budgetRows(plan, 'food', '2026-11-30')).toEqual([['2026-11-29', 'bill', '-230.00']]);
     expect([at(plan, '2026-11-30'), at(plan, '2027-02-28')]).toEqual(['702.91', '3274.87']);
   });
 
   it('shows "On the pay-later card: £80.00 left until Sat 28 Nov" with £120.00 spent, not in Left to spend', () => {
-    const plan = foodPlan([
-      samSpend('shop-1-nov', '120.00', '2026-11-01', '2026-11-01T18:00:00Z', 'food'),
-    ]);
+    // Today is Sun 8 Nov, after the spend (D119).
+    const plan = foodPlan(
+      [samSpend('shop-1-nov', '120.00', '2026-11-01', '2026-11-01T18:00:00Z', 'food')],
+      '2026-11-08',
+    );
     const left = current(plan).leftToSpend;
     expect(left?.payLater).toEqual([{ budgetId: 'food', left: 8000, until: '2026-11-28' }]);
-    expect(left?.amount).toBe(3000);
+    // The £80.00 on the card isn't in Left to spend: it's the same as with no
+    // food budget at all. The £30.00 this test had on Sun 25 Oct can't stay
+    // with today on Sun 8 Nov: Left to spend runs to Thu 12 Nov, and Sam has
+    // no spending money due then, so both are £0.00. The owner is asked to
+    // confirm this (step 1f).
+    const noFood = workOutPlan(samPlan({ series: samSeriesWithoutFood, today: '2026-11-08' }));
+    expect(left?.amount).toBe(current(noFood).leftToSpend?.amount);
     // The card's spends never leave the bank account: the bill is still £200.00.
     expect(budgetRows(plan, 'food', '2026-11-30')).toEqual([['2026-11-29', 'bill', '-200.00']]);
   });
