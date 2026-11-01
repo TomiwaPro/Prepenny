@@ -47,7 +47,8 @@ export interface PayChange {
  * Take-home pay with and without the change, from the payday's pay week and
  * anything already saved for it (D5). Both use the same year so far: any pay
  * periods between the last payslip and the payday count as paid the payday's
- * pay without the change (D124).
+ * own pay week, with no overtime or missed shifts (D124). So two shifts on
+ * one payday add up to exactly what both together would change.
  */
 export function workOutPayChange(
   input: PayChangeInput,
@@ -59,12 +60,16 @@ export function workOutPayChange(
     fixed: input.fixed ?? [],
     ...(input.soFar === undefined ? {} : { soFar: input.soFar }),
   };
-  const without = workOutTakeHome({ ...base, lines: [...input.lines, ...input.earlier] }, years);
+  const usual = workOutTakeHome({ ...base, lines: input.lines }, years);
+  const without = workOutTakeHome(
+    { ...base, lines: [...input.lines, ...input.earlier], assumedPayBetween: usual.payForTax },
+    years,
+  );
   const withChange = workOutTakeHome(
     {
       ...base,
       lines: [...input.lines, ...input.earlier, input.change],
-      assumedPayBetween: without.payForTax,
+      assumedPayBetween: usual.payForTax,
     },
     years,
   );
