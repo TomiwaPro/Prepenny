@@ -201,7 +201,10 @@ export function changeOne(context: Context, found: Found, edits: OneOff): void {
     originalDate,
   };
   if (edits.amount !== undefined) {
-    next.amount = edits.amount === plain.amount ? undefined : edits.amount;
+    // A pay-later bill's real amount always stands: the estimate it would
+    // otherwise show moves with the spends (D32, D111).
+    const bill = context.checked.budgets.has(seriesId);
+    next.amount = edits.amount === plain.amount && !bill ? undefined : edits.amount;
   }
   if (edits.day !== undefined) {
     next.newDate = edits.day === plain.day ? undefined : formatDate(edits.day);

@@ -2,6 +2,7 @@
 // what they are after. Nothing here is stored or sent anywhere.
 
 import type { BalanceUpdate, Tick } from '../balance/types.ts';
+import type { Spend } from '../budgets/types.ts';
 import type { Debt } from '../debts/types.ts';
 import { EngineInputError } from '../errors.ts';
 import type { PaymentChange, Series } from '../schedule/types.ts';
@@ -14,6 +15,7 @@ const KIND_ORDER: readonly RecordWrite['kind'][] = [
   'tick',
   'balance-update',
   'debt',
+  'spend',
 ];
 
 /** One text that names a record: its kind, then its id, or its series and original date. */
@@ -22,6 +24,7 @@ export function keyOf(write: RecordWrite): string {
     case 'series':
     case 'balance-update':
     case 'debt':
+    case 'spend':
       return JSON.stringify([write.kind, write.id]);
     case 'change':
     case 'tick':
@@ -35,7 +38,10 @@ function checkWrite(write: RecordWrite, what: string): void {
     write !== null &&
     typeof write === 'object' &&
     KIND_ORDER.includes(write.kind) &&
-    (write.kind === 'series' || write.kind === 'balance-update' || write.kind === 'debt'
+    (write.kind === 'series' ||
+    write.kind === 'balance-update' ||
+    write.kind === 'debt' ||
+    write.kind === 'spend'
       ? text(write.id)
       : text(write.seriesId) && text(write.originalDate));
   if (
@@ -114,6 +120,10 @@ export class Draft {
     }
     for (const value of records.debts ?? []) {
       const write: RecordWrite = { kind: 'debt', id: value.id, value };
+      this.#now.set(keyOf(write), write);
+    }
+    for (const value of records.spends ?? []) {
+      const write: RecordWrite = { kind: 'spend', id: value.id, value };
       this.#now.set(keyOf(write), write);
     }
   }
@@ -229,9 +239,19 @@ export function applyWrites<T extends PlanRecords>(records: T, writes: readonly 
             keyOf({ kind: 'debt', id: one.id, value: null }),
           ),
         };
+  // Spends too: left as given unless the edit changes one.
+  const spends =
+    records.spends === undefined && !writes.some((write) => write.kind === 'spend')
+      ? {}
+      : {
+          spends: applyToList<Spend>(records.spends ?? [], writes, 'spend', (one) =>
+            keyOf({ kind: 'spend', id: one.id, value: null }),
+          ),
+        };
   return {
     ...records,
     ...debts,
+    ...spends,
     series: applyToList<Series>(records.series, writes, 'series', (one) =>
       keyOf(seriesWrite(one.id, null)),
     ),

@@ -3,8 +3,10 @@
 // engine never saves or changes anything itself.
 
 import type { Account, BalanceUpdate, Tick } from '../balance/types.ts';
+import type { Budget, Spend } from '../budgets/types.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Debt } from '../debts/types.ts';
+import type { Goal } from '../goals/types.ts';
 import type { MinorUnits } from '../money/currency.ts';
 import type { Pence } from '../money/pence.ts';
 import type { PaymentChange, Schedule, Series } from '../schedule/types.ts';
@@ -18,6 +20,12 @@ export interface PlanRecords {
   readonly ticks?: readonly Tick[];
   /** The plan's debts (D98). When they're given, every series' link to a debt is checked too. */
   readonly debts?: readonly Debt[];
+  /** Budgets (brief 4.5). A pay-later budget's bills can be ticked and changed like payments (D111). */
+  readonly budgets?: readonly Budget[];
+  /** "I spent" (brief 4.5, D115). */
+  readonly spends?: readonly Spend[];
+  /** Savings goals (brief 4.7). When they're given, every series' link to a goal is checked too. */
+  readonly goals?: readonly Goal[];
 }
 
 /** What an edit needs: the stored records, the plan's settings and today. */
@@ -150,6 +158,20 @@ export type EditCommand =
       /** Payments linked to this debt, ticked in the update's steps. */
       readonly ticks?: readonly TickInUpdate[];
     }
+  /** "I spent" (brief 4.5, D115): a new spend, with its id, budget, amount, day and the time it was recorded. */
+  | { readonly kind: 'spend'; readonly spend: Spend }
+  /** Changes a spend's amount, day or note (D115). An empty note means no note. */
+  | {
+      readonly kind: 'change-spend';
+      readonly spendId: string;
+      readonly edits: {
+        readonly amount?: Pence;
+        readonly spentOn?: string;
+        readonly note?: string;
+      };
+    }
+  /** Removes a spend (D115). */
+  | { readonly kind: 'remove-spend'; readonly spendId: string }
   /** Puts back the records from before an earlier edit, as a new edit (ARCHITECTURE.md 2.3). */
   | { readonly kind: 'undo'; readonly edit: Edit };
 
@@ -157,7 +179,7 @@ export type EditCommand =
  * One record as an edit leaves it: saved with `value`, or removed when
  * `value` is null. In an undo list, null means the record didn't exist.
  *
- * Series, balance updates and debts are found by id. Changes and ticks are found by
+ * Series, balance updates, debts and spends are found by id. Changes and ticks are found by
  * series and original date, as everywhere in the engine (brief 5.2, D87).
  */
 export type RecordWrite =
@@ -175,7 +197,8 @@ export type RecordWrite =
       readonly value: Tick | null;
     }
   | { readonly kind: 'balance-update'; readonly id: string; readonly value: BalanceUpdate | null }
-  | { readonly kind: 'debt'; readonly id: string; readonly value: Debt | null };
+  | { readonly kind: 'debt'; readonly id: string; readonly value: Debt | null }
+  | { readonly kind: 'spend'; readonly id: string; readonly value: Spend | null };
 
 /**
  * One edit: one undo step, however many records it touched (brief 5.4).

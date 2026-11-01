@@ -6,6 +6,8 @@
 import { checkRecords } from '../balance/plan.ts';
 import { paidDate } from '../balance/ticks.ts';
 import type { BalanceUpdate, Tick } from '../balance/types.ts';
+import { checkSpend } from '../budgets/check.ts';
+import type { Spend } from '../budgets/types.ts';
 import { type Day, formatDate, parseDate } from '../dates/day.ts';
 import { parseTime } from '../dates/time.ts';
 import type { Debt } from '../debts/types.ts';
@@ -260,6 +262,82 @@ function updateFromStatement(
   }
 }
 
+/** "I spent" (brief 4.5, D115): a new spend, checked like the stored ones. */
+function recordSpend(context: Context, spend: Spend): void {
+  if (spend === null || typeof spend !== 'object') {
+    refuse('bad-command', 'The command needs the spend.');
+  }
+  const checked = checkSpend(spend, context.checked.budgets);
+  const write: RecordWrite = { kind: 'spend', id: spend.id, value: null };
+  if (context.draft.get(write) !== null) {
+    refuse('id-taken', `Spend ${spend.id} already exists.`);
+  }
+  context.draft.set({
+    ...write,
+    value: clean<Spend>({
+      id: spend.id,
+      budgetId: spend.budgetId,
+      amount: checked.spend.amount,
+      spentOn: spend.spentOn,
+      recordedAt: spend.recordedAt,
+      note: spend.note === '' ? undefined : spend.note,
+    }),
+  });
+}
+
+function spendNow(context: Context, spendId: string): Spend {
+  if (typeof spendId !== 'string' || spendId === '') {
+    refuse('bad-command', 'The command needs the spend.');
+  }
+  return (
+    (context.draft.get({ kind: 'spend', id: spendId, value: null }) as Spend | null) ??
+    refuse('unknown-spend', `Spend ${spendId} isn't in the plan.`)
+  );
+}
+
+/**
+ * Changes a spend's amount, day or note (D115). When it was recorded stays
+ * the same, so it's still inside the same balance update, or not (D2, D33).
+ */
+function changeSpend(
+  context: Context,
+  command: Extract<EditCommand, { kind: 'change-spend' }>,
+): void {
+  const spend = spendNow(context, command.spendId);
+  const edits = command.edits;
+  if (edits === null || typeof edits !== 'object') {
+    refuse('bad-command', `Spend ${spend.id}: the command needs its edits.`);
+  }
+  const value = clean<Spend>({
+    ...spend,
+    amount: edits.amount ?? spend.amount,
+    spentOn: edits.spentOn ?? spend.spentOn,
+    note: edits.note === undefined ? spend.note : edits.note === '' ? undefined : edits.note,
+  });
+  checkSpend(value, context.checked.budgets);
+  context.draft.set({ kind: 'spend', id: spend.id, value });
+}
+
+/** Removes a spend (D115). */
+function removeSpend(context: Context, spendId: string): void {
+  const spend = spendNow(context, spendId);
+  context.draft.set({ kind: 'spend', id: spend.id, value: null });
+}
+
+/**
+ * A pay-later budget's bills come from the budget (D111): one bill can be
+ * changed, moved, removed or ticked, but changing this and all later ones
+ * is a change to the budget itself.
+ */
+function refuseForBills(context: Context, ref: PaymentRef): void {
+  if (context.checked.budgets.has(ref?.seriesId)) {
+    refuse(
+      'budget-bills',
+      `Series ${ref.seriesId} is a pay-later budget's bills: to change this and later ones, change the budget.`,
+    );
+  }
+}
+
 /**
  * Undo (ARCHITECTURE.md 2.3): saves the "before" copies of an earlier edit
  * as a new edit. Refused when anything that edit saved has been changed
@@ -369,6 +447,7 @@ function run(context: Context, command: EditCommand): void {
       break;
     }
     case 'this-and-later':
+      refuseForBills(context, command);
       thisAndLater(
         context,
         command,
@@ -378,6 +457,7 @@ function run(context: Context, command: EditCommand): void {
       );
       break;
     case 'remove-this-and-later':
+      refuseForBills(context, command);
       removeThisAndLater(context, command);
       break;
     case 'tick':
@@ -405,6 +485,15 @@ function run(context: Context, command: EditCommand): void {
       break;
     case 'update-from-statement':
       updateFromStatement(context, command);
+      break;
+    case 'spend':
+      recordSpend(context, command.spend);
+      break;
+    case 'change-spend':
+      changeSpend(context, command);
+      break;
+    case 'remove-spend':
+      removeSpend(context, command.spendId);
       break;
     case 'undo':
       undo(context, command.edit);
