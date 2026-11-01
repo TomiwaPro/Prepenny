@@ -1,6 +1,7 @@
 // Credit card estimates (brief 4.6, 5.6, D101): the month's interest and the
 // minimum from a rule, worked out on the statement day.
 
+import type { Day } from '../dates/day.ts';
 import type { MinorUnits } from '../money/currency.ts';
 import { type Decimal, divideRounded, powerOfTen } from '../money/decimal.ts';
 import { penceFromBigInt } from '../money/pence.ts';
@@ -49,9 +50,19 @@ export interface Statement {
   readonly after: MinorUnits;
 }
 
+/**
+ * The yearly rate on a statement day: none before a card's "0% until" date
+ * ends, so a statement day on or before it adds nothing (D106).
+ */
+export function rateOn(card: CheckedDebt, day: Day): Decimal | null {
+  if (card.zeroInterestUntil !== null && day <= card.zeroInterestUntil) return null;
+  return card.interestRate;
+}
+
 /** A statement day on a card, from the balance just before it. */
-export function statementOf(card: CheckedDebt, before: MinorUnits): Statement {
-  const interest = card.interestRate === null ? 0 : monthlyInterest(before, card.interestRate);
+export function statementOf(card: CheckedDebt, before: MinorUnits, day: Day): Statement {
+  const rate = rateOn(card, day);
+  const interest = rate === null ? 0 : monthlyInterest(before, rate);
   const minimum =
     card.minimum?.kind === 'rule' ? minimumFromRule(before, interest, card.minimum) : null;
   return { interest, minimum, after: before + interest };

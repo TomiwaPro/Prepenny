@@ -40,6 +40,7 @@ export function canonical(records: EditInput) {
     ticks: [...(records.ticks ?? [])].sort(by(onPayment)),
     balanceUpdates: [...records.balanceUpdates].sort(by((one) => one.id)),
     debts: [...(records.debts ?? [])].sort(by((one) => one.id)),
+    spends: [...(records.spends ?? [])].sort(by((one) => one.id)),
   };
 }
 

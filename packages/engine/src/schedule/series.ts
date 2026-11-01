@@ -11,6 +11,7 @@ import {
 import { parseTime } from '../dates/time.ts';
 import { type BankHolidayLookup, lastWorkingDayOfMonth } from '../dates/working-days.ts';
 import { EngineInputError } from '../errors.ts';
+import { parseDecimal, powerOfTen } from '../money/decimal.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { type MonthlyDay, PAYMENT_TYPES, type Schedule, type Series } from './types.ts';
 
@@ -238,6 +239,31 @@ function datesOf(
   }
 }
 
+/** Checks "Set aside" (D64, D113): money coming in only, a percentage above 0 up to 100. */
+function checkSetAside(series: Series): void {
+  const id = series.id;
+  const setAside = series.setAside;
+  if (setAside === null || typeof setAside !== 'object') {
+    fail(id, 'bad-set-aside', 'set aside needs a percentage and an account.');
+  }
+  if (series.direction !== 'in') {
+    fail(id, 'bad-set-aside', 'only money coming in can have money set aside.');
+  }
+  if (series.mirrorOf !== undefined) {
+    fail(id, 'bad-set-aside', 'the shared half of a private transfer has no set aside (D16).');
+  }
+  const percent = parseDecimal(setAside.percent, `Series ${id}: the percentage set aside`);
+  if (percent.units <= 0n || percent.units > 100n * powerOfTen(percent.scale)) {
+    fail(id, 'bad-set-aside', 'the percentage set aside must be above 0 and at most 100.');
+  }
+  if (typeof setAside.accountId !== 'string' || setAside.accountId === '') {
+    fail(id, 'bad-set-aside', 'set aside needs the account it moves to.');
+  }
+  if (setAside.accountId === series.accountId) {
+    fail(id, 'bad-set-aside', 'set aside must move to a different account.');
+  }
+}
+
 function checkSeries(series: Series): void {
   if (typeof series?.id !== 'string' || series.id === '') {
     throw new EngineInputError('bad-series', 'A series needs an id.');
@@ -312,6 +338,10 @@ function checkSeries(series: Series): void {
       fail(id, 'bad-debt-link', 'the shared half of a private transfer has no debt (D16).');
     }
   }
+  if (series.goalId !== undefined && (typeof series.goalId !== 'string' || series.goalId === '')) {
+    fail(id, 'bad-series', 'the linked goal must be the id of a goal.');
+  }
+  if (series.setAside !== undefined) checkSetAside(series);
   for (const field of ['splitFrom', 'mirrorOf'] as const) {
     const value = series[field];
     if (value !== undefined && (typeof value !== 'string' || value === '' || value === id)) {

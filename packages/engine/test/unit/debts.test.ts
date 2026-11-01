@@ -1,6 +1,6 @@
 // Debts (step 1d, brief 4.6 and 5.6, ARCHITECTURE.md 2.6): owner tests 1 to
 // 4 on Sam's plan, ARCHITECTURE.md tests 28 and 30, D27, D34, D42, D43, D62,
-// D63 and the rules in D98 to D100.
+// D63, the rules in D98 to D100, and the payment on the statement date (D105).
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -436,14 +436,31 @@ describe('test 28 and D98 to D100: left now and paid off on', () => {
     });
   });
 
-  it("doesn't take off a payment dated on the balance date unless it's ticked after the update (brief 5.6)", () => {
+  it('takes off a payment due on the balance date unless it was ticked at or before the update (D105)', () => {
+    // The statement was typed in at 9am on Sun 1 Nov, before that day's payment went.
     const fromTheFirst = series({ ...weekly, start: '2026-11-01' });
-    expect(paymentRows(plan({ series: [fromTheFirst] }))[0]?.date).toBe('2026-11-08');
-    const ticked = plan({
+    const notTicked = plan({ series: [fromTheFirst] });
+    expect(paymentRows(notTicked)[0]).toMatchObject({
+      date: '2026-11-01',
+      ticked: false,
+      leftAfter: 7500,
+    });
+    // Ticked after the update: it comes off once, on its date.
+    const tickedAfter = plan({
       series: [fromTheFirst],
       ticks: [samTick('weekly', '2026-11-01', '2026-11-01T10:00:00Z')],
     });
-    expect([ticked.leftNow, paymentRows(ticked)[0]?.date]).toEqual([7500, '2026-11-01']);
+    expect([tickedAfter.leftNow, paymentRows(tickedAfter)[0]?.date]).toEqual([7500, '2026-11-01']);
+    expect(paymentRows(tickedAfter)[1]?.date).toBe('2026-11-08');
+    // Ticked at 8am, before the update: it's already inside the balance, so it never comes off.
+    const tickedBefore = plan({
+      series: [fromTheFirst],
+      ticks: [samTick('weekly', '2026-11-01', '2026-11-01T08:00:00Z')],
+    });
+    expect([tickedBefore.leftNow, paymentRows(tickedBefore)[0]?.date]).toEqual([
+      10000,
+      '2026-11-08',
+    ]);
   });
 
   it('ignores a tick made before the balance was typed in: it is already inside it (D62)', () => {

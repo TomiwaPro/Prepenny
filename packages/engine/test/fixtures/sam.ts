@@ -4,17 +4,19 @@
 //
 // Step 1a used the payments. Step 1b adds the accounts, balances, payment
 // types (D79), families and main pay. Step 1d adds the debts (brief 8.1) and
-// links each debt payment to its debt (brief 8.2). Budgets and the rest come
-// in later steps.
+// links each debt payment to its debt (brief 8.2). Step 1e adds a Travel
+// budget, its spends and the pay-later food budget for the owner's tests.
 
 import type {
   Account,
   BalanceUpdate,
+  Budget,
   Debt,
   DebtsInput,
   PaymentChange,
   PlanInput,
   Series,
+  Spend,
 } from '../../src/index.ts';
 import { parsePounds as pounds } from '../../src/index.ts';
 import { englandAndWales } from './holidays.ts';
@@ -458,3 +460,65 @@ export function samDebtsInput(overrides: Partial<DebtsInput> = {}): DebtsInput {
     ...overrides,
   };
 }
+
+/**
+ * Step 1e: a Travel budget added to Sam's plan, £25 a week from the current
+ * account, all at the start. His weekly budgets run Friday to Thursday,
+ * because his main pay is weekly on Fridays (D29). It starts with the week
+ * of Fri 23 Oct, and was made before his balance update on Sun 25 Oct.
+ */
+export function samTravel(fields: Partial<Budget> = {}): Budget {
+  return {
+    id: 'travel',
+    accountId: 'current',
+    name: 'Travel',
+    amount: pounds('25.00'),
+    every: 'week',
+    leaves: 'at-start',
+    rollOver: false,
+    startsOn: '2026-10-23',
+    createdAt: '2026-10-23T09:00:00Z',
+    ...fields,
+  };
+}
+
+/** "I spent": a spend from one of Sam's budgets, Travel unless it says otherwise. */
+export function samSpend(
+  id: string,
+  amount: string,
+  spentOn: string,
+  recordedAt: string,
+  budgetId = 'travel',
+): Spend {
+  return { id, budgetId, amount: pounds(amount), spentOn, recordedAt };
+}
+
+/** Owner test 1's spends: £4.00 on Sat 24 Oct before the update, £6.00 on Sun 25 Oct after it. */
+export const samTravelSpends: readonly Spend[] = [
+  samSpend('bus-24-oct', '4.00', '2026-10-24', '2026-10-24T17:00:00Z'),
+  samSpend('bus-25-oct', '6.00', '2026-10-25', '2026-10-25T12:00:00Z'),
+];
+
+/**
+ * Owner test 3: Sam's "Pay-later card (food)" series replaced with a
+ * pay-later budget of £200 a month, the bill on the 29th. Its first bill is
+ * on Sun 29 Nov, covering spends from Thu 29 Oct to Sat 28 Nov. It was made
+ * at the same moment as the series it replaces, so the same-day order stays.
+ */
+export const samFood: Budget = {
+  id: 'food',
+  accountId: 'current',
+  name: 'Pay-later card (food)',
+  amount: pounds('200.00'),
+  every: 'month',
+  leaves: 'pay-later',
+  rollOver: false,
+  startsOn: '2026-10-29',
+  billDay: 29,
+  createdAt: '2026-10-25T08:49:00Z',
+};
+
+/** Sam's series without the "Pay-later card (food)" series, for owner test 3. */
+export const samSeriesWithoutFood: readonly Series[] = samSeries.filter(
+  (one) => one.id !== 'pay-later-card-food',
+);

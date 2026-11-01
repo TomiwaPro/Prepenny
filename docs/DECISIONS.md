@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -880,7 +880,7 @@ Why: Sam's pay follows a 4-week rota, so changing one week of the rota should ch
 
 ## Made during step 1d
 
-D98 to D103 were decided on 29 Oct 2026 while building step 1d. The minimum rule in D101 is the owner's, recorded as the owner asked. Two questions for the owner are in `PLAN.md`: whether Left now on a credit card should include the interest added since the last update (D101), and whether a payment due on the statement date itself should come off the debt (D100).
+D98 to D103 were decided on 29 Oct 2026 while building step 1d. The minimum rule in D101 is the owner's, recorded as the owner asked. Two questions for the owner are in `PLAN.md`: whether Left now on a credit card should include the interest added since the last update (D101), and whether a payment due on the statement date itself should come off the debt (D100). The owner answered both on 1 Nov 2026: D104 and D105.
 
 ### D98. Debts and the payments linked to them
 
@@ -958,3 +958,155 @@ Decided 29 Oct 2026 in step 1d. Adds to brief 4.6, D62 and D87.
 - The balance date can't be after today, and the time must be later than the debt's last update, so it's always clear which ticks came before it. Only payments linked to that debt can be ticked in its steps.
 
 Why: people see Update from statement as one thing, as with Update balance (D87), and D62 says ticks made in its steps count as before it.
+
+## From the owner's review of step 1d
+
+D104 to D106 were agreed by the owner on 1 Nov 2026, answering the questions left in `PLAN.md` at the end of step 1d and adding one rule. The owner also confirmed D98 to D103.
+
+### D104. A credit card's Left now includes the interest since the last update
+
+Agreed 1 Nov 2026, from the owner's review of step 1d. Answers the question in D101 and replaces its point that Left now doesn't include estimated interest. Adds to D99.
+
+- A credit card's Left now includes the interest added on each statement day since the last Update from statement, up to and including today, labelled as an estimate.
+- It's worked out from the balance on its date: payments ticked after the update come off on their paid dates, and each statement day after the balance date adds the month's interest (D101) on what's left then. On a statement day, that day's payments come off first. Payments not ticked yet don't come off, because the card hasn't seen them. No interest is added once it's paid off.
+- Progress and Owed now use this Left now. Owed now is labelled as an estimate when any Left now in it is.
+- A card with no rate or a 0% rate never gets interest. A credit card with no rate says "Interest not included". Other kinds of debt don't, because their payments already include any interest (D98).
+
+Test: on Fri 20 Nov, owner test 5's card, with the £25.00 on Sun 15 Nov ticked, shows £404.73: £420.99, plus £8.74 on Tue 10 Nov, minus £25.00.
+
+Why: the card adds interest whether or not the person updates from a statement, so Left now shows what the card itself will say, marked as an estimate until the next statement.
+
+### D105. A payment due on the statement date itself
+
+Agreed 1 Nov 2026, from the owner's review of step 1d. Answers the question in D100. Changes "after its date" in brief 5.6, and "dated after the balance date" in D100, to "on or after".
+
+A payment due on a debt's balance date comes off the debt, unless it was ticked at or before that statement update, or inside its steps (D62, D103). This is the same rule as D33 for the bank balance.
+
+Test: £100.00 typed in at 9am on Sun 1 Nov, with £25.00 due that day: £75.00 is left after it. Ticked at 10am, it comes off once. Ticked at 8am, before the update, it's already inside the balance and never comes off.
+
+Why: a statement typed in on the morning a payment is due doesn't include that payment, so otherwise the debt would never take it off, although the bank balance does.
+
+### D106. 0% until a date
+
+Agreed 1 Nov 2026, from the owner's review of step 1d. Adds to D101 and D102.
+
+A credit card can have "0% until [date]" before its normal rate. A statement day on or before that date adds no interest, and later ones use the normal rate. It applies everywhere interest does: the statement days ahead, Paid off on, Left now (D104) and the comparison (D102). Only a credit card has it (D98). The minimum rule still applies while the card is at 0%: 1% of the balance, at least the floor amount.
+
+Test (the owner's): £420.99 on Sun 25 Oct 2026, 0% until Mon 30 Nov 2026, then 24.9% a year, statement day the 10th, £25.00 paid on the 15th. Tue 10 Nov adds nothing, leaving £395.99 after the 15 Nov payment. Thu 10 Dec adds £8.22, so £404.21, then £379.21 after 15 Dec.
+
+Why: many cards start with a 0% offer, and working out interest at the normal rate during it would show more owed than the card does.
+
+## Made during step 1e
+
+D107 to D115 were decided on 1 Nov 2026 while building step 1e. Three questions for the owner are in `PLAN.md`: whether money set aside is ticked on its own (D113), two points about the "Spend no more than" line (D112), and whether "I spent" takes a date after today (D109).
+
+### D107. Budgets
+
+Decided 1 Nov 2026 in step 1e. Adds to brief 4.5, ARCHITECTURE.md 3.3 and D79.
+
+- A budget has the fields in ARCHITECTURE.md 3.3: the account it leaves, its name, the amount, every week or every month, how it leaves (all at the start, spread across the days, or a pay-later bill), roll-over and the day it was switched on, the day it starts, an end day if it has one, and for a pay-later budget its bill day and, if set, the card's own statement day. It also keeps when it was made, for the same-day order (D12).
+- A budget has no payment type of its own. Its rows count as Spending money, as D79 says for Food and Travel, and a pay-later budget's bills count as Bills, like Sam's food bill (D61, D79).
+- A budget's first period is the one with its start day in it, at the full amount, and its last period is the one with its end day in it.
+- A pay-later bill comes once a month (brief 4.5), so a pay-later budget is always monthly.
+- On the same day, a budget's own spends come first, then the rest of the budget.
+
+Why: these follow brief 4.5 and ARCHITECTURE.md 3.3. A budget that starts part-way through a week leaves its whole amount, because "all at the start" is the safest choice (brief 4.5).
+
+### D108. Budget periods, in more detail
+
+Decided 1 Nov 2026 in step 1e. Adds to D29.
+
+- A weekly budget starts on the weekday of the main pay's schedule when that's weekly or every few weeks, so Sam's run Friday to Thursday. The schedule is the one the main pay follows today.
+- A monthly budget runs from one main payday to the day before the next when the main pay comes every month, using the real paydays after the weekend and bank holiday rule: Priya's runs from Thu 31 Dec 2026 to Thu 28 Jan 2027.
+- Before the first main payday, and after the last one, monthly budget periods carry on in whole months from the nearest payday. Priya, setting up on Sun 25 Oct with her next payday on Fri 30 Oct, has a month from Wed 30 Sep to Thu 29 Oct.
+- Pay every 2 months or more, pay on chosen dates and pay once use calendar months and Monday weeks. Irregular pay uses Monday weeks too (D14).
+- A removed main payday isn't a payday (D81), so the budget month around it runs on to the next payday, as plan periods do.
+
+Why: D29 says how budget periods line up with pay, and these are the cases it didn't cover, worked out the same way as plan periods (D84).
+
+### D109. Budgets and the bank balance, in more detail
+
+Decided 1 Nov 2026 in step 1e. Adds to D2, D33 and D67.
+
+- D2's rule applies to every period from the one with today in it on. Spends recorded after the account's latest balance update are rows on their days. What's left, the budget minus every spend dated in the period, leaves today for this period, and on the first day for each later one. So a later period with no spends leaves in full at the start (D2).
+- A spend recorded after the update but dated before the balance date comes off at the start, as D39 does for a tick.
+- Spends can be dated after today, because owner test 3 has spends in a statement period that hasn't started yet. Whether "I spent" should take a date after today is a question for the owner in `PLAN.md`.
+- Budget rows and spends are never ticked, so they're never in Not ticked yet. They aren't in Payments that could move either: moving them would mean changing the budget.
+- A row of £0.00 isn't shown.
+
+Why: the plan and the bank agree (D2), the same rule works for this period and later ones, and a later period with a spend already in it never takes more than the budget or the spends, whichever is more.
+
+### D110. Roll-over, in more detail
+
+Decided 1 Nov 2026 in step 1e. Adds to D30.
+
+- Only a period that has ended rolls over. What's left of it, its budget and anything that rolled into it, minus its spends, is added to the next period. Periods still to come get nothing yet (ARCHITECTURE.md 2.5).
+- It rolls over from the budget's first period on, or, when the day roll-over was switched on is set, only from periods that ended on or after that day.
+- Spending more than the budget takes nothing off the next period.
+- In a pay-later budget, roll-over raises the next bill's estimate.
+
+Test (owner test 4): £18.00 spent from Fri 16 to Thu 22 Oct makes this week "£25 + £7 from last week", £32.00, and £28.00 leaves on Sun 25 Oct after £4.00 spent before the update. The weeks after are £25.00.
+
+Why: D30 adds the unspent amount at the end of a period, which is only known once the period has ended, and it never says an overspend comes off.
+
+### D111. Pay-later bills, in more detail
+
+Decided 1 Nov 2026 in step 1e. Adds to D32 and D61. The first point is the owner's, given with step 1e.
+
+- Without the card's own statement day, a bill covers spends from the day of the bill before it to the day before this one: the bill on Sun 28 Feb 2027 covers Fri 29 Jan to Sat 27 Feb. With a statement day, the bill covers spends up to that statement day, in the bill's month when the statement day comes before the bill day and in the month before otherwise, but never up to or past the bill date itself.
+- The bill is on the bill day, or the month's last day when the month is shorter, and keeps its date on weekends and bank holidays.
+- The bill is a payment like any other. It can be ticked, moved, removed just this one, and given its real amount, found by the budget's id and the bill's date. The real amount always stands, even when it's the same as the budget. Changing or removing this and all later bills is refused: that's a change to the budget.
+- Until the real bill is typed in, it's the budget for the period, including anything that rolled over, or what was spent if that's more, labelled as an estimate.
+- The line under Left to spend ("On the pay-later card: £80.00 left until Sat 28 Nov") is for the period with today in it, or the first period when the budget starts later.
+
+Why: the bill is what leaves the bank account, so it needs a tick and a real amount like rent (D61). A card's statement can't be made on or after the day it's paid.
+
+### D112. Left to spend, in more detail
+
+Decided 1 Nov 2026 in step 1e. Adds to D3 and D28.
+
+- Left to spend is worked out for each account. It counts the rows dated from today to the day before the next main payday that are budget rows, or payments of the type Spending money not ticked yet. Spends already recorded, pay-later bills and anything already ticked aren't in it.
+- M is the lowest end-of-day balance from today to the day before the next main payday, or to the plan's last day if that comes first.
+- The "Spend no more than" line appears when M is under the warning level (D10), with X = max(0, L + M − W) as D3 says.
+- With no main pay there's no next payday (D81), so there's no Left to spend.
+
+Test (owner test 1): Left to spend until Fri 30 Oct is £45.00, £30.00 spending money and £15.00 travel, with "Spend no more than £16.54 to keep at least £20 until Fri 30 Oct".
+
+Why: these follow D3 and D28. Two points about the line are questions for the owner in `PLAN.md`.
+
+### D113. Set aside, in more detail
+
+Decided 1 Nov 2026 in step 1e. Adds to D64.
+
+- Only money coming in can have money set aside, to another account in the plan, at a percentage above 0 and up to 100. The shared half of a private transfer can't, because it carries only the date and amount (D16).
+- The money set aside moves between the two accounts on the same day, after the money comes in (D12), with a row in each account. Its type is Savings.
+- It goes with its payment: the same date, tick, removal and estimate label. Ticking the payment ticks the money set aside too. Whether it should be ticked on its own is a question for the owner in `PLAN.md`.
+
+Test (owner test 7): Kofi's £400.00 estimate on Mon 2 Nov with 25% set aside moves £100.00 to his Tax account the same day. Typed in as £437.50, it moves £109.38.
+
+Why: D64 says the money moves on the same day and follows the estimate, so it's part of the payment.
+
+### D114. Savings goals
+
+Decided 1 Nov 2026 in step 1e. Adds to brief 4.7 and ARCHITECTURE.md 3.3.
+
+- A goal has a name, a target, a target date if there is one, the account the money is kept in, the amount already saved when it was made, and who it belongs to (D65).
+- A payment linked to a goal must move money into or out of the goal's account. Money into it adds to the goal, and money out of it takes off.
+- Saved so far is the starting amount plus every linked payment ticked as paid. Progress is to the nearest whole percent, and stays at 99% until the goal is reached, as D99 does for debts.
+- The date it's reached: from the starting amount, each linked payment is added in date order. A ticked payment counts on its paid date, one still to come on its date, and one dated before today that isn't ticked yet counts on today. The goal is reached on the day of the payment that first takes it to the target. That date is labelled as an estimate when it depends on a payment marked as an estimate.
+- The goals screen looks 24 months ahead, like the Debts screen (D43).
+- What each person has put into a shared goal (brief 4.14) comes in Phase 3 with shared plans, when the engine knows whose account each payment came from.
+
+Test (owner test 8): a £1,200.00 Holiday goal by Fri 30 Jul 2027, from £0, with £50.00 moved every Friday from Fri 30 Oct, is reached on Fri 9 Apr 2027 with the 24th move.
+
+Why: brief 4.7 asks for progress and the date at the current plan. Counting only ticked payments as saved keeps it true to the bank, as Left now does for debts (D99).
+
+### D115. "I spent" as an edit
+
+Decided 1 Nov 2026 in step 1e. Adds to D87.
+
+- "I spent", changing a spend and removing a spend are each one edit, so one undo (D87).
+- A spend's amount must be above zero.
+- Changing a spend keeps the time it was recorded, so it stays inside the same balance update, or outside it (D33).
+
+Why: brief Part 3, principle 4 says every change can be undone, and D87 says one engine function makes every edit.

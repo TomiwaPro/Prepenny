@@ -5,7 +5,6 @@
 import { compareRows } from '../balance/order.ts';
 import { type CheckedTick, indexTicks, type TickIndex } from '../balance/ticks.ts';
 import {
-  addDays,
   addMonths,
   type Day,
   dayFromParts,
@@ -111,6 +110,7 @@ interface Records {
   readonly changes: ChangeIndex;
   readonly ticks: TickIndex;
   readonly holidays: BankHolidayLookup;
+  readonly today: Day;
   readonly to: Day;
 }
 
@@ -127,7 +127,8 @@ function workOutDebt(
     card.rate === null ? pence : toOtherCurrency(pence, card.rate);
 
   const events: Event[] = statementDays(card, to).map((day) => ({ kind: 'statement', day }));
-  const tickedAfter: MinorUnits[] = [];
+  // Every linked payment ticked after the balance was typed in, for Left now (D99, D104).
+  const tickedAfter: Event[] = [];
   for (const one of linked) {
     const ticksOfSeries = ticks.get(one.series.id);
     const family = {
@@ -142,24 +143,22 @@ function workOutDebt(
       if (index >= one.count || one.dateAt(index) !== originalDay) continue;
       if (insideBalance(tick, card)) continue;
       const payment = paymentAtIndex(one, index, changes, holidays);
-      const amount = convert(payment.amount);
-      tickedAfter.push(amount);
-      if (tick.paidOn <= to) {
-        events.push({
-          kind: 'payment',
-          day: tick.paidOn,
-          payment,
-          amount,
-          ticked: true,
-          ...family,
-        });
-      }
+      const event: Event = {
+        kind: 'payment',
+        day: tick.paidOn,
+        payment,
+        amount: convert(payment.amount),
+        ticked: true,
+        ...family,
+      };
+      tickedAfter.push(event);
+      if (tick.paidOn <= to) events.push(event);
     }
-    // Planned payments after the balance date (brief 5.6). A removed payment
-    // takes nothing off unless it's ticked (D4, D83).
-    const from = addDays(balanceOn, 1);
-    if (from > to) continue;
-    for (const payment of paymentsOfSeriesBetween(one, from, to, changes, holidays)) {
+    // Planned payments from the balance date on (brief 5.6, D105): one due on
+    // the balance date itself comes off too, unless it was ticked at or
+    // before the update, which the ticks above already sort out. A removed
+    // payment takes nothing off unless it's ticked (D4, D83).
+    for (const payment of paymentsOfSeriesBetween(one, balanceOn, to, changes, holidays)) {
       if (payment.skipped || ticksOfSeries?.has(payment.originalDay) === true) continue;
       events.push({
         kind: 'payment',
@@ -183,7 +182,7 @@ function workOutDebt(
     if (event.kind === 'statement') {
       // No interest once it's paid off.
       if (paidOffOn !== null) continue;
-      const statement = statementOf(card, balance);
+      const statement = statementOf(card, balance, event.day);
       balance = statement.after;
       if (statement.interest > 0) isEstimate = true;
       rows.push({
@@ -218,14 +217,16 @@ function workOutDebt(
     });
   }
 
-  // Left now (D27, D62): every linked payment ticked after the balance was typed in.
-  const exactLeftNow = debt.balance - sumPence(tickedAfter);
-  const paidOffNow = exactLeftNow <= PAID_OFF_AT;
-  const leftNow = paidOffNow ? 0 : exactLeftNow;
+  const now = leftNowOf(card, tickedAfter, records.today);
+  const paidOffNow = now.exact <= PAID_OFF_AT;
+  const leftNow = paidOffNow ? 0 : now.exact;
   const paidSoFar = Math.max(0, debt.startingBalance - leftNow);
   return {
     debt,
     leftNow,
+    interestSinceUpdate: now.interest,
+    leftNowIsEstimate: now.interest > 0,
+    interestNotIncluded: debt.kind === 'credit-card' && card.interestRate === null,
     leftNowInPounds: card.rate === null ? leftNow : fromOtherCurrency(leftNow, card.rate),
     paidOffNow,
     paidSoFar,
@@ -235,6 +236,42 @@ function workOutDebt(
     isEstimate,
     rows,
   };
+}
+
+/**
+ * Left now (D27, D62, D99, D104): from the balance on its date, take off
+ * every linked payment ticked after it was typed in, on its paid date, and
+ * for a credit card add the estimated interest on each statement day after
+ * the balance date, up to and including today. On a statement day, that
+ * day's payments come off before the interest, and no interest is added
+ * once it's paid off (D101). Payments not ticked yet don't come off: the
+ * card hasn't seen them.
+ */
+function leftNowOf(
+  card: CheckedDebt,
+  tickedAfter: readonly Event[],
+  today: Day,
+): { exact: MinorUnits; interest: MinorUnits } {
+  const events: Event[] = [
+    ...statementDays(card, today).map((day): Event => ({ kind: 'statement', day })),
+    ...tickedAfter,
+  ];
+  events.sort(compareEvents);
+  let balance = card.debt.balance;
+  let interest = 0;
+  let paidOff = balance <= PAID_OFF_AT;
+  for (const event of events) {
+    if (event.kind === 'statement') {
+      if (paidOff) continue;
+      const statement = statementOf(card, balance, event.day);
+      interest += statement.interest;
+      balance = statement.after;
+      continue;
+    }
+    balance = checkPence(balance - event.amount, `Debt ${card.debt.id}: what's left`);
+    if (balance <= PAID_OFF_AT) paidOff = true;
+  }
+  return { exact: balance, interest };
 }
 
 /**
@@ -290,6 +327,7 @@ export function workOutDebts(input: DebtsInput): DebtsPlan {
     changes: indexChanges(input.changes ?? []),
     ticks: indexTicks(input.ticks ?? []),
     holidays: input.holidays,
+    today,
     to,
   };
   const linked = new Map<string, PreparedSeries[]>();
@@ -301,12 +339,12 @@ export function workOutDebts(input: DebtsInput): DebtsPlan {
   const plans = [...debts.values()].map((card) =>
     workOutDebt(card, linked.get(card.debt.id) ?? [], records),
   );
+  const open = plans.filter((one) => one.debt.closed !== true);
   return {
     today: formatDate(today),
     to: formatDate(to),
-    owedNow: sumPence(
-      plans.filter((one) => one.debt.closed !== true).map((one) => one.leftNowInPounds),
-    ),
+    owedNow: sumPence(open.map((one) => one.leftNowInPounds)),
+    owedNowIsEstimate: open.some((one) => one.leftNowIsEstimate),
     debts: plans,
   };
 }

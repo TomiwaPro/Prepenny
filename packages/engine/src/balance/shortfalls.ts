@@ -77,6 +77,9 @@ function couldMove(
   work.rows.forEach((row, index) => {
     const day = work.rowDays[index] as Day;
     if (day < today || day >= firstShort || row.ticked || row.change >= 0) return;
+    // Only a payment or a pay-later bill can be moved. A budget row, a spend
+    // and a set-aside can't be moved on their own (D109, D113).
+    if (row.kind !== 'payment' && row.kind !== 'bill') return;
     const amount = -row.change;
     if (amount < deepest) return;
     if (row.flow === 'transfer-out') {

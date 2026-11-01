@@ -65,6 +65,18 @@ export type EndRule =
   /** The last payment is the last one whose original date is on or before this date. */
   | { readonly kind: 'on'; readonly date: string };
 
+/**
+ * "Set aside" on money coming in (D64, D113): a percentage of each payment
+ * that moves to another account on the same day, rounded to the nearest
+ * penny (D9). Kofi sets 25% aside for tax.
+ */
+export interface SetAside {
+  /** A percentage written as text, above 0 and up to 100: "25". */
+  readonly percent: string;
+  /** The account it moves to: another account in the plan. */
+  readonly accountId: string;
+}
+
 /** Anything that happens once or repeats (brief 5.2). */
 export interface Series {
   readonly id: string;
@@ -94,6 +106,13 @@ export interface Series {
    * going out can be linked, and never either half of a private transfer (D98).
    */
   readonly debtId?: string;
+  /**
+   * The savings goal it moves money towards, or away from (brief 4.7, D114).
+   * It must move money into or out of the goal's account.
+   */
+  readonly goalId?: string;
+  /** Money coming in only: part of each payment moved to another account the same day (D64). */
+  readonly setAside?: SetAside;
   readonly isEstimate: boolean;
   readonly note?: string;
   /**

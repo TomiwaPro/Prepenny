@@ -58,7 +58,7 @@ function payOff(
     for (const [what, day] of order) {
       if (day <= from) continue;
       if (what === 'statement') {
-        const made = statementOf(card, balance);
+        const made = statementOf(card, balance, day);
         interest += made.interest;
         minimum = made.minimum ?? 0;
         balance = made.after;
