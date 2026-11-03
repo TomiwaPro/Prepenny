@@ -1679,3 +1679,140 @@ Agreed 3 Nov 2026, from the owner's review of step 2a. Replaces "every step can 
 - "Look at an example plan" still needs no balance: it's Sam's plan (D15).
 
 Why: the owner's answer. A plan with no balance can't show anything left after a payment.
+
+## Made during step 2b
+
+D164 to D175 were decided on 3 Nov 2026 while building step 2b. D164 waits for the owner's approval, and the questions are in `PLAN.md`.
+
+### D164. Dark mode colours, the text box border and the focus outline (proposed)
+
+Decided 3 Nov 2026 in step 2b. Proposed for the owner's approval (DESIGN.md: "Propose its values in Phase 2"). Adds to DESIGN.md.
+
+Dark mode uses the same roles as light mode. Two roles are new: **Navy as text** (links, outlined buttons, the wordmark and the active navigation item, `#14213D` in light mode, as the approved sample has them) and the two lines DESIGN.md left to choose.
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| Paper (page background) | #F4EFE6 | #0E1424 |
+| Card | #FFFDF8 | #172036 |
+| Sunk (date tiles) | #EFE8DA | #212B44 |
+| Ink (main text) | #1A2238 | #F2ECE0 |
+| Ink muted (second lines) | #4A5060 | #B9B2A3 |
+| Navy (main button, balance card) | #14213D | #22345E |
+| Navy raised (block inside the balance card) | #22304F | #2E4272 |
+| Text on navy | #F4EFE6 | #F4EFE6 |
+| Muted text on navy | #C9BFA8 | #D3C9B3 |
+| Brass (lines only) | #A8864B | #B08E55 |
+| Row dividers | #EDE5D6 | #27314B |
+| Card edges | #E3D9C6 | #2C3752 |
+| Button borders | #D9D2C3 | #3B4662 |
+| Active navigation pill | #E6E2D6 | #2B3757 |
+| Money in | #1E6B3A | #74CC92 |
+| Tight | #7A4E00 on #FBF0D9 | #F2C46A on #3B2D0F |
+| Short | #A1281E on #FBE4E1 | #FFB2A6 on #4B1D18 |
+| Navy as text | #14213D | #F2ECE0 |
+| **Text box border** (new) | #7A7365 | #8790A6 |
+| **Focus outline** (new) | #14213D | #F4EFE6 |
+
+- Every text pair passes WCAG 2.2 AA at 4.5:1 in both modes. The lowest in dark mode is Ink muted on the active navigation pill, 5.57:1; in light mode the lowest is still Money in on Sunk, 5.35:1.
+- The text box border passes 3:1 against Paper, Card and Sunk: 3.86:1 at its lowest in light mode (on Sunk) and 4.40:1 in dark (on Sunk). The focus outline is 3px wide, 2px outside the control, and passes 3:1 against all three: 13.10:1 and 12.28:1 at their lowest.
+- `apps/web/test/unit/colours.test.ts` reads the colours from `apps/web/styles/tokens.css` and checks every pair, so a changed colour can't slip through.
+- Dark mode follows the phone. The More screen also has Colours: Match this phone, Light or Dark (D173).
+
+Why: DESIGN.md asks for dark mode values and the two lines in Phase 2, for the owner's approval. Dark mode keeps navy and cream: a deep navy page, cream text, and a lighter navy for the balance card and main button so they still stand out.
+
+### D165. What's in Sam's example plan
+
+Decided 3 Nov 2026 in step 2b. Adds to D15 and D133.
+
+- The example plan is brief 8.1 and 8.2 with the D15 names, exactly the engine's tested fixture, plus Sam's pay profile and his three pay weeks from brief 8.6, linked to his pay as in step 1f, so "I did overtime" works on it in step 2d. None of these changes a figure.
+- It has no budgets and no savings goals, because brief 8.2 has none: his food is the monthly "Pay-later card (food)" payment brief 8.2 lists. Whether the example should show a budget and a goal is a question for the owner in `PLAN.md`.
+- It lives in `apps/web/data/example-plan.ts`, and a test proves its records are exactly the fixture's. It's saved in the phone's database on first open, and replaced when its version number changes.
+
+Why: the example and the brief's tests stay the same plan (D15), and every figure on Home comes out of the engine, not out of the screen.
+
+### D166. A warning level in a sentence has no ".00"
+
+Decided 3 Nov 2026 in step 2b. Adds to VOICE.md.
+
+A warning level inside a sentence is written in whole pounds when it has no pence: "keep at least £20", "Under £20 from Mon 26 Oct." Every other amount shows its pence: figures, rows and amounts in sentences, such as "Spend no more than £22.54".
+
+Why: the owner's wording for Home and the Home sketch write the warning level as £20, and it's a round number the person chose, while amounts that line up in columns always need their pence (brief Part 6).
+
+### D167. Home looks 3 months ahead
+
+Decided 3 Nov 2026 in step 2b. Adds to brief 4.8 and 4.9. A question for the owner in `PLAN.md`.
+
+Home works the plan out to the same date 3 months after today, or that month's last day when it's shorter: Sun 25 Oct 2026 looks to Mon 25 Jan 2027. That's the Plan screen's default (brief 4.8: "Three months shown by default"), so Lowest point ahead on Home and on the Plan screen always agree. Left to spend counts to the next payday whatever the view (D143).
+
+Why: the brief doesn't say how far ahead Home's lowest point looks. For Sam it's £4.53 on Sun 1 Nov whichever way, but for a yearly bill, such as Priya's car insurance, it decides whether Home warns months early.
+
+### D168. Home's account, "This pay has to cover" and "Next due"
+
+Decided 3 Nov 2026 in step 2b. Adds to brief 4.9.
+
+- Home shows one account: the one the main pay arrives in, otherwise the first current account, otherwise the first account. For Sam, his current account.
+- "This pay has to cover" is that account's first pay period (D84) from today: "Going out by" its last day, with every row going out in it, transfers out included; and "Coming in", its Came in. It's shown only when the plan has pay periods: with no main pay, or after the main pay stops (D144), there's no pay to cover anything.
+- "Next due" is that account's next three rows from today that aren't ticked, coming in or going out, in the plan's order, each with what's left after it and a Tight or Short pill when it's under. A row's second line is its date, with ", estimate" when it is one.
+
+Why: brief 4.9 asks for "what this pay has to cover" and "the next three things due" without saying which account or which rows. Sam's figures (£721.07, £500.00, and the three rows) are the owner's.
+
+### D169. The font files
+
+Decided 3 Nov 2026 in step 2b. Adds to D23 and DESIGN.md.
+
+Figtree comes from the Fontsource package (`@fontsource/figtree` 5.3.0), weights 400, 500, 600 and 700, the Latin set only, which has every English letter, the £ sign, the proper minus sign and tabular figures. Next.js serves the files from PrePenny's own site, beside the app's other files, rather than from a `public/fonts` folder as ARCHITECTURE.md 5 sketched. Letters outside the Latin set, such as ł, fall back to the phone's own font.
+
+Why: the files come from one pinned package instead of copies in the repository, and Next.js adds the matching fallback font sizes so the page doesn't jump when Figtree arrives.
+
+### D170. The engine's background worker is built on its own
+
+Decided 3 Nov 2026 in step 2b. Adds to ARCHITECTURE.md 2.8 point 7.
+
+The worker that runs the engine is built by esbuild into one file, `/engine-worker.js`, before Next.js builds the app (`apps/web/scripts/build-worker.ts`).
+
+Why: Next.js's own workers read their settings from the end of their web address. When the offline helper serves the file from the phone, that part is lost and the worker can't start, so Home would fail on every visit after the first. The end-to-end test that opens the app with no signal found it.
+
+### D171. Patched versions for four tool packages
+
+Decided 3 Nov 2026 in step 2b. Adds to D77.
+
+`pnpm audit` found 11 known problems, all in packages used only by the build and test tools (Serwist's build step and Wrangler's local server), none in anything that runs on a phone. `pnpm-workspace.yaml` pins patched versions: zod 4.6.7, undici 7.30.1, glob 14.0.2 and minimatch 11.0.1. `pnpm audit` now finds none, and the build and every test pass.
+
+Why: brief 7.2 asks for a dependency and security check. Each fix is the smallest version that has the patch.
+
+### D172. The exact versions for the app
+
+Decided 3 Nov 2026 in step 2b. Adds to D56 and D77.
+
+Next.js 16.4.3, React and React DOM 19.3.1, Dexie 4.4.7, Serwist 9.5.13, Fontsource Figtree 5.3.0, Playwright 1.64.1, axe for Playwright 4.14.0, Wrangler 4.151.3, esbuild 0.28.2, fake-indexeddb 6.2.6, and the React types 19.3.0, all pinned exactly. Next.js 16.4.4 and 16.4.5 came out on 2 and 3 Nov, so 16.4.3 (23 Oct) is used, and `pnpm audit` lists no problem in it. Node is 24.22.2, as before.
+
+Why: the same rule as D77: the same versions everywhere, changed only on purpose, and nothing brand new.
+
+### D173. Light or Dark on this phone
+
+Decided 3 Nov 2026 in step 2b. Adds to ARCHITECTURE.md 3.8.
+
+More has Colours: Match this phone (the default), Light or Dark. The choice is kept in the browser's own small store on this phone, not in the plan's database, so the page is drawn in the right colours from the very first moment.
+
+Why: the plan's database opens a moment after the page appears, so a choice kept there would flash the wrong colours first.
+
+### D174. The offline note, while nothing is sent anywhere
+
+Decided 3 Nov 2026 in step 2b. Replaces the offline note's wording in ARCHITECTURE.md 4.5 until Phase 3.
+
+Until Phase 3, the offline note says "You're offline. Your plan is saved on this phone, so everything here still works." From Phase 3, when changes are sent to the server, it says what ARCHITECTURE.md 4.5 has: "You're offline. Changes are saved on this phone and will be sent when you're back online."
+
+Why: in Phase 2 nothing is sent anywhere, so saying changes "will be sent" wouldn't be true.
+
+### D175. Smaller choices on Home and the parts
+
+Decided 3 Nov 2026 in step 2b. Adds to DESIGN.md and the Home sketch in ARCHITECTURE.md 4.6.
+
+- Home's top line is the PrePenny name, as in the approved sample; "Home" is its heading for screen readers. The sample's "?" help button waits for the help sheets in Phase 4 (brief 4.16).
+- A row's Tight or Short pill sits under "£12.54 left", so the row fits at 320px.
+- The balance and the lowest point grow with the phone's text size, but never wider than their card, so a large balance at 200% text stays on one line.
+- Two buttons share a row unless big text needs the room; then each has its own.
+- A page at `/app/parts/`, not linked from the app, shows every part with the example's figures, including a Short lowest point worked out by the engine (D69's case), the undo bar, the offline note and a sheet, for checking the look. It's removed before launch.
+- Hosting: Cloudflare serves the built files as they are, with a security policy that allows no script, font or connection from anywhere but PrePenny's own site. A pull request's preview link is `pr-<number>-prepenny.<your workers.dev name>.workers.dev/app/`. The very first time, before anything is merged, the pull request's version also goes live once, because Cloudflare needs a live app before it can make previews.
+
+Why: each follows the sample, DESIGN.md or the brief where they didn't say exactly, and keeps every screen working at 320px and at 200% text (D37).
