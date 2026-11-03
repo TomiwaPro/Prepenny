@@ -105,6 +105,19 @@ const wish = fc.record({
 
 type Wish = typeof wish extends fc.Arbitrary<infer W> ? W : never;
 
+/** A wish to start fixed examples from. */
+const exampleWish: Wish = {
+  kind: 'add-account',
+  a: 0,
+  b: 0,
+  c: 0,
+  amount: 0,
+  days: 0,
+  flag: false,
+  other: false,
+  text: 'New',
+};
+
 function pick<T>(list: readonly T[], n: number): T | undefined {
   return list.length === 0 ? undefined : list[n % list.length];
 }
@@ -430,7 +443,21 @@ describe('owner test 3: undo after any made-up command on any of the six peopleâ
           });
         },
       ),
-      { numRuns: 300 },
+      {
+        numRuns: 300,
+        // Closing an account is made only when an account was added earlier
+        // in the same run, which random runs miss about 1 time in 20. This
+        // run, as well as the random ones, always adds one and then closes it.
+        examples: [
+          [
+            0,
+            [
+              { ...exampleWish, kind: 'add-account', text: 'New', amount: 20_000 },
+              { ...exampleWish, kind: 'close-account', flag: true },
+            ],
+          ],
+        ],
+      },
     );
     // Every kind of command was made at least once, not only refused.
     for (const kind of KINDS) expect(made.get(kind) ?? 0, kind).toBeGreaterThan(0);
