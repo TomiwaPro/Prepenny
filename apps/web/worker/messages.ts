@@ -3,8 +3,10 @@
 // message, so no name or note can leak into an error report later (CLAUDE.md).
 
 import type { EditCommand, PlanRecords } from '@prepenny/engine';
+import type { ActionsView } from '../lib/actions-view.ts';
 import type { EditResult } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
+import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 
 /** Everything Home shows. */
@@ -30,13 +32,30 @@ export interface EditAsk {
   readonly command: EditCommand;
 }
 
-export type Ask = HomeAsk | PlanAsk | EditAsk;
+/** What the four actions on Home need (D197 to D200). */
+export interface ActionsAsk {
+  readonly kind: 'actions';
+  readonly records: PlanRecords;
+  readonly today: string;
+}
+
+/** What "I did overtime" or "I missed a shift" would do, without saving it (D200). */
+export interface PayPreviewAsk {
+  readonly kind: 'pay-preview';
+  readonly records: PlanRecords;
+  readonly today: string;
+  readonly command: PayCommand;
+}
+
+export type Ask = HomeAsk | PlanAsk | EditAsk | ActionsAsk | PayPreviewAsk;
 
 /** What each kind of question is answered with. */
 export interface Answers {
   readonly home: HomeView;
   readonly plan: PlanView;
   readonly edit: EditResult;
+  readonly actions: ActionsView;
+  readonly 'pay-preview': PayPreview;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

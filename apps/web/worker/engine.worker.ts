@@ -2,8 +2,10 @@
 // so working out the plan never makes the screen stutter on a cheap phone.
 
 import { EngineInputError } from '@prepenny/engine';
+import { workOutActionsView } from '../lib/actions-view.ts';
 import { runEdit } from '../lib/edit.ts';
 import { workOutHome } from '../lib/home.ts';
+import { previewPayChange } from '../lib/pay-preview.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
 import type { Answers, Ask, WorkRequest, WorkResponse } from './messages.ts';
 
@@ -22,6 +24,10 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return workOutPlanView(ask.records, ask.today, ask.options);
     case 'edit':
       return runEdit(ask.records, ask.today, ask.command);
+    case 'actions':
+      return workOutActionsView(ask.records, ask.today);
+    case 'pay-preview':
+      return previewPayChange(ask.records, ask.today, ask.command);
     default:
       throw new EngineInputError('bad-request', 'The worker was asked something it does not know.');
   }

@@ -20,6 +20,20 @@ export const strings = {
 
   dates: {
     weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    weekdaysLong: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    /** "9:14am", "12:05pm". */
+    time: (hour: number, minutes: string, morning: boolean) =>
+      `${hour}:${minutes}${morning ? 'am' : 'pm'}`,
+    /** "1st", "2nd", "13th", "22nd". */
+    ordinal: (day: number) => {
+      const tens = day % 100;
+      if (tens >= 11 && tens <= 13) return `${day}th`;
+      const unit = day % 10;
+      if (unit === 1) return `${day}st`;
+      if (unit === 2) return `${day}nd`;
+      if (unit === 3) return `${day}rd`;
+      return `${day}th`;
+    },
     months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     monthsLong: [
       'January',
@@ -69,6 +83,7 @@ export const strings = {
   banners: {
     example: 'This is an example plan. Nothing here is yours.',
     offline: "You're offline. PrePenny keeps working with what's on this phone.",
+    updated: 'PrePenny has been updated. Tap to reload.',
   },
 
   status: {
@@ -123,6 +138,159 @@ export const strings = {
   sheet: {
     close: 'Close',
     stillBeingBuilt: 'This part is still being built.',
+    back: 'Back',
+    next: 'Next',
+    done: 'Done',
+    save: 'Save',
+    stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
+    working: 'Working it out.',
+  },
+
+  /** Shared by the sheets' boxes. */
+  form: {
+    pound: '£',
+    amountError: 'Type an amount, for example 25.',
+    dateError: 'Choose a date.',
+    optional: (label: string) => `${label}, if any`,
+  },
+
+  /** Update balance (brief 4.2, D33, D46, D87, D197). */
+  updateBalance: {
+    title: 'Update balance',
+    whichAccount: 'Which account',
+    typeWhatBankShows: 'Type what your bank shows now',
+    overdrawn: "It's overdrawn, below £0.00",
+    amountError: 'Type what your bank shows, for example 237.54.',
+    expected: (amount: string) => `The plan expected ${amount} by the end of today.`,
+    bankShows: (amount: string) => `Your bank shows ${amount}.`,
+    match: 'They match.',
+    less: (amount: string) => `That's ${amount} less.`,
+    more: (amount: string) => `That's ${amount} more.`,
+    tickHeading: 'Tick anything from today or earlier that has gone out or come in',
+    tickIntro: 'Anything you leave unticked is still to come off, or come in.',
+    nothingToTick: 'Nothing from today or earlier is waiting to be ticked.',
+    tickAll: 'Tick all',
+    untickAll: 'Untick all',
+    tickLabel: (date: string, name: string, amount: string) => `${date}, ${name}, ${amount}`,
+    updated: 'Balance updated',
+    updatedAt: (amount: string, date: string, time: string) => `${amount}, ${date}, ${time}`,
+    ticked: (count: number) =>
+      count === 1 ? '1 payment ticked as paid.' : `${count} payments ticked as paid.`,
+    lowestPointAhead: 'Lowest point ahead',
+  },
+
+  /** I spent (brief 4.5, D2, D115, D119, D198). */
+  spent: {
+    title: 'I spent',
+    noBudgets:
+      "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, are added on the Budgets screen in More.",
+    whichBudget: 'Which budget',
+    amount: 'How much',
+    day: 'When',
+    dayError: 'Choose today or an earlier day.',
+    thisWeek: (end: string) => `This week, to ${end}`,
+    thisMonth: (end: string) => `This month, to ${end}`,
+    spentSoFar: 'Spent',
+    left: 'Left',
+    withThis: (spent: string, left: string) => `With this: ${spent} spent, ${left} left.`,
+    earlier: "This goes in an earlier week or month, so it doesn't change this one.",
+    rolledOver: (base: string, rolled: string) => `${base} + ${rolled} from last time`,
+  },
+
+  /** Add a payment (brief 4.3, 4.4, D86, D150, D160, D199). */
+  addPayment: {
+    title: 'Add a payment',
+    kind: 'What kind',
+    out: 'Going out',
+    in: 'Coming in',
+    transfer: 'Between accounts',
+    name: 'Name',
+    nameError: 'Type a name, for example Car MOT.',
+    amount: 'Amount',
+    from: 'From',
+    into: 'Into',
+    to: 'To',
+    sameAccount: 'Choose two different accounts.',
+    nextPayment: 'Next payment',
+    beforeToday: "Pick today or a later date. If it's already gone, update your balance instead.",
+    howOften: 'How often',
+    once: 'Once',
+    weekly: 'Every week, or every few weeks',
+    monthly: 'Every month, or every few months',
+    dates: 'On chosen dates',
+    weeksApart: 'How many weeks apart',
+    weeksApartHint: '1 is every week, 2 is every 2 weeks.',
+    weeksError: 'Type a number from 1 to 52.',
+    everyWeeks: (every: number, weekday: string) =>
+      every === 1 ? `Every ${weekday}.` : `Every ${every} weeks, on a ${weekday}.`,
+    monthsApart: 'How many months apart',
+    monthsApartHint: '1 is every month, 3 is every 3 months, 12 is once a year.',
+    monthsError: 'Type a number from 1 to 12.',
+    onWhichDay: 'On',
+    onDay: (day: string) => `The ${day} of the month`,
+    onLastDay: 'The last day of the month',
+    onLastWorkingDay: 'The last working day of the month',
+    onWeekday: (position: string, weekday: string) => `The ${position} ${weekday} of the month`,
+    positions: ['first', 'second', 'third', 'fourth'],
+    last: 'last',
+    leaveOut: 'Leave out some months',
+    leaveOutLegend: 'Months to leave out',
+    leaveOutError: 'Leave at least one month in.',
+    chosenDates: 'The dates after that',
+    addDate: 'Add a date',
+    removeDate: (date: string) => `Remove ${date}`,
+    laterDate: (number: number) => `Date ${number}`,
+    datesError: 'Choose dates after the next payment, each one once.',
+    ends: 'When it ends',
+    never: "It doesn't end",
+    after: 'After a number of payments',
+    onDate: 'On a date',
+    howMany: 'How many payments',
+    howManyError: 'Type how many payments, for example 3.',
+    lastDate: 'Last date',
+    lastDateError: 'Choose a date on or after the next payment.',
+    differentLast: 'The last payment is a different amount',
+    lastAmount: 'Last amount',
+    weekend: 'On a weekend or bank holiday',
+    keep: 'Keep the date',
+    before: 'Move to the working day before',
+    afterDay: 'Move to the working day after',
+    type: 'Type',
+    linked: 'Paying off a debt, or saving towards a goal',
+    nothing: 'Neither',
+    debt: (name: string) => `Debt: ${name}`,
+    goal: (name: string) => `Savings goal: ${name}`,
+    isEstimate: 'This is an estimate',
+    note: 'Note',
+    save: 'Add payment',
+  },
+
+  /** I did overtime and I missed a shift (brief 4.3, D5, D124, D129 to D131, D140, D200). */
+  overtime: {
+    titleOvertime: 'I did overtime',
+    titleMissed: 'I missed a shift',
+    what: 'What happened',
+    overtime: 'Overtime',
+    missed: 'Missed a shift',
+    noPay:
+      'PrePenny needs your pay details to work this out. They come with the pay calculator, which is still being built.',
+    whichPay: 'Which pay',
+    dayOvertime: 'Day of the overtime',
+    dayMissed: 'Day of the shift',
+    hours: 'Hours',
+    hoursError: 'Type the hours, for example 11.5.',
+    atRate: (rate: string) => `At ${rate} an hour.`,
+    changeRate: 'Change the rate',
+    rate: 'Rate an hour',
+    rateError: 'Type the rate, for example 19.07.',
+    extrasOvertime: 'Extras it adds, such as shift premium, if any',
+    extrasMissed: 'Extras it loses, such as shift premium, if any',
+    extrasHint: 'Leave it empty if the extras stay the same.',
+    landsOn: (date: string, change: string, total: string) =>
+      `This goes on your pay on ${date}: ${change}, making it ${total}.`,
+    comesOff: (date: string, change: string, total: string) =>
+      `This comes off your pay on ${date}: ${change}, making it ${total}.`,
+    changesBy: (change: string) => `This changes your pay by ${change}.`,
   },
 
   undo: {
@@ -137,6 +305,21 @@ export const strings = {
     skipped: (name: string) => `${name} skipped.`,
     removedJustThisOne: (name: string) => `${name} removed for just this one.`,
     removedThisAndLater: (name: string) => `${name} removed for this and all later ones.`,
+    balanceUpdated: (account: string) => `${account} balance updated.`,
+    balanceUpdatedTicked: (account: string, count: number) =>
+      count === 1
+        ? `${account} balance updated, and 1 payment ticked.`
+        : `${account} balance updated, and ${count} payments ticked.`,
+    spent: (amount: string, budget: string) => `${amount} spent on ${budget}.`,
+    spentWeek: (amount: string, budget: string, spent: string, left: string) =>
+      `${amount} spent on ${budget}. This week: ${spent} spent, ${left} left.`,
+    spentMonth: (amount: string, budget: string, spent: string, left: string) =>
+      `${amount} spent on ${budget}. This month: ${spent} spent, ${left} left.`,
+    added: (name: string) => `${name} added.`,
+    overtimeAdded: (date: string, change: string) => `Overtime added to ${date}: ${change}.`,
+    missedTakenOff: (date: string, change: string) => `Missed shift taken off ${date}: ${change}.`,
+    overtimeAddedNoDay: (change: string) => `Overtime added: ${change}.`,
+    missedTakenOffNoDay: (change: string) => `Missed shift taken off: ${change}.`,
   },
 
   /** What the edit sheet says when the engine can't make a change (D87). Never the code itself. */
@@ -163,6 +346,21 @@ export const strings = {
     'not-last-change':
       'A newer change has been made since, so this one can no longer be undone here.',
     'not-ready': 'Your plan is still being worked out. Try again in a moment.',
+    'payment-before-today':
+      "Pick today or a later date. If it's already gone, update your balance instead.",
+    'spend-after-today': 'Choose today or an earlier day.',
+    'same-account': 'Choose two different accounts.',
+    'needs-name': 'Type a name, for example Car MOT.',
+    'payday-not-estimate': 'That payday already has its real pay typed in, so it stays as it is.',
+    'no-payday': "There's no payday in the plan that pays for work on that day.",
+    'no-pay-week':
+      "PrePenny doesn't know your usual week for that payday yet, so it can't work this out.",
+    'no-pay-profile': 'PrePenny needs your pay details to work this out.',
+    'no-covered-to': 'PrePenny needs to know which days of work each payday pays for.',
+    'no-rate': 'Type the rate for these hours, for example 19.07.',
+    'no-extras': 'That payday has no extras, such as a shift premium, to change.',
+    'too-much-extras': "That's more than the extras on that payday. Type a smaller amount.",
+    'same-time-balances': 'Wait a moment, then try again.',
     other: "That change couldn't be made, so nothing was changed. Try again.",
   },
 
@@ -180,6 +378,7 @@ export const strings = {
     lowestOnAfter: (amount: string, date: string, name: string) =>
       `${amount} on ${date}, after ${name}`,
     lowestOn: (amount: string, date: string) => `${amount} on ${date}`,
+    showUpTo: (date: string) => `Show the plan up to ${date}`,
     notTickedYet: 'Not ticked yet',
     notTickedYetIntro: 'These were due before today. Tap each one to mark it as paid or change it.',
     fromToday: (end: string) => `Today to ${end}`,

@@ -44,3 +44,21 @@ export function formatMonth(date: string, today: string): string {
   if (name === undefined) throw new RangeError(`No month ${parts.month}.`);
   return parts.year === partsOf(today).year ? name : `${name}${KEEP_TOGETHER}${parts.year}`;
 }
+
+/** "Friday": a date's weekday in full. */
+export function weekdayName(date: string): string {
+  const name = strings.dates.weekdaysLong[partsOf(date).weekday - 1];
+  if (name === undefined) throw new RangeError(`No weekday for ${date}.`);
+  return name;
+}
+
+/**
+ * "9:14am": the time on this phone's clock, from a UTC time such as
+ * "2026-10-30T09:14:05Z". Only for showing when something was done, never in a sum.
+ */
+export function formatTime(time: string): string {
+  const moment = new Date(time);
+  const hours = moment.getHours();
+  const minutes = moment.getMinutes().toString().padStart(2, '0');
+  return strings.dates.time(hours % 12 === 0 ? 12 : hours % 12, minutes, hours < 12);
+}
