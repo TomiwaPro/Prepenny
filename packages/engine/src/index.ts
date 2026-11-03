@@ -9,6 +9,7 @@
 // Step 1e: budgets, spends, Left to spend, savings goals and "Set aside".
 // Step 1f: the take-home pay calculator, "I did overtime" and "I missed a shift".
 // Step 1g: What if, the last day of work a payday covers, and speed.
+// Step 2a: commands for adding and changing records, and the owner's answers to step 1g.
 
 export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';

@@ -1517,3 +1517,105 @@ Agreed 3 Nov 2026, from the owner's review of step 1g. Confirms the NONCUM point
 A tax code ending in NONCUM is an emergency code on the week 1/month 1 basis.
 
 Why: the owner confirmed it.
+
+## Made during step 2a
+
+D149 to D157 were decided on 3 Nov 2026 while building step 2a. D150 is the owner's, given with the step. Questions for the owner are in `PLAN.md`.
+
+### D149. Commands for adding and changing records
+
+Decided 3 Nov 2026 in step 2a. Adds to D87 and ARCHITECTURE.md 2.3.
+
+- Setup, "Add a payment" and the add and edit sheets change the plan only through engine commands: accounts, payments, debts, budgets, savings goals, pay profiles, pay weeks, the main pay and the nation. Each is one edit, so one undo, and every id comes in with the command.
+- Each command checks what it's given and refuses with a plain code, such as `same-account`, `budget-zero`, `needs-account` or `payment-before-today`, and a message with ids and dates only, never amounts, names or notes. It then checks the plan would still work out with it, so it never saves a record the plan can't use.
+- Anything a person types a name for needs a name with something in it.
+- Edits work on a plan with no accounts yet, so setup can start from nothing. Working out a plan still needs an account.
+- An undo is refused when something saved since depends on what the edit changed, such as a payment added since in an account the edit added.
+
+Why: brief Part 3, principle 4 says every change can be undone, and D87 says one engine function makes every edit, so every phone and every replayed edit after a sync clash checks the same things.
+
+### D150. A payment dated before today is refused
+
+Agreed 3 Nov 2026, from the owner's step 2a instructions. Adds to D86.
+
+"Add a payment" and setup refuse a payment whose next payment is before today: if it has already gone, Update balance covers it. Decided in step 2a: this counts the day it lands, so a payment due today that the weekend rule moves to Friday is refused on a Sunday too, and setup offers the one after it.
+
+Why: the owner's instruction. A payment before today would show in "Not ticked yet" and come off the balance, although the bank balance already has it.
+
+### D151. Accounts
+
+Decided 3 Nov 2026 in step 2a. Adds to brief 4.2 and ARCHITECTURE.md 3.3.
+
+- An account is added with the balance its bank shows, as one edit, because every account needs a balance to start from (D85).
+- An account has a name, and its name, kind, overdraft limit and warning level can change.
+- An account can be closed once nothing is planned in it: no payment, money set aside or pay-later bill still to come or not ticked yet, no budget that hasn't ended and no savings goal kept in it. It keeps its balance updates for the history, and nothing new can use it. Whether an account with money left in it can be closed is a question for the owner in `PLAN.md`.
+
+Why: brief 4.2 lists each account's name, balance, overdraft limit and warning level. Closing an account that still has payments would lose them from the plan.
+
+### D152. Budgets
+
+Decided 3 Nov 2026 in step 2a. Adds to brief 4.5, D30, D107 and D110.
+
+- A budget starts today or later, like a payment's next date (D86, D150), and its amount is above zero.
+- A new amount counts from the period with today in it. Periods that have ended keep the amount they had, for roll-over and pay-later bills: Sam's Travel, £25.00 with £7.00 left last week, changed to £30.00 on Sun 25 Oct, is £30.00 + £7.00 this week. This is a question for the owner in `PLAN.md`.
+- Switching roll-over on counts from today (D110), and switching it off clears that day.
+- How it leaves can change between all at the start and spread across the days at any time. Changing to or from a pay-later bill, or changing the bill day, is refused once it has spends or a bill with a tick or a change, because they'd count differently (D61). It's ended and a new budget added instead.
+- Ending a budget sets its last period: the one with the end date in it, today or later.
+
+Why: a budget's past periods are settled (D2, D67), and changing the past would change what rolled over and what a bill was planned at.
+
+### D153. Debts and savings goals
+
+Decided 3 Nov 2026 in step 2a. Adds to brief 4.6, 4.7, D98 and D114.
+
+- A debt is added with everything in ARCHITECTURE.md 3.3, including 0% until a date (D106) and the minimum rule (D101), and checked like a stored one. Anything but its balance can change; its balance changes with "Update from statement" (D103). Changing a credit card to another kind needs its card fields cleared.
+- Currencies that aren't counted in hundredths, such as the yen or the Kuwaiti dinar, are refused (D98).
+- A closed debt is still worked out but left out of Owed now (D99). No new payment can be linked to it.
+- A savings goal needs an account, a target above zero, and a target date of today or later if it has one. It can change, and moving it to another account is refused while its payments don't move money into or out of that account (D114).
+- A goal can be closed. Payments stay linked to it, and no new one can be.
+- A payment is linked to a debt or a goal. Whether it can be linked to a budget, as ARCHITECTURE.md 3.3 lists, is a question for the owner in `PLAN.md`: a budget already puts its own money in the plan (D107).
+
+Why: these follow the brief and the decisions named, so a record added later is checked exactly like one already in the plan.
+
+### D154. Pay profiles and pay weeks
+
+Decided 3 Nov 2026 in step 2a. Adds to D5, D123, D130, D131 and D140.
+
+- A pay profile and a pay week each have a name, such as "Warehouse job" and "3-shift week".
+- A pay profile's last day covered must suit its pay: a day of the month for monthly pay, days before payday otherwise (D131, D142). Setup works it out from the payday and the last day picked.
+- A pay week has at least one line or one extra, and no hours, rate or extra below zero. Its extras are its fixed pay, such as a shift premium (D130).
+- Pay is linked to its pay profile and pay weeks for its whole family: each series gets the pay weeks when its pattern has that many steps.
+- Changing a pay profile, a pay week or the pay's links works out every overtime and missed shift saved on them again, so they always match what they're worked out from, as D140 does when one is removed. This is a question for the owner in `PLAN.md`.
+
+Why: brief 4.15 names each job's settings and saved weeks, and an overtime figure worked out from a week that has since changed would put a wrong amount in the plan.
+
+### D155. The main pay and the nation are one settings record
+
+Decided 3 Nov 2026 in step 2a. Adds to D14 and ARCHITECTURE.md 3.2.
+
+- The plan's nation for bank holidays and the main pay are saved as one settings record, so choosing either is one undoable edit. The app passes them to the engine as the bank holidays and the main pay.
+- The main pay is a family of money coming in, or none.
+- In a shared plan each person's main pay moves to their own plan member record in Phase 3 (ARCHITECTURE.md 3.2). Until then, nothing checks that the main pay passed in is the one saved, so Tom's own view of Jess and Tom's plan still works.
+
+Why: brief Part 3, principle 4 says every change can be undone, and the main pay and nation change how the whole plan is worked out.
+
+### D156. Deleting a payment that hasn't started yet
+
+Decided 3 Nov 2026 in step 2a. Adds to D92.
+
+A payment whose first payment is after today can be deleted: its whole family, with its one-off changes and any overtime or missed shifts saved for it. From the day its first payment is due, "Remove this and later" is used instead (D92).
+
+Why: the owner's instruction says a payment that hasn't started can be deleted. Once one is due it may already have gone, so it's removed the way D92 says, which refuses a ticked payment.
+
+### D157. The people's plans as the commands build them
+
+Decided 3 Nov 2026 in step 2a. Adds to D137.
+
+The fixture plans now look exactly as the commands would build them, and every figure in every test stays the same:
+
+- Every account, pay profile and pay week has a name.
+- Priya, Kofi, and Jess and Tom set up the day before their balances were checked, Dee on Tue 27 Oct and Ali on Sun 20 Sep, so each has a balance from the day they set up as well as the latest one. A balance can't be dated after the day it's typed in, and a payment can't be added for a day before (D150).
+- Priya's salary and holiday savings start on her next payday, Fri 30 Oct, not Thu 1 Oct (D86). They give the same payments.
+- Dee's payments were made on Tue 27 Oct, so her October Universal Credit, due on Wed 28 Oct, could be added. Her balance on 27 Oct is £121.22, which gives her £427.40 on Mon 2 Nov once her Universal Credit, wages, rent and council tax have gone in and out.
+
+Why: the owner's test 2 builds each plan from empty with the commands and expects exactly the records in the fixture files.
