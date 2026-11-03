@@ -21,9 +21,9 @@
   color: var(--on-navy-muted);
 }
 
-/* 46px, but never wider than the card, so a long balance at 200% text still fits. */
+/* 46px, growing with the phone's text size as far as the card allows on one line (D175). */
 .balance {
-  font-size: min(var(--size-balance), 18cqi);
+  font-size: min(var(--size-balance), calc(100cqi / var(--figure-width, 4)));
   line-height: 1.1;
   font-weight: 700;
   letter-spacing: -0.8px;
@@ -45,7 +45,7 @@
 .raised {
   background: var(--navy-raised);
   border-radius: var(--radius-inner);
-  padding: 11px 14px;
+  padding: var(--space-3) 14px;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -68,7 +68,7 @@
 
 .raisedAmount {
   margin-left: auto;
-  font-size: 1.125rem;
+  font-size: var(--size-heading);
   font-weight: 700;
 }
 

@@ -22,9 +22,9 @@
   color: var(--ink-muted);
 }
 
-/* 30px, but never wider than the card. */
+/* 30px, growing with the phone's text size as far as the card allows on one line (D175). */
 .figure {
-  font-size: min(var(--size-key-figure), 14cqi);
+  font-size: min(var(--size-key-figure), calc(100cqi / var(--figure-width, 4)));
   line-height: 1.2;
   font-weight: 700;
   overflow-wrap: anywhere;

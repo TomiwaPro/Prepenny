@@ -1,7 +1,8 @@
 // The balance card (DESIGN.md): navy, the account, its balance and when it
 // was checked, a thin brass line, then a raised block with Left to spend.
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
+import { figureStyle } from '../lib/figure.ts';
 import styles from './BalanceCard.module.css';
 
 export interface BalanceCardProps {
@@ -17,13 +18,14 @@ export interface BalanceCardProps {
 }
 
 export function BalanceCard({ account, balance, checked, raised }: BalanceCardProps) {
+  const headingId = useId();
   return (
-    <section className={styles.card} aria-labelledby="balance-account">
+    <section className={styles.card} aria-labelledby={headingId}>
       <div className={styles.top}>
-        <h2 id="balance-account" className={styles.account}>
+        <h2 id={headingId} className={styles.account}>
           {account}
         </h2>
-        <p className={`${styles.balance} num`} data-testid="balance">
+        <p className={`${styles.balance} num`} style={figureStyle(balance)} data-testid="balance">
           {balance}
         </p>
         <p className={styles.checked}>{checked}</p>

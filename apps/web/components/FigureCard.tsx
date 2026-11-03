@@ -1,6 +1,7 @@
 // A figure card (DESIGN.md): a label, a status pill with its word, a big
 // figure, its date and cause, and one line of context.
 
+import { figureStyle } from '../lib/figure.ts';
 import styles from './FigureCard.module.css';
 import { type Status, StatusPill } from './StatusPill.tsx';
 
@@ -20,7 +21,9 @@ export function FigureCard({ label, status, figure, detail, context, testId }: F
         <h2 className={styles.label}>{label}</h2>
         {status === null ? null : <StatusPill status={status} />}
       </div>
-      <p className={`${styles.figure} num`}>{figure}</p>
+      <p className={`${styles.figure} num`} style={figureStyle(figure)}>
+        {figure}
+      </p>
       <p className={styles.detail}>{detail}</p>
       {context === null ? null : <p className={styles.context}>{context}</p>}
     </section>
