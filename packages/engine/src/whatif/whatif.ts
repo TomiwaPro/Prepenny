@@ -149,7 +149,7 @@ function accountOutcome(plan: Plan, accountId: string): AccountOutcome {
  * on", and each goal's date.
  *
  * The real records are never changed. To throw the practice away, the app
- * simply forgets it. To keep it, the app saves `keep`, one edit that's one
+ * forgets it. To keep it, the app saves `keep`, one edit that's one
  * undo step. When the real plan may have changed since the practice began,
  * for example after a partner's change arrived, the app runs `whatIf` again
  * on the newest real records with the same practice commands, and keeps

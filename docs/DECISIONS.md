@@ -1353,7 +1353,7 @@ Decided 3 Nov 2026 in step 1g. Adds to brief 4.10 and ARCHITECTURE.md 2.1.
 
 - Practice changes are ordinary edit commands, made one after another on a copy of the plan's records, each on the records the ones before it left. Anything that can be edited for real can be practised, including "I did overtime" and Update balance.
 - What if gives the real plan and the practice plan side by side: for each account its lowest point, the first day under the warning level and each shortfall with the payments that could move; for each debt "Paid off on", or what's still left at the end; and for each savings goal the date it's reached. Debts and goals look 24 months ahead, like the Debts screen (D43), unless told otherwise.
-- The real records are never changed. Throwing the practice away is simply forgetting it.
+- The real records are never changed. To throw the practice away, the app forgets it.
 - Keeping it gives one edit holding every practice change: for each record, how it was before the first practice change and how it is after the last. It's one undo step (brief 5.4, D87). A record that ends up as it started isn't in it.
 - Before keeping, the app works What if out again on the newest real records with the same practice commands, as a sync clash runs a command again (ARCHITECTURE.md 3.5), so a partner's change that arrived in the meantime is never overwritten.
 - A practice change the engine can't make is refused with its usual code, and the message says which practice change it was.
@@ -1385,3 +1385,52 @@ The plans for Priya, Dee, Kofi, Jess and Tom, and Ali in `packages/engine/test/f
 - Everything paid before each person's balance was checked is ticked, so nothing is in Not ticked yet.
 
 Why: the brief asks for all six people as personas and end-to-end tests. Each plan has what that person needs most, and every engine part is used by at least one of them.
+
+### D138. A tick made before an update, for money paid after its balance date
+
+Decided 3 Nov 2026 in step 1g, from the engine review. Follows brief 5.5 rule 1 and D1 where the engine didn't. Adds to D33, D62 and D99.
+
+- A payment's tick is inside an account's balance when it was ticked at or before the balance update and its paid date is on or before the balance date (brief 5.5 rule 1, D1, D33), or when it was ticked inside that account's Update balance steps.
+- So a payment ticked before an update, but paid after the balance date, isn't inside it. It goes out on its paid date. This only happens when the balance is typed in with a date before today.
+- Debts work the same way (D62, D99): a payment ticked before an Update from statement, but paid after the statement's balance date, comes off the debt on its paid date. Ticks made inside the update's steps are still inside it (D103).
+
+Test: on Tue 3 Nov at 9am a balance of £500.00 is typed in as it was on Sun 1 Nov. The £25.00 phone bill paid on Mon 2 Nov, ticked at 6pm that day, comes off on Mon 2 Nov, leaving £475.00. A loan updated the same way from a £100.00 statement dated Sun 1 Nov shows £75.00 left now, and is paid off on Tue 2 Feb 2027, not Tue 2 Mar.
+
+Why: the engine counted every tick made before an update as inside it, whatever the paid date, so a balance dated before today showed money that had already gone: £25.00 too much in the test.
+
+### D139. A savings goal that drops back below its target
+
+Decided 3 Nov 2026 in step 1g, from the engine review. Adds to D114.
+
+- The date a goal is reached is the day of the payment that takes it to the target and keeps it there to the last day looked at. Money taken out again, below the target, starts it over: the date is the day it gets back to the target, or none if it doesn't.
+- A goal that starts at its target, and never drops below it, has no date, as before (D114).
+- The date is labelled an estimate when a payment marked as an estimate comes before it.
+
+Test: a £1,000.00 goal starting at £1,000.00, with £300.00 taken out on Tue 20 Oct and £50.00 a week in from Fri 6 Nov, is reached again on Fri 11 Dec 2026, with its 7th linked payment counting the £300.00 out. One that went over its target then back under, and stays under, has no date, beside 70%. D114's test still gives Fri 9 Apr 2027 with the 24th move.
+
+Why: D114's "first takes it to the target" said a goal was reached on a date it later fell back from, so the screen could show "Reached on 10 Oct" beside 70%, and missed the real date when money was taken out first.
+
+### D140. Overtime and missed shifts on the same payday, and smaller pay rules
+
+Decided 3 Nov 2026 in step 1g, from the engine review. Adds to D5, D121, D123, D124, D130 and D131.
+
+- **Every shift on one payday is worked out together.** The overtime and missed shifts on one payday are worked out in the order they were saved (by id, which is made in time order), each on top of the ones before it, so they add up to exactly all of them together (D124). Removing one works the others out again. An undo that would take away or change one that a later one was worked out on top of is refused, as is an undo that would take away the payday of one saved since (D87). Removing overtime is refused when a missed shift on that payday would then take off more extras than the payday has (D130).
+- **The payday that covers the shift.** A shift goes on the payday whose last day covered is the earliest on or after the shift (D131). Paydays usually land in that order anyway; this matters only when a payday has been moved before another one, which still covers the same work.
+- **NONCUM.** A tax code ending in NONCUM is an emergency code on the week 1/month 1 basis, like W1, M1 and X. GOV.UK's "Emergency tax codes" page says payslips can show it (D121).
+- **Check my payslip** doesn't list National Insurance or take-home pay that's 1p away from the calculator, because some payroll software uses HMRC's National Insurance tables (brief 8.6). Any other difference, even 1p, is listed.
+- **Other deductions** typed in can't be below zero, because a deduction below zero would add to take-home pay.
+
+Tests: with two overtimes on Fri 6 Nov, removing the first leaves £773.58, the same as the second alone. With Fri 13 Nov's pay moved to Thu 5 Nov, overtime on Mon 26 Oct still lands on Fri 6 Nov.
+
+Why: each was found by the review with an example that put a wrong figure in the plan or refused something valid: removing one of two shifts left Fri 6 Nov £16.00 too high.
+
+### D141. Smaller fixes to records and edits
+
+Decided 3 Nov 2026 in step 1g, from the engine review.
+
+- Two balance updates for one account at the same moment are refused whatever order they come in (D85). Before, it depended on the order.
+- A payment's own date from its schedule, sent as the new date for this and all later ones, isn't a new date: the schedule and any one-off moved dates stay as they are (D60, D91). Before, the later dates were worked out again from it, so a payment on the 31st became the 30th in later months.
+- A pattern's step is worked out without losing accuracy whatever the pattern position stored, and a payment number above 100,000 is refused: weekly payments from 1900 to 2999 are about 57,400.
+- A series ending on Tue 31 Dec 2999, the last day a date can be, counts as never ending. Before, it was refused.
+
+Why: each could refuse a valid plan or change payments nobody asked to change.

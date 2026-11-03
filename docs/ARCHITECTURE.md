@@ -215,7 +215,7 @@ A property test proves that an edit followed by its undo gives back exactly the 
 For each account (brief 5.5, with D1, D10, D11, D12 and D33):
 
 1. **Start** from the latest balance update: amount B, typed on date D at time T.
-2. **Already inside B, so ignored:** payments ticked at or before T, payments ticked inside that update's steps (D33), and spends recorded at or before T (D2, D33).
+2. **Already inside B, so ignored:** payments ticked at or before T with a paid date on or before D (brief 5.5 rule 1, D1, D138), payments ticked inside that update's steps (D33), and spends recorded at or before T (D2, D33).
 3. **Overdue:** unticked payments dated before D. These are applied first, oldest first. On screen, "Not ticked yet" lists unticked payments dated before today (D11).
 4. **Ticked after T:** not inside B, even on the same day (D33). It goes out on its paid date: the day it was ticked if that was before the payment was due (D1), otherwise the payment's own date after any weekend, bank holiday or moved-date change (D71). **Agreed (D39):** if that date is before D, it goes out at the start with the overdue payments, shown as ticked. Balances from today on come out the same as if it went out today.
 5. **Everything from D onwards,** in date order. On the same day: money in, then transfers, then money out. Within each group, by when the series' family was first created (3.3), then by name (D12).
@@ -253,7 +253,7 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
 
 ### 2.6 Debts
 
-- **Left now** = the balance on its date, minus every linked payment ticked as paid after the balance was typed in or updated from a statement, by time, even on the same day (brief 5.6, D27, D62). Each payment is converted with the debt's rate and rounded once (D9).
+- **Left now** = the balance on its date, minus every linked payment ticked as paid after the balance was typed in or updated from a statement, by time, even on the same day (brief 5.6, D27, D62), and every one ticked before it but paid after the statement's date (D138). Each payment is converted with the debt's rate and rounded once (D9).
 - **Paid off on** = the first date where the balance minus the planned linked payments after its date, in order, reaches 1p or less. **Agreed (D42):** 1 cent, or the smallest unit, for a debt in another currency. If that never happens in the view, show what will still be left at the end.
 - **Never less than nothing** (D34): 1p or less, including a small minus from rounding, shows "Paid off" and £0.00. Family loan: €1,400.57 minus 6 payments converted at €1.1612 per £1 leaves −€0.01, so it shows "Paid off on Fri 1 Jan 2027".
 - **Credit cards with an interest rate:** monthly interest (balance × yearly rate ÷ 12) is added on the statement day (D13), rounded once (D9), and the minimum is worked out from the rule, for example interest plus 1% of the balance, at least £5. Both are labelled as estimates. When a planned payment is more than what's left, D63 applies.
@@ -288,6 +288,7 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
   - A shift goes on the first payday whose last day of work covered is on or after the shift (D131). Setup asks once, "Fri 6 Nov pays for work up to Sun 1 Nov": monthly pay keeps a day of the month (or the last day), in the payday's own month; any other pay keeps a number of days before payday, 5 for Sam. Both count from the payday's date from its schedule, before any weekend or bank holiday move.
   - When the payday's pay week has fixed extras, such as a shift premium, "I did overtime" and "I missed a shift" take an optional change to them, worked out with the hours (D130).
   - A new amount for every payday from now drops the pattern's pay weeks with the pattern, and "Only this week of the pattern" keeps a single pay week on every step (D136).
+  - From the engine review (D140): every overtime and missed shift on one payday is worked out together, in the order they were saved, so removing one works the others out again, and an undo that would leave one wrong is refused. A shift goes on the payday that covers its work even when another payday has been moved before it. NONCUM is an emergency code. Check my payslip allows 1p on National Insurance and take-home pay. Other deductions can't be below zero.
   - The year so far is exact from the payslip just before. Otherwise the pay periods in between count as this payday's pay, or for overtime as the payday's own pay week, and the result is an estimate (D124).
   - Pension is a percentage of the earnings in a band, before or after tax; other deductions come off after tax (D126). One of student loan Plans 1, 2, 4 and 5, and a Postgraduate loan (D127). The tax year file and the check are D128.
 
@@ -1696,6 +1697,10 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | What if on Sam: the Fri 30 Oct pay £100 lower gives −£95.47 on Sun 1 Nov (Short) beside £4.53 (Tight), the D69 list, and every paid-off date the same; keeping it is one edit and one undo | 4.10, D69, D135 | 1g |
 | Each of the other five people's plans works out with no errors and shows what brief Part 2 says they need most: Priya's yearly car insurance once, Dee's Universal Credit on Thu 24 Dec 2026, Kofi's Monday to Sunday weeks with 25% set aside, Jess and Tom's £600 transfer with the total unchanged, Ali's −£300 as Tight | Part 2, 8.5 | 1g |
 | Property, on all six people's plans with any practice changes in What if: tests 44 to 46 again, What if never changes the real plan, and Keep saves exactly the practice plan | 5.8, D135 | 1g |
+| A balance, or a debt's statement, typed in with an earlier date: a payment ticked before it but paid after its date comes off on its paid date | D138 | 1g |
+| A savings goal that drops back below its target is reached on the day it gets back, or not at all | D139 | 1g |
+| Two shifts on one payday: removing one works the other out again, and undoing the first is refused; a shift goes on the payday that covers its work; NONCUM; 1p allowed on National Insurance and take-home pay in Check my payslip; no deduction below zero | D140 | 1g |
+| Same-moment balance updates refused in any order; a payment's own date isn't a new date; any pattern position; an end on 31 Dec 2999 | D141 | 1g |
 | Property: take-home is gross less every deduction; no payday takes more than half its pay in tax; week by week gives the same tax as no year so far when every week pays the same; overtime shift by shift adds up to all at once | D121, D124 | 1f |
 
 **After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
