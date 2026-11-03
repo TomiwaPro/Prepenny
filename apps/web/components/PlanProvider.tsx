@@ -29,8 +29,14 @@ import {
   saveChange,
   savePlan,
 } from '../data/db.ts';
-import { EXAMPLE_PLAN_ID, EXAMPLE_VERSION, examplePlan } from '../data/example-plan.ts';
+import {
+  EXAMPLE_PLAN_ID,
+  EXAMPLE_VERSION,
+  examplePlan,
+  fingerprint,
+} from '../data/example-plan.ts';
 import type { HomeView } from '../lib/home.ts';
+import { testSetting } from '../lib/test-setting.ts';
 import { todayFor } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
 import { EngineError, editInBackground, workOutHomeInBackground } from '../worker/client.ts';
@@ -99,10 +105,26 @@ const ActionsContext = createContext<PlanActions>({
   startAgainWithExample: noPlan,
 });
 
+/**
+ * The example's records and their version: Sam's plan, or the end-to-end
+ * tests' own plan when they set one (D201).
+ */
+function theExample(): { readonly records: PlanRecords; readonly version: string } {
+  const plan = testSetting()?.plan;
+  return plan === undefined
+    ? { records: examplePlan, version: EXAMPLE_VERSION }
+    : { records: plan, version: fingerprint(plan) };
+}
+
+/** Today for a plan, or the end-to-end tests' own today when they set one (D201). */
+function todayOf(plan: StoredPlan): string {
+  return testSetting()?.today ?? todayFor(plan);
+}
+
 const freshExample = (): StoredPlan => ({
   id: EXAMPLE_PLAN_ID,
   isExample: true,
-  exampleVersion: EXAMPLE_VERSION,
+  exampleVersion: theExample().version,
 });
 
 const ASKED_TO_KEEP = 'asked-to-keep-data';
@@ -113,11 +135,12 @@ const ASKED_TO_KEEP = 'asked-to-keep-data';
  */
 async function planOnPhone(): Promise<{ plan: StoredPlan; records: PlanRecords }> {
   const db = openDb();
+  const example = theExample();
   try {
     let plan = await db.plans.get(EXAMPLE_PLAN_ID);
-    if (plan === undefined || exampleNeedsReplacing(plan, EXAMPLE_VERSION)) {
+    if (plan === undefined || exampleNeedsReplacing(plan, example.version)) {
       plan = freshExample();
-      await savePlan(db, plan, examplePlan);
+      await savePlan(db, plan, example.records);
     }
     if ((await db.device.get(ASKED_TO_KEEP)) === undefined) {
       await db.device.put({ key: ASKED_TO_KEEP, value: await askToKeepData() });
@@ -165,11 +188,11 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
         // No database on this phone, for example in some private windows:
         // the example still works, it just isn't saved.
         canSave.current = false;
-        found = { plan: freshExample(), records: examplePlan };
+        found = { plan: freshExample(), records: theExample().records };
       }
       if (!current) return;
       setState({ status: 'loading', plan: found.plan });
-      keepLoaded({ ...found, today: todayFor(found.plan), version: 1 });
+      keepLoaded({ ...found, today: todayOf(found.plan), version: 1 });
     })();
     return () => {
       current = false;
@@ -273,10 +296,11 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     () =>
       inTurn(async (): Promise<ChangeOutcome> => {
         const plan = freshExample();
+        const { records } = theExample();
         try {
           const db = openDb();
           try {
-            await savePlan(db, plan, examplePlan);
+            await savePlan(db, plan, records);
             // The whole plan is saved again, so changes can be saved from here on.
             canSave.current = true;
           } finally {
@@ -287,7 +311,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
           canSave.current = false;
         }
         const version = (loadedRef.current?.version ?? 0) + 1;
-        keepLoaded({ plan, records: examplePlan, today: todayFor(plan), version });
+        keepLoaded({ plan, records, today: todayOf(plan), version });
         showChange('', null);
         return { ok: true, version };
       }),
