@@ -5,8 +5,8 @@
   "description": "PrePenny's app and website: Next.js as a static export (D17).",
   "type": "module",
   "scripts": {
-    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev",
-    "build": "NEXT_TELEMETRY_DISABLED=1 next build && NO_UPDATE_NOTIFIER=1 serwist build serwist.config.js",
+    "dev": "node scripts/build-worker.ts && NEXT_TELEMETRY_DISABLED=1 next dev",
+    "build": "node scripts/build-worker.ts && NEXT_TELEMETRY_DISABLED=1 next build && NO_UPDATE_NOTIFIER=1 serwist build serwist.config.js",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --project tsconfig.json && tsc --project service-worker/tsconfig.json",
     "e2e": "playwright test"

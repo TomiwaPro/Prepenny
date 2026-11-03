@@ -22,7 +22,8 @@ const waiting = new Map<number, { resolve(home: HomeView): void; reject(error: E
 
 function engineWorker(): Worker {
   if (worker !== null) return worker;
-  worker = new Worker(new URL('./engine.worker.ts', import.meta.url), { type: 'module' });
+  // Built on its own by scripts/build-worker.ts (D170).
+  worker = new Worker('/engine-worker.js');
   worker.addEventListener('message', (event: MessageEvent<WorkResponse>) => {
     const answer = event.data;
     const promise = waiting.get(answer.id);
