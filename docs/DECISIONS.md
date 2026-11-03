@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 onwards were decided while building step 2a, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 onwards were decided while building step 2b, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -1621,3 +1621,61 @@ The fixture plans now look exactly as the commands would build them, and every f
 - Dee's payments were made on Tue 27 Oct, so her October Universal Credit, due on Wed 28 Oct, could be added. Her balance on 27 Oct is £121.22, which gives her £427.40 on Mon 2 Nov once her Universal Credit, wages, rent and council tax have gone in and out.
 
 Why: the owner's test 2 builds each plan from empty with the commands and expects exactly the records in the fixture files.
+
+## From the owner's review of step 2a
+
+D158 to D163 were agreed by the owner on 3 Nov 2026, answering the six questions left at the end of step 2a. Each is built in the step that uses it.
+
+### D158. An account is closed only at £0.00
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Answers the question in D151 and adds to it. Built in step 2f, with the account screens.
+
+- An account can be closed only when the plan shows £0.00 in it at the end of today, as well as nothing planned in it (D151).
+- When money is left, the app offers one tap: "Move £3.12 to another account first". That adds a transfer today from this account to one the person picks, for the whole amount left. Then the account can be closed.
+- The engine refuses to close an account with money left in it, so no phone can do it by mistake.
+
+Why: the owner's answer. Money never quietly drops out of the plan.
+
+### D159. "The last day" of the month: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Confirms the second point of D142. Built in step 2a; setup uses it in step 2e.
+
+When the last day of work picked for monthly pay is a month's last day, it follows each month's end: "Fri 5 Dec pays for work up to Mon 30 Nov" means January's pay covers work to Thu 31 Dec and March's to Sun 28 Feb. Any other day stays that day each month.
+
+Why: the owner confirmed it.
+
+### D160. Payments link to debts and goals only, for now
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Answers the question in D153. Changes ARCHITECTURE.md 3.3, which listed a linked budget on a payment.
+
+- A payment can be linked to a debt or a savings goal. Linking a payment to a budget is left for later.
+- The records keep room for it: the Phase 3 database keeps an empty `budget_id` beside `debt_id` and `goal_id` on each payment, so it can be added without starting again. "Add a payment" (step 2d) offers only debts and goals.
+
+Why: the owner's answer. A budget already puts its own money in the plan (D107), so a linked payment would count the same money twice until a rule for it is agreed.
+
+### D161. Changing a budget part-way through: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Confirms the second and fifth points of D152. Built in step 2a; the budget sheet uses it in step 2f.
+
+- A new amount counts from this week or month, the period with today in it. Periods that have ended keep what they had: Sam's Travel, £25.00 with £7.00 left last week, changed to £30.00 on Sun 25 Oct, is £30.00 + £7.00 this week.
+- A budget with spending recorded can't switch to or from a pay-later card. The person ends it and adds a new one.
+
+Why: the owner confirmed it.
+
+### D162. Overtime is worked out again when its pay week changes: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Confirms the fifth point of D154. Built in step 2a; "I did overtime" uses it in step 2d.
+
+When the tax code, the year so far or the usual week changes, every overtime and missed shift saved on it, on a payday still to come that's still an estimate, is worked out again.
+
+Why: the owner confirmed it. A figure worked out from a week that has since changed would put a wrong amount in the plan.
+
+### D163. Setup can't skip the account and balance
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Replaces "every step can be skipped" in brief 4.1 for the first step of setup. Built in step 2e.
+
+- In setup, the account and balance step can't be skipped, because every plan starts from a balance (D85, D151). Someone who only wants budgets still types one balance.
+- Every other step can be skipped and changed later (brief 4.1).
+- "Look at an example plan" still needs no balance: it's Sam's plan (D15).
+
+Why: the owner's answer. A plan with no balance can't show anything left after a payment.
