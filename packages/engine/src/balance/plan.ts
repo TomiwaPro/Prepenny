@@ -170,8 +170,8 @@ function isNonEmptyText(value: unknown): value is string {
   return typeof value === 'string' && value !== '';
 }
 
-function checkAccounts(accounts: readonly Account[]): Map<string, Account> {
-  if (!Array.isArray(accounts) || accounts.length === 0) {
+function checkAccounts(accounts: readonly Account[], emptyPlan: boolean): Map<string, Account> {
+  if (!Array.isArray(accounts) || (accounts.length === 0 && !emptyPlan)) {
     throw new EngineInputError('bad-account', 'The plan needs at least one account.');
   }
   const byId = new Map<string, Account>();
@@ -386,9 +386,11 @@ export interface CheckedRecords {
  * Checks every record of a plan the way the plan needs them: accounts, a
  * balance update for each, series, changes and ticks. Refuses anything the
  * engine can't work with (D85), with a message that holds no money data.
+ * Working out a plan needs an account; with `emptyPlan`, records with none
+ * yet are fine, as at the start of setup (D149).
  */
-export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords {
-  const accounts = checkAccounts(input.accounts);
+export function checkRecords(input: RecordsToCheck, today: Day, emptyPlan = false): CheckedRecords {
+  const accounts = checkAccounts(input.accounts, emptyPlan);
   const { starts, accountOfUpdate } = latestBalances(input.balanceUpdates, accounts, today);
   const budgets = checkBudgets(input.budgets ?? [], new Set(accounts.keys()));
   const spends = checkSpends(input.spends ?? [], budgets);

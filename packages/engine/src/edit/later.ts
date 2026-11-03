@@ -78,7 +78,8 @@ function endedBefore(prepared: PreparedSeries, index: number): Series {
   });
 }
 
-function removeSeries(context: Context, prepared: PreparedSeries): void {
+/** Removes a series with its one-off changes and ticks. */
+export function removeSeries(context: Context, prepared: PreparedSeries): void {
   const id = prepared.series.id;
   context.draft.set(seriesWrite(id, null));
   for (const day of context.checked.changes.get(id)?.keys() ?? []) {

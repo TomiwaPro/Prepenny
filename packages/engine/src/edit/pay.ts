@@ -21,8 +21,9 @@ import {
   stepOf,
 } from '../schedule/payments.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
+import type { Series } from '../schedule/types.ts';
 import { type Context, refuse } from './context.ts';
-import { clean, sameValue } from './records.ts';
+import { clean, sameValue, seriesWrite } from './records.ts';
 import type { EditCommand, RecordWrite } from './types.ts';
 
 type PayCommand = Extract<EditCommand, { kind: 'overtime' | 'missed-shift' }>;
@@ -407,5 +408,60 @@ export function refuseUndoOfPay(
         'An overtime or missed shift saved since is on a payday this undo would take away, so it can no longer be undone.',
       );
     }
+  }
+}
+
+/**
+ * The pay profile and pay week of a payday as they are now in this edit,
+ * after a change to them or to the pay's links (D154), or null when it has none.
+ */
+function basisNow(
+  context: Context,
+  payday: { prepared: PreparedSeries; payment: PaymentOnDays },
+): PaydayBasis | null {
+  const id = payday.prepared.series.id;
+  const series =
+    (context.draft.get(seriesWrite(id, null)) as Series | null) ?? payday.prepared.series;
+  const profile =
+    series.payProfileId === undefined
+      ? null
+      : (context.draft.get({
+          kind: 'pay-profile',
+          id: series.payProfileId,
+          value: null,
+        }) as PayProfile | null);
+  const steps = payday.prepared.cycle?.length ?? 1;
+  const weekId =
+    series.cyclePayWeeks?.[stepOf(payday.payment.number, payday.prepared.cycleOffset, steps)];
+  const week =
+    weekId === undefined
+      ? null
+      : (context.draft.get({ kind: 'pay-week', id: weekId, value: null }) as PayWeek | null);
+  return profile === null || week === null ? null : { profile, week };
+}
+
+/**
+ * Works out every saved overtime and missed shift again on its payday, from
+ * the pay profiles, pay weeks and pay links as they are now in this edit
+ * (D140, D154), so they always match what they're worked out from. One whose
+ * payday has no pay profile or pay week any more stays as it is, as when
+ * another on its payday is removed. Refused when a missed shift would then
+ * take off more extras than the payday has (D130).
+ */
+export function reworkPayAdjustments(context: Context): void {
+  const groups = new Map<string, PayAdjustment[]>();
+  for (const { id } of context.checked.pay.adjustments.values()) {
+    const now = context.draft.get(adjustmentWrite(id, null)) as PayAdjustment | null;
+    if (now === null) continue;
+    const key = JSON.stringify([now.familyId, now.number]);
+    groups.set(key, [...(groups.get(key) ?? []), now]);
+  }
+  for (const group of groups.values()) {
+    const { familyId, number } = group[0] as PayAdjustment;
+    const payday = paydayByNumber(context, familyId, number);
+    const basis = payday === null ? null : basisNow(context, payday);
+    if (payday === null || basis === null) continue;
+    refuseTooMuchExtras(payday, basis.week, group);
+    saveAll(context, workOutPayday(payday, basis, group));
   }
 }
