@@ -52,8 +52,17 @@ export interface PayslipCheck {
 }
 
 /**
+ * Figures a payslip can show 1p away from the calculator without anything
+ * being wrong: some payroll software uses HMRC's National Insurance tables,
+ * which can differ from the exact percentage method by 1p, and take-home pay
+ * with it (brief 8.6, D140).
+ */
+const ONE_PENNY_ALLOWED: ReadonlySet<PayslipFigure> = new Set(['nationalInsurance', 'takeHome']);
+
+/**
  * Works out what the payslip should show from its pay lines and settings,
- * and lists every figure typed in that differs, with how much by.
+ * and lists every figure typed in that differs, with how much by. National
+ * Insurance and take-home pay 1p away aren't listed (D140).
  */
 export function checkPayslip(
   input: TakeHomeInput,
@@ -66,12 +75,13 @@ export function checkPayslip(
     const onPayslip = payslip[figure];
     if (onPayslip === undefined) continue;
     checkPence(onPayslip, `The payslip's ${figure}`);
-    if (onPayslip !== expected[figure]) {
+    const difference = onPayslip - expected[figure];
+    if (difference !== 0 && !(ONE_PENNY_ALLOWED.has(figure) && Math.abs(difference) <= 1)) {
       differences.push({
         figure,
         expected: expected[figure],
         onPayslip,
-        difference: onPayslip - expected[figure],
+        difference,
       });
     }
   }
