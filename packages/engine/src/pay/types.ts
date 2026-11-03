@@ -83,11 +83,16 @@ export type CoveredTo =
    * month's last day when the month is shorter. The payday's month is the
    * month of its date from the schedule, before any weekend or bank holiday
    * move. Pay on the last working day covering work up to the 15th: Thu 31
-   * Dec 2026 covers up to Tue 15 Dec.
+   * Dec 2026 covers up to Tue 15 Dec. With `monthBefore`, it's that day of
+   * the month before: pay on the 5th for work up to the 28th of last month (D142).
    */
-  | { readonly kind: 'day-of-month'; readonly day: number }
-  /** Monthly pay: up to the last day of the payday's month. */
-  | { readonly kind: 'last-day' }
+  | { readonly kind: 'day-of-month'; readonly day: number; readonly monthBefore?: true }
+  /**
+   * Monthly pay: up to the last day of the payday's month, or with
+   * `monthBefore` of the month before: "Fri 5 Dec pays for work up to Mon 30
+   * Nov" (D142).
+   */
+  | { readonly kind: 'last-day'; readonly monthBefore?: true }
   /**
    * Any other pay: up to this many days before the payday's date from the
    * schedule, before any weekend or bank holiday move, 0 to 62. Sam's is 5:

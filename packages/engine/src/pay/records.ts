@@ -63,14 +63,18 @@ function checkCoveredTo(coveredTo: CoveredTo, what: string): void {
       if (!whole(coveredTo.day, 1, 31)) {
         bad('bad-pay-profile', `${what}: the last day covered is a day of the month, 1 to 31.`);
       }
-      return;
+      break;
     case 'last-day':
-      return;
+      break;
     default:
       bad(
         'bad-pay-profile',
         `${what}: the last day covered is a day of the month, the last day, or days before payday.`,
       );
+  }
+  // Monthly pay can cover work up to a day of the month before (D142).
+  if (coveredTo.monthBefore !== undefined && coveredTo.monthBefore !== true) {
+    bad('bad-pay-profile', `${what}: monthBefore is true, or left out.`);
   }
 }
 

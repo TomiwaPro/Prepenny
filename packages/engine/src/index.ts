@@ -171,7 +171,12 @@ export {
   type PayslipFigure,
   takeHomeAsEstimate,
 } from './pay/payslip.ts';
-export { lastDayCovered, type PayChange, workOutPayChange } from './pay/shifts.ts';
+export {
+  coveredToFromDates,
+  lastDayCovered,
+  type PayChange,
+  workOutPayChange,
+} from './pay/shifts.ts';
 export {
   checkStudentLoans,
   studentLoanDeduction,
