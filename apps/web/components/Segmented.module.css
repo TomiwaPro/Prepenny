@@ -1,0 +1,60 @@
+.group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-inner);
+  background: var(--sunk);
+}
+
+.option {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-align: center;
+  cursor: pointer;
+}
+
+/* The picked one stands out as a card, with its word in navy, never by colour alone: it's bold too. */
+.option:has(.input:checked) {
+  background: var(--card);
+  color: var(--accent-text);
+  font-weight: 700;
+  border-color: var(--button-border);
+}
+
+.option:has(.input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/*
+ * The radio button itself is hidden from sight but still there for the
+ * keyboard and screen readers. A tap anywhere on its word lands on the label.
+ */
+.input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
