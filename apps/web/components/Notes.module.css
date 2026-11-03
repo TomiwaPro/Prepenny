@@ -1,0 +1,15 @@
+.note {
+  border-radius: var(--radius-inner);
+  padding: var(--space-3) 14px;
+  font-size: var(--size-second);
+  font-weight: 500;
+}
+
+.example {
+  background: var(--card);
+  border: 1px solid var(--brass);
+}
+
+.offline {
+  background: var(--sunk);
+}

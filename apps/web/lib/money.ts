@@ -1,0 +1,39 @@
+// Money as people read it (brief Part 6, VOICE.md): £ and pence, a proper
+// minus sign (U+2212) and commas between thousands. Amounts are whole pence
+// from the engine; nothing here uses floating point for money.
+
+import type { Pence } from '@prepenny/engine';
+
+/** The proper minus sign, never a hyphen (VOICE.md). */
+export const MINUS = '−';
+
+export interface MoneyOptions {
+  /**
+   * `negative` (the default) shows a minus sign below zero only. `always`
+   * also shows a plus sign above zero, for money coming in on a payment row.
+   */
+  readonly sign?: 'negative' | 'always';
+  /**
+   * Leaves off ".00" for a whole number of pounds, for a warning level in a
+   * sentence: "keep at least £20" (D166). Figures and rows always show pence.
+   */
+  readonly wholePounds?: boolean;
+}
+
+/** "£1,024.60", "−£30.00", "+£500.00" with `sign: 'always'`, "£20" with `wholePounds`. */
+export function formatMoney(pence: Pence, options: MoneyOptions = {}): string {
+  if (!Number.isSafeInteger(pence)) {
+    throw new RangeError('An amount must be whole pence.');
+  }
+  const size = Math.abs(pence);
+  const pounds = Math.floor(size / 100);
+  const pennies = size % 100;
+  const grouped = pounds.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const amount =
+    options.wholePounds === true && pennies === 0
+      ? `£${grouped}`
+      : `£${grouped}.${pennies.toString().padStart(2, '0')}`;
+  if (pence < 0) return `${MINUS}${amount}`;
+  if (pence > 0 && options.sign === 'always') return `+${amount}`;
+  return amount;
+}

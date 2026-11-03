@@ -1,0 +1,16 @@
+// Hosting on Cloudflare Workers (D68): the static export in out/, served as
+// it is, with no code of our own running on Cloudflare. A preview link for
+// each pull request comes from `wrangler versions upload` in
+// .github/workflows/deploy.yml.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "prepenny",
+  "compatibility_date": "2026-10-19",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./out",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

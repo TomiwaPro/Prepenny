@@ -1,0 +1,41 @@
+.card {
+  margin: 0;
+  border: 0;
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: 14px 16px 6px;
+  min-width: 0;
+}
+
+/* The legend sits inside the card, as a heading. */
+.legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+.hint {
+  clear: both;
+  padding: var(--space-1) 0 var(--space-2);
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  border-top: 1px solid var(--divider);
+  font-size: var(--size-name);
+  cursor: pointer;
+}
+
+.option input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--accent-text);
+}

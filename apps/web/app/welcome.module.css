@@ -1,0 +1,60 @@
+.page {
+  max-width: var(--column);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--space-6) var(--gutter);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.name {
+  font-size: var(--size-key-figure);
+  font-weight: 700;
+  color: var(--accent-text);
+  letter-spacing: -0.2px;
+}
+
+.tagline {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.description {
+  font-size: var(--size-name);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-3);
+}
+
+.button {
+  display: flex;
+  border: 1px solid var(--navy);
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-height);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-inner);
+  background: var(--navy);
+  color: var(--on-navy);
+  font-size: var(--size-name);
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+}
+
+.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-height);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  color: var(--accent-text);
+  font-size: var(--size-name);
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+}

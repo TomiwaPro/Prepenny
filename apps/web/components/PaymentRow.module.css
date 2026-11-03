@@ -1,0 +1,84 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--divider);
+}
+
+.tile {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: var(--radius-inner);
+  background: var(--sunk);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.day {
+  font-size: var(--size-name);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 12px, the smallest size allowed (DESIGN.md), not the sample's 11px. */
+.month {
+  font-size: var(--size-label);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.middle {
+  flex: 1 1 6rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.name {
+  font-size: var(--size-name);
+  font-weight: 600;
+}
+
+.second {
+  font-size: var(--size-small);
+  color: var(--ink-muted);
+}
+
+.right {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+
+.amount {
+  font-size: var(--size-name);
+  font-weight: 600;
+}
+
+.in {
+  color: var(--money-in);
+}
+
+/* "£12.54 left", with its Tight or Short pill under it. */
+.leftLine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.left {
+  font-size: var(--size-small);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}

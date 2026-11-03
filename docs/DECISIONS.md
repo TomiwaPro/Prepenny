@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 onwards were decided while building step 2a, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 onwards were decided while building step 2b, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -1621,3 +1621,203 @@ The fixture plans now look exactly as the commands would build them, and every f
 - Dee's payments were made on Tue 27 Oct, so her October Universal Credit, due on Wed 28 Oct, could be added. Her balance on 27 Oct is £121.22, which gives her £427.40 on Mon 2 Nov once her Universal Credit, wages, rent and council tax have gone in and out.
 
 Why: the owner's test 2 builds each plan from empty with the commands and expects exactly the records in the fixture files.
+
+## From the owner's review of step 2a
+
+D158 to D163 were agreed by the owner on 3 Nov 2026, answering the six questions left at the end of step 2a. Each is built in the step that uses it.
+
+### D158. An account is closed only at £0.00
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Answers the question in D151 and adds to it. Built in step 2f, with the account screens.
+
+- An account can be closed only when the plan shows £0.00 in it at the end of today, as well as nothing planned in it (D151).
+- When money is left, the app offers one tap: "Move £3.12 to another account first". That adds a transfer today from this account to one the person picks, for the whole amount left. Then the account can be closed.
+- The engine refuses to close an account with money left in it, so no phone can do it by mistake.
+
+Why: the owner's answer. Money never quietly drops out of the plan.
+
+### D159. "The last day" of the month: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Confirms the second point of D142. Built in step 2a; setup uses it in step 2e.
+
+When the last day of work picked for monthly pay is a month's last day, it follows each month's end: "Fri 5 Dec pays for work up to Mon 30 Nov" means January's pay covers work to Thu 31 Dec and March's to Sun 28 Feb. Any other day stays that day each month.
+
+Why: the owner confirmed it.
+
+### D160. Payments link to debts and goals only, for now
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Answers the question in D153. Changes ARCHITECTURE.md 3.3, which listed a linked budget on a payment.
+
+- A payment can be linked to a debt or a savings goal. Linking a payment to a budget is left for later.
+- The records keep room for it: the Phase 3 database keeps an empty `budget_id` beside `debt_id` and `goal_id` on each payment, so it can be added without starting again. "Add a payment" (step 2d) offers only debts and goals.
+
+Why: the owner's answer. A budget already puts its own money in the plan (D107), so a linked payment would count the same money twice until a rule for it is agreed.
+
+### D161. Changing a budget part-way through: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Confirms the second and fifth points of D152. Built in step 2a; the budget sheet uses it in step 2f.
+
+- A new amount counts from this week or month, the period with today in it. Periods that have ended keep what they had: Sam's Travel, £25.00 with £7.00 left last week, changed to £30.00 on Sun 25 Oct, is £30.00 + £7.00 this week.
+- A budget with spending recorded can't switch to or from a pay-later card. The person ends it and adds a new one.
+
+Why: the owner confirmed it.
+
+### D162. Overtime is worked out again when its pay week changes: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Confirms the fifth point of D154. Built in step 2a; "I did overtime" uses it in step 2d.
+
+When the tax code, the year so far or the usual week changes, every overtime and missed shift saved on it, on a payday still to come that's still an estimate, is worked out again.
+
+Why: the owner confirmed it. A figure worked out from a week that has since changed would put a wrong amount in the plan.
+
+### D163. Setup can't skip the account and balance
+
+Agreed 3 Nov 2026, from the owner's review of step 2a. Replaces "every step can be skipped" in brief 4.1 for the first step of setup. Built in step 2e.
+
+- In setup, the account and balance step can't be skipped, because every plan starts from a balance (D85, D151). Someone who only wants budgets still types one balance.
+- Every other step can be skipped and changed later (brief 4.1).
+- "Look at an example plan" still needs no balance: it's Sam's plan (D15).
+
+Why: the owner's answer. A plan with no balance can't show anything left after a payment.
+
+## Made during step 2b
+
+D164 to D175 were decided on 3 Nov 2026 while building step 2b. D164 waits for the owner's approval, and the questions are in `PLAN.md`.
+
+### D164. Dark mode colours, the text box border and the focus outline (proposed)
+
+Decided 3 Nov 2026 in step 2b. Proposed for the owner's approval (DESIGN.md: "Propose its values in Phase 2"). Adds to DESIGN.md.
+
+Dark mode uses the same roles as light mode. Two roles are new: **Navy as text** (links, outlined buttons, the wordmark and the active navigation item, `#14213D` in light mode, as the approved sample has them) and the two lines DESIGN.md left to choose.
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| Paper (page background) | #F4EFE6 | #0E1424 |
+| Card | #FFFDF8 | #172036 |
+| Sunk (date tiles) | #EFE8DA | #212B44 |
+| Ink (main text) | #1A2238 | #F2ECE0 |
+| Ink muted (second lines) | #4A5060 | #B9B2A3 |
+| Navy (main button, balance card) | #14213D | #22345E |
+| Navy raised (block inside the balance card) | #22304F | #2E4272 |
+| Text on navy | #F4EFE6 | #F4EFE6 |
+| Muted text on navy | #C9BFA8 | #D3C9B3 |
+| Brass (lines only) | #A8864B | #B08E55 |
+| Row dividers | #EDE5D6 | #27314B |
+| Card edges | #E3D9C6 | #2C3752 |
+| Button borders | #D9D2C3 | #3B4662 |
+| Active navigation pill | #E6E2D6 | #2B3757 |
+| Money in | #1E6B3A | #74CC92 |
+| Tight | #7A4E00 on #FBF0D9 | #F2C46A on #3B2D0F |
+| Short | #A1281E on #FBE4E1 | #FFB2A6 on #4B1D18 |
+| Navy as text | #14213D | #F2ECE0 |
+| **Text box border** (new) | #7A7365 | #8790A6 |
+| **Focus outline** (new) | #14213D | #F4EFE6 |
+
+- Every text pair passes WCAG 2.2 AA at 4.5:1 in both modes. The lowest in dark mode is Ink muted on the active navigation pill, 5.57:1; in light mode the lowest is still Money in on Sunk, 5.35:1.
+- The text box border passes 3:1 against Paper, Card and Sunk: 3.86:1 at its lowest in light mode (on Sunk) and 4.40:1 in dark (on Sunk). The focus outline is 3px wide, 2px outside the control, and passes 3:1 against all three: 13.10:1 and 12.28:1 at their lowest.
+- `apps/web/test/unit/colours.test.ts` reads the colours from `apps/web/styles/tokens.css` and checks every pair, so a changed colour can't slip through.
+- Dark mode follows the phone. The More screen also has Colours: Match this phone, Light or Dark (D173).
+
+Why: DESIGN.md asks for dark mode values and the two lines in Phase 2, for the owner's approval. Dark mode keeps navy and cream: a deep navy page, cream text, and a lighter navy for the balance card and main button so they still stand out.
+
+### D165. What's in Sam's example plan
+
+Decided 3 Nov 2026 in step 2b. Adds to D15 and D133.
+
+- The example plan is brief 8.1 and 8.2 with the D15 names, exactly the engine's tested fixture, plus Sam's pay profile and his three pay weeks from brief 8.6, linked to his pay as in step 1f, so "I did overtime" works on it in step 2d. None of these changes a figure.
+- It has no budgets and no savings goals, because brief 8.2 has none: his food is the monthly "Pay-later card (food)" payment brief 8.2 lists. Whether the example should show a budget and a goal is a question for the owner in `PLAN.md`.
+- It lives in `apps/web/data/example-plan.ts`, and a test proves its records are exactly the fixture's. It's saved in the phone's database on first open. Its version is a fingerprint of its records, so whenever they change, every phone replaces its copy the next time the app opens.
+- The phone's database keeps each record's place among its kind, so lists come back in the order they were made: the first account added stays first.
+
+Why: the example and the brief's tests stay the same plan (D15), and every figure on Home comes out of the engine, not out of the screen.
+
+### D166. A warning level in a sentence has no ".00"
+
+Decided 3 Nov 2026 in step 2b. Adds to VOICE.md.
+
+A warning level inside a sentence is written in whole pounds when it has no pence: "keep at least £20", "Under £20 from Mon 26 Oct." Every other amount shows its pence: figures, rows and amounts in sentences, such as "Spend no more than £22.54".
+
+Why: the owner's wording for Home and the Home sketch write the warning level as £20, and it's a round number the person chose, while amounts that line up in columns always need their pence (brief Part 6).
+
+### D167. Home looks 3 months ahead
+
+Decided 3 Nov 2026 in step 2b. Adds to brief 4.8 and 4.9. A question for the owner in `PLAN.md`.
+
+Home works the plan out to the same date 3 months after today, or that month's last day when it's shorter: Sun 25 Oct 2026 looks to Mon 25 Jan 2027. That's the Plan screen's default (brief 4.8: "Three months shown by default"), so Lowest point ahead on Home and on the Plan screen always agree. Left to spend counts to the next payday whatever the view (D143).
+
+Why: the brief doesn't say how far ahead Home's lowest point looks. For Sam it's £4.53 on Sun 1 Nov whichever way, but for a yearly bill, such as Priya's car insurance, it decides whether Home warns months early.
+
+### D168. Home's account, "This pay has to cover" and "Next due"
+
+Decided 3 Nov 2026 in step 2b. Adds to brief 4.9.
+
+- Home shows one account: the one the main pay arrives in, otherwise the first current account, otherwise the first account. For Sam, his current account.
+- "This pay has to cover" is that account's first pay period (D84) from today: "Going out by" its last day, with every row going out in it, transfers out included; and "Coming in", its Came in. It's shown only when the plan has pay periods: with no main pay, or after the main pay stops (D144), there's no pay to cover anything.
+- "Next due" is that account's next three rows from today that aren't ticked, coming in or going out, in the plan's order, each with what's left after it and a Tight or Short pill when it's under. A row's second line is its date, with ", estimate" when it is one. Money coming in is green, with a plus sign (brief Part 6). With nothing due, it says "Nothing is due up to Mon 25 Jan 2027.", the last day Home looks at (D167).
+
+Why: brief 4.9 asks for "what this pay has to cover" and "the next three things due" without saying which account or which rows. Sam's figures (£721.07, £500.00, and the three rows) are the owner's.
+
+### D169. The font files
+
+Decided 3 Nov 2026 in step 2b. Adds to D23 and DESIGN.md.
+
+Figtree comes from the Fontsource package (`@fontsource/figtree` 5.3.0), weights 400, 500, 600 and 700, the Latin set only, which has every English letter, the £ sign, the proper minus sign and tabular figures. Next.js serves the files from PrePenny's own site, beside the app's other files, rather than from a `public/fonts` folder as ARCHITECTURE.md 5 sketched. Letters outside the Latin set, such as ł, fall back to the phone's own font.
+
+Why: the files come from one pinned package instead of copies in the repository, and Next.js adds the matching fallback font sizes so the page doesn't jump when Figtree arrives.
+
+### D170. The engine's background worker is built on its own
+
+Decided 3 Nov 2026 in step 2b. Adds to ARCHITECTURE.md 2.8 point 7.
+
+- The worker that runs the engine is built by esbuild into one file before Next.js builds the app (`apps/web/scripts/build-worker.ts`). Its name has a fingerprint of its contents, such as `/engine-worker-913faec53e82.js`, so a page can only ever start the worker it was built with, even while a newer version of the app arrives.
+- Home waits up to 20 seconds for an answer. If none comes, or the worker fails, Home says "Your plan couldn't be worked out. Close PrePenny and open it again." instead of waiting for ever.
+
+Why: Next.js's own workers read their settings from the end of their web address. When the offline helper serves the file from the phone, that part is lost and the worker can't start, so Home would fail on every visit after the first. The end-to-end test that opens the app with no signal found it. The fingerprint and the time limit came from the outside review.
+
+### D171. Patched versions for four tool packages
+
+Decided 3 Nov 2026 in step 2b. Adds to D77.
+
+`pnpm audit` found 11 known problems, all in packages used only by the build and test tools (Serwist's build step and Wrangler's local server), none in anything that runs on a phone. `pnpm-workspace.yaml` pins patched versions: zod 4.6.7, undici 7.30.1, glob 14.0.2 and minimatch 11.0.1. `pnpm audit` now finds none, and the build and every test pass.
+
+Why: brief 7.2 asks for a dependency and security check. Each fix is the smallest version that has the patch.
+
+### D172. The exact versions for the app
+
+Decided 3 Nov 2026 in step 2b. Adds to D56 and D77.
+
+Next.js 16.4.3, React and React DOM 19.3.1, Dexie 4.4.7, Serwist 9.5.13, Fontsource Figtree 5.3.0, Playwright 1.64.1, axe for Playwright 4.14.0, Wrangler 4.151.3, esbuild 0.28.2, fake-indexeddb 6.2.6, and the React types 19.3.0, all pinned exactly. Next.js 16.4.4 and 16.4.5 came out on 2 and 3 Nov, so 16.4.3 (23 Oct) is used, and `pnpm audit` lists no problem in it. Node is 24.22.2, as before.
+
+Why: the same rule as D77: the same versions everywhere, changed only on purpose, and nothing brand new.
+
+### D173. Light or Dark on this phone
+
+Decided 3 Nov 2026 in step 2b. Adds to ARCHITECTURE.md 3.8.
+
+More has Colours: Match this phone (the default), Light or Dark. The choice is kept in the browser's own small store on this phone, not in the plan's database, so the page is drawn in the right colours from the very first moment.
+
+Why: the plan's database opens a moment after the page appears, so a choice kept there would flash the wrong colours first.
+
+### D174. The offline note, while nothing is sent anywhere
+
+Decided 3 Nov 2026 in step 2b. Replaces the offline note's wording in ARCHITECTURE.md 4.5 until Phase 3.
+
+Until Phase 3, the offline note says "You're offline. PrePenny keeps working with what's on this phone." From Phase 3, when changes are sent to the server, it says what ARCHITECTURE.md 4.5 has: "You're offline. Changes are saved on this phone and will be sent when you're back online."
+
+Why: in Phase 2 nothing is sent anywhere, so saying changes "will be sent" wouldn't be true. It doesn't say "your plan is saved" either: the example isn't the person's plan, and in some private windows nothing can be saved.
+
+### D175. Smaller choices on Home and the parts
+
+Decided 3 Nov 2026 in step 2b. Adds to DESIGN.md and the Home sketch in ARCHITECTURE.md 4.6.
+
+- Home's top line is the PrePenny name, as in the approved sample; "Home" is its heading for screen readers. The sample's "?" help button waits for the help sheets in Phase 4 (brief 4.16).
+- A row's Tight or Short pill sits under "£12.54 left", so the row fits at 320px.
+- The balance and the lowest point grow with the phone's text size, up to the widest they can be on one line in their card, worked out from Figtree's own character widths. At 200% text the lowest point reaches its full 60px, and the balance reaches 63px at 320px wide and 73px at 360px, where 92px wouldn't fit on one line.
+- The actions are always 2 by 2, on a phone or a laptop, unless big text needs the room: then each has its own row.
+- When something goes wrong while drawing a screen, PrePenny shows its own screen, "This screen couldn't be shown", with "Try again" and "Go to Home", and no details of the problem.
+- Spacing keeps to DESIGN.md's 4px scale, so the sample's 10px and 11px gaps are 12px, and Left to spend's amount is 17px, the section heading size, where the sample had 18px.
+- A page at `/app/parts/`, not linked from the app, shows every part with the example's figures, including a Short lowest point worked out by the engine (D69's case), the undo bar, the offline note and a sheet, for checking the look. It's removed before launch.
+- Hosting: Cloudflare serves the built files as they are, with a security policy that allows no script, font or connection from anywhere but PrePenny's own site. Next.js's own small scripts are written into each page, so the policy has to allow scripts written into pages; listing each one instead is for Phase 4. A pull request's preview link is `pr-<number>-prepenny.<your workers.dev name>.workers.dev/app/`.
+- The live app is updated from `main` only after GitHub's checks have passed on that exact commit. The very first time, before anything is merged, a pull request's version also goes live once, but only when Cloudflare says the app doesn't exist yet; any other problem stops the workflow with Cloudflare's own message. The Cloudflare key is given only to the steps that use it.
+
+Why: each follows the sample, DESIGN.md or the brief where they didn't say exactly, and keeps every screen working at 320px and at 200% text (D37). The last five points came from the outside review.

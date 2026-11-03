@@ -1,2 +1,13 @@
 packages:
+  - apps/*
   - packages/*
+allowBuilds:
+  esbuild: true
+  workerd: true
+# Patched versions of packages used only by build and test tools, for
+# advisories found by `pnpm audit` on 3 Nov 2026 (D171).
+overrides:
+  zod: 4.6.7
+  undici@7: 7.30.1
+  glob: 14.0.2
+  minimatch: 11.0.1

@@ -1,0 +1,40 @@
+.card {
+  container-type: inline-size;
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* 30px, growing with the phone's text size as far as the card allows on one line (D175). */
+.figure {
+  font-size: min(var(--size-key-figure), calc(100cqi / var(--figure-width, 4)));
+  line-height: 1.2;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  font-size: var(--size-body);
+}
+
+.context {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}

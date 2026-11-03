@@ -1,0 +1,50 @@
+.nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: var(--card);
+  border-top: 1px solid var(--card-edge);
+  padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: var(--column);
+  margin: 0 auto;
+}
+
+.link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 3.25rem;
+  border-radius: var(--radius-inner);
+  text-decoration: none;
+  color: var(--ink-muted);
+  font-size: var(--size-label);
+  font-weight: 600;
+  text-align: center;
+}
+
+.link[aria-current="page"] {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 28px;
+  border-radius: 14px;
+}
+
+.link[aria-current="page"] .pill {
+  background: var(--nav-active);
+}

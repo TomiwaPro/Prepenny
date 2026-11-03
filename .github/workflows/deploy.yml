@@ -1,0 +1,133 @@
+name: Deploy
+
+# Puts the app online with Cloudflare Workers (D68):
+# - the live app, from main, only after the Check workflow has passed on it
+# - a preview link for every pull request, posted on it.
+# Needs two secrets, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: see
+# "Putting PrePenny online" in README.md. Until they're added, it builds the
+# app and says plainly that nothing was put online.
+
+on:
+  workflow_run:
+    workflows: [Check]
+    types: [completed]
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: deploy-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    # bash -eo pipefail: a failing command fails its step, even inside a pipe.
+    shell: bash
+
+jobs:
+  deploy:
+    name: Put the app online
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The live app only from main once its checks have passed, or by hand from
+    # main. Previews only for pull requests from this repository, because
+    # other people's copies never get the secrets.
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+        with:
+          # For the live app, exactly the commit the checks passed on.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up pnpm (the version in package.json)
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Build the app
+        run: pnpm build
+
+      - name: Check Cloudflare is set up
+        id: cloudflare
+        env:
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAS_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ] || [ "$HAS_ACCOUNT" != "true" ]; then
+            echo "::warning title=Not put online::Cloudflare isn't set up yet, so nothing was put online. Follow 'Putting PrePenny online' in README.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Put the live app online
+        if: steps.cloudflare.outputs.ready == 'true' && github.event_name != 'pull_request'
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: pnpm exec wrangler deploy --message "Commit ${COMMIT::7}"
+
+      - name: Upload a preview of this pull request
+        id: preview
+        if: steps.cloudflare.outputs.ready == 'true' && github.event_name == 'pull_request'
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NUMBER: ${{ github.event.number }}
+        run: |
+          # A preview needs the app to exist on Cloudflare. Only when Cloudflare
+          # says it doesn't exist yet (code 10007), the very first time, is
+          # this pull request's version put online once. Any other problem
+          # stops here and shows Cloudflare's own message.
+          if ! pnpm exec wrangler deployments list > deployments.log 2>&1; then
+            cat deployments.log
+            if grep -q "10007" deployments.log; then
+              echo "The app isn't on Cloudflare yet, so this version goes online once first."
+              pnpm exec wrangler deploy --message "First version, from pull request $NUMBER"
+            else
+              echo "::error title=Cloudflare refused::Cloudflare couldn't list the app's versions. Its message is above."
+              exit 1
+            fi
+          fi
+          pnpm exec wrangler versions upload --preview-alias "pr-$NUMBER" --message "Pull request $NUMBER" | tee upload.log
+          url=$(grep -oE "https://pr-$NUMBER-[a-z0-9.-]+\.workers\.dev" upload.log | head -n 1 || true)
+          if [ -z "$url" ]; then
+            echo "::error title=No preview link::Cloudflare didn't give a preview link. Its message is above."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Post the preview link on the pull request
+        if: steps.preview.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.number }}
+          URL: ${{ steps.preview.outputs.url }}
+        run: |
+          body="Preview of this pull request: $URL/app/
+
+          Open it on your phone to try it. It updates with every new commit."
+          gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" \
+            || gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"

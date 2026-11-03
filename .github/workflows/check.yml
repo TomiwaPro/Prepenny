@@ -1,6 +1,7 @@
 name: Check
 
-# Lint, type checks and tests on every push and pull request (brief 7.1).
+# Lint, type checks and unit tests, then the app's build and the end-to-end
+# tests on phone-sized screens, on every push and pull request (brief 7.1).
 
 on:
   push:
@@ -33,6 +34,8 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
       - name: Lint
         run: pnpm lint
@@ -42,3 +45,42 @@ jobs:
 
       - name: Tests
         run: pnpm test
+
+  end-to-end:
+    name: Build and end-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up pnpm (the version in package.json)
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Build the app
+        run: pnpm build
+
+      - name: Install the test browser
+        run: pnpm --filter @prepenny/web exec playwright install --with-deps chromium
+
+      - name: End-to-end tests at 320px and 360px
+        run: pnpm e2e
+
+      - name: Keep the test report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
