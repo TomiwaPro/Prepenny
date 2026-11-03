@@ -2,7 +2,6 @@
 // ARCHITECTURE.md 3.4). Hours, rates and percentages are exact decimals
 // written as text; money is whole pence.
 
-import type { Weekday } from '../dates/day.ts';
 import type { Pence } from '../money/pence.ts';
 import type { PayFrequency, StudentLoanPlan } from './tax-year.ts';
 
@@ -74,6 +73,29 @@ export interface PaySettings {
 }
 
 /**
+ * The last day of work a payday pays for (D131), asked once in setup: "Fri
+ * 6 Nov pays for work up to Sun 1 Nov". A shift is paid on the first payday
+ * whose last day covered is on or after the shift.
+ */
+export type CoveredTo =
+  /**
+   * Monthly pay: up to this day of the payday's month, 1 to 31, or the
+   * month's last day when the month is shorter. The payday's month is the
+   * month of its date from the schedule, before any weekend or bank holiday
+   * move. Pay on the last working day covering work up to the 15th: Thu 31
+   * Dec 2026 covers up to Tue 15 Dec.
+   */
+  | { readonly kind: 'day-of-month'; readonly day: number }
+  /** Monthly pay: up to the last day of the payday's month. */
+  | { readonly kind: 'last-day' }
+  /**
+   * Any other pay: up to this many days before the payday's date from the
+   * schedule, before any weekend or bank holiday move, 0 to 62. Sam's is 5:
+   * Fri 6 Nov covers up to Sun 1 Nov.
+   */
+  | { readonly kind: 'days-before'; readonly days: number };
+
+/**
  * A pay profile (ARCHITECTURE.md 3.4): one job's tax settings, the latest
  * payslip's year so far, and what "I did overtime" and "I missed a shift" need.
  */
@@ -83,10 +105,8 @@ export interface PayProfile extends PaySettings {
   readonly soFar?: YearSoFar;
   /** Remembered for "I did overtime" (brief 4.3): pounds an hour as text. */
   readonly overtimeRate?: string;
-  /** The first day of a working week, for finding the payday a shift is paid on (D5). */
-  readonly workWeekStarts?: Weekday;
-  /** How many weeks behind the shifts pay is: 1 for "My pay is one week behind my shifts". */
-  readonly weeksBehind?: number;
+  /** The last day of work each payday pays for, for finding the payday a shift is paid on (D131). */
+  readonly coveredTo?: CoveredTo;
 }
 
 /** A saved pay week (D5): the usual lines of one kind of week, such as "3-shift week". */
@@ -113,6 +133,12 @@ export interface PayAdjustment {
   readonly workedOn: string;
   readonly hours: string;
   readonly rate: string;
+  /**
+   * A change to the pay week's extras, such as its shift premium, bonus or
+   * allowance (D130): added for overtime, taken off for a missed shift.
+   * Above zero, or left out when the extras stay as they are.
+   */
+  readonly extras?: Pence;
   /** The change to the payday's take-home pay, worked out when it was saved (D5). Below zero for a missed shift. */
   readonly change: Pence;
   /** The tax year of the payday, "2026-27". */

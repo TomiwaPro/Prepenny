@@ -205,6 +205,13 @@ export type EditCommand =
        * first basic line.
        */
       readonly rate?: string;
+      /**
+       * An optional change to the payday's extras, such as its shift premium,
+       * bonus or allowance (D130): how much more for overtime, or how much
+       * less for a missed shift, as an amount above zero. Left out, or £0.00,
+       * the extras stay as they are. Refused when the pay has no extras.
+       */
+      readonly extras?: Pence;
     }
   /** Removes a saved "I did overtime" or "I missed a shift". */
   | { readonly kind: 'remove-pay-adjustment'; readonly id: string }

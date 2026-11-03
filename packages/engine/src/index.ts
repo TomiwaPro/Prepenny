@@ -170,7 +170,7 @@ export {
   type PayslipFigure,
   takeHomeAsEstimate,
 } from './pay/payslip.ts';
-export { type PayChange, shiftPaidFrom, workOutPayChange, workWeekStart } from './pay/shifts.ts';
+export { lastDayCovered, type PayChange, workOutPayChange } from './pay/shifts.ts';
 export {
   checkStudentLoans,
   studentLoanDeduction,
@@ -204,6 +204,7 @@ export {
   taxYearsOf,
 } from './pay/tax-year.ts';
 export {
+  type CoveredTo,
   type EstimateReason,
   type FixedPay,
   type OtherDeduction,

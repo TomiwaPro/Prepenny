@@ -372,11 +372,11 @@ describe('owner test 3: a pay-later budget in place of the Pay-later card (food)
     );
     const left = current(plan).leftToSpend;
     expect(left?.payLater).toEqual([{ budgetId: 'food', left: 8000, until: '2026-11-28' }]);
-    // The £80.00 on the card isn't in Left to spend: it's the same as with no
-    // food budget at all. The £30.00 this test had on Sun 25 Oct can't stay
-    // with today on Sun 8 Nov: Left to spend runs to Thu 12 Nov, and Sam has
-    // no spending money due then, so both are £0.00. The owner is asked to
-    // confirm this (step 1f).
+    // The £80.00 on the card isn't in Left to spend. On Sun 8 Nov, Left to
+    // spend runs to Thu 12 Nov, and Sam's spending money for that week left
+    // on payday, Fri 6 Nov, so it's £0.00, as the owner confirmed (D129).
+    // It's the same as with no food budget at all.
+    expect([left?.until, left?.amount]).toEqual(['2026-11-13', 0]);
     const noFood = workOutPlan(samPlan({ series: samSeriesWithoutFood, today: '2026-11-08' }));
     expect(left?.amount).toBe(current(noFood).leftToSpend?.amount);
     // The card's spends never leave the bank account: the bill is still £200.00.
