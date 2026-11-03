@@ -1559,7 +1559,8 @@ Decided 3 Nov 2026 in step 2a. Adds to brief 4.5, D30, D107 and D110.
 - A budget starts today or later, like a payment's next date (D86, D150), and its amount is above zero.
 - A new amount counts from the period with today in it. Periods that have ended keep the amount they had, for roll-over and pay-later bills: Sam's Travel, £25.00 with £7.00 left last week, changed to £30.00 on Sun 25 Oct, is £30.00 + £7.00 this week. This is a question for the owner in `PLAN.md`.
 - Switching roll-over on counts from today (D110), and switching it off clears that day.
-- How it leaves can change between all at the start and spread across the days at any time. Changing to or from a pay-later bill, or changing the bill day, is refused once it has spends or a bill with a tick or a change, because they'd count differently (D61). It's ended and a new budget added instead.
+- How it leaves can change between all at the start and spread across the days at any time.
+- A change that moves a pay-later budget's bills (to or from a pay-later bill, a new bill day, or a new statement day for the card) is refused once its first bill has come, or a bill has a tick or a change, because a bill is found by its date (D111) and pays for its statement period's spends (D61). To or from a pay-later bill, and a new bill day, are refused once it has spends too. It's ended and a new budget added instead. A change that would make a bill dated before today is refused, as a payment is (D150).
 - Ending a budget sets its last period: the one with the end date in it, today or later.
 
 Why: a budget's past periods are settled (D2, D67), and changing the past would change what rolled over and what a bill was planned at.
@@ -1585,7 +1586,8 @@ Decided 3 Nov 2026 in step 2a. Adds to D5, D123, D130, D131 and D140.
 - A pay profile's last day covered must suit its pay: a day of the month for monthly pay, days before payday otherwise (D131, D142). Setup works it out from the payday and the last day picked.
 - A pay week has at least one line or one extra, and no hours, rate or extra below zero. Its extras are its fixed pay, such as a shift premium (D130).
 - Pay is linked to its pay profile and pay weeks for its whole family: each series gets the pay weeks when its pattern has that many steps.
-- Changing a pay profile, a pay week or the pay's links works out every overtime and missed shift saved on them again, so they always match what they're worked out from, as D140 does when one is removed. This is a question for the owner in `PLAN.md`.
+- Changing a pay profile, a pay week or the pay's links works out every overtime and missed shift saved on them again, on paydays still to come that are still estimates, so they always match what they're worked out from, as D140 does when one is removed. An undo that puts them back does the same. Shifts on paydays that have gone, or that have their real amount (D44), stay as they were saved, and so do those on a payday a newer payslip's year so far already covers. This is a question for the owner in `PLAN.md`.
+- A new last day covered (D131) is refused while a shift saved on a payday still to come would then go on another payday. The person removes the shift and adds it again.
 
 Why: brief 4.15 names each job's settings and saved weeks, and an overtime figure worked out from a week that has since changed would put a wrong amount in the plan.
 
