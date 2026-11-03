@@ -82,6 +82,7 @@ export type PaymentMistake =
   | 'weeksError'
   | 'monthsError'
   | 'leaveOutError'
+  | 'leaveOutNext'
   | 'datesError'
   | 'howManyError'
   | 'lastDateError';
@@ -230,12 +231,8 @@ export function buildPayment(
     const every = wholeNumber(form.months, 1, 12);
     if (every === null) errors.months = 'monthsError';
     const leaveOut = form.leaveOut ? [...new Set(form.leftOut)].sort((a, b) => a - b) : [];
-    if (
-      date !== null &&
-      (leaveOut.length >= 12 || (leaveOut.length > 0 && leaveOut.includes(monthOf(date))))
-    ) {
-      errors.leaveOut = 'leaveOutError';
-    }
+    if (leaveOut.length >= 12) errors.leaveOut = 'leaveOutError';
+    else if (date !== null && leaveOut.includes(monthOf(date))) errors.leaveOut = 'leaveOutNext';
     if (every !== null && date !== null) {
       const on = monthlyChoices(date, holidays).includes(form.monthlyOn) ? form.monthlyOn : 'day';
       schedule = {

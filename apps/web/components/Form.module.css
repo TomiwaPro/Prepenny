@@ -338,11 +338,12 @@
 
 .tickAmount {
   margin-left: auto;
+  white-space: nowrap;
 }
 
 .months {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
   gap: 0 var(--space-3);
   margin: 0;
   padding: 0;

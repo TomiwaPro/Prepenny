@@ -284,14 +284,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await sheet.getByLabel('Hours').fill('11.5');
       await expect(sheet.getByText('At £19.07 an hour.')).toBeVisible();
       await expect(sheet.getByTestId('shift-preview')).toHaveText(
-        'This goes on your pay on Fri\u00a06\u00a0Nov: +£155.12, making it £773.58.',
+        'This adds £155.12 to your pay on Fri\u00a06\u00a0Nov, making it £773.58.',
       );
       // Week 27's lines have a shift premium, so the extras box shows (D130).
       await expect(sheet.getByLabel('Extras it adds, such as shift premium, if any')).toBeVisible();
       await noAxeProblems(page);
       await sheet.getByRole('button', { name: 'Save' }).click();
       await expect(sheet).toBeHidden();
-      await expect(undoBar(page)).toContainText('Overtime added to Fri\u00a06\u00a0Nov: +£155.12.');
+      await expect(undoBar(page)).toContainText(
+        'Overtime added. Your pay on Fri\u00a06\u00a0Nov goes up by £155.12.',
+      );
 
       await openPlan(page);
       await expect(rowIn(page, '2026-11-06', 'Pay')).toContainText('+£773.58');
@@ -310,13 +312,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await sheet.getByLabel('Hours').fill('11.5');
       await expect(sheet.getByText('At £12.71 an hour.')).toBeVisible();
       await expect(sheet.getByTestId('shift-preview')).toHaveText(
-        `This comes off your pay on Fri\u00a013\u00a0Nov: ${MINUS}£100.43, making it £368.63.`,
+        'This takes £100.43 off your pay on Fri\u00a013\u00a0Nov, making it £368.63.',
       );
       await noAxeProblems(page);
       await sheet.getByRole('button', { name: 'Save' }).click();
       await expect(sheet).toBeHidden();
       await expect(undoBar(page)).toContainText(
-        `Missed shift taken off Fri\u00a013\u00a0Nov: ${MINUS}£100.43.`,
+        'Missed shift added. Your pay on Fri\u00a013\u00a0Nov goes down by £100.43.',
       );
       await openPlan(page);
       await expect(rowIn(page, '2026-11-13', 'Pay')).toContainText('+£368.63');

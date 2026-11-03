@@ -236,6 +236,7 @@ export const strings = {
     leaveOut: 'Leave out some months',
     leaveOutLegend: 'Months to leave out',
     leaveOutError: 'Leave at least one month in.',
+    leaveOutNext: "Keep the next payment's month in.",
     chosenDates: 'The dates after that',
     addDate: 'Add a date',
     removeDate: (date: string) => `Remove ${date}`,
@@ -286,11 +287,12 @@ export const strings = {
     extrasOvertime: 'Extras it adds, such as shift premium, if any',
     extrasMissed: 'Extras it loses, such as shift premium, if any',
     extrasHint: 'Leave it empty if the extras stay the same.',
-    landsOn: (date: string, change: string, total: string) =>
-      `This goes on your pay on ${date}: ${change}, making it ${total}.`,
-    comesOff: (date: string, change: string, total: string) =>
-      `This comes off your pay on ${date}: ${change}, making it ${total}.`,
-    changesBy: (change: string) => `This changes your pay by ${change}.`,
+    adds: (amount: string, date: string, total: string) =>
+      `This adds ${amount} to your pay on ${date}, making it ${total}.`,
+    takesOff: (amount: string, date: string, total: string) =>
+      `This takes ${amount} off your pay on ${date}, making it ${total}.`,
+    addsNoDay: (amount: string) => `This adds ${amount} to your pay.`,
+    takesOffNoDay: (amount: string) => `This takes ${amount} off your pay.`,
   },
 
   undo: {
@@ -316,10 +318,14 @@ export const strings = {
     spentMonth: (amount: string, budget: string, spent: string, left: string) =>
       `${amount} spent on ${budget}. This month: ${spent} spent, ${left} left.`,
     added: (name: string) => `${name} added.`,
-    overtimeAdded: (date: string, change: string) => `Overtime added to ${date}: ${change}.`,
-    missedTakenOff: (date: string, change: string) => `Missed shift taken off ${date}: ${change}.`,
-    overtimeAddedNoDay: (change: string) => `Overtime added: ${change}.`,
-    missedTakenOffNoDay: (change: string) => `Missed shift taken off: ${change}.`,
+    overtimeAdded: 'Overtime added.',
+    missedAdded: 'Missed shift added.',
+    payUp: (what: string, date: string, amount: string) =>
+      `${what} Your pay on ${date} goes up by ${amount}.`,
+    payDown: (what: string, date: string, amount: string) =>
+      `${what} Your pay on ${date} goes down by ${amount}.`,
+    payUpNoDay: (what: string, amount: string) => `${what} Your pay goes up by ${amount}.`,
+    payDownNoDay: (what: string, amount: string) => `${what} Your pay goes down by ${amount}.`,
   },
 
   /** What the edit sheet says when the engine can't make a change (D87). Never the code itself. */

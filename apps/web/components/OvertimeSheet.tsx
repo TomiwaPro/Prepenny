@@ -82,6 +82,22 @@ function readRate(text: string): string | null {
   return RATE.test(rate) ? rate : null;
 }
 
+/**
+ * "This adds £155.12 to your pay on Fri 6 Nov, making it £773.58." The
+ * amounts have no sign, so a line never breaks between "+" and "£".
+ */
+function previewSentence(
+  result: Extract<PayPreview, { ok: true }>,
+  day: (date: string) => string,
+): string {
+  const amount = formatMoney(Math.abs(result.change));
+  const up = result.change >= 0;
+  if (result.payday === null || result.payAfter === null) {
+    return (up ? t.addsNoDay : t.takesOffNoDay)(amount);
+  }
+  return (up ? t.adds : t.takesOff)(amount, day(result.payday), formatMoney(result.payAfter));
+}
+
 /** "£19.07" for a rate the engine used. */
 function rateWords(rate: string): string {
   const pence = parseAmount(rate);
@@ -207,16 +223,7 @@ function ShiftFields({
   if (command !== null) {
     if (result === null) previewWords = strings.sheet.working;
     else if (!result.ok) previewWords = refusalMessage(result.code);
-    else {
-      const change = formatMoney(result.change, { sign: 'always' });
-      if (result.payday === null || result.payAfter === null) previewWords = t.changesBy(change);
-      else
-        previewWords = (kind === 'overtime' ? t.landsOn : t.comesOff)(
-          day(result.payday),
-          change,
-          formatMoney(result.payAfter),
-        );
-    }
+    else previewWords = previewSentence(result, day);
   }
 
   async function save() {
@@ -243,16 +250,13 @@ function ShiftFields({
       setProblem(refusalMessage(sure.code));
       return;
     }
-    const change = formatMoney(sure.change, { sign: 'always' });
+    const what = kind === 'overtime' ? strings.undo.overtimeAdded : strings.undo.missedAdded;
+    const amount = formatMoney(Math.abs(sure.change));
+    const up = sure.change >= 0;
     const message =
       sure.payday === null
-        ? kind === 'overtime'
-          ? strings.undo.overtimeAddedNoDay(change)
-          : strings.undo.missedTakenOffNoDay(change)
-        : (kind === 'overtime' ? strings.undo.overtimeAdded : strings.undo.missedTakenOff)(
-            day(sure.payday),
-            change,
-          );
+        ? (up ? strings.undo.payUpNoDay : strings.undo.payDownNoDay)(what, amount)
+        : (up ? strings.undo.payUp : strings.undo.payDown)(what, day(sure.payday), amount);
     const outcome = await makeChange(command, message);
     setBusy(false);
     if (outcome.ok) onDone();

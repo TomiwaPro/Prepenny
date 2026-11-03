@@ -26,7 +26,6 @@ import {
   type HowOften,
   type MonthlyOn,
   monthlyChoices,
-  monthOf,
   type PaymentErrors,
   type PaymentField,
   type PaymentForm,
@@ -381,7 +380,6 @@ function PaymentFields({
                       ref={index === 0 ? refs.leaveOut : undefined}
                       type="checkbox"
                       checked={form.leftOut.includes(month)}
-                      disabled={validDate && monthOf(form.date) === month}
                       onChange={(event) =>
                         set(
                           'leftOut',
