@@ -43,7 +43,7 @@ To look at the app on a computer while working on it, run `pnpm --filter @prepen
 The app is hosted on Cloudflare Workers (D68), on Cloudflare's free plan. GitHub puts it online by itself, with the **Deploy** workflow (`.github/workflows/deploy.yml`):
 
 - every pull request gets its own preview link, posted on the pull request as a comment, and updated with each new commit
-- every change merged into `main` goes to the live app.
+- every change merged into `main` goes to the live app, once GitHub's checks have passed on it.
 
 To deploy an update, merge its pull request. Nothing else is needed.
 

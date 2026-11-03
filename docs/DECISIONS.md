@@ -1726,7 +1726,8 @@ Decided 3 Nov 2026 in step 2b. Adds to D15 and D133.
 
 - The example plan is brief 8.1 and 8.2 with the D15 names, exactly the engine's tested fixture, plus Sam's pay profile and his three pay weeks from brief 8.6, linked to his pay as in step 1f, so "I did overtime" works on it in step 2d. None of these changes a figure.
 - It has no budgets and no savings goals, because brief 8.2 has none: his food is the monthly "Pay-later card (food)" payment brief 8.2 lists. Whether the example should show a budget and a goal is a question for the owner in `PLAN.md`.
-- It lives in `apps/web/data/example-plan.ts`, and a test proves its records are exactly the fixture's. It's saved in the phone's database on first open, and replaced when its version number changes.
+- It lives in `apps/web/data/example-plan.ts`, and a test proves its records are exactly the fixture's. It's saved in the phone's database on first open. Its version is a fingerprint of its records, so whenever they change, every phone replaces its copy the next time the app opens.
+- The phone's database keeps each record's place among its kind, so lists come back in the order they were made: the first account added stays first.
 
 Why: the example and the brief's tests stay the same plan (D15), and every figure on Home comes out of the engine, not out of the screen.
 
@@ -1752,7 +1753,7 @@ Decided 3 Nov 2026 in step 2b. Adds to brief 4.9.
 
 - Home shows one account: the one the main pay arrives in, otherwise the first current account, otherwise the first account. For Sam, his current account.
 - "This pay has to cover" is that account's first pay period (D84) from today: "Going out by" its last day, with every row going out in it, transfers out included; and "Coming in", its Came in. It's shown only when the plan has pay periods: with no main pay, or after the main pay stops (D144), there's no pay to cover anything.
-- "Next due" is that account's next three rows from today that aren't ticked, coming in or going out, in the plan's order, each with what's left after it and a Tight or Short pill when it's under. A row's second line is its date, with ", estimate" when it is one.
+- "Next due" is that account's next three rows from today that aren't ticked, coming in or going out, in the plan's order, each with what's left after it and a Tight or Short pill when it's under. A row's second line is its date, with ", estimate" when it is one. Money coming in is green, with a plus sign (brief Part 6). With nothing due, it says "Nothing is due up to Mon 25 Jan 2027.", the last day Home looks at (D167).
 
 Why: brief 4.9 asks for "what this pay has to cover" and "the next three things due" without saying which account or which rows. Sam's figures (£721.07, £500.00, and the three rows) are the owner's.
 
@@ -1768,9 +1769,10 @@ Why: the files come from one pinned package instead of copies in the repository,
 
 Decided 3 Nov 2026 in step 2b. Adds to ARCHITECTURE.md 2.8 point 7.
 
-The worker that runs the engine is built by esbuild into one file, `/engine-worker.js`, before Next.js builds the app (`apps/web/scripts/build-worker.ts`).
+- The worker that runs the engine is built by esbuild into one file before Next.js builds the app (`apps/web/scripts/build-worker.ts`). Its name has a fingerprint of its contents, such as `/engine-worker-913faec53e82.js`, so a page can only ever start the worker it was built with, even while a newer version of the app arrives.
+- Home waits up to 20 seconds for an answer. If none comes, or the worker fails, Home says "Your plan couldn't be worked out. Close PrePenny and open it again." instead of waiting for ever.
 
-Why: Next.js's own workers read their settings from the end of their web address. When the offline helper serves the file from the phone, that part is lost and the worker can't start, so Home would fail on every visit after the first. The end-to-end test that opens the app with no signal found it.
+Why: Next.js's own workers read their settings from the end of their web address. When the offline helper serves the file from the phone, that part is lost and the worker can't start, so Home would fail on every visit after the first. The end-to-end test that opens the app with no signal found it. The fingerprint and the time limit came from the outside review.
 
 ### D171. Patched versions for four tool packages
 
@@ -1800,9 +1802,9 @@ Why: the plan's database opens a moment after the page appears, so a choice kept
 
 Decided 3 Nov 2026 in step 2b. Replaces the offline note's wording in ARCHITECTURE.md 4.5 until Phase 3.
 
-Until Phase 3, the offline note says "You're offline. Your plan is saved on this phone, so everything here still works." From Phase 3, when changes are sent to the server, it says what ARCHITECTURE.md 4.5 has: "You're offline. Changes are saved on this phone and will be sent when you're back online."
+Until Phase 3, the offline note says "You're offline. PrePenny keeps working with what's on this phone." From Phase 3, when changes are sent to the server, it says what ARCHITECTURE.md 4.5 has: "You're offline. Changes are saved on this phone and will be sent when you're back online."
 
-Why: in Phase 2 nothing is sent anywhere, so saying changes "will be sent" wouldn't be true.
+Why: in Phase 2 nothing is sent anywhere, so saying changes "will be sent" wouldn't be true. It doesn't say "your plan is saved" either: the example isn't the person's plan, and in some private windows nothing can be saved.
 
 ### D175. Smaller choices on Home and the parts
 
@@ -1810,9 +1812,12 @@ Decided 3 Nov 2026 in step 2b. Adds to DESIGN.md and the Home sketch in ARCHITEC
 
 - Home's top line is the PrePenny name, as in the approved sample; "Home" is its heading for screen readers. The sample's "?" help button waits for the help sheets in Phase 4 (brief 4.16).
 - A row's Tight or Short pill sits under "£12.54 left", so the row fits at 320px.
-- The balance and the lowest point grow with the phone's text size, but never wider than their card, so a large balance at 200% text stays on one line.
-- Two buttons share a row unless big text needs the room; then each has its own.
+- The balance and the lowest point grow with the phone's text size, up to the widest they can be on one line in their card, worked out from Figtree's own character widths. At 200% text the lowest point reaches its full 60px, and the balance reaches 63px at 320px wide and 73px at 360px, where 92px wouldn't fit on one line.
+- The actions are always 2 by 2, on a phone or a laptop, unless big text needs the room: then each has its own row.
+- When something goes wrong while drawing a screen, PrePenny shows its own screen, "This screen couldn't be shown", with "Try again" and "Go to Home", and no details of the problem.
+- Spacing keeps to DESIGN.md's 4px scale, so the sample's 10px and 11px gaps are 12px, and Left to spend's amount is 17px, the section heading size, where the sample had 18px.
 - A page at `/app/parts/`, not linked from the app, shows every part with the example's figures, including a Short lowest point worked out by the engine (D69's case), the undo bar, the offline note and a sheet, for checking the look. It's removed before launch.
-- Hosting: Cloudflare serves the built files as they are, with a security policy that allows no script, font or connection from anywhere but PrePenny's own site. A pull request's preview link is `pr-<number>-prepenny.<your workers.dev name>.workers.dev/app/`. The very first time, before anything is merged, the pull request's version also goes live once, because Cloudflare needs a live app before it can make previews.
+- Hosting: Cloudflare serves the built files as they are, with a security policy that allows no script, font or connection from anywhere but PrePenny's own site. Next.js's own small scripts are written into each page, so the policy has to allow scripts written into pages; listing each one instead is for Phase 4. A pull request's preview link is `pr-<number>-prepenny.<your workers.dev name>.workers.dev/app/`.
+- The live app is updated from `main` only after GitHub's checks have passed on that exact commit. The very first time, before anything is merged, a pull request's version also goes live once, but only when Cloudflare says the app doesn't exist yet; any other problem stops the workflow with Cloudflare's own message. The Cloudflare key is given only to the steps that use it.
 
-Why: each follows the sample, DESIGN.md or the brief where they didn't say exactly, and keeps every screen working at 320px and at 200% text (D37).
+Why: each follows the sample, DESIGN.md or the brief where they didn't say exactly, and keeps every screen working at 320px and at 200% text (D37). The last five points came from the outside review.
