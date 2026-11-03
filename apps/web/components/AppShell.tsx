@@ -45,22 +45,26 @@ function ChangeBar() {
     if (lastChange !== null) setRefused(null);
   }, [lastChange]);
 
-  if (lastChange === null && refused === null) return null;
-  const message = refused ?? lastChange?.message ?? '';
+  const message = refused ?? lastChange?.message ?? null;
   const canUndo = refused === null && lastChange?.edit !== null && lastChange?.edit !== undefined;
+  // The live region is always on the page, so screen readers hear each new message.
   return (
-    <UndoBar
-      key={lastChange?.id}
-      message={message}
-      {...(canUndo
-        ? {
-            onUndo: async () => {
-              const outcome = await undoLastChange();
-              if (!outcome.ok) setRefused(refusalMessage(outcome.code));
-            },
-          }
-        : {})}
-    />
+    <div role="status">
+      {message === null ? null : (
+        <UndoBar
+          announce={false}
+          message={message}
+          {...(canUndo
+            ? {
+                onUndo: async () => {
+                  const outcome = await undoLastChange();
+                  if (!outcome.ok) setRefused(refusalMessage(outcome.code));
+                },
+              }
+            : {})}
+        />
+      )}
+    </div>
   );
 }
 
