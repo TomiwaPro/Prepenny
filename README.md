@@ -47,6 +47,8 @@ The app is hosted on Cloudflare Workers (D68), on Cloudflare's free plan. GitHub
 
 To deploy an update, merge its pull request. Nothing else is needed.
 
+The live app is at https://prepenny.prepenny.workers.dev/app/ (set up by the owner on 3 Nov 2026, D195).
+
 ### Setting it up the first time (the owner does this once)
 
 GitHub needs permission to put the app on your Cloudflare account. Cloudflare changes its menus now and then, so a label may be slightly different from these.
