@@ -10,4 +10,5 @@ apps/web/test-results/
 apps/web/playwright-report/
 apps/web/.wrangler/
 *.tsbuildinfo
-apps/web/public/engine-worker.js
+apps/web/public/engine-worker*.js
+apps/web/.env*.local
