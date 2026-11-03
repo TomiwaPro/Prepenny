@@ -109,6 +109,36 @@ describe('"I spent" (D115)', () => {
       edits: { amount: -100 },
     });
   });
+
+  it('takes today or an earlier day only (D119)', () => {
+    // Today is Sun 25 Oct: Mon 26 Oct is refused, Sun 25 and Sat 24 Oct are fine.
+    refusedWith('spend-after-today', sam, {
+      kind: 'spend',
+      spend: { ...coffee, spentOn: '2026-10-26' },
+    });
+    refusedWith('spend-after-today', sam, {
+      kind: 'change-spend',
+      spendId: 'bus-25-oct',
+      edits: { spentOn: '2026-10-26' },
+    });
+    expect(() => editPlan(sam, { kind: 'spend', spend: coffee })).not.toThrow();
+    expect(() =>
+      editPlan(sam, { kind: 'spend', spend: { ...coffee, spentOn: '2026-10-24' } }),
+    ).not.toThrow();
+  });
+
+  it('still changes the amount of a stored spend dated after today, without a new day (D119, D85)', () => {
+    // In a shared plan, a partner whose today is already Mon 26 Oct can record a spend that day.
+    const tomorrow = samSpend('bus-26-oct', '2.00', '2026-10-26', '2026-10-25T23:30:00Z');
+    const withIt = { ...sam, spends: [...(sam.spends ?? []), tomorrow] };
+    expect(() => plan(withIt)).not.toThrow();
+    const { after } = edited(withIt, {
+      kind: 'change-spend',
+      spendId: 'bus-26-oct',
+      edits: { amount: pounds('2.50') },
+    });
+    expect(after.spends?.find((one) => one.id === 'bus-26-oct')?.amount).toBe(250);
+  });
 });
 
 describe('a pay-later bill as a payment (D32, D111)', () => {

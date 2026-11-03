@@ -249,7 +249,7 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
   - Set aside moves part of money coming in to another account the same day, and goes with its payment (D113).
   - Savings goals: saved so far from ticked payments, and the date the plan reaches the target (D114).
   - "I spent", changing and removing a spend are undoable edits (D115).
-  - Three questions wait for the owner in `PLAN.md`: whether money set aside is ticked on its own, two points about the "Spend no more than" line, and whether "I spent" takes a date after today.
+  - The owner answered the three questions left at the end of step 1e, and the answers were built in step 1f (D116 to D119): money set aside has its own tick; when even spending nothing goes under the warning level, the line says "You'll go under £20 on Mon 26 Oct, even if you spend nothing."; "Spend no more than" counts only the spending money due by each day; and "I spent" takes only today or an earlier date.
 
 ### 2.6 Debts
 
@@ -280,6 +280,12 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
 - **The tax year file:** one data file per tax year (`2026-27.json`) holding every rate and threshold, with the GOV.UK source link written in it (brief 4.15). **Agreed (D45):** the admin check starts warning on 1 March if the file for the tax year starting in April is missing.
 - **Overtime** (D5): the change to the payday is take-home with the overtime minus take-home without it, using the payday's linked pay week. 11.5 h × £19.07 on week 27's lines raises that payday by £155.23 (within £1). On week 26's lines it gives £150.89, which is how Fri 30 Oct became £603.06.
 - **Agreed (D44):** "I did overtime" and "I missed a shift" change a payday only while it's an estimate. Once the real amount is typed in, the real amount stands.
+- **Built in step 1f** (D120 to D128):
+  - Every figure comes from GOV.UK. A GitHub workflow saves the GOV.UK pages listed in `sources/gov-uk.txt` unchanged in `sources/gov-uk/`, with the date each was fetched, and only fetches from www.gov.uk and GOV.UK's own files that those pages link to (D120).
+  - Income tax follows HMRC's Specification for PAYE tax table routines, version 24.0, step by step, for every kind of tax code (D121). National Insurance uses the exact percentage method and HMRC's rounding (D122). Both give HMRC's own 2026-27 test data to the penny.
+  - "I did overtime" and "I missed a shift" are pay adjustments, found by the pay's family and the payday's payment number (D123), on the first payday on or after the shift's working week moved on by the weeks pay is behind (D125).
+  - The year so far is exact from the payslip just before. Otherwise the pay periods in between count as this payday's pay, or for overtime as the payday's own pay week, and the result is an estimate (D124).
+  - Pension is a percentage of the earnings in a band, before or after tax; other deductions come off after tax (D126). One of student loan Plans 1, 2, 4 and 5, and a Postgraduate loan (D127). The tax year file and the check are D128.
 
 ### 2.8 Speed: 24 months of 100 series in under 50 milliseconds
 
@@ -309,6 +315,7 @@ The engine has a built-in copy of the official list from `https://www.gov.uk/ban
 - **Pure:** no `Date.now()`, no `Math.random()`, no network, no storage. A lint rule blocks them inside the package.
 - **Debts** (step 1d, `packages/engine/src/debts`): `workOutDebts({ debts, series, changes, ticks, holidays, today, to }) → { owedNow, owedNowIsEstimate, debts }`, one `DebtPlan` per debt with Left now (with `interestSinceUpdate`, `leftNowIsEstimate` and `interestNotIncluded`, D104), Paid off on or `leftAtEnd`, progress and every row (linked payments and credit card statement days). A card's `zeroInterestUntil` is its "0% until" date (D106). Use `to: debtsLookAhead(today)` for the Debts screen (D43, D100). `compareCardPayments({ card, left, from, paysOn, fixed })` gives the minimum, fixed and full comparison (D102). Debt amounts are the debt's own minor units (`MinorUnits`); `leftNowInPounds` and `owedNow` are pence. A series links to a debt with `debtId`; a tick made inside a debt's statement update has `inDebtUpdate` set to the debt's id (D62).
 - **Budgets, Left to spend and Set aside** (step 1e, `packages/engine/src/budgets`): `PlanInput` takes optional `budgets`, `spends` and `goals`. `workOutPlan` gives back `plan.budgets` (one `BudgetPlan` per budget: `current` and `periods`, each with `base`, `rolledOver`, `amount`, `spent`, `left`, `perDay` for spread budgets and `bill` for pay-later ones) and `account.leftToSpend` (`until`, `amount`, `lowest`, `spendNoMoreThan`, `canKeepWarningLevel` and the `payLater` lines). Every `PlanRow` has a `kind`: `payment`, `bill`, `set-aside`, `budget` or `spend`, with `budgetId` and `spendId`. A pay-later budget's bills are a series made inside the engine with the budget's id (`billSeriesOf`), so ticks, changes and edits find them like any payment. A series' `setAside` is `{ percent, accountId }`.
+- **Take-home pay** (step 1f, `packages/engine/src/pay`): `workOutTakeHome({ settings, lines, fixed, payDate, soFar, assumedPayBetween }) → TakeHome` with gross, pension, pay for tax, tax, National Insurance, student loan, Postgraduate loan, other deductions, take-home, the year so far after it, the tax the regulatory limit held back, and `isEstimate` with its reason (D124). `checkPayslip(input, payslip)` lists each figure that differs and by how much; `takeHomeAsEstimate(payday, result)` is the `just-this-one` edit that adds it to the plan. Tax year files are JSON in `src/pay/tax-years`, checked by `checkTaxYear`; `taxYearsOf()` gives the built-in ones and `checkTaxYearFiles(today)` the needed and missing ones (D45, D128). The tax itself is `taxForPeriod` with `parseTaxCode` (D121), National Insurance `employeeNationalInsurance` (D122), student loans `studentLoanDeduction` (D127). `PlanInput` and the edit records take optional `payProfiles`, `payWeeks` and `payAdjustments`; a series links with `payProfileId` and `cyclePayWeeks`. The edit commands `overtime`, `missed-shift` and `remove-pay-adjustment` save a `pay-adjustment` record (D123, D125). A payday that's an estimate adds its adjustments to its amount and shows them in `payment.payAdjustment`.
 - **Savings goals** (step 1e, `packages/engine/src/goals`): `workOutGoals({ goals, series, changes, ticks, holidays, today, to }) → { goals }`, one `GoalPlan` per goal with saved so far, progress, `reachedOn` and `reachedWith`, and every linked payment. Use `to: debtsLookAhead(today)` to look 24 months ahead (D114). A series links to a goal with `goalId`.
 - **Edits** are commands: `editPlan(input, command) → { writes, undo }`, where `input` is the stored records (accounts, balance updates, series, changes, ticks and, from step 1d, debts) with the main pay, the bank holidays and `today`. Built in step 1c, in `packages/engine/src/edit`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
   - Commands: `just-this-one`, `this-and-later`, `remove-this-one`, `remove-this-and-later`, `move`, `move-to-next-payday`, `tick`, `untick`, `update-balance`, `update-from-statement` (step 1d), `spend`, `change-spend` and `remove-spend` (step 1e) and `undo`. A pay-later bill takes every payment command except `this-and-later` and `remove-this-and-later` (D111). A `this-and-later` edit takes `amount` for "Every payday from now" (D90) or `stepAmount` for "Only this week of the pattern" (D97), never both. For a new date, the app sends only `date`, and the engine works out the schedule from it (D96, `src/edit/new-date.ts`). A `schedule` in the command is for a later "how often" change.
@@ -496,6 +503,7 @@ Changes and ticks have their own `id` in the database (3.1), but the engine find
 | `ticked_at` | time | Compared with the balance update's time (D33) |
 | `in_balance_update` | id, or empty | Set when ticked inside the Update balance steps, so it counts as before that update (D33) |
 | `in_debt_update` | id, or empty | The debt, when ticked inside its Update from statement steps, so it counts as before that update for that debt (D62, D103) |
+| `set_aside` | yes/no | The tick of the payment's money set aside, which is ticked on its own (D116) |
 | `ticked_by` | person id | Either person can tick (brief 4.14) |
 | `source` | choice: typed, bank | "bank" is ready for bank connections (3.10) |
 
@@ -577,8 +585,9 @@ Planned transfers into a goal are series with `goal_id` set.
 | `pension_when` | choice: before tax, after tax | |
 | `student_loans` | list: Plan 1, Plan 2, Plan 4, Plan 5, Postgraduate | |
 | `other_deductions` | list of name and pence | |
+| `ni_category` | choice | The National Insurance category letter, A unless the payslip says otherwise (D122) |
 | `gross_so_far`, `tax_so_far` | pence | "Gross for tax so far" and "Tax paid so far" from the last payslip |
-| `so_far_period` | number | Which tax week or month those figures include |
+| `so_far_period`, `so_far_tax_year` | number, text | Which tax week or month, and tax year, those figures include (D124) |
 | `overtime_rate` | decimal | Remembered for "I did overtime" (brief 4.3) |
 | `work_week_starts` | weekday | The first day of a working week, for matching a shift to its payday |
 | `shift_pay_delay` | number | How many weeks after the shift's working week it's paid. Sam's is 1: "My pay is one week behind my shifts" |
@@ -596,8 +605,8 @@ Planned transfers into a goal are series with `goal_id` set.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `series_id` | id | The pay series |
-| `original_date` | date | The payday it lands on |
+| `family_id` | id | The pay series' family (D49). **Built in step 1f (D123):** found by family and payment number, not series and original date, so a split or a new date never loses it |
+| `payment_number` | number | The payday it lands on (D125) |
 | `kind` | choice: overtime, missed shift | |
 | `worked_on` | date | The day of the shift |
 | `hours`, `rate` | decimal | |
@@ -1501,6 +1510,10 @@ prepenny/
     help/                Help centre articles in Markdown (brief 7.1)
     legal/               Privacy notice, terms and accessibility statement drafts
     emails/              Wording for every email
+  sources/
+    gov-uk.txt           The GOV.UK addresses the tax figures come from (D120)
+    gov-uk/              Each page and HMRC file saved unchanged, with the date
+                         it was fetched, by the Fetch sources workflow
   scripts/               Checks: banned words and long dashes, no money in logs,
                          tax year file, bank holiday refresh
   docs/                  BRIEF, DECISIONS, VOICE, DESIGN, ARCHITECTURE
@@ -1656,6 +1669,15 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | "I spent", changing and removing a spend are each one undo; a pay-later bill is ticked, moved and given its real amount, but not changed for this and all later ones | D111, D115 | 1e |
 | Property: budget periods follow on with no gaps; what's left leaves in full from today; spread days add up; spends after the update are rows and those before aren't; bills are the budget or what was spent; Left to spend follows D3 and D28; record order changes nothing; spend and bill edits are undone exactly | D2, D3, D28, D30, D31, D32, D115 | 1e |
 | Property: a credit card's Left now matches a second working of the interest since the update | D104 | 1e |
+| Money set aside has its own tick: ticking the pay leaves it unticked, and it can be ticked, unticked, split and undone on its own | D116 | 1f |
+| With £217.54 on Sun 25 Oct: "You'll go under £20 on Mon 26 Oct, even if you spend nothing." Owner test 2 gives "Spend no more than £17.55", owner test 1 £16.54 and test 32 £22.54 | D117, D118 | 1f |
+| "I spent" refuses a date after today; owner test 3 with today Sat 28 Nov and Sun 8 Nov | D119 | 1f |
+| Every figure in the 2026-27 tax year file has its www.gov.uk source link and agrees with the GOV.UK pages; the tax year check warns on Mon 1 Mar 2027 without a 2027-28 file and not on Sun 28 Feb 2027 | 4.15, D45, D128 | 1f |
+| HMRC's 2026-27 payroll test data, every row used, to the penny: income tax for the rest of the UK, Scotland and Wales, National Insurance category A for every pay period, and every student loan plan | D121, D122, D127 | 1f |
+| Week 29's worked check: £10,732.73 − 29 × £241.92 = £3,717.05, so £3,717, £743.40 so far and £140.20 this week | 8.6 | 1f |
+| Worked by hand: an emergency code on week 1/month 1, a monthly salary, a pension after tax, Plan 2 on a payslip, a K code held to half the pay, week 53, and pay every 2 weeks | 8.6, D121, D124, D126 | 1f |
+| "I missed a shift" on Tue 3 Nov comes off Fri 13 Nov (−£100.43), and changes nothing once that payday's real amount is typed in | D44, D123, D125 | 1f |
+| Property: take-home is gross less every deduction; no payday takes more than half its pay in tax; week by week gives the same tax as no year so far when every week pays the same; overtime shift by shift adds up to all at once | D121, D124 | 1f |
 
 **After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
 

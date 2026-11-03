@@ -9,6 +9,7 @@ import type { Debt } from '../debts/types.ts';
 import type { Goal } from '../goals/types.ts';
 import type { MinorUnits } from '../money/currency.ts';
 import type { Pence } from '../money/pence.ts';
+import type { PayAdjustment, PayProfile, PayWeek } from '../pay/types.ts';
 import type { PaymentChange, Schedule, Series } from '../schedule/types.ts';
 
 /** Everything stored for a plan that an edit can read or change. */
@@ -26,6 +27,12 @@ export interface PlanRecords {
   readonly spends?: readonly Spend[];
   /** Savings goals (brief 4.7). When they're given, every series' link to a goal is checked too. */
   readonly goals?: readonly Goal[];
+  /** Pay profiles (brief 4.15). When they're given, every series' link to one is checked too. */
+  readonly payProfiles?: readonly PayProfile[];
+  /** Saved pay weeks (D5). */
+  readonly payWeeks?: readonly PayWeek[];
+  /** "I did overtime" and "I missed a shift" (D5, D44). */
+  readonly payAdjustments?: readonly PayAdjustment[];
 }
 
 /** What an edit needs: the stored records, the plan's settings and today. */
@@ -96,6 +103,8 @@ export interface ThisAndLaterEdits {
 export interface TickInUpdate extends PaymentRef {
   /** When it was ticked, a UTC time such as "2026-10-30T09:15:00Z". */
   readonly tickedAt: string;
+  /** Ticks the payment's money set aside instead of the payment (D116). */
+  readonly setAside?: true;
 }
 
 /** One edit the person makes. */
@@ -129,9 +138,11 @@ export type EditCommand =
       readonly tickedAt: string;
       /** The id of the balance update whose steps it's ticked in, if it is (D33). */
       readonly inBalanceUpdate?: string;
+      /** Ticks the payment's money set aside instead of the payment (D116). */
+      readonly setAside?: true;
     })
-  /** Unticks a payment: its tick is removed. */
-  | (PaymentRef & { readonly kind: 'untick' })
+  /** Unticks a payment, or with `setAside` its money set aside: the tick is removed. */
+  | (PaymentRef & { readonly kind: 'untick'; readonly setAside?: true })
   /**
    * A new balance update (brief 4.2, D33), with anything ticked in its steps,
    * so the whole Update balance is one undo step (D87).
@@ -172,6 +183,31 @@ export type EditCommand =
     }
   /** Removes a spend (D115). */
   | { readonly kind: 'remove-spend'; readonly spendId: string }
+  /**
+   * "I did overtime" or "I missed a shift" (brief 4.3, D5, D44): finds the
+   * payday the shift is paid on, works out take-home pay with and without it
+   * from that payday's pay week, and saves the difference as a pay
+   * adjustment. Refused once that payday's real amount is in.
+   */
+  | {
+      readonly kind: 'overtime' | 'missed-shift';
+      /** The id for the new pay adjustment. The engine can't make ids. */
+      readonly id: string;
+      /** A series of the pay, usually the main pay. */
+      readonly seriesId: string;
+      /** The day of the shift, "YYYY-MM-DD". */
+      readonly workedOn: string;
+      /** Hours as text, above zero, such as "11.5". */
+      readonly hours: string;
+      /**
+       * Pounds an hour as text. Overtime uses the pay profile's overtime rate
+       * when it's left out; a missed shift uses the rate of the pay week's
+       * first basic line.
+       */
+      readonly rate?: string;
+    }
+  /** Removes a saved "I did overtime" or "I missed a shift". */
+  | { readonly kind: 'remove-pay-adjustment'; readonly id: string }
   /** Puts back the records from before an earlier edit, as a new edit (ARCHITECTURE.md 2.3). */
   | { readonly kind: 'undo'; readonly edit: Edit };
 
@@ -179,8 +215,9 @@ export type EditCommand =
  * One record as an edit leaves it: saved with `value`, or removed when
  * `value` is null. In an undo list, null means the record didn't exist.
  *
- * Series, balance updates, debts and spends are found by id. Changes and ticks are found by
- * series and original date, as everywhere in the engine (brief 5.2, D87).
+ * Series, balance updates, debts, spends and pay adjustments are found by id. Changes and ticks are found by
+ * series and original date, as everywhere in the engine (brief 5.2, D87), and a tick
+ * also by whether it's for the money set aside (D116).
  */
 export type RecordWrite =
   | { readonly kind: 'series'; readonly id: string; readonly value: Series | null }
@@ -194,11 +231,14 @@ export type RecordWrite =
       readonly kind: 'tick';
       readonly seriesId: string;
       readonly originalDate: string;
+      /** Set for the tick of the payment's money set aside (D116). */
+      readonly setAside?: true;
       readonly value: Tick | null;
     }
   | { readonly kind: 'balance-update'; readonly id: string; readonly value: BalanceUpdate | null }
   | { readonly kind: 'debt'; readonly id: string; readonly value: Debt | null }
-  | { readonly kind: 'spend'; readonly id: string; readonly value: Spend | null };
+  | { readonly kind: 'spend'; readonly id: string; readonly value: Spend | null }
+  | { readonly kind: 'pay-adjustment'; readonly id: string; readonly value: PayAdjustment | null };
 
 /**
  * One edit: one undo step, however many records it touched (brief 5.4).

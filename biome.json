@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/*.md", "!pnpm-lock.yaml", "!packages/engine/data"]
+    "includes": ["**", "!**/*.md", "!pnpm-lock.yaml", "!packages/engine/data", "!sources/gov-uk"]
   },
   "formatter": {
     "enabled": true,

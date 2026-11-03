@@ -53,7 +53,13 @@ export function paymentAt(context: Context, prepared: PreparedSeries, index: num
     index,
     number: prepared.firstNumber + index,
     originalDate: formatDate(prepared.dateAt(index)),
-    payment: paymentAtIndex(prepared, index, context.checked.changes, context.input.holidays),
+    payment: paymentAtIndex(
+      prepared,
+      index,
+      context.checked.changes,
+      context.input.holidays,
+      context.checked.pay.index,
+    ),
   };
 }
 

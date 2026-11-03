@@ -1,0 +1,7 @@
+{
+  "source": "https://www.gov.uk/api/search.json?q=national+insurance+exact+percentage+method&count=20",
+  "fetched_from": "https://www.gov.uk/api/search.json?q=national+insurance+exact+percentage+method&count=20",
+  "content_type": "application/json",
+  "fetched_on": "2026-11-01",
+  "sha256": "02e60cafa5b64161ee20e7b252e1c3de2a22b9d9e5fbcb3ce047c03ac5bc0979"
+}

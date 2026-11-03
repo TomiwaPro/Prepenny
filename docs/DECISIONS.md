@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -27,6 +27,8 @@ The rules for the "spread across the days" and "pay-later bill" options must be 
 Why: the plan and the bank always agree.
 
 ### D3. Left to spend this week
+
+The sum for X is replaced by D118, and the line when even spending nothing goes under the warning level by D117.
 
 The main number is this period's spending money (budgets, plus payments of the type Spending money) minus what has been spent.
 
@@ -998,7 +1000,7 @@ Why: many cards start with a 0% offer, and working out interest at the normal ra
 
 ## Made during step 1e
 
-D107 to D115 were decided on 1 Nov 2026 while building step 1e. Three questions for the owner are in `PLAN.md`: whether money set aside is ticked on its own (D113), two points about the "Spend no more than" line (D112), and whether "I spent" takes a date after today (D109).
+D107 to D115 were decided on 1 Nov 2026 while building step 1e. The owner answered its three questions the same day: D116 to D119.
 
 ### D107. Budgets
 
@@ -1025,6 +1027,8 @@ Decided 1 Nov 2026 in step 1e. Adds to D29.
 Why: D29 says how budget periods line up with pay, and these are the cases it didn't cover, worked out the same way as plan periods (D84).
 
 ### D109. Budgets and the bank balance, in more detail
+
+The third point is replaced by D119.
 
 Decided 1 Nov 2026 in step 1e. Adds to D2, D33 and D67.
 
@@ -1063,6 +1067,8 @@ Why: the bill is what leaves the bank account, so it needs a tick and a real amo
 
 ### D112. Left to spend, in more detail
 
+The sum for X in the third point is replaced by D118, and D117 adds the line for when even spending nothing goes under the warning level.
+
 Decided 1 Nov 2026 in step 1e. Adds to D3 and D28.
 
 - Left to spend is worked out for each account. It counts the rows dated from today to the day before the next main payday that are budget rows, or payments of the type Spending money not ticked yet. Spends already recorded, pay-later bills and anything already ticked aren't in it.
@@ -1075,6 +1081,8 @@ Test (owner test 1): Left to spend until Fri 30 Oct is £45.00, £30.00 spending
 Why: these follow D3 and D28. Two points about the line are questions for the owner in `PLAN.md`.
 
 ### D113. Set aside, in more detail
+
+The point that money set aside is ticked with its payment is replaced by D116.
 
 Decided 1 Nov 2026 in step 1e. Adds to D64.
 
@@ -1110,3 +1118,149 @@ Decided 1 Nov 2026 in step 1e. Adds to D87.
 - Changing a spend keeps the time it was recorded, so it stays inside the same balance update, or outside it (D33).
 
 Why: brief Part 3, principle 4 says every change can be undone, and D87 says one engine function makes every edit.
+
+## From the owner's review of step 1e
+
+D116 to D119 were agreed by the owner on 1 Nov 2026, answering the questions left in `PLAN.md` at the end of step 1e. They were built in step 1f.
+
+### D116. Money set aside gets its own tick
+
+Agreed 1 Nov 2026, from the owner's review of step 1e. Replaces the point of D113 that money set aside is ticked with its payment.
+
+- Money set aside has a tick of its own, separate from the tick of the pay it comes from. Ticking Kofi's £400.00 on Mon 2 Nov leaves the £100.00 for his Tax account unticked, so it still moves on its date, and shows in Not ticked yet once that date has passed, until he ticks it.
+- The tick is stored as its own record, for the same series and original date, marked as the money set aside's. A set-aside tick for pay with no money set aside is ignored, like any tick with no payment (D83).
+- Ticking, unticking, ticks inside Update balance, splits, removals and undo treat a set-aside tick exactly like a payment's tick. "Remove this and later" is refused while either is ticked (D92). A set-aside tick can't be made inside Update from statement, because money set aside never pays a debt.
+- A removed payment whose money set aside is ticked still moves that money, because the tick says it really moved (D83).
+- Debts and savings goals use only payments' own ticks.
+
+Why: the money set aside only leaves the account when the person moves it. Ticked with its pay, the plan would count it in both accounts until then.
+
+### D117. "You'll go under £20 on Mon 26 Oct, even if you spend nothing."
+
+Agreed 1 Nov 2026, from the owner's review of step 1e. Adds to D3 and D112.
+
+When even spending none of Left to spend takes the balance under the warning level before the next main payday, the line under Left to spend says "You'll go under £20 on Mon 26 Oct, even if you spend nothing." instead of "Spend no more than £0.00". The date is the first day from today when that day's end balance, plus the spending money due by that day, is under the warning level (D10).
+
+Test: Sam's plan with £217.54 on Sun 25 Oct instead of £267.54: he's at −£7.46 on Mon 26 Oct even spending none of his £30.00, so the line gives Mon 26 Oct.
+
+Why: "Spend no more than £0.00 to keep at least £20" wouldn't be true, because even £0.00 doesn't keep £20.
+
+### D118. "Spend no more than" counts only the spending money due by each day
+
+Agreed 1 Nov 2026, from the owner's review of step 1e. Replaces the sum for X in D3 and D112.
+
+X is the smallest value, over each day from today to the day before the next main payday, of (that day's end balance + the Left to spend due by that day − the warning level), and never below 0. The line still appears only when spending all of Left to spend would take the balance under the warning level.
+
+Tests: owner test 2 (Travel spread across the days) gives £17.55: Mon 26 Oct ends at £1.15 with £36.40 of spending money due by then, so £1.15 + £36.40 − £20.00. Owner test 1 still gives £16.54 and test 32 still £22.54.
+
+Why: spending money due after the lowest day can't be spent before it, so counting it would let someone spend money that takes them under their warning level.
+
+### D119. "I spent" takes only today or an earlier date
+
+Agreed 1 Nov 2026, from the owner's review of step 1e. Replaces the third point of D109.
+
+- The I spent sheet takes today or an earlier date. The engine refuses a new spend dated after today, and a change that moves a spend to a day after today.
+- A spend already stored with a later date is still worked out by the plan, and can still have its amount or note changed. In a shared plan, a partner's today can be a day ahead (D85).
+- Owner test 3 moves "today" to after the spends: Sat 28 Nov 2026 for the £230.00 case and Sun 8 Nov 2026 for the £120.00 case. Every expected figure stays the same except one: in the £120.00 case, Left to spend is £0.00, not £30.00, because on Sun 8 Nov it runs to Thu 12 Nov and Sam has no spending money due then. The test checks that the pay-later card's £80.00 still isn't in Left to spend by comparing with the same plan without the food budget. This is a question for the owner in `PLAN.md`.
+
+Why: a spend dated after today and recorded before the next Update balance would count as already inside that balance, although the money hasn't gone yet.
+
+## Made during step 1f
+
+D120 was agreed by the owner on 1 Nov 2026 while step 1f was being built. D121 to D128 were decided on 1 Nov 2026 while building step 1f. The questions for the owner are in `PLAN.md`.
+
+### D120. Where the tax figures come from
+
+Agreed by the owner on 1 Nov 2026, during step 1f. Adds to brief 4.15.
+
+- Every figure in a tax year file comes from GOV.UK, never from memory or another site. The build container can't reach GOV.UK, so a GitHub workflow (`.github/workflows/fetch-sources.yml`) fetches the addresses listed in `sources/gov-uk.txt` and saves each page unchanged in `sources/gov-uk/`, with a small file beside it giving the address, the date it was fetched and a checksum. It commits them back to the branch it ran on.
+- It contacts only www.gov.uk, and GOV.UK's own file store, assets.publishing.service.gov.uk, for a file that one of the www.gov.uk pages on the list links to. Any other address, or a redirect anywhere else, is refused.
+- HMRC publishes the exact rules for tax-free pay (the Specification for PAYE tax table routines and Tables A), its National Insurance guidance for software developers and its payroll test data only as files on GOV.UK's file store, linked from www.gov.uk. The owner agreed they can be fetched that way.
+- GOV.UK pages change slightly every time they're fetched, so each run saves a fresh copy of every page with its date.
+
+Why: the brief asks for the figures from GOV.UK, and the exact rounding for tax-free pay is only in HMRC's own files.
+
+### D121. Income tax follows HMRC's PAYE tax table routines
+
+Decided 1 Nov 2026 in step 1f. Adds to brief 4.15.
+
+- Income tax follows HMRC's Specification for PAYE tax table routines, version 24.0, step by step, with the 2026-27 bands from its appendices for England and Northern Ireland, Scotland and Wales. Tax-free pay for week 1 is worked out from the code number in 500s and a remainder, each rounded up to the penny: 1257L is £49.60 + 2 × £96.16 = £241.92 a week. Thresholds are taken to 4 decimal places of a pound, taxable pay to date is rounded down to the pound, and tax down to the penny.
+- Codes: a number and L, M, N or T (including 0T), K codes, BR, D0 and the D codes above it up to the top rate, and NT, each with S for Scotland or C for Wales (there's no SNT or CNT). A code ending in W1, M1 or X is an emergency code and works on the week 1/month 1 basis. Any other letter is refused, with a message asking for the code as it is on the payslip.
+- No payday takes more than half its pay in tax (the regulatory limit), on every code. On the cumulative basis, the tax it holds back is taken later where it can be.
+- Pay every 2 weeks uses the tables for week 2 on the year's first payday, then week 4 and so on; pay every 4 weeks uses week 4, then 8 (CWG2 1.7). Week 53, 54 or 56 is worked out on its own with the tables for week 1, 2 or 4, and takes no tax when the free pay to week 52 covers the whole year's pay (CWG2 1.13).
+- HMRC's 2026-27 payroll test data for the rest of the UK, Scotland and Wales gives the same tax to the penny on every row.
+
+Why: HMRC's payroll software follows this specification, so following it exactly gives the payslip's own figures.
+
+### D122. National Insurance by the exact percentage method
+
+Decided 1 Nov 2026 in step 1f. Adds to brief 4.15.
+
+- Employee National Insurance uses the exact percentage method from HMRC's National Insurance guidance for software developers 2026 to 2027: the earnings from the primary threshold to the upper earnings limit at the category's main rate, rounded, plus the earnings above the limit at its upper rate, rounded. It's worked out on gross pay: a pension taken before tax doesn't lower it.
+- Rounding: HMRC looks only at the third decimal place of a pound, rounding down at 5 or less and up at 6 or more. Week 26's (£553.19 − £242) × 8% = £24.8952 is £24.89, as on Sam's payslip. HMRC's manual NIM11002 words the rule as "amounts of less than £0.005 are disregarded", but its software guidance and CWG2 say "£0.005 or less", and its own test data confirms that: £242.32 a week gives 2p, not 3p.
+- The thresholds for weekly, every 2 weeks, every 4 weeks and monthly pay are HMRC's own table. The category letter is A unless the payslip shows another.
+
+Why: it's the method HMRC prefers, and it matches all four of Sam's payslips to the penny.
+
+### D123. "I did overtime" and "I missed a shift" are pay adjustments
+
+Decided 1 Nov 2026 in step 1f. Adds to D5, D44 and ARCHITECTURE.md 3.4.
+
+- Each is saved as a pay adjustment with the change to take-home pay worked out when it's saved (D5). It's found by the pay series' family and the payday's payment number, not by series and original date, so a split or a new date for this and all later ones never loses it (D49, D89).
+- While the payday is an estimate, its adjustments are added to its amount, and the row says how much of it they are. Once the real amount is typed in, they no longer count (D44), but they're kept, so they come back if the real amount is removed. A payday never goes below £0.00.
+- "I did overtime", "I missed a shift" and removing either are each one edit, so one undo (D87). Both are refused once the payday has its real amount.
+- Overtime adds a line of the hours at the overtime rate, which is the pay profile's unless another is given. A missed shift adds a line of minus the hours at the rate of the pay week's first basic line, unless another is given, rounded once like every line (D9). A shift premium or other fixed pay isn't changed.
+
+Why: the change to a payday has to come from the pay calculator (D5), and the real amount is what the bank shows (D44).
+
+### D124. The year so far, for exact tax and for a week in the future
+
+Decided 1 Nov 2026 in step 1f. Adds to brief 4.15. The owner asked for this to be recorded as a decision.
+
+- On the cumulative basis, "Gross for tax so far" and "Tax paid so far" from the payslip just before this payday make the tax exact. Week 1/month 1 needs no year so far, so it's exact too.
+- When they're from an earlier payslip, each pay period in between counts as paid this payday's pay for tax, with the tax the cumulative basis would have taken, and the result is labelled an estimate. Without them, the same is done from the start of the tax year. When they're from the tax year before, the new year starts from nothing.
+- For "I did overtime" and "I missed a shift", the pay periods in between count as paid the payday's own pay week, with no overtime or missed shifts, both with and without the change. So the change is what the overtime or missed shift alone does to that payday, and two shifts on one payday add up to exactly both together.
+- Test 3 shows it: Fri 6 Nov is tax week 31, and Sam's last payslip is week 29, so week 30 counts as week 27's pay. 11.5 hours at £19.07 raise Fri 6 Nov by £155.12, within £1 of the brief's £155.23 (D7). On week 26's payslip, with the year so far to week 25, it's £150.79, within £1 of £150.89. The brief's figures take the tax on the overtime as exactly 20% of the extra pay for tax; the tax tables round taxable pay down to whole pounds first, which explains the 10p or so.
+
+Why: what someone will really earn in the weeks before a future payday isn't known, and their usual week is the best guess. The overtime's own effect is what the person asked for.
+
+### D125. Which payday a shift is paid on
+
+Decided 1 Nov 2026 in step 1f. Adds to D5 and ARCHITECTURE.md 3.4.
+
+- A pay profile says which day its working week starts and how many weeks behind the shifts pay is. A shift is paid on the first payday, on or after the first day of its working week moved on by that many weeks. Sam's shift on Mon 26 Oct, in a week from Monday, one week behind, is paid from Mon 2 Nov: on Fri 6 Nov. A week from Saturday gives Fri 6 Nov too.
+- The payday is the day the pay lands, after the weekend and bank holiday rule and any move. A removed payday isn't a payday (D81).
+- The payday's pay week is the one linked to its step of the amount pattern (D5), or the one pay week of pay with no pattern. With none, "I did overtime" is refused, and the app asks once for the usual hours and rate and saves them as a pay week (D5).
+
+Why: the brief's test lands on Fri 6 Nov, and the same rule works for any working week and any number of weeks behind.
+
+### D126. Pension and other deductions
+
+Decided 1 Nov 2026 in step 1f. Adds to brief 4.15.
+
+- The pension is a percentage of the gross pay inside the profile's band for the pay period, such as £120 to £967 a week, rounded once to the nearest penny (D9). Without a band, it's the whole of the gross pay.
+- Taken before tax, it lowers the pay for tax (HMRC's "net pay" arrangement), but not National Insurance or student loans (CWG2 2.1). Taken after tax, it comes off take-home pay and the pay for tax stays as it is.
+- The percentage is what comes off the pay, as the payslip shows it. For a pension taken after tax, the pension company claims the tax relief itself, so it isn't added to take-home pay.
+- Other deductions typed in, such as union fees, come off after tax.
+
+Why: it matches Sam's four payslips to the penny, and it's how CWG2 describes the two ways of taking a pension.
+
+### D127. Student loans
+
+Decided 1 Nov 2026 in step 1f. Adds to brief 4.15.
+
+- A pay profile has at most one of Plans 1, 2, 4 and 5, and can also have a Postgraduate loan, because an employer takes only one of the plans through payroll (HMRC, "Collection of student loans from 6 April 2026"). Two plans are refused, asking for the one on the payslip.
+- Each is worked out on the earnings National Insurance is due on, for this payday only: the plan's rate on the earnings above its threshold for the pay period, rounded down to the whole pound. The threshold is the annual one ÷ the paydays in a year, rounded down to the penny: Plan 2 is £565.09 a week.
+
+Why: these are HMRC's rules, and HMRC's 2026-27 student loan test data gives the same figures for every plan and pay period.
+
+### D128. Tax year files and pay records
+
+Decided 1 Nov 2026 in step 1f. Adds to D45 and ARCHITECTURE.md 2.7 and 3.4.
+
+- Each tax year file is a data file in `packages/engine/src/pay/tax-years`, named like `2026-27.json`. Every figure has its value, its www.gov.uk source link, where on the page it is and, when it's in one of GOV.UK's files, that file. The engine checks the file before using it, and refuses a figure without a GOV.UK link.
+- Pay on a day with no tax year file is refused, saying which tax year is missing.
+- The tax year check gives the files needed and the ones missing: the file for the tax year we're in, and from 1 March the file for the year starting on 6 April. On Mon 1 Mar 2027 it warns that 2027-28 is missing; on Sun 28 Feb 2027 it doesn't (D45).
+- A pay series links to its pay profile and to a pay week for each step of its amount pattern (D5). A pay profile also keeps the year so far, with the tax year and the tax week or month it's from.
+
+Why: the brief asks for one file per tax year with its source links, and the app and the server can then use the same check.

@@ -1,0 +1,553 @@
+{
+  "taxYear": "2026-27",
+  "firstDay": {
+    "value": "2026-04-06",
+    "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027",
+    "where": "Unless otherwise stated, the following figures apply from 6 April 2026 to 5 April 2027"
+  },
+  "lastDay": {
+    "value": "2027-04-05",
+    "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027",
+    "where": "Unless otherwise stated, the following figures apply from 6 April 2026 to 5 April 2027"
+  },
+  "incomeTax": {
+    "personalAllowance": {
+      "value": "12570",
+      "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#england-and-northern-ireland",
+      "where": "The standard employee personal allowance for the 2026 to 2027 tax year: £12,570 per year"
+    },
+    "emergencyCode": {
+      "value": "1257L",
+      "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#emergency-tax-codes",
+      "where": "The emergency tax codes from 6 April 2026 are 1257L W1, 1257L M1 and 1257L X"
+    },
+    "maxRate": {
+      "value": "50",
+      "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+      "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Tax Rates, M (Maxrate), 2026/2027",
+      "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+    },
+    "regimes": {
+      "england-and-northern-ireland": {
+        "basicRate": {
+          "value": "2",
+          "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+          "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Tax Rates, G (Gpointer), 2026/2027",
+          "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+        },
+        "bands": [
+          {
+            "rate": {
+              "value": "10",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Tax Rates, R1, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "0",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Annual Width of Tax Bands, B1, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "20",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Tax Rates, R2, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "37700",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Annual Width of Tax Bands, B2, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "40",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Tax Rates, R3, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "87440",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Annual Width of Tax Bands, B3, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "45",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Tax Rates, R4, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          }
+        ]
+      },
+      "scotland": {
+        "basicRate": {
+          "value": "2",
+          "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+          "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Tax Rates, G1 (Gpointer), 2026/2027",
+          "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+        },
+        "bands": [
+          {
+            "rate": {
+              "value": "19",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Tax Rates, SR1, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "3967",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Annual Width of Tax Bands, SB1, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "20",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Tax Rates, SR2, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "12989",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Annual Width of Tax Bands, SB2, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "21",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Tax Rates, SR3, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "14136",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Annual Width of Tax Bands, SB3, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "42",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Tax Rates, SR4, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "31338",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Annual Width of Tax Bands, SB4, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "45",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Tax Rates, SR5, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "62710",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Annual Width of Tax Bands, SB5, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "48",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix B, Tax Rates, SR6, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          }
+        ]
+      },
+      "wales": {
+        "basicRate": {
+          "value": "2",
+          "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+          "where": "Specification for PAYE tax table routines, version 24.0, Appendix C, Tax Rates, G2 (Gpointer), 2026/2027",
+          "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+        },
+        "bands": [
+          {
+            "rate": {
+              "value": "10",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix C, Tax Rates, WR1, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "0",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Annual Width of Tax Bands, B1, 2026/2027 (Appendix C works Welsh tax on these bandwidths: WK = B x WR)",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "20",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix C, Tax Rates, WR2, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "37700",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Annual Width of Tax Bands, B2, 2026/2027 (Appendix C works Welsh tax on these bandwidths: WK = B x WR)",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "40",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix C, Tax Rates, WR3, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            },
+            "width": {
+              "value": "87440",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix A, Annual Width of Tax Bands, B3, 2026/2027 (Appendix C works Welsh tax on these bandwidths: WK = B x WR)",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          },
+          {
+            "rate": {
+              "value": "45",
+              "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-income-tax",
+              "where": "Specification for PAYE tax table routines, version 24.0, Appendix C, Tax Rates, WR4, 2026/2027",
+              "file": "https://assets.publishing.service.gov.uk/media/698c9824bd090be481c2879a/PAYErout-v24-0.odt"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "nationalInsurance": {
+    "thresholds": {
+      "weekly": {
+        "primaryThreshold": {
+          "value": "242",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#class-1-national-insurance-thresholds",
+          "where": "Class 1 National Insurance thresholds, Primary threshold, £242 per week"
+        },
+        "upperEarningsLimit": {
+          "value": "967",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#class-1-national-insurance-thresholds",
+          "where": "Class 1 National Insurance thresholds, Upper earnings limit, £967 per week"
+        }
+      },
+      "two-weekly": {
+        "primaryThreshold": {
+          "value": "484",
+          "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-national-insurance",
+          "where": "National Insurance guidance for software developers 2026 to 2027, section 9.2 Earnings limits, 2 Weekly, PT",
+          "file": "https://assets.publishing.service.gov.uk/media/6a3bc1fe4c7605ab567238ff/NI-Guidance-2026-27_v1.1.odt"
+        },
+        "upperEarningsLimit": {
+          "value": "1934",
+          "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-national-insurance",
+          "where": "National Insurance guidance for software developers 2026 to 2027, section 9.2 Earnings limits, 2 Weekly, UEL",
+          "file": "https://assets.publishing.service.gov.uk/media/6a3bc1fe4c7605ab567238ff/NI-Guidance-2026-27_v1.1.odt"
+        }
+      },
+      "four-weekly": {
+        "primaryThreshold": {
+          "value": "967",
+          "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-national-insurance",
+          "where": "National Insurance guidance for software developers 2026 to 2027, section 9.2 Earnings limits, 4 Weekly, PT",
+          "file": "https://assets.publishing.service.gov.uk/media/6a3bc1fe4c7605ab567238ff/NI-Guidance-2026-27_v1.1.odt"
+        },
+        "upperEarningsLimit": {
+          "value": "3867",
+          "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-national-insurance",
+          "where": "National Insurance guidance for software developers 2026 to 2027, section 9.2 Earnings limits, 4 Weekly, UEL",
+          "file": "https://assets.publishing.service.gov.uk/media/6a3bc1fe4c7605ab567238ff/NI-Guidance-2026-27_v1.1.odt"
+        }
+      },
+      "monthly": {
+        "primaryThreshold": {
+          "value": "1048",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#class-1-national-insurance-thresholds",
+          "where": "Class 1 National Insurance thresholds, Primary threshold, £1048 per month"
+        },
+        "upperEarningsLimit": {
+          "value": "4189",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#class-1-national-insurance-thresholds",
+          "where": "Class 1 National Insurance thresholds, Upper earnings limit, £4189 per month"
+        }
+      }
+    },
+    "employeeRates": {
+      "A": {
+        "main": {
+          "value": "8",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter A, Earnings above primary threshold up to and including upper earnings limit: 8%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter A, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "B": {
+        "main": {
+          "value": "1.85",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter B, Earnings above primary threshold up to and including upper earnings limit: 1.85%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter B, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "C": {
+        "main": {
+          "value": "0",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter C, Earnings above primary threshold up to and including upper earnings limit: nil"
+        },
+        "upper": {
+          "value": "0",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter C, Balance of earnings above upper earnings limit: nil"
+        }
+      },
+      "D": {
+        "main": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter D, Earnings above primary threshold up to and including upper earnings limit: 2%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter D, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "E": {
+        "main": {
+          "value": "1.85",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter E, Earnings above primary threshold up to and including upper earnings limit: 1.85%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter E, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "F": {
+        "main": {
+          "value": "8",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter F, Earnings above primary threshold up to and including upper earnings limit: 8%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter F, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "H": {
+        "main": {
+          "value": "8",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter H, Earnings above primary threshold up to and including upper earnings limit: 8%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter H, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "I": {
+        "main": {
+          "value": "1.85",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter I, Earnings above primary threshold up to and including upper earnings limit: 1.85%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter I, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "J": {
+        "main": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter J, Earnings above primary threshold up to and including upper earnings limit: 2%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter J, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "K": {
+        "main": {
+          "value": "0",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter K, Earnings above primary threshold up to and including upper earnings limit: nil"
+        },
+        "upper": {
+          "value": "0",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter K, Balance of earnings above upper earnings limit: nil"
+        }
+      },
+      "L": {
+        "main": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter L, Earnings above primary threshold up to and including upper earnings limit: 2%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter L, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "M": {
+        "main": {
+          "value": "8",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter M, Earnings above primary threshold up to and including upper earnings limit: 8%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter M, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "N": {
+        "main": {
+          "value": "8",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter N, Earnings above primary threshold up to and including upper earnings limit: 8%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter N, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "S": {
+        "main": {
+          "value": "0",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter S, Earnings above primary threshold up to and including upper earnings limit: nil"
+        },
+        "upper": {
+          "value": "0",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter S, Balance of earnings above upper earnings limit: nil"
+        }
+      },
+      "V": {
+        "main": {
+          "value": "8",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter V, Earnings above primary threshold up to and including upper earnings limit: 8%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter V, Balance of earnings above upper earnings limit: 2%"
+        }
+      },
+      "Z": {
+        "main": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter Z, Earnings above primary threshold up to and including upper earnings limit: 2%"
+        },
+        "upper": {
+          "value": "2",
+          "source": "https://www.gov.uk/guidance/rates-and-thresholds-for-employers-2026-to-2027#employee-primary-contribution-rates",
+          "where": "Employee (primary) contribution rates, letter Z, Balance of earnings above upper earnings limit: 2%"
+        }
+      }
+    }
+  },
+  "studentLoans": {
+    "plan-1": {
+      "annualThreshold": {
+        "value": "26900",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#annualthreshold-at",
+        "where": "4.1 Annual threshold (AT), 2026 to 2027, SL1T"
+      },
+      "rate": {
+        "value": "9",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#recovery-rate-r",
+        "where": "4.2 Recovery rate (R), 2026 to 2027, SL1R"
+      }
+    },
+    "plan-2": {
+      "annualThreshold": {
+        "value": "29385",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#annualthreshold-at",
+        "where": "4.1 Annual threshold (AT), 2026 to 2027, SL2T"
+      },
+      "rate": {
+        "value": "9",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#recovery-rate-r",
+        "where": "4.2 Recovery rate (R), 2026 to 2027, SL2R"
+      }
+    },
+    "plan-4": {
+      "annualThreshold": {
+        "value": "33795",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#annualthreshold-at",
+        "where": "4.1 Annual threshold (AT), 2026 to 2027, SL4T"
+      },
+      "rate": {
+        "value": "9",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#recovery-rate-r",
+        "where": "4.2 Recovery rate (R), 2026 to 2027, SL4R"
+      }
+    },
+    "plan-5": {
+      "annualThreshold": {
+        "value": "25000",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#annualthreshold-at",
+        "where": "4.1 Annual threshold (AT), 2026 to 2027, SL5T"
+      },
+      "rate": {
+        "value": "9",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#recovery-rate-r",
+        "where": "4.2 Recovery rate (R), 2026 to 2027, SL5R"
+      }
+    },
+    "postgraduate": {
+      "annualThreshold": {
+        "value": "21000",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#annualthreshold-at",
+        "where": "4.1 Annual threshold (AT), 2026 to 2027, PGL"
+      },
+      "rate": {
+        "value": "6",
+        "source": "https://www.gov.uk/government/publications/payroll-technical-specifications-student-loans/collection-of-student-loans-from-6-april-2026#recovery-rate-r",
+        "where": "4.2 Recovery rate (R), 2026 to 2027, PGLR"
+      }
+    }
+  }
+}

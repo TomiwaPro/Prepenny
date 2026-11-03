@@ -2,6 +2,7 @@ import type { Budget, BudgetPlan, Spend } from '../budgets/types.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Goal } from '../goals/types.ts';
 import type { Pence } from '../money/pence.ts';
+import type { PayAdjustment, PayProfile, PayWeek } from '../pay/types.ts';
 import type { Payment, PaymentChange, Series } from '../schedule/types.ts';
 
 /** The kinds of account (brief 4.2, 5.2). */
@@ -57,6 +58,12 @@ export interface Tick {
    * `paidDate` when the tick is made (D1, D71).
    */
   readonly paidOn: string;
+  /**
+   * Set on the tick for the money set aside from this payment, not the
+   * payment itself. Money set aside is ticked on its own, so it stays in
+   * Not ticked yet until it has really been moved (D116).
+   */
+  readonly setAside?: true;
 }
 
 /** Everything the plan needs (ARCHITECTURE.md 2.1, "Work out the plan"). */
@@ -73,6 +80,12 @@ export interface PlanInput {
   readonly spends?: readonly Spend[];
   /** Savings goals (brief 4.7). When they're given, every series' link to a goal is checked. */
   readonly goals?: readonly Goal[];
+  /** Pay profiles (brief 4.15). When they're given, every series' link to one is checked. */
+  readonly payProfiles?: readonly PayProfile[];
+  /** Saved pay weeks (D5). */
+  readonly payWeeks?: readonly PayWeek[];
+  /** "I did overtime" and "I missed a shift": added to their payday while it's an estimate (D44). */
+  readonly payAdjustments?: readonly PayAdjustment[];
   /** The family of the main pay of the person viewing (D14), or null when there's none. */
   readonly mainPayFamilyId: string | null;
   /** The plan's bank holidays, usually a BankHolidayCalendar for its nation. */
@@ -100,7 +113,8 @@ export type Flow = 'in' | 'out' | 'transfer-in' | 'transfer-out';
  * - `bill`: a pay-later budget's bill (D32, D111). It's ticked, moved and
  *   given its real amount like a payment, found by the budget's id.
  * - `set-aside`: part of money coming in, moved to another account (D64, D113).
- *   It goes with its payment: the same tick, date and estimate label.
+ *   It goes with its payment's date, removal and estimate label, but has a
+ *   tick of its own (D116).
  * - `budget`: what's left of a budget period leaving the account (D2), all
  *   at once or one day of it spread across the days (D31).
  * - `spend`: "I spent", recorded after the account's latest balance update (D2, D33).
@@ -199,7 +213,7 @@ export interface PayLaterLeft {
   readonly until: string;
 }
 
-/** Left to spend (D3, D28, D112). */
+/** Left to spend (D3, D28, D112, D117, D118). */
 export interface LeftToSpend {
   /** The next main payday, "YYYY-MM-DD": "Left to spend until Fri 30 Oct" (D28). */
   readonly until: string;
@@ -213,17 +227,21 @@ export interface LeftToSpend {
   /** M: the lowest end-of-day balance from today to the day before the next main payday. */
   readonly lowest: DayBalance;
   /**
-   * X in "Spend no more than £X to keep at least £20 until Fri 30 Oct":
-   * max(0, L + M − W), where W is the warning level (D3). Only when spending
-   * all of L takes the balance under the warning level (M < W). Otherwise null.
+   * X in "Spend no more than £X to keep at least £20 until Fri 30 Oct": the
+   * smallest, over each day from today to the day before the next main
+   * payday, of that day's end balance + the Left to spend due by that day −
+   * the warning level, never below 0 (D118). Only when spending all of L
+   * takes the balance under the warning level (M < W), and spending nothing
+   * wouldn't. Otherwise null.
    */
   readonly spendNoMoreThan: Pence | null;
   /**
-   * L + M is at least the warning level: spending nothing of L would keep
-   * the balance at or above it. When this is false, X is 0 and even spending
-   * nothing doesn't keep the warning level (a question for the owner, D112).
+   * The first day, "YYYY-MM-DD", that the balance goes under the warning
+   * level even if none of L is spent, for "You'll go under £20 on Mon 26 Oct,
+   * even if you spend nothing." It replaces the "Spend no more than" line
+   * (D117). Otherwise null.
    */
-  readonly canKeepWarningLevel: boolean;
+  readonly underEvenSpendingNothing: string | null;
   /** Each pay-later budget on this account, shown on its own line under Left to spend (D61). */
   readonly payLater: readonly PayLaterLeft[];
 }

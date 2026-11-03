@@ -15,8 +15,15 @@ export interface CheckedTick {
 /** Ticks, found by series and original date, like changes (brief 5.2, D48). */
 export type TickIndex = ReadonlyMap<string, ReadonlyMap<Day, CheckedTick>>;
 
-/** Checks the ticks and indexes them by series and original date. One tick per payment (D83). */
-export function indexTicks(ticks: readonly Tick[]): TickIndex {
+/** Which tick of a payment: the payment's own, or its money set aside's (D116). */
+export type TickPart = 'payment' | 'set-aside';
+
+/**
+ * Checks the ticks and indexes one part's ticks by series and original date.
+ * One tick per payment, and one for its money set aside (D83, D116). Debts
+ * and goals use only the payments' own ticks.
+ */
+export function indexTicks(ticks: readonly Tick[], part: TickPart = 'payment'): TickIndex {
   if (!Array.isArray(ticks)) {
     throw new EngineInputError('bad-tick', 'The ticks must be a list.');
   }
@@ -41,11 +48,17 @@ export function indexTicks(ticks: readonly Tick[]): TickIndex {
     ) {
       throw new EngineInputError('bad-tick', `${what}: the debt must be an id.`);
     }
+    if (tick.setAside !== undefined && tick.setAside !== true) {
+      throw new EngineInputError('bad-tick', `${what}: set aside must be true, or left out.`);
+    }
+    if ((tick.setAside === true) !== (part === 'set-aside')) return;
     const forSeries = index.get(tick.seriesId) ?? new Map<Day, CheckedTick>();
     if (forSeries.has(originalDay)) {
       throw new EngineInputError(
         'repeated-tick',
-        `${what}: series ${tick.seriesId} already has a tick for ${tick.originalDate}.`,
+        part === 'set-aside'
+          ? `${what}: series ${tick.seriesId} already has a set-aside tick for ${tick.originalDate}.`
+          : `${what}: series ${tick.seriesId} already has a tick for ${tick.originalDate}.`,
       );
     }
     forSeries.set(originalDay, {

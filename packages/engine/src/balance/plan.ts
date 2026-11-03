@@ -25,6 +25,7 @@ import { EngineInputError } from '../errors.ts';
 import { type CheckedGoal, checkGoalLinks, checkGoals } from '../goals/goals.ts';
 import { type Decimal, divideRounded, parseDecimal, powerOfTen } from '../money/decimal.ts';
 import { checkPence, checkPenceNotNegative, type Pence, penceFromBigInt } from '../money/pence.ts';
+import { type CheckedPay, checkPay } from '../pay/records.ts';
 import { type MainPaydays, mainPaydaysOf } from '../periods/main-pay.ts';
 import {
   type ChangeIndex,
@@ -238,6 +239,9 @@ export type RecordsToCheck = Pick<
   | 'budgets'
   | 'spends'
   | 'goals'
+  | 'payProfiles'
+  | 'payWeeks'
+  | 'payAdjustments'
   | 'holidays'
 > & {
   /** The plan's debts. When they're given, every series' link to a debt is checked too (D98). */
@@ -255,7 +259,10 @@ export interface CheckedRecords {
   readonly prepared: readonly PreparedSeries[];
   readonly familyTimes: ReadonlyMap<string, Moment>;
   readonly changes: ChangeIndex;
+  /** The payments' own ticks. */
   readonly ticks: TickIndex;
+  /** The ticks for money set aside, kept apart from the payments' own (D116). */
+  readonly setAsideTicks: TickIndex;
   /** The debts, by id. Empty when none were given. */
   readonly debts: ReadonlyMap<string, CheckedDebt>;
   /**
@@ -267,6 +274,8 @@ export interface CheckedRecords {
   readonly spends: ReadonlyMap<string, readonly CheckedSpend[]>;
   /** The goals, by id. Empty when none were given. */
   readonly goals: ReadonlyMap<string, CheckedGoal>;
+  /** Pay profiles, pay weeks and pay adjustments, with each payday's adjustments added up (D123). */
+  readonly pay: CheckedPay;
 }
 
 /**
@@ -283,6 +292,7 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
   const { prepared, familyTimes } = prepareAll(input, accounts, bills);
   const changes = indexChanges(input.changes ?? []);
   const ticks = indexTicks(input.ticks ?? []);
+  const setAsideTicks = indexTicks(input.ticks ?? [], 'set-aside');
   const debts = checkDebts(input.debts ?? [], today);
   if (input.debts !== undefined) checkDebtLinks(input.series, debts);
   const goals = checkGoals(input.goals ?? []);
@@ -297,6 +307,7 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
     }
     checkGoalLinks(input.series, goals);
   }
+  const pay = checkPay(input, input.series);
   return {
     accounts,
     starts,
@@ -305,10 +316,12 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
     familyTimes,
     changes,
     ticks,
+    setAsideTicks,
     debts,
     budgets,
     spends,
     goals,
+    pay,
   };
 }
 
@@ -323,12 +336,18 @@ function setAsideAmount(amount: Pence, percent: Decimal): Pence {
 /**
  * The set-aside that goes with a payment of money coming in (D64, D113): a
  * transfer of the amount set aside, from the payment's account to the one
- * it's set aside in, on the same day, with the payment's tick.
+ * it's set aside in, on the same day. It has a tick of its own (D116).
  */
-function setAsideOf(movement: Movement, setAside: SetAside, percent: Decimal): Movement {
+function setAsideOf(
+  movement: Movement,
+  setAside: SetAside,
+  percent: Decimal,
+  tick: CheckedTick | null,
+): Movement {
   return {
     ...movement,
     kind: 'set-aside',
+    tick,
     payment: {
       ...movement.payment,
       direction: 'transfer',
@@ -354,7 +373,8 @@ function collectPayments(
   to: Day,
   holidays: BankHolidayLookup,
 ): Movement[] {
-  const { prepared, familyTimes, changes, ticks } = checked;
+  const { prepared, familyTimes, changes, ticks, setAsideTicks } = checked;
+  const adjustments = checked.pay.index;
   const all: Movement[] = [];
   for (const one of prepared) {
     const id = one.series.id;
@@ -366,6 +386,8 @@ function collectPayments(
     const familyCreatedAt = familyTimes.get(one.series.familyId) as Moment;
     const bill = worked.get(id) ?? null;
     const setAside = one.series.setAside;
+    // A set-aside tick on a series with no money set aside is ignored (D83, D116).
+    const setAsideTicksOfSeries = setAside === undefined ? undefined : setAsideTicks.get(id);
     const percent =
       setAside === undefined ? null : parseDecimal(setAside.percent, `Series ${id}: set aside`);
     const found = new Set<Day>();
@@ -390,20 +412,31 @@ function collectPayments(
       };
       all.push(movement);
       if (setAside !== undefined && percent !== null) {
-        all.push(setAsideOf(movement, setAside, percent));
+        const tick = setAsideTicksOfSeries?.get(payment.originalDay) ?? null;
+        all.push(setAsideOf(movement, setAside, percent, tick));
       }
     };
     if (from <= to) {
-      for (const payment of paymentsOfSeriesBetween(one, from, to, changes, holidays)) {
+      for (const payment of paymentsOfSeriesBetween(
+        one,
+        from,
+        to,
+        changes,
+        holidays,
+        adjustments,
+      )) {
         add(payment);
       }
     }
-    // Ticked payments dated after the plan's last day.
-    for (const originalDay of ticksOfSeries?.keys() ?? []) {
+    // Ticked payments, and ticked money set aside, dated after the plan's last day.
+    for (const originalDay of [
+      ...(ticksOfSeries?.keys() ?? []),
+      ...(setAsideTicksOfSeries?.keys() ?? []),
+    ]) {
       if (found.has(originalDay)) continue;
       const index = one.firstIndexOnOrAfter(originalDay);
       if (index < one.count && one.dateAt(index) === originalDay) {
-        add(paymentAtIndex(one, index, changes, holidays));
+        add(paymentAtIndex(one, index, changes, holidays, adjustments));
       }
       // A tick on a date that isn't one of the series' payments is ignored.
     }
@@ -475,7 +508,7 @@ interface WorkingRow {
   readonly within: number;
 }
 
-/** Only payments, bills and their set-asides can be ticked (D109). */
+/** Only payments, bills and their set-asides can be ticked (D109, D116). */
 function tickable(kind: RowKind): boolean {
   return kind === 'payment' || kind === 'bill' || kind === 'set-aside';
 }
@@ -634,9 +667,16 @@ function mainPaydayList(main: MainPaydays | null, today: Day, to: Day): Day[] {
 }
 
 /**
- * Left to spend until the next main payday (D3, D28, D112): spending money
- * still due to leave from today to the day before it, the lowest end-of-day
- * balance in that time, and the "Spend no more than" amount.
+ * Left to spend until the next main payday (D3, D28, D112, D117, D118): spending
+ * money still due to leave from today to the day before it, the lowest
+ * end-of-day balance in that time, and the line under it.
+ *
+ * "Spend no more than £X" counts, for each day, only the spending money due
+ * by that day: X is the smallest, over each day from today to the day before
+ * the next main payday, of that day's end balance + the Left to spend due by
+ * that day − the warning level, and never below 0 (D118). When that's below
+ * 0 on some day, even spending nothing takes the balance under the warning
+ * level, and the line says so with the first such day instead (D117).
  */
 function leftToSpendOf(
   work: AccountWork,
@@ -648,6 +688,7 @@ function leftToSpendOf(
   if (nextPayday === null) return null;
   const last = Math.min(addDays(nextPayday, -1), to);
   let amount = 0;
+  const dueOn = new Map<Day, Pence>();
   work.rows.forEach((row, i) => {
     const day = work.rowDays[i] as Day;
     if (day < today || day > last || row.change >= 0) return;
@@ -656,22 +697,34 @@ function leftToSpendOf(
     const spending =
       row.kind === 'budget' ||
       (row.kind === 'payment' && row.payment.type === 'spending-money' && !row.ticked);
-    if (spending) amount = checkPence(amount - row.change, 'Left to spend');
+    if (spending) {
+      amount = checkPence(amount - row.change, 'Left to spend');
+      dueOn.set(day, (dueOn.get(day) ?? 0) - row.change);
+    }
   });
+  const warning = work.account.warningLevel;
   let lowest = dayBalanceOf(work, today);
-  for (let day = today + 1; day <= last; day += 1) {
+  // The smallest room over the days, and the first day with no room at all.
+  let room: Pence | null = null;
+  let underOn: Day | null = null;
+  let dueSoFar = 0;
+  for (let day = today; day <= last; day += 1) {
     const balance = dayBalanceOf(work, day);
     if (balance.balance < lowest.balance) lowest = balance;
+    dueSoFar += dueOn.get(day) ?? 0;
+    const roomThatDay = balance.balance + dueSoFar - warning;
+    if (room === null || roomThatDay < room) room = roomThatDay;
+    // Strictly under the warning level even spending nothing (D10).
+    if (roomThatDay < 0 && underOn === null) underOn = day;
   }
-  const warning = work.account.warningLevel;
+  // A line only when spending it all goes under the warning level (D3, D10).
+  const needsLine = lowest.balance < warning;
   return {
     until: formatDate(nextPayday),
     amount,
     lowest,
-    // X = max(0, L + M − W), only when spending it all goes under W (D3, D10).
-    spendNoMoreThan:
-      lowest.balance < warning ? Math.max(0, amount + lowest.balance - warning) : null,
-    canKeepWarningLevel: amount + lowest.balance >= warning,
+    spendNoMoreThan: needsLine && underOn === null ? Math.max(0, room ?? 0) : null,
+    underEvenSpendingNothing: needsLine && underOn !== null ? formatDate(underOn) : null,
     payLater,
   };
 }

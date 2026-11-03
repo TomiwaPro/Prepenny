@@ -264,6 +264,30 @@ function checkSetAside(series: Series): void {
   }
 }
 
+/** Checks the links from pay to its pay profile and pay weeks (D5, ARCHITECTURE.md 3.4). */
+function checkPayLinks(series: Series): void {
+  const id = series.id;
+  if (series.direction !== 'in' || series.mirrorOf !== undefined) {
+    fail(id, 'bad-pay-link', 'only money coming in can be linked to a pay profile.');
+  }
+  if (typeof series.payProfileId !== 'string' || series.payProfileId === '') {
+    fail(id, 'bad-pay-link', 'pay weeks need the pay profile they belong to.');
+  }
+  const weeks = series.cyclePayWeeks;
+  if (weeks === undefined) return;
+  const steps = series.amountCycle?.length ?? 1;
+  if (!Array.isArray(weeks) || weeks.length !== steps) {
+    fail(
+      id,
+      'bad-pay-link',
+      'it needs one pay week for each step of its amount pattern, or one with no pattern.',
+    );
+  }
+  for (const week of weeks) {
+    if (typeof week !== 'string' || week === '') fail(id, 'bad-pay-link', 'a pay week is an id.');
+  }
+}
+
 function checkSeries(series: Series): void {
   if (typeof series?.id !== 'string' || series.id === '') {
     throw new EngineInputError('bad-series', 'A series needs an id.');
@@ -342,6 +366,8 @@ function checkSeries(series: Series): void {
     fail(id, 'bad-series', 'the linked goal must be the id of a goal.');
   }
   if (series.setAside !== undefined) checkSetAside(series);
+  if (series.payProfileId !== undefined || series.cyclePayWeeks !== undefined)
+    checkPayLinks(series);
   for (const field of ['splitFrom', 'mirrorOf'] as const) {
     const value = series[field];
     if (value !== undefined && (typeof value !== 'string' || value === '' || value === id)) {

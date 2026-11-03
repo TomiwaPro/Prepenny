@@ -1,11 +1,14 @@
 // Budgets, "Set aside" and savings goals for the other people (step 1e):
-// owner tests 6, 7 and 8, D29, D61, D64, D108, D111, D113 and D114.
+// owner tests 6, 7 and 8, D29, D61, D64, D108, D111, D113, D114 and D116.
 
 import { describe, expect, it } from 'vitest';
 import {
   type Budget,
   type BudgetPlan,
+  balanceAtEndOf,
+  type Debt,
   debtsLookAhead,
+  editPlan,
   formatPounds,
   type Goal,
   type Plan,
@@ -14,6 +17,7 @@ import {
   workOutGoals,
   workOutPlan,
 } from '../../src/index.ts';
+import { canonical, edited, editedInTurn } from '../fixtures/edit.ts';
 import { englandAndWales } from '../fixtures/holidays.ts';
 import { account, accountOf, balanceUpdate, planInput, pounds } from '../fixtures/plan.ts';
 import { samPlan, samSeries, samSpend, samTravel } from '../fixtures/sam.ts';
@@ -56,6 +60,9 @@ const kofiWork = series({
   isEstimate: true,
   setAside: { percent: '25', accountId: 'tax' },
 });
+
+/** The same, with no money set aside. */
+const { setAside: _setAside, ...kofiWorkNoSetAside } = kofiWork;
 
 function kofi(fields: Partial<PlanInput> = {}): PlanInput {
   return planInput({
@@ -299,27 +306,11 @@ describe('owner test 7 and D64: Set aside', () => {
     expect([formatPounds(tax?.change ?? 0), tax?.payment.isEstimate]).toEqual(['109.38', false]);
   });
 
-  it('goes with its payment: removed with it, and ticked with it (D113)', () => {
+  it('goes with its payment when it is removed (D113)', () => {
     const removed = workOutPlan(
       kofi({ changes: [{ seriesId: 'driving-work', originalDate: '2026-11-02', skipped: true }] }),
     );
     expect(accountOf(removed, 'tax').rows.filter((row) => row.date === '2026-11-02')).toEqual([]);
-    // Ticked on Mon 2 Nov, after both balance updates: both halves move once, that day.
-    const ticked = workOutPlan(
-      kofi({
-        today: '2026-11-03',
-        ticks: [
-          {
-            seriesId: 'driving-work',
-            originalDate: '2026-11-02',
-            tickedAt: '2026-11-02T18:00:00Z',
-            paidOn: '2026-11-02',
-          },
-        ],
-      }),
-    );
-    const taxRow = accountOf(ticked, 'tax').rows.find((row) => row.date === '2026-11-02');
-    expect([taxRow?.ticked, taxRow?.change]).toEqual([true, 10000]);
   });
 
   it('is only for money coming in, to another account in the plan, above 0% and up to 100%', () => {
@@ -337,6 +328,203 @@ describe('owner test 7 and D64: Set aside', () => {
         kofi({ series: [{ ...kofiWork, setAside: { percent: '100', accountId: 'tax' } }] }),
       ),
     ).not.toThrow();
+  });
+});
+
+describe('D116: money set aside has a tick of its own', () => {
+  // Kofi on Tue 3 Nov, the day after his £400.00 came in with £100.00 set aside.
+  const nov3 = kofi({ today: '2026-11-03' });
+  const ref = { seriesId: 'driving-work', originalDate: '2026-11-02' };
+  const tickedAt = '2026-11-02T18:00:00Z';
+  const onNov2 = (plan: Plan, id: string) =>
+    accountOf(plan, id)
+      .rows.filter((row) => row.date === '2026-11-02')
+      .map((row) => [row.kind, formatPounds(row.change), row.ticked, row.notTickedYet]);
+  const plan = (input: PlanInput) => workOutPlan(input);
+
+  it('leaves the £100.00 unticked when the £400.00 is ticked: it still moves on Mon 2 Nov, and is Not ticked yet', () => {
+    const { after } = edited(nov3, { kind: 'tick', ...ref, tickedAt });
+    expect(after.ticks).toEqual([{ ...ref, tickedAt, paidOn: '2026-11-02' }]);
+    expect(onNov2(plan(after), 'current')).toEqual([
+      ['payment', '400.00', true, false],
+      ['set-aside', '-100.00', false, true],
+    ]);
+    expect(onNov2(plan(after), 'tax')).toEqual([['set-aside', '100.00', false, true]]);
+    expect(accountOf(plan(after), 'current').notTickedYet.map((row) => row.kind)).toEqual([
+      'set-aside',
+    ]);
+  });
+
+  it('ticks the £100.00 on its own, leaving the £400.00 Not ticked yet', () => {
+    const { after } = edited(nov3, { kind: 'tick', ...ref, tickedAt, setAside: true });
+    expect(after.ticks).toEqual([{ ...ref, tickedAt, paidOn: '2026-11-02', setAside: true }]);
+    expect(onNov2(plan(after), 'current')).toEqual([
+      ['payment', '400.00', false, true],
+      ['set-aside', '-100.00', true, false],
+    ]);
+  });
+
+  it('ticks both, and each moves money once', () => {
+    const after = editedInTurn(nov3, [
+      { kind: 'tick', ...ref, tickedAt },
+      { kind: 'tick', ...ref, tickedAt, setAside: true },
+    ]);
+    expect(onNov2(plan(after), 'current')).toEqual([
+      ['payment', '400.00', true, false],
+      ['set-aside', '-100.00', true, false],
+    ]);
+    // £640.00 + £400.00 − £100.00, and £1,200.00 + £100.00.
+    expect(formatPounds(balanceAtEndOf(accountOf(plan(after), 'current'), '2026-11-02'))).toBe(
+      '940.00',
+    );
+    expect(formatPounds(balanceAtEndOf(accountOf(plan(after), 'tax'), '2026-11-02'))).toBe(
+      '1300.00',
+    );
+    expect(accountOf(plan(after), 'current').notTickedYet).toEqual([]);
+  });
+
+  it('unticks the £100.00 alone, and undoes a set-aside tick in one step', () => {
+    const both = editedInTurn(nov3, [
+      { kind: 'tick', ...ref, tickedAt },
+      { kind: 'tick', ...ref, tickedAt, setAside: true },
+    ]);
+    const { edit, after } = edited(both, { kind: 'untick', ...ref, setAside: true });
+    expect(after.ticks).toEqual([{ ...ref, tickedAt, paidOn: '2026-11-02' }]);
+    expect(canonical(edited(after, { kind: 'undo', edit }).after)).toEqual(canonical(both));
+    const ticking = edited(nov3, { kind: 'tick', ...ref, tickedAt, setAside: true });
+    expect(canonical(edited(ticking.after, { kind: 'undo', edit: ticking.edit }).after)).toEqual(
+      canonical(nov3),
+    );
+  });
+
+  it('can be ticked in the Update balance steps', () => {
+    const { after } = edited(nov3, {
+      kind: 'update-balance',
+      update: {
+        id: 'tax-3-nov',
+        accountId: 'tax',
+        balance: pounds('1300.00'),
+        checkedOn: '2026-11-03',
+        checkedAt: '2026-11-03T09:00:00Z',
+      },
+      ticks: [{ ...ref, tickedAt: '2026-11-03T09:00:30Z', setAside: true }],
+    });
+    expect(after.ticks).toEqual([
+      {
+        ...ref,
+        tickedAt: '2026-11-03T09:00:30Z',
+        paidOn: '2026-11-02',
+        inBalanceUpdate: 'tax-3-nov',
+        setAside: true,
+      },
+    ]);
+    // Inside the Tax account's new balance, so it isn't counted again there.
+    expect(onNov2(plan(after), 'tax')).toEqual([]);
+  });
+
+  it('moves the £100.00 when only it is ticked, even if the payment was removed (D83)', () => {
+    const after = workOutPlan(
+      kofi({
+        today: '2026-11-03',
+        changes: [{ ...ref, skipped: true }],
+        ticks: [{ ...ref, tickedAt, paidOn: '2026-11-02', setAside: true }],
+      }),
+    );
+    expect(onNov2(after, 'current')).toEqual([['set-aside', '-100.00', true, false]]);
+  });
+
+  it('moves both ticks to the new series in a split, by payment number', () => {
+    const nov10 = kofi({ today: '2026-11-10' });
+    const ninth = { seriesId: 'driving-work', originalDate: '2026-11-09' };
+    const ticked = editedInTurn(nov10, [
+      { kind: 'tick', ...ninth, tickedAt: '2026-11-09T18:00:00Z' },
+      { kind: 'tick', ...ninth, tickedAt: '2026-11-09T18:05:00Z', setAside: true },
+    ]);
+    const { edit, after } = edited(ticked, {
+      kind: 'this-and-later',
+      ...ninth,
+      edits: { note: 'Busy week' },
+      newSeriesId: 'driving-work-2',
+    });
+    expect(canonical(after).ticks).toEqual([
+      {
+        seriesId: 'driving-work-2',
+        originalDate: '2026-11-09',
+        tickedAt: '2026-11-09T18:00:00Z',
+        paidOn: '2026-11-09',
+      },
+      {
+        seriesId: 'driving-work-2',
+        originalDate: '2026-11-09',
+        tickedAt: '2026-11-09T18:05:00Z',
+        paidOn: '2026-11-09',
+        setAside: true,
+      },
+    ]);
+    expect(canonical(edited(after, { kind: 'undo', edit }).after)).toEqual(canonical(ticked));
+  });
+
+  it('refuses Remove this and later while only the £100.00 is ticked: the money really moved', () => {
+    const { after } = edited(nov3, { kind: 'tick', ...ref, tickedAt, setAside: true });
+    expect(() => editPlan(after, { kind: 'remove-this-and-later', ...ref })).toThrow(
+      expect.objectContaining({ code: 'ticked' }),
+    );
+  });
+
+  it('refuses a set-aside tick on a payment with none, a second one, and an untick with none', () => {
+    const noSetAside = kofi({
+      today: '2026-11-03',
+      series: [kofiWorkNoSetAside],
+    });
+    expect(() => editPlan(noSetAside, { kind: 'tick', ...ref, tickedAt, setAside: true })).toThrow(
+      expect.objectContaining({ code: 'no-set-aside' }),
+    );
+    const { after } = edited(nov3, { kind: 'tick', ...ref, tickedAt, setAside: true });
+    expect(() => editPlan(after, { kind: 'tick', ...ref, tickedAt, setAside: true })).toThrow(
+      expect.objectContaining({ code: 'already-ticked' }),
+    );
+    // The payment's own tick is still free.
+    expect(() => editPlan(after, { kind: 'tick', ...ref, tickedAt })).not.toThrow();
+    expect(() => editPlan(nov3, { kind: 'untick', ...ref, setAside: true })).toThrow(
+      expect.objectContaining({ code: 'not-ticked' }),
+    );
+  });
+
+  it('refuses a set-aside tick inside an Update from statement: money set aside pays no debt', () => {
+    const loan: Debt[] = [
+      {
+        id: 'van',
+        name: 'Van finance',
+        kind: 'loan',
+        currency: 'GBP',
+        balance: pounds('5000.00'),
+        balanceOn: '2026-10-28',
+        balanceAt: '2026-10-28T09:00:00Z',
+        startingBalance: pounds('9000.00'),
+      },
+    ];
+    expect(() =>
+      editPlan(
+        { ...nov3, debts: loan },
+        {
+          kind: 'update-from-statement',
+          debtId: 'van',
+          balance: pounds('4900.00'),
+          balanceOn: '2026-11-03',
+          balanceAt: '2026-11-03T09:00:00Z',
+          ticks: [{ ...ref, tickedAt: '2026-11-03T09:00:30Z', setAside: true }],
+        },
+      ),
+    ).toThrow(expect.objectContaining({ code: 'not-linked' }));
+  });
+
+  it('ignores a stored set-aside tick on a series with no money set aside, like any tick with no payment (D83)', () => {
+    const input = kofi({
+      today: '2026-11-03',
+      series: [kofiWorkNoSetAside],
+      ticks: [{ ...ref, tickedAt, paidOn: '2026-11-02', setAside: true }],
+    });
+    expect(onNov2(workOutPlan(input), 'current')).toEqual([['payment', '400.00', false, true]]);
   });
 });
 

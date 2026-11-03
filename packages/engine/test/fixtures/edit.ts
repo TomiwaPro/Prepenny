@@ -33,7 +33,9 @@ export function canonical(records: EditInput) {
     <R>(key: (record: R) => string) =>
     (a: R, b: R) =>
       key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0;
-  const onPayment = (record: PaymentChange | Tick) => `${record.seriesId} ${record.originalDate}`;
+  // A payment's tick and its money set aside's tick are two records (D116).
+  const onPayment = (record: PaymentChange | Tick) =>
+    `${record.seriesId} ${record.originalDate}${'setAside' in record && record.setAside ? ' set-aside' : ''}`;
   return {
     series: [...records.series].sort(by((one: Series) => one.id)),
     changes: [...(records.changes ?? [])].sort(by(onPayment)),

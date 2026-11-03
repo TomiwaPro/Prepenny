@@ -5,6 +5,7 @@ import type { BalanceUpdate, Tick } from '../balance/types.ts';
 import type { Spend } from '../budgets/types.ts';
 import type { Debt } from '../debts/types.ts';
 import { EngineInputError } from '../errors.ts';
+import type { PayAdjustment } from '../pay/types.ts';
 import type { PaymentChange, Series } from '../schedule/types.ts';
 import type { Edit, PlanRecords, RecordWrite } from './types.ts';
 
@@ -16,6 +17,7 @@ const KIND_ORDER: readonly RecordWrite['kind'][] = [
   'balance-update',
   'debt',
   'spend',
+  'pay-adjustment',
 ];
 
 /** One text that names a record: its kind, then its id, or its series and original date. */
@@ -25,10 +27,15 @@ export function keyOf(write: RecordWrite): string {
     case 'balance-update':
     case 'debt':
     case 'spend':
+    case 'pay-adjustment':
       return JSON.stringify([write.kind, write.id]);
     case 'change':
-    case 'tick':
       return JSON.stringify([write.kind, write.seriesId, write.originalDate]);
+    case 'tick':
+      // A payment's tick and its money set aside's tick are two records (D116).
+      return write.setAside === true
+        ? JSON.stringify([write.kind, write.seriesId, write.originalDate, 'set-aside'])
+        : JSON.stringify([write.kind, write.seriesId, write.originalDate]);
   }
 }
 
@@ -41,11 +48,13 @@ function checkWrite(write: RecordWrite, what: string): void {
     (write.kind === 'series' ||
     write.kind === 'balance-update' ||
     write.kind === 'debt' ||
-    write.kind === 'spend'
+    write.kind === 'spend' ||
+    write.kind === 'pay-adjustment'
       ? text(write.id)
       : text(write.seriesId) && text(write.originalDate));
   if (
     !known ||
+    (write.kind === 'tick' && write.setAside !== undefined && write.setAside !== true) ||
     (write.value !== null && (typeof write.value !== 'object' || write.value === null))
   ) {
     throw new EngineInputError('bad-edit', `${what} isn't a record the engine knows.`);
@@ -111,7 +120,7 @@ export class Draft {
       this.#now.set(keyOf(write), write);
     }
     for (const value of records.ticks ?? []) {
-      const write = tickWrite(value.seriesId, value.originalDate, value);
+      const write = tickWrite(value.seriesId, value.originalDate, value, value.setAside === true);
       this.#now.set(keyOf(write), write);
     }
     for (const value of records.balanceUpdates) {
@@ -124,6 +133,10 @@ export class Draft {
     }
     for (const value of records.spends ?? []) {
       const write: RecordWrite = { kind: 'spend', id: value.id, value };
+      this.#now.set(keyOf(write), write);
+    }
+    for (const value of records.payAdjustments ?? []) {
+      const write: RecordWrite = { kind: 'pay-adjustment', id: value.id, value };
       this.#now.set(keyOf(write), write);
     }
   }
@@ -146,8 +159,9 @@ export class Draft {
     return this.get(changeWrite(seriesId, originalDate, null)) as PaymentChange | null;
   }
 
-  tick(seriesId: string, originalDate: string): Tick | null {
-    return this.get(tickWrite(seriesId, originalDate, null)) as Tick | null;
+  /** The payment's tick, or with `setAside` its money set aside's tick (D116). */
+  tick(seriesId: string, originalDate: string, setAside = false): Tick | null {
+    return this.get(tickWrite(seriesId, originalDate, null, setAside)) as Tick | null;
   }
 
   /** The edit: every record whose value changed, in a fixed order, and its "before" copy. */
@@ -183,8 +197,16 @@ export function changeWrite(
   return { kind: 'change', seriesId, originalDate, value };
 }
 
-export function tickWrite(seriesId: string, originalDate: string, value: Tick | null): RecordWrite {
-  return { kind: 'tick', seriesId, originalDate, value };
+/** A tick record. With `setAside`, the tick for the payment's money set aside (D116). */
+export function tickWrite(
+  seriesId: string,
+  originalDate: string,
+  value: Tick | null,
+  setAside = false,
+): RecordWrite {
+  return setAside
+    ? { kind: 'tick', seriesId, originalDate, setAside: true, value }
+    : { kind: 'tick', seriesId, originalDate, value };
 }
 
 /** Checks the writes of an edit given back to the engine, as undo does. */
@@ -248,10 +270,23 @@ export function applyWrites<T extends PlanRecords>(records: T, writes: readonly 
             keyOf({ kind: 'spend', id: one.id, value: null }),
           ),
         };
+  // Pay adjustments too.
+  const payAdjustments =
+    records.payAdjustments === undefined && !writes.some((write) => write.kind === 'pay-adjustment')
+      ? {}
+      : {
+          payAdjustments: applyToList<PayAdjustment>(
+            records.payAdjustments ?? [],
+            writes,
+            'pay-adjustment',
+            (one) => keyOf({ kind: 'pay-adjustment', id: one.id, value: null }),
+          ),
+        };
   return {
     ...records,
     ...debts,
     ...spends,
+    ...payAdjustments,
     series: applyToList<Series>(records.series, writes, 'series', (one) =>
       keyOf(seriesWrite(one.id, null)),
     ),
@@ -259,7 +294,7 @@ export function applyWrites<T extends PlanRecords>(records: T, writes: readonly 
       keyOf(changeWrite(one.seriesId, one.originalDate, null)),
     ),
     ticks: applyToList<Tick>(records.ticks ?? [], writes, 'tick', (one) =>
-      keyOf(tickWrite(one.seriesId, one.originalDate, null)),
+      keyOf(tickWrite(one.seriesId, one.originalDate, null, one.setAside === true)),
     ),
     balanceUpdates: applyToList<BalanceUpdate>(
       records.balanceUpdates,
