@@ -95,7 +95,7 @@ function Figures({ home }: { readonly home: HomeView }) {
         testId="next-due"
         heading={t.nextDue}
         link={{ label: t.seeThePlan, href: '/app/plan/' }}
-        empty={t.nothingDue}
+        empty={t.nothingDue(day(home.lookAheadTo))}
       >
         {home.nextDue.map((row) => (
           <PaymentRow
@@ -104,6 +104,7 @@ function Figures({ home }: { readonly home: HomeView }) {
             name={row.name}
             second={row.isEstimate ? t.withEstimate(day(row.date)) : day(row.date)}
             amount={formatMoney(row.change, { sign: 'always' })}
+            moneyIn={row.change > 0}
             left={t.left(formatMoney(row.leftAfter))}
             status={row.status === 'ok' ? null : row.status}
           />

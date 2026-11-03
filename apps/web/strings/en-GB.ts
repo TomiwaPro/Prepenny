@@ -33,7 +33,7 @@ export const strings = {
 
   banners: {
     example: 'This is an example plan. Nothing here is yours.',
-    offline: "You're offline. Your plan is saved on this phone, so everything here still works.",
+    offline: "You're offline. PrePenny keeps working with what's on this phone.",
   },
 
   status: {
@@ -47,6 +47,9 @@ export const strings = {
 
   errors: {
     plan: "Your plan couldn't be worked out. Close PrePenny and open it again.",
+    screenHeading: "This screen couldn't be shown",
+    screen: 'Try again. If it happens again, close PrePenny and open it again.',
+    tryAgain: 'Try again',
   },
 
   home: {
@@ -60,7 +63,7 @@ export const strings = {
     underEvenSpendingNothing: (warning: string, date: string) =>
       `You'll go under ${warning} on ${date}, even if you spend nothing.`,
     payLaterLeft: (amount: string, date: string) =>
-      `On the pay-later card: ${amount} left until ${date}`,
+      `On the pay-later card: ${amount} left until ${date}.`,
     mainPayEnded: 'Your main pay has no more paydays planned. Choose another to plan by payday.',
     lowestPointAhead: 'Lowest point ahead',
     lowestOnAfter: (date: string, name: string) => `${date}, after ${name}`,
@@ -71,7 +74,7 @@ export const strings = {
     comingIn: 'Coming in',
     nextDue: 'Next due',
     seeThePlan: 'See the plan',
-    nothingDue: 'Nothing planned yet.',
+    nothingDue: (date: string) => `Nothing is due up to ${date}.`,
     left: (amount: string) => `${amount} left`,
     withEstimate: (date: string) => `${date}, estimate`,
   },

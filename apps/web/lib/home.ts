@@ -51,6 +51,8 @@ export type LeftToSpendLine =
 
 export interface HomeView {
   readonly today: string;
+  /** The plan's last day: Home looks this far ahead (D167). */
+  readonly lookAheadTo: string;
   readonly account: {
     readonly name: string;
     readonly balance: Pence;
@@ -177,6 +179,7 @@ export function workOutHome(records: PlanRecords, today: string): HomeView {
   const short = account.shortfalls[0];
   return {
     today,
+    lookAheadTo: plan.to,
     account: {
       name: account.account.name ?? '',
       balance: account.start.balance,

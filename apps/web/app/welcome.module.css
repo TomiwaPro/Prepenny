@@ -29,6 +29,7 @@
 
 .button {
   display: flex;
+  border: 1px solid var(--navy);
   align-items: center;
   justify-content: center;
   min-height: var(--button-height);
@@ -36,6 +37,22 @@
   border-radius: var(--radius-inner);
   background: var(--navy);
   color: var(--on-navy);
+  font-size: var(--size-name);
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+}
+
+.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-height);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  color: var(--accent-text);
   font-size: var(--size-name);
   font-weight: 600;
   text-decoration: none;

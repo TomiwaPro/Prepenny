@@ -72,6 +72,10 @@ describe('Home for Sam’s example plan', () => {
     expect(new Set(home.nextDue.map((row) => row.key)).size).toBe(3);
   });
 
+  it('looks 3 months ahead, to Mon 25 Jan 2027 (D167)', () => {
+    expect(home.lookAheadTo).toBe('2027-01-25');
+  });
+
   it('uses the account the main pay arrives in', () => {
     expect(homeAccountId(examplePlan)).toBe('current');
   });
