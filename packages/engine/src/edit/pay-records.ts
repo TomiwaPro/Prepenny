@@ -16,8 +16,8 @@ import {
 } from '../pay/types.ts';
 import { checkEdits, checkName, checkNewId, checkNow, checkObject, recordNow } from './checks.ts';
 import { type Context, refuse } from './context.ts';
-import { reworkPayAdjustments } from './pay.ts';
-import { clean, type Draftable } from './records.ts';
+import { refuseMovedShifts, reworkPayAdjustments } from './pay.ts';
+import { clean, type Draftable, sameValue } from './records.ts';
 import type { EditCommand, PayProfileEdits, PayWeekEdits } from './types.ts';
 
 /** Checks a pay profile's own fields beyond its tax settings (D124, D131, D154). */
@@ -130,6 +130,9 @@ export function changePayProfile(context: Context, profileId: string, raw: PayPr
   checkProfile(value, what);
   context.draft.set({ kind: 'pay-profile', id: profileId, value });
   checkNow(context);
+  if (!sameValue(value.coveredTo, profile.coveredTo)) {
+    refuseMovedShifts(context, profileId, value.coveredTo);
+  }
   reworkPayAdjustments(context);
 }
 

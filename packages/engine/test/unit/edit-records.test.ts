@@ -16,7 +16,14 @@ import {
   workOutDebts,
   workOutPlan,
 } from '../../src/index.ts';
-import { allRecords, build, inputFor, recordsOf, samSteps } from '../fixtures/from-empty.ts';
+import {
+  allRecords,
+  build,
+  inputFor,
+  recordsOf,
+  samEverythingSteps,
+  samSteps,
+} from '../fixtures/from-empty.ts';
 import { samPayProfile, samPayWeeks } from '../fixtures/pay.ts';
 import { pounds } from '../fixtures/plan.ts';
 import { samSpend, samToday, samTravel, samViewEnd } from '../fixtures/sam.ts';
@@ -690,5 +697,112 @@ describe('owner test 4: every refusal has a plain code', () => {
     }
     expect(message).not.toBe('');
     expect(message).not.toMatch(/987|Secret|dentist/);
+  });
+});
+
+describe('found by the outside review of step 2a', () => {
+  // Sam's whole plan with his pay profile, pay weeks and pay-later food budget.
+  const everything = build(samEverythingSteps()).records;
+  const overtimeOn = (workedOn: string, id = 'ot'): EditCommand => ({
+    kind: 'overtime',
+    id,
+    seriesId: 'pay',
+    workedOn,
+    hours: '5',
+  });
+  const changeOf = (records: PlanRecords, id = 'ot') =>
+    records.payAdjustments?.find((one) => one.id === id)?.change;
+
+  it('takes a newer payslip’s year so far once overtime is saved on a payday that has gone (D154)', () => {
+    // Overtime for Sat 24 Oct goes on Fri 30 Oct, tax week 30.
+    const saved = made(everything, overtimeOn('2026-10-24'));
+    const before = changeOf(saved);
+    const week30 = made(
+      saved,
+      {
+        kind: 'change-pay-profile',
+        payProfileId: 'warehouse',
+        edits: { soFar: { taxYear: '2026-27', period: 30, grossForTax: 1110000, taxPaid: 77000 } },
+      },
+      '2026-10-31',
+    );
+    expect(changeOf(week30)).toBe(before);
+    made(
+      saved,
+      {
+        kind: 'change-pay-profile',
+        payProfileId: 'warehouse',
+        edits: { soFar: { taxYear: '2027-28', period: 1, grossForTax: 50000, taxPaid: 0 } },
+      },
+      '2027-04-12',
+    );
+  });
+
+  it('works overtime out again when an undo puts the tax code back (D154)', () => {
+    const { edit, after } = run(everything, {
+      kind: 'change-pay-profile',
+      payProfileId: 'warehouse',
+      edits: { taxCode: 'BR' },
+    });
+    const withOvertime = run(after, overtimeOn('2026-10-27')).after;
+    const undone = run(withOvertime, { kind: 'undo', edit }).after;
+    const fresh = run(everything, overtimeOn('2026-10-27')).after;
+    expect(changeOf(undone)).toBe(changeOf(fresh));
+    expect(changeOf(undone)).not.toBe(changeOf(withOvertime));
+  });
+
+  it('refuses a new last day covered that would move a saved shift to another payday (D154)', () => {
+    // Tue 27 Oct is paid on Fri 6 Nov, covering work up to Sun 1 Nov.
+    const saved = made(everything, overtimeOn('2026-10-27'));
+    refuses(
+      'shifts-saved',
+      {
+        kind: 'change-pay-profile',
+        payProfileId: 'warehouse',
+        edits: { coveredTo: { kind: 'days-before', days: 0 } },
+      },
+      saved,
+    );
+    // Covering work up to 4 days before still puts it on Fri 6 Nov.
+    const after = made(saved, {
+      kind: 'change-pay-profile',
+      payProfileId: 'warehouse',
+      edits: { coveredTo: { kind: 'days-before', days: 4 } },
+    });
+    expect(after.payAdjustments?.[0]?.number).toBe(1);
+  });
+
+  it('moves a pay-later budget’s bills only while nothing is stored against them, and never before today (D152)', () => {
+    const spend: EditCommand = {
+      kind: 'spend',
+      spend: {
+        id: 'shop',
+        budgetId: 'food',
+        amount: pounds('120.00'),
+        spentOn: '2026-11-10',
+        recordedAt: '2026-11-10T12:00:00Z',
+      },
+    };
+    const billDay = (day: number): EditCommand => ({
+      kind: 'change-budget',
+      budgetId: 'food',
+      edits: { billDay: day },
+    });
+    // On Tue 10 Nov a bill on the 5th would start with one on Thu 5 Nov.
+    refuses('bill-before-today', billDay(5), everything, '2026-11-10');
+    refuses('budget-has-history', billDay(5), made(everything, spend, '2026-11-10'), '2026-11-10');
+    // On Sun 25 Oct, before any bill or spend, the bill can move to the 30th.
+    const moved = made(everything, billDay(30));
+    expect(moved.budgets?.[0]?.billDay).toBe(30);
+    // Sam's Travel, from Fri 23 Oct, as a pay-later bill on the 24th would have had a bill on Sat 24 Oct.
+    refuses(
+      'bill-before-today',
+      {
+        kind: 'change-budget',
+        budgetId: 'travel',
+        edits: { leaves: 'pay-later', billDay: 24 },
+      },
+      { ...sam, budgets: [samTravel()] },
+    );
   });
 });

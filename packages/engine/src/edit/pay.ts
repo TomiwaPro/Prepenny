@@ -2,6 +2,7 @@
 // 4.3, D5, D44, D123, D130, D131). Each is one undo step, like every edit (D87).
 
 import { addDays, type Day, formatDate, parseDate } from '../dates/day.ts';
+import { EngineInputError } from '../errors.ts';
 import { parseDecimal } from '../money/decimal.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { lastDayCovered, workOutPayChange } from '../pay/shifts.ts';
@@ -441,14 +442,15 @@ function basisNow(
 }
 
 /**
- * Works out every saved overtime and missed shift again on its payday, from
- * the pay profiles, pay weeks and pay links as they are now in this edit
- * (D140, D154), so they always match what they're worked out from. One whose
- * payday has no pay profile or pay week any more stays as it is, as when
- * another on its payday is removed. Refused when a missed shift would then
- * take off more extras than the payday has (D130).
+ * True for a payday still to come that's an estimate, so its overtime and
+ * missed shifts still change it (D44, D154).
  */
-export function reworkPayAdjustments(context: Context): void {
+function stillToCome(context: Context, payday: { payment: PaymentOnDays }): boolean {
+  return payday.payment.day >= context.today && payday.payment.isEstimate;
+}
+
+/** Every saved overtime and missed shift as it is now in this edit, grouped by payday. */
+function savedByPayday(context: Context): PayAdjustment[][] {
   const groups = new Map<string, PayAdjustment[]>();
   for (const { id } of context.checked.pay.adjustments.values()) {
     const now = context.draft.get(adjustmentWrite(id, null)) as PayAdjustment | null;
@@ -456,12 +458,68 @@ export function reworkPayAdjustments(context: Context): void {
     const key = JSON.stringify([now.familyId, now.number]);
     groups.set(key, [...(groups.get(key) ?? []), now]);
   }
-  for (const group of groups.values()) {
+  return [...groups.values()];
+}
+
+/**
+ * Works out every saved overtime and missed shift on a payday still to come
+ * again, from the pay profiles, pay weeks and pay links as they are now in
+ * this edit (D140, D154), so they always match what they're worked out
+ * from. Those on paydays that have gone, or have their real amount, stay as
+ * they were saved, and so does one on a payday a newer payslip's year so far
+ * already covers. One whose payday has no pay profile or pay week any more
+ * stays as it is too, as when another on its payday is removed. Refused when
+ * a missed shift would then take off more extras than the payday has (D130).
+ */
+export function reworkPayAdjustments(context: Context): void {
+  for (const group of savedByPayday(context)) {
     const { familyId, number } = group[0] as PayAdjustment;
     const payday = paydayByNumber(context, familyId, number);
-    const basis = payday === null ? null : basisNow(context, payday);
-    if (payday === null || basis === null) continue;
+    if (payday === null || !stillToCome(context, payday)) continue;
+    const basis = basisNow(context, payday);
+    if (basis === null) continue;
     refuseTooMuchExtras(payday, basis.week, group);
-    saveAll(context, workOutPayday(payday, basis, group));
+    let worked: PayAdjustment[];
+    try {
+      worked = workOutPayday(payday, basis, group);
+    } catch (error) {
+      // The year so far is from this payday's payslip or later, or from
+      // another tax year: the payday is settled, so its shifts stay as saved.
+      if (error instanceof EngineInputError && error.code === 'bad-year-so-far') continue;
+      throw error;
+    }
+    saveAll(context, worked);
+  }
+}
+
+/**
+ * Refuses a new last day covered for a pay profile while a shift saved on a
+ * payday still to come would go on another payday with it (D131, D154). The
+ * person removes the shift and adds it again, so its payday and its change
+ * are both worked out afresh.
+ */
+export function refuseMovedShifts(
+  context: Context,
+  profileId: string,
+  coveredTo: CoveredTo | undefined,
+): void {
+  if (coveredTo === undefined) return;
+  for (const group of savedByPayday(context)) {
+    const { familyId, number } = group[0] as PayAdjustment;
+    const payday = paydayByNumber(context, familyId, number);
+    if (payday === null || !stillToCome(context, payday)) continue;
+    const id = payday.prepared.series.id;
+    const series =
+      (context.draft.get(seriesWrite(id, null)) as Series | null) ?? payday.prepared.series;
+    if (series.payProfileId !== profileId) continue;
+    for (const one of group) {
+      const now = paydayForShift(context, familyId, coveredTo, parseDate(one.workedOn));
+      if (now === null || now.payment.number !== number) {
+        refuse(
+          'shifts-saved',
+          `Pay profile ${profileId}: a shift saved for the payday on ${formatDate(payday.payment.day)} would go on another payday. Remove it first, then add it again.`,
+        );
+      }
+    }
   }
 }

@@ -15,6 +15,7 @@ import { EngineInputError } from '../errors.ts';
 import { checkPence, checkPenceNotNegative } from '../money/pence.ts';
 import { mainPaydaysOf } from '../periods/main-pay.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
+import type { Series } from '../schedule/types.ts';
 import { addAccount, changeAccount, closeAccount } from './accounts.ts';
 import { addBudget, changeBudget, endBudget } from './budget-commands.ts';
 import {
@@ -31,7 +32,13 @@ import {
 import { addDebt, addGoal, changeDebt, changeGoal, closeDebt, closeGoal } from './debts-goals.ts';
 import { removeThisAndLater, thisAndLater } from './later.ts';
 import { addPayment, deletePayment, linkPay } from './new-payments.ts';
-import { recordPayAdjustment, refuseUndoOfPay, removePayAdjustment } from './pay.ts';
+import {
+  recordPayAdjustment,
+  refuseMovedShifts,
+  refuseUndoOfPay,
+  removePayAdjustment,
+  reworkPayAdjustments,
+} from './pay.ts';
 import { addPayProfile, addPayWeek, changePayProfile, changePayWeek } from './pay-records.ts';
 import {
   applyWrites,
@@ -467,6 +474,29 @@ function undo(context: Context, edit: Edit): void {
     }
   }
   refuseUndoOfPay(context, writes, before);
+  // Putting back a pay profile, a pay week or pay's links works out the
+  // overtime and missed shifts saved since on them again, from what's put
+  // back, so they match it (D154).
+  const beforeByKey = new Map(before.map((write) => [keyOf(write), write]));
+  const links = (value: RecordWrite['value']) => {
+    const series = value as Series | null;
+    return series === null ? null : [series.payProfileId ?? null, series.cyclePayWeeks ?? null];
+  };
+  const putsBackPay = writes.some(
+    (write) =>
+      write.kind === 'pay-profile' ||
+      write.kind === 'pay-week' ||
+      (write.kind === 'series' &&
+        !sameValue(links(write.value), links(beforeByKey.get(keyOf(write))?.value ?? null))),
+  );
+  if (putsBackPay) {
+    for (const write of before) {
+      if (write.kind === 'pay-profile' && write.value !== null) {
+        refuseMovedShifts(context, write.id, write.value.coveredTo);
+      }
+    }
+    reworkPayAdjustments(context);
+  }
   // Something saved since may use what this edit added, such as a payment in
   // a new account, or a goal's new account (D149). The records before the
   // edit made a plan, so if putting them back doesn't, something has changed since.

@@ -90,6 +90,52 @@ function billsHaveHistory(context: Context, id: string, after: Day | null = null
   );
 }
 
+/** A pay-later budget's first bill (D111), or null for any other budget. */
+function firstBill(budget: Draftable<Budget>): Day | null {
+  if (budget.leaves !== 'pay-later' || typeof budget.billDay !== 'number') return null;
+  const calendar = statementPeriods(budget.billDay, budget.statementDay ?? null);
+  return calendar.periodOf(parseDate(budget.startsOn as string)).bill;
+}
+
+/**
+ * Refuses a change that moves a budget's bills (D152): to or from a
+ * pay-later bill, a new bill day, or a new statement day for the card. A
+ * bill is found by its date (D111) and pays for the spends of its statement
+ * period (D61), so the bills can only move while the first one is still to
+ * come and nothing is stored against them: no tick or change on a bill, and,
+ * to or from a pay-later bill or for a new bill day, no spends. A bill can
+ * never be made for a day before today, as a payment can't (D150).
+ */
+function refuseMovedBills(
+  context: Context,
+  budget: Budget,
+  next: Draftable<Budget>,
+  what: string,
+): void {
+  const switches = (budget.leaves === 'pay-later') !== (next.leaves === 'pay-later');
+  const billDayMoves = switches || next.billDay !== budget.billDay;
+  if (!billDayMoves && next.statementDay === budget.statementDay) return;
+  const spends = context.checked.spends.get(budget.id)?.length ?? 0;
+  const before = firstBill(budget);
+  if (
+    billsHaveHistory(context, budget.id) ||
+    (billDayMoves && spends > 0) ||
+    (before !== null && before < context.today)
+  ) {
+    refuse(
+      'budget-has-history',
+      `${what} has spends or bills already, so its bills stay as they are. End it and add a new budget.`,
+    );
+  }
+  const after = firstBill(next);
+  if (after !== null && after < context.today) {
+    refuse(
+      'bill-before-today',
+      `${what}: its first bill would be on ${formatDate(after)}, before today.`,
+    );
+  }
+}
+
 /**
  * The amounts a budget had before an amount change today (D152). The new
  * amount counts from the period with today in it: periods that have ended
@@ -134,32 +180,18 @@ export function changeBudget(context: Context, budgetId: string, raw: BudgetEdit
     next.amount = edits.amount;
   }
   if (edits.leaves !== undefined && edits.leaves !== budget.leaves) {
-    const payLaterNow = budget.leaves === 'pay-later';
-    if (payLaterNow !== (edits.leaves === 'pay-later')) {
-      const spends = context.checked.spends.get(id)?.length ?? 0;
-      if (spends > 0 || billsHaveHistory(context, id)) {
-        refuse(
-          'budget-has-history',
-          `${what} has spends or bills already, so it can't change to or from a pay-later bill. End it and add a new budget.`,
-        );
-      }
-      // Only a pay-later budget has bill days (D107).
-      if (payLaterNow) {
-        next.billDay = undefined;
-        next.statementDay = undefined;
-      }
+    // Only a pay-later budget has bill days (D107).
+    if (budget.leaves === 'pay-later' && edits.leaves !== 'pay-later') {
+      next.billDay = undefined;
+      next.statementDay = undefined;
     }
     next.leaves = edits.leaves;
   }
-  if (edits.billDay !== undefined && edits.billDay !== budget.billDay) {
-    if (budget.billDay !== undefined && billsHaveHistory(context, id)) {
-      refuse('budget-has-history', `${what}'s bills have ticks or changes, so the bill day stays.`);
-    }
-    next.billDay = edits.billDay;
-  }
+  if (edits.billDay !== undefined) next.billDay = edits.billDay;
   if (edits.statementDay !== undefined) {
     next.statementDay = edits.statementDay === null ? undefined : edits.statementDay;
   }
+  refuseMovedBills(context, budget, next, what);
   if (edits.rollOver !== undefined && edits.rollOver !== budget.rollOver) {
     if (typeof edits.rollOver !== 'boolean') {
       refuse('bad-command', `${what}: roll-over is true or false.`);
