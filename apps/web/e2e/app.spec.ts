@@ -90,8 +90,9 @@ test('the example plan is saved in the phone’s own database', async ({ page })
         };
       }),
   );
-  // 2 accounts, 2 balances, 21 payments, 3 changes, 6 debts, 1 pay profile, 3 pay weeks, settings.
-  expect(saved).toEqual({ plans: 1, records: 39 });
+  // 2 accounts, 2 balances, 21 payments, 3 changes, 6 debts, 1 pay profile, 4 pay weeks
+  // (weeks 26 to 29, D196), settings.
+  expect(saved).toEqual({ plans: 1, records: 40 });
 });
 
 test('says so when the phone is offline', async ({ page, context }) => {
