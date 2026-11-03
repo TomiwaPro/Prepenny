@@ -63,9 +63,11 @@ export interface GoalPlan {
   /** What's saved so far has reached the target. */
   readonly reachedNow: boolean;
   /**
-   * The date the plan reaches the target: the day of the payment that first
-   * takes it to the target or above. Null when the starting amount already
-   * did, or when it isn't reached by the last day looked at.
+   * The date the plan reaches the target: the day of the payment that takes
+   * it to the target or above and keeps it there to the last day looked at
+   * (D139). Money taken out again, below the target, starts it over. Null
+   * when the starting amount already did and it never drops below, or when
+   * it isn't at the target on the last day looked at.
    */
   readonly reachedOn: string | null;
   /** Which payment that is: 24 for the 24th move. Null when `reachedOn` is. */
