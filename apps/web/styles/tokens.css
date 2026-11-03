@@ -1,0 +1,133 @@
+/*
+ * PrePenny's design tokens (docs/DESIGN.md). Light mode is the owner's
+ * approved palette. Dark mode uses the same roles with values proposed in
+ * step 2b for the owner's approval (D164). Every text pair passes WCAG 2.2 AA
+ * at 4.5:1, and the text box border and focus outline at 3:1, in both modes:
+ * test/unit/colours.test.ts checks them.
+ *
+ * Dark mode follows the phone unless the person picks Light or Dark on the
+ * More screen, which sets data-theme on <html>. The dark values are written
+ * twice, once for each way in, and the test checks the two match.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Colours (DESIGN.md, light mode) */
+  --paper: #f4efe6;
+  --card: #fffdf8;
+  --sunk: #efe8da;
+  --ink: #1a2238;
+  --ink-muted: #4a5060;
+  --navy: #14213d;
+  --navy-raised: #22304f;
+  --on-navy: #f4efe6;
+  --on-navy-muted: #c9bfa8;
+  --brass: #a8864b;
+  --divider: #ede5d6;
+  --card-edge: #e3d9c6;
+  --button-border: #d9d2c3;
+  --nav-active: #e6e2d6;
+  --money-in: #1e6b3a;
+  --tight-text: #7a4e00;
+  --tight-bg: #fbf0d9;
+  --short-text: #a1281e;
+  --short-bg: #fbe4e1;
+  /* Navy used as text: links, outlined buttons, the wordmark and the active navigation item */
+  --accent-text: #14213d;
+  /* Still to choose in DESIGN.md, proposed in step 2b (D164) */
+  --field-border: #7a7365;
+  --focus: #14213d;
+  /* The dim behind a sheet: a see-through navy, not a glass effect */
+  --backdrop: rgb(20 33 61 / 0.45);
+
+  /* Type (DESIGN.md), in rem so text scales with the phone's text size */
+  --font: var(--font-figtree), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --size-balance: 2.875rem; /* 46px */
+  --size-key-figure: 1.875rem; /* 30px */
+  --size-wordmark: 1.375rem; /* 22px */
+  --size-heading: 1.0625rem; /* 17px */
+  --size-name: 1rem; /* 16px */
+  --size-body: 0.9375rem; /* 15px */
+  --size-second: 0.875rem; /* 14px */
+  --size-small: 0.8125rem; /* 13px */
+  --size-label: 0.75rem; /* 12px, the smallest allowed */
+
+  /* Space: a 4px scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --gutter: 16px;
+  --card-gap: 12px;
+
+  /* Corners */
+  --radius-balance: 20px;
+  --radius-card: 16px;
+  --radius-inner: 12px;
+  --radius-pill: 999px;
+
+  /* Sizes */
+  --button-height: 48px;
+  --tap: 44px;
+  --column: 30rem;
+  --nav-height: 4.125rem; /* 66px */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0e1424;
+    --card: #172036;
+    --sunk: #212b44;
+    --ink: #f2ece0;
+    --ink-muted: #b9b2a3;
+    --navy: #22345e;
+    --navy-raised: #2e4272;
+    --on-navy: #f4efe6;
+    --on-navy-muted: #d3c9b3;
+    --brass: #b08e55;
+    --divider: #27314b;
+    --card-edge: #2c3752;
+    --button-border: #3b4662;
+    --nav-active: #2b3757;
+    --money-in: #74cc92;
+    --tight-text: #f2c46a;
+    --tight-bg: #3b2d0f;
+    --short-text: #ffb2a6;
+    --short-bg: #4b1d18;
+    --accent-text: #f2ece0;
+    --field-border: #8790a6;
+    --focus: #f4efe6;
+    --backdrop: rgb(0 0 0 / 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0e1424;
+  --card: #172036;
+  --sunk: #212b44;
+  --ink: #f2ece0;
+  --ink-muted: #b9b2a3;
+  --navy: #22345e;
+  --navy-raised: #2e4272;
+  --on-navy: #f4efe6;
+  --on-navy-muted: #d3c9b3;
+  --brass: #b08e55;
+  --divider: #27314b;
+  --card-edge: #2c3752;
+  --button-border: #3b4662;
+  --nav-active: #2b3757;
+  --money-in: #74cc92;
+  --tight-text: #f2c46a;
+  --tight-bg: #3b2d0f;
+  --short-text: #ffb2a6;
+  --short-bg: #4b1d18;
+  --accent-text: #f2ece0;
+  --field-border: #8790a6;
+  --focus: #f4efe6;
+  --backdrop: rgb(0 0 0 / 0.6);
+}
