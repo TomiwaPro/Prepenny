@@ -30,7 +30,7 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      WRANGLER_SEND_METRICS: 'false'
+      WRANGLER_SEND_METRICS: "false"
     steps:
       - name: Check out the code
         uses: actions/checkout@v5
@@ -47,7 +47,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
         env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
       - name: Build the app
         run: pnpm build
