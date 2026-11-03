@@ -117,6 +117,9 @@ export function checkPay(records: PayRecords, series: readonly Series[]): Checke
     const what = `Pay profile ${profile.id}`;
     if (profiles.has(profile.id)) bad('repeated-pay-profile', `${what} is listed twice.`);
     checkSettings(profile);
+    if (profile.name !== undefined && typeof profile.name !== 'string') {
+      bad('bad-pay-profile', `${what}: its name must be text.`);
+    }
     if (profile.overtimeRate !== undefined)
       parseDecimal(profile.overtimeRate, `${what}: overtime rate`);
     if (profile.coveredTo !== undefined) checkCoveredTo(profile.coveredTo, what);
@@ -127,6 +130,9 @@ export function checkPay(records: PayRecords, series: readonly Series[]): Checke
     if (!isId(week?.id)) bad('bad-pay-week', 'A pay week needs an id.');
     const what = `Pay week ${week.id}`;
     if (weeks.has(week.id)) bad('repeated-pay-week', `${what} is listed twice.`);
+    if (week.name !== undefined && typeof week.name !== 'string') {
+      bad('bad-pay-week', `${what}: its name must be text.`);
+    }
     if (records.payProfiles !== undefined && !profiles.has(week.payProfileId)) {
       bad('unknown-pay-profile', `${what} is for a pay profile not in the plan.`);
     }

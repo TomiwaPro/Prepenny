@@ -109,6 +109,9 @@ export function workOutBudget(
   const { budget } = checked;
   const calendar: BudgetCalendar = calendarOf(checked, pay);
   const what = `Budget ${budget.id}`;
+  // A period that had ended when the amount changed keeps the amount it had (D152).
+  const amountFor = (start: Day): Pence =>
+    checked.amountsBefore.find((one) => start <= one.until)?.amount ?? budget.amount;
 
   const first = calendar.periodOf(checked.startsOn);
   const lastStart = checked.endsOn === null ? null : calendar.periodOf(checked.endsOn).start;
@@ -139,7 +142,8 @@ export function workOutBudget(
   bounds.forEach((period, i) => {
     const before = periods[i - 1];
     const rolledOver = before?.rollsOn === true ? before.left : 0;
-    const amount = add(budget.amount, rolledOver, what);
+    const base = amountFor(period.start);
+    const amount = add(base, rolledOver, what);
     const spent = spentIn[i] as Pence;
     const left = Math.max(0, amount - spent);
     const firstDay = Math.max(today, period.start);
@@ -149,7 +153,7 @@ export function workOutBudget(
         : null;
     periods.push({
       ...period,
-      base: budget.amount,
+      base,
       rolledOver,
       amount,
       spent,
@@ -228,7 +232,7 @@ export function workOutBudget(
         spent = add(spent, spend.spend.amount, what);
       }
     }
-    return Math.max(budget.amount, spent);
+    return Math.max(amountFor(period.start), spent);
   };
 
   return { checked, periods, currentIndex, rows, billEstimate };

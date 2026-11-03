@@ -106,6 +106,8 @@ export type CoveredTo =
  */
 export interface PayProfile extends PaySettings {
   readonly id: string;
+  /** "Warehouse job". Every pay profile added with a command has one (D154). */
+  readonly name?: string;
   /** From the last payslip, for exact tax on the cumulative basis. */
   readonly soFar?: YearSoFar;
   /** Remembered for "I did overtime" (brief 4.3): pounds an hour as text. */
@@ -117,6 +119,8 @@ export interface PayProfile extends PaySettings {
 /** A saved pay week (D5): the usual lines of one kind of week, such as "3-shift week". */
 export interface PayWeek {
   readonly id: string;
+  /** "3-shift week". Every pay week added with a command has one (D154). */
+  readonly name?: string;
   readonly payProfileId: string;
   readonly lines: readonly PayLine[];
   readonly fixed?: readonly FixedPay[];

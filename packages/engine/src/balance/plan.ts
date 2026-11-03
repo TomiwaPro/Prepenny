@@ -13,6 +13,7 @@ import {
 } from '../budgets/check.ts';
 import { budgetPay } from '../budgets/periods.ts';
 import type { BudgetBill } from '../budgets/types.ts';
+import { NATIONS } from '../dates/bank-holiday-rules.ts';
 import {
   addDays,
   type Day,
@@ -59,6 +60,7 @@ import {
   type Plan,
   type PlanInput,
   type PlanRow,
+  type PlanSettings,
   type RowKind,
 } from './types.ts';
 
@@ -189,9 +191,34 @@ function checkAccounts(accounts: readonly Account[]): Map<string, Account> {
     }
     checkPenceNotNegative(account.overdraftLimit, `${what}: the overdraft limit`);
     checkPence(account.warningLevel, `${what}: the warning level`);
+    if (account.name !== undefined && typeof account.name !== 'string') {
+      throw new EngineInputError('bad-account', `${what}: its name must be text.`);
+    }
+    if (account.closed !== undefined && typeof account.closed !== 'boolean') {
+      throw new EngineInputError('bad-account', `${what}: closed must be true or false.`);
+    }
     byId.set(account.id, account);
   });
   return byId;
+}
+
+/**
+ * Checks the plan's settings (D155): a nation, and the main pay as a family
+ * id or none. A main pay with no series left counts as none (D85).
+ */
+function checkPlanSettings(settings: PlanSettings): void {
+  if (settings === null || typeof settings !== 'object') {
+    throw new EngineInputError('bad-settings', 'The plan settings must be a record.');
+  }
+  if (!(NATIONS as readonly unknown[]).includes(settings.nation)) {
+    throw new EngineInputError(
+      'bad-nation',
+      'The nation must be england-and-wales, scotland or northern-ireland.',
+    );
+  }
+  if (settings.mainPayFamilyId !== null && !isNonEmptyText(settings.mainPayFamilyId)) {
+    throw new EngineInputError('bad-main-pay', 'The main pay must be a family id, or null.');
+  }
 }
 
 /** The latest balance update for each account, by time (D33). */
@@ -321,6 +348,8 @@ export type RecordsToCheck = Pick<
 > & {
   /** The plan's debts. When they're given, every series' link to a debt is checked too (D98). */
   readonly debts?: readonly Debt[];
+  /** The plan's nation and main pay (D155), when they've been chosen. */
+  readonly settings?: PlanSettings;
 };
 
 /** A plan's records, checked and ready to work with. */
@@ -383,6 +412,7 @@ export function checkRecords(input: RecordsToCheck, today: Day): CheckedRecords 
     checkGoalLinks(input.series, goals);
   }
   const pay = checkPay(input, input.series);
+  if (input.settings !== undefined) checkPlanSettings(input.settings);
   return {
     accounts,
     starts,

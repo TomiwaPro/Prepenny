@@ -1,4 +1,5 @@
 import type { Budget, BudgetPlan, Spend } from '../budgets/types.ts';
+import type { Nation } from '../dates/bank-holiday-rules.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Goal } from '../goals/types.ts';
 import type { Pence } from '../money/pence.ts';
@@ -13,11 +14,30 @@ export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 /** An account (brief 5.2, ARCHITECTURE.md 3.3). Its balance comes from its balance updates. */
 export interface Account {
   readonly id: string;
+  /** "Current account". Every account added with a command has one (D151). */
+  readonly name?: string;
   readonly kind: AccountKind;
   /** 0 if none. The floor is minus this: −£1,000.00 for Ali (brief 5.5, 8.5). */
   readonly overdraftLimit: Pence;
   /** Strictly under this is Tight (D10). Can be below zero, near an overdraft floor. */
   readonly warningLevel: Pence;
+  /**
+   * Closed: nothing is planned in it any more (D151). It keeps its balance
+   * updates for the history, and the plan still works it out.
+   */
+  readonly closed?: boolean;
+}
+
+/**
+ * The plan's settings (D155): the nation whose bank holidays apply (brief
+ * 4.3, 5.7) and the main pay (D14). The app passes them to the engine as
+ * `holidays` and `mainPayFamilyId`. In a shared plan, each person's main pay
+ * moves to their own plan member record in Phase 3 (ARCHITECTURE.md 3.2).
+ */
+export interface PlanSettings {
+  readonly nation: Nation;
+  /** The family of the main pay, or null when there's none (D14). */
+  readonly mainPayFamilyId: string | null;
 }
 
 /** What the bank showed, typed in with Update balance (brief 4.2, D33). */

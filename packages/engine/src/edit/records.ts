@@ -1,7 +1,7 @@
 // Keeping track of the records an edit touches: what they were before, and
 // what they are after. Nothing here is stored or sent anywhere.
 
-import type { BalanceUpdate, Tick } from '../balance/types.ts';
+import type { Account, BalanceUpdate, PlanSettings, Tick } from '../balance/types.ts';
 import type { Spend } from '../budgets/types.ts';
 import type { Debt } from '../debts/types.ts';
 import { EngineInputError } from '../errors.ts';
@@ -9,7 +9,7 @@ import type { PayAdjustment } from '../pay/types.ts';
 import type { PaymentChange, Series } from '../schedule/types.ts';
 import type { Edit, PlanRecords, RecordWrite } from './types.ts';
 
-/** The kinds of record, in the order an edit lists them. */
+/** The kinds of record, in the order an edit lists them. Kinds added in step 2a come last. */
 const KIND_ORDER: readonly RecordWrite['kind'][] = [
   'series',
   'change',
@@ -18,16 +18,40 @@ const KIND_ORDER: readonly RecordWrite['kind'][] = [
   'debt',
   'spend',
   'pay-adjustment',
+  'account',
+  'budget',
+  'goal',
+  'pay-profile',
+  'pay-week',
+  'settings',
 ];
+
+/** The kinds of record found by their own id. */
+type ById = Exclude<RecordWrite, { kind: 'change' | 'tick' | 'settings' }>;
+
+const BY_ID: readonly RecordWrite['kind'][] = KIND_ORDER.filter(
+  (kind) => kind !== 'change' && kind !== 'tick' && kind !== 'settings',
+);
+
+function isById(write: RecordWrite): write is ById {
+  return BY_ID.includes(write.kind);
+}
 
 /** One text that names a record: its kind, then its id, or its series and original date. */
 export function keyOf(write: RecordWrite): string {
   switch (write.kind) {
+    case 'settings':
+      return JSON.stringify([write.kind]);
+    case 'account':
     case 'series':
     case 'balance-update':
     case 'debt':
     case 'spend':
     case 'pay-adjustment':
+    case 'budget':
+    case 'goal':
+    case 'pay-profile':
+    case 'pay-week':
       return JSON.stringify([write.kind, write.id]);
     case 'change':
       return JSON.stringify([write.kind, write.seriesId, write.originalDate]);
@@ -45,13 +69,8 @@ function checkWrite(write: RecordWrite, what: string): void {
     write !== null &&
     typeof write === 'object' &&
     KIND_ORDER.includes(write.kind) &&
-    (write.kind === 'series' ||
-    write.kind === 'balance-update' ||
-    write.kind === 'debt' ||
-    write.kind === 'spend' ||
-    write.kind === 'pay-adjustment'
-      ? text(write.id)
-      : text(write.seriesId) && text(write.originalDate));
+    (write.kind === 'settings' ||
+      (isById(write) ? text(write.id) : text(write.seriesId) && text(write.originalDate)));
   if (
     !known ||
     (write.kind === 'tick' && write.setAside !== undefined && write.setAside !== true) ||
@@ -137,6 +156,23 @@ export class Draft {
     }
     for (const value of records.payAdjustments ?? []) {
       const write: RecordWrite = { kind: 'pay-adjustment', id: value.id, value };
+      this.#now.set(keyOf(write), write);
+    }
+    const byId: [RecordWrite['kind'], readonly { readonly id: string }[] | undefined][] = [
+      ['account', records.accounts],
+      ['budget', records.budgets],
+      ['goal', records.goals],
+      ['pay-profile', records.payProfiles],
+      ['pay-week', records.payWeeks],
+    ];
+    for (const [kind, list] of byId) {
+      for (const value of list ?? []) {
+        const write = { kind, id: value.id, value } as RecordWrite;
+        this.#now.set(keyOf(write), write);
+      }
+    }
+    if (records.settings !== undefined) {
+      const write: RecordWrite = { kind: 'settings', value: records.settings };
       this.#now.set(keyOf(write), write);
     }
   }
@@ -251,6 +287,21 @@ function applyToList<T>(
  * removed, or added at the end. A helper for the app's own copy and for
  * tests; it changes nothing it's given.
  */
+/**
+ * One list of records with an edit's writes saved, by id. A list that wasn't
+ * given stays not given, unless the edit adds to it.
+ */
+function applyById<R extends { readonly id: string }>(
+  list: readonly R[] | undefined,
+  writes: readonly RecordWrite[],
+  kind: ById['kind'],
+): readonly R[] | undefined {
+  if (list === undefined && !writes.some((write) => write.kind === kind)) return undefined;
+  return applyToList<R>(list ?? [], writes, kind, (one) =>
+    keyOf({ kind, id: one.id, value: null } as RecordWrite),
+  );
+}
+
 export function applyWrites<T extends PlanRecords>(records: T, writes: readonly RecordWrite[]): T {
   // Debts are left as they were given, missing or not, unless the edit changes one.
   const debts =
@@ -282,11 +333,33 @@ export function applyWrites<T extends PlanRecords>(records: T, writes: readonly 
             (one) => keyOf({ kind: 'pay-adjustment', id: one.id, value: null }),
           ),
         };
-  return {
-    ...records,
+  const optional: Record<string, unknown> = {};
+  const lists: [keyof PlanRecords, ById['kind']][] = [
+    ['budgets', 'budget'],
+    ['goals', 'goal'],
+    ['payProfiles', 'pay-profile'],
+    ['payWeeks', 'pay-week'],
+  ];
+  for (const [field, kind] of lists) {
+    const list = applyById(records[field] as readonly { id: string }[] | undefined, writes, kind);
+    if (list !== undefined) optional[field] = list;
+  }
+  // The plan's settings: one record, left as given unless the edit changes it.
+  let settings: PlanSettings | null | undefined = records.settings;
+  for (const write of writes) {
+    if (write.kind === 'settings') settings = write.value;
+  }
+  const { settings: _settings, ...rest } = records;
+  const result: Record<string, unknown> = {
+    ...rest,
+    ...(settings === undefined || settings === null ? {} : { settings }),
     ...debts,
     ...spends,
     ...payAdjustments,
+    ...(optional as Partial<T>),
+    accounts: applyToList<Account>(records.accounts, writes, 'account', (one) =>
+      keyOf({ kind: 'account', id: one.id, value: null }),
+    ),
     series: applyToList<Series>(records.series, writes, 'series', (one) =>
       keyOf(seriesWrite(one.id, null)),
     ),
@@ -303,4 +376,5 @@ export function applyWrites<T extends PlanRecords>(records: T, writes: readonly 
       (one) => keyOf({ kind: 'balance-update', id: one.id, value: null }),
     ),
   };
+  return result as T;
 }

@@ -51,6 +51,9 @@ export function checkGoal(goal: Goal): CheckedGoal {
   ) {
     fail(id, 'the person it belongs to must be an id.');
   }
+  if (goal.closed !== undefined && typeof goal.closed !== 'boolean') {
+    fail(id, 'closed must be true or false.');
+  }
   const targetDate =
     goal.targetDate === undefined
       ? null
