@@ -1346,3 +1346,42 @@ Decided 3 Nov 2026 in step 1g. Adds to D72 and ARCHITECTURE.md 2.8.
 Result: about 5 milliseconds on the test machine, from about 28 before step 1g.
 
 Why: the test should measure the engine as the app will run it, and nothing else running at the same time. The target leaves room for a phone four times slower to stay under the brief's 50 milliseconds (ARCHITECTURE.md 2.8).
+
+### D135. What if
+
+Decided 3 Nov 2026 in step 1g. Adds to brief 4.10 and ARCHITECTURE.md 2.1.
+
+- Practice changes are ordinary edit commands, made one after another on a copy of the plan's records, each on the records the ones before it left. Anything that can be edited for real can be practised, including "I did overtime" and Update balance.
+- What if gives the real plan and the practice plan side by side: for each account its lowest point, the first day under the warning level and each shortfall with the payments that could move; for each debt "Paid off on", or what's still left at the end; and for each savings goal the date it's reached. Debts and goals look 24 months ahead, like the Debts screen (D43), unless told otherwise.
+- The real records are never changed. Throwing the practice away is simply forgetting it.
+- Keeping it gives one edit holding every practice change: for each record, how it was before the first practice change and how it is after the last. It's one undo step (brief 5.4, D87). A record that ends up as it started isn't in it.
+- Before keeping, the app works What if out again on the newest real records with the same practice commands, as a sync clash runs a command again (ARCHITECTURE.md 3.5), so a partner's change that arrived in the meantime is never overwritten.
+- A practice change the engine can't make is refused with its usual code, and the message says which practice change it was.
+
+Tests: owner test 2 (Kofi with no work next week: from a lowest point of £156.00 to £237.75 short on Thu 5 Nov, beside each other) and owner test 3 (Sam's Fri 30 Oct pay £100 lower: −£95.47 Short on Sun 1 Nov beside £4.53 Tight, the D69 list, and every paid-off date the same). Property tests on all six people's plans prove the real plan never changes, Keep saves exactly the practice plan, and one undo puts it back.
+
+Why: the brief asks for a practice mode with the same changes as real ones, side by side, then kept or thrown away. Using the same commands means practice and real changes always agree, and one edit for Keep follows the rule that every change can be undone straight away.
+
+### D136. Pay weeks after a new amount for this and all later ones
+
+Decided 3 Nov 2026 in step 1g. Adds to D5, D90 and D97.
+
+- A new amount for every payday from now (D90) replaces an amount pattern with one amount. The pay weeks linked to each step of the pattern (D5) go with the pattern, so those paydays have no pay week. "I did overtime" and "I missed a shift" on them then ask once for the usual hours and rate, as D5 says for pay with no linked week. A series with one amount and one pay week keeps it.
+- "Only this week of the pattern" (D97) on a series that has one amount and one pay week gives every step of its new pattern that same pay week.
+
+Why: the step 1g property tests found that a new amount for every payday from now, on pay linked to pay weeks, left four pay weeks on a series with one amount, so the edit was refused. With one amount, which step's week to use can't be known, and guessing would put a wrong overtime figure in the plan. A single week was already used for every payday, so it carries on.
+
+### D137. The other five people's plans
+
+Decided 3 Nov 2026 in step 1g. Adds to brief Part 2 and D15.
+
+The plans for Priya, Dee, Kofi, Jess and Tom, and Ali in `packages/engine/test/fixtures/people.ts` use the details in brief Part 2 and amounts made up to fit each person. They're test data for Phase 2's end-to-end tests, not example plans people see: Sam's is the only example (D15).
+
+- Priya: today Sun 25 Oct 2026, looking a year ahead so the yearly bills show. Salary £2,100 on the last working day, moved to the working day before (brief 8.5), rent, council tax over 10 months, energy, a quarterly water bill, yearly car insurance and TV licence, subscriptions, monthly food and weekly spread travel budgets, and £150 to a holiday fund each payday, reached on Fri 28 May 2027. No debts.
+- Dee: today Mon 2 Nov 2026. Her main pay is Universal Credit on the 28th, moved to the working day before, as an estimate, with October's real £812.46 typed in. Café wages every 2 weeks (32 hours at £12.71), with a pay profile so "I missed a shift" works. Council tax in 10 instalments, April to January, weekly childcare, and a weekly food budget. A £50 warning level, so she's Tight from Mon 9 Nov and never overdrawn.
+- Kofi: today Wed 28 Oct 2026. Three platforms as irregular weekly estimates, with Rides as his main pay, so his weeks run Monday to Sunday. 25% of each set aside to his Tax account, which pays his Self Assessment. Van finance as a loan with 24 payments left, rent, insurance, phone, and weekly fuel and food budgets.
+- Jess and Tom: today Sun 25 Oct 2026. Three accounts: Jess's, Tom's and the joint one. Jess is paid on the 28th and Tom on the 15th, both moved to the working day before. Jess moves £600 to the joint account on her payday (brief 8.5) and Tom £950 on his. The joint account pays the rent, bills and a monthly food budget. Tom's car loan belongs to Tom (D65). Jess's pay is the main pay here; Tom's own view uses his. Sharing between their phones, with private accounts, comes in Phase 3.
+- Ali: today Mon 2 Nov 2026, £300 into a £1,000 overdraft with a warning level of £0. His main pay is the student loan, three termly payments on chosen dates, so his plan runs term by term and Left to spend lasts until Mon 11 Jan. A weekly shop job, rent each term, a phone contract, a bus pass and a weekly food budget.
+- Everything paid before each person's balance was checked is ticked, so nothing is in Not ticked yet.
+
+Why: the brief asks for all six people as personas and end-to-end tests. Each plan has what that person needs most, and every engine part is used by at least one of them.

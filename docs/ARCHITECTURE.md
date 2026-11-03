@@ -283,7 +283,11 @@ Each budget has a period (D29), an amount, a way of leaving the account, and rol
 - **Built in step 1f** (D120 to D128):
   - Every figure comes from GOV.UK. A GitHub workflow saves the GOV.UK pages listed in `sources/gov-uk.txt` unchanged in `sources/gov-uk/`, with the date each was fetched, and only fetches from www.gov.uk and GOV.UK's own files that those pages link to (D120).
   - Income tax follows HMRC's Specification for PAYE tax table routines, version 24.0, step by step, for every kind of tax code (D121). National Insurance uses the exact percentage method and HMRC's rounding (D122). Both give HMRC's own 2026-27 test data to the penny.
-  - "I did overtime" and "I missed a shift" are pay adjustments, found by the pay's family and the payday's payment number (D123), on the first payday on or after the shift's working week moved on by the weeks pay is behind (D125).
+  - "I did overtime" and "I missed a shift" are pay adjustments, found by the pay's family and the payday's payment number (D123), on the first payday on or after the shift's working week moved on by the weeks pay is behind (D125, replaced in step 1g by D131).
+- **Built in step 1g** (D130, D131, D136):
+  - A shift goes on the first payday whose last day of work covered is on or after the shift (D131). Setup asks once, "Fri 6 Nov pays for work up to Sun 1 Nov": monthly pay keeps a day of the month (or the last day), in the payday's own month; any other pay keeps a number of days before payday, 5 for Sam. Both count from the payday's date from its schedule, before any weekend or bank holiday move.
+  - When the payday's pay week has fixed extras, such as a shift premium, "I did overtime" and "I missed a shift" take an optional change to them, worked out with the hours (D130).
+  - A new amount for every payday from now drops the pattern's pay weeks with the pattern, and "Only this week of the pattern" keeps a single pay week on every step (D136).
   - The year so far is exact from the payslip just before. Otherwise the pay periods in between count as this payday's pay, or for overtime as the payday's own pay week, and the result is an estimate (D124).
   - Pension is a percentage of the earnings in a band, before or after tax; other deductions come off after tax (D126). One of student loan Plans 1, 2, 4 and 5, and a Postgraduate loan (D127). The tax year file and the check are D128.
 
@@ -302,9 +306,15 @@ How the engine stays fast:
 7. **It runs in a background worker,** so the screen never stutters, even on a cheap phone.
 8. **A speed test in every test run** (step 1g): 100 series over 24 months must finish in under 12 milliseconds on the test machine, using the middle time of 20 runs after a warm-up (D72), which leaves room for a phone four times slower. Phase 4 checks it on a real mid-range Android phone.
 
+**Built in step 1g** (D134): points 1 to 5 and 8. The speed test, `packages/engine/test/speed/speed.test.ts`, works out 100 weekly series over two accounts for 24 months, about 10,500 rows, and takes about 5 milliseconds on the test machine, down from about 28 before step 1g. On top of points 1 to 5, each date's text is written once and kept, payments are written out field by field without copying, payments are collected in the same-day order so most days need no sorting, and what every row of a series shares is kept once for the series. The test runs on its own after every other test, and loads the engine with Node's own import, as the app's build will. Points 6 and 7 aren't needed to meet the target, so they wait for Phase 2: the background worker comes with the app, and keeping each series' payments between changes only if the phone check in Phase 4 needs it.
+
 ### 2.9 Bank holidays
 
 The engine has a built-in copy of the official list from `https://www.gov.uk/bank-holidays.json` for England and Wales, Scotland and Northern Ireland (brief 5.7). The built-in copy is `packages/engine/data/bank-holidays.json`, saved unchanged by the Bank holidays workflow on GitHub (`.github/workflows/bank-holidays.yml`), with `bank-holidays.source.json` beside it giving the source link, the date downloaded and a checksum. The engine takes the list as an input, so the app can pass in a fresher one. For a year the official list doesn't cover (D76), the engine works out the usual bank holidays by the standard rules, substitute days included, and switches to the official list once it covers that year (D74). **Agreed (D57):** the app also fetches a fresher copy of that same file from PrePenny's own website, which a weekly job refreshes from GOV.UK, and keeps it on the phone, so the phone never contacts another site. Each plan has one nation, chosen in setup.
+
+### 2.10 What if
+
+**Built in step 1g** (D135). A safe practice mode (brief 4.10). The person makes practice changes on the What if screen with the same sheets as real changes, such as "Move", "Just this one" or "Remove this one", and the engine makes them on a copy of the plan. It shows the real plan and the practice plan side by side: each account's lowest point, first day under the warning level and shortfalls, each debt's "Paid off on" and each savings goal's date. Throwing the practice away changes nothing. Keeping it saves every practice change as one edit, so one tap of Undo takes all of it back. Practice changes stay on the phone and are never sent anywhere (3.8).
 
 ### For future sessions: the engine
 
@@ -315,7 +325,8 @@ The engine has a built-in copy of the official list from `https://www.gov.uk/ban
 - **Pure:** no `Date.now()`, no `Math.random()`, no network, no storage. A lint rule blocks them inside the package.
 - **Debts** (step 1d, `packages/engine/src/debts`): `workOutDebts({ debts, series, changes, ticks, holidays, today, to }) → { owedNow, owedNowIsEstimate, debts }`, one `DebtPlan` per debt with Left now (with `interestSinceUpdate`, `leftNowIsEstimate` and `interestNotIncluded`, D104), Paid off on or `leftAtEnd`, progress and every row (linked payments and credit card statement days). A card's `zeroInterestUntil` is its "0% until" date (D106). Use `to: debtsLookAhead(today)` for the Debts screen (D43, D100). `compareCardPayments({ card, left, from, paysOn, fixed })` gives the minimum, fixed and full comparison (D102). Debt amounts are the debt's own minor units (`MinorUnits`); `leftNowInPounds` and `owedNow` are pence. A series links to a debt with `debtId`; a tick made inside a debt's statement update has `inDebtUpdate` set to the debt's id (D62).
 - **Budgets, Left to spend and Set aside** (step 1e, `packages/engine/src/budgets`): `PlanInput` takes optional `budgets`, `spends` and `goals`. `workOutPlan` gives back `plan.budgets` (one `BudgetPlan` per budget: `current` and `periods`, each with `base`, `rolledOver`, `amount`, `spent`, `left`, `perDay` for spread budgets and `bill` for pay-later ones) and `account.leftToSpend` (`until`, `amount`, `lowest`, `spendNoMoreThan`, `canKeepWarningLevel` and the `payLater` lines). Every `PlanRow` has a `kind`: `payment`, `bill`, `set-aside`, `budget` or `spend`, with `budgetId` and `spendId`. A pay-later budget's bills are a series made inside the engine with the budget's id (`billSeriesOf`), so ticks, changes and edits find them like any payment. A series' `setAside` is `{ percent, accountId }`.
-- **Take-home pay** (step 1f, `packages/engine/src/pay`): `workOutTakeHome({ settings, lines, fixed, payDate, soFar, assumedPayBetween }) → TakeHome` with gross, pension, pay for tax, tax, National Insurance, student loan, Postgraduate loan, other deductions, take-home, the year so far after it, the tax the regulatory limit held back, and `isEstimate` with its reason (D124). `checkPayslip(input, payslip)` lists each figure that differs and by how much; `takeHomeAsEstimate(payday, result)` is the `just-this-one` edit that adds it to the plan. Tax year files are JSON in `src/pay/tax-years`, checked by `checkTaxYear`; `taxYearsOf()` gives the built-in ones and `checkTaxYearFiles(today)` the needed and missing ones (D45, D128). The tax itself is `taxForPeriod` with `parseTaxCode` (D121), National Insurance `employeeNationalInsurance` (D122), student loans `studentLoanDeduction` (D127). `PlanInput` and the edit records take optional `payProfiles`, `payWeeks` and `payAdjustments`; a series links with `payProfileId` and `cyclePayWeeks`. The edit commands `overtime`, `missed-shift` and `remove-pay-adjustment` save a `pay-adjustment` record (D123, D125). A payday that's an estimate adds its adjustments to its amount and shows them in `payment.payAdjustment`.
+- **Take-home pay** (step 1f, `packages/engine/src/pay`): `workOutTakeHome({ settings, lines, fixed, payDate, soFar, assumedPayBetween }) → TakeHome` with gross, pension, pay for tax, tax, National Insurance, student loan, Postgraduate loan, other deductions, take-home, the year so far after it, the tax the regulatory limit held back, and `isEstimate` with its reason (D124). `checkPayslip(input, payslip)` lists each figure that differs and by how much; `takeHomeAsEstimate(payday, result)` is the `just-this-one` edit that adds it to the plan. Tax year files are JSON in `src/pay/tax-years`, checked by `checkTaxYear`; `taxYearsOf()` gives the built-in ones and `checkTaxYearFiles(today)` the needed and missing ones (D45, D128). The tax itself is `taxForPeriod` with `parseTaxCode` (D121), National Insurance `employeeNationalInsurance` (D122), student loans `studentLoanDeduction` (D127). `PlanInput` and the edit records take optional `payProfiles`, `payWeeks` and `payAdjustments`; a series links with `payProfileId` and `cyclePayWeeks`. The edit commands `overtime`, `missed-shift` and `remove-pay-adjustment` save a `pay-adjustment` record (D123); `overtime` and `missed-shift` take an optional `extras` (D130). A pay profile's `coveredTo` is the last day of work each payday covers (D131): `{ kind: 'days-before', days }`, `{ kind: 'day-of-month', day }` or `{ kind: 'last-day' }`, and `lastDayCovered(coveredTo, paydayOriginal)` works it out. A payday that's an estimate adds its adjustments to its amount and shows them in `payment.payAdjustment`.
+- **What if** (step 1g, `packages/engine/src/whatif`, D135): `whatIf(input, practiceChanges) → WhatIf`, where `input` is an `EditInput` with `to` (and optionally `debtsTo`, 24 months ahead by default) and `practiceChanges` is a list of ordinary `EditCommand`s, made in turn on a copy. It gives `real` and `practice` (each with its `records`, `plan`, `debts` and `goals`), `accounts`, `debts` and `goals` side by side (lowest point, first day under the warning level, shortfalls, Paid off on, the date a goal is reached), and `keep`, one `Edit` with every practice change in it, which is one undo step. It never changes `input`. Before keeping, the app runs it again on the newest real records with the same commands, as a sync clash does (3.5). A refused practice change keeps its usual code, and its message starts "Practice change N:".
 - **Savings goals** (step 1e, `packages/engine/src/goals`): `workOutGoals({ goals, series, changes, ticks, holidays, today, to }) → { goals }`, one `GoalPlan` per goal with saved so far, progress, `reachedOn` and `reachedWith`, and every linked payment. Use `to: debtsLookAhead(today)` to look 24 months ahead (D114). A series links to a goal with `goalId`.
 - **Edits** are commands: `editPlan(input, command) → { writes, undo }`, where `input` is the stored records (accounts, balance updates, series, changes, ticks and, from step 1d, debts) with the main pay, the bank holidays and `today`. Built in step 1c, in `packages/engine/src/edit`. The same function runs again when a sync clash needs an edit replayed on newer data (section 3.5).
   - Commands: `just-this-one`, `this-and-later`, `remove-this-one`, `remove-this-and-later`, `move`, `move-to-next-payday`, `tick`, `untick`, `update-balance`, `update-from-statement` (step 1d), `spend`, `change-spend` and `remove-spend` (step 1e) and `undo`. A pay-later bill takes every payment command except `this-and-later` and `remove-this-and-later` (D111). A `this-and-later` edit takes `amount` for "Every payday from now" (D90) or `stepAmount` for "Only this week of the pattern" (D97), never both. For a new date, the app sends only `date`, and the engine works out the schedule from it (D96, `src/edit/new-date.ts`). A `schedule` in the command is for a later "how often" change.
@@ -589,8 +600,7 @@ Planned transfers into a goal are series with `goal_id` set.
 | `gross_so_far`, `tax_so_far` | pence | "Gross for tax so far" and "Tax paid so far" from the last payslip |
 | `so_far_period`, `so_far_tax_year` | number, text | Which tax week or month, and tax year, those figures include (D124) |
 | `overtime_rate` | decimal | Remembered for "I did overtime" (brief 4.3) |
-| `work_week_starts` | weekday | The first day of a working week, for matching a shift to its payday |
-| `shift_pay_delay` | number | How many weeks after the shift's working week it's paid. Sam's is 1: "My pay is one week behind my shifts" |
+| `covered_to` | a day of the month, the last day, or a number of days before payday | The last day of work each payday pays for, asked once in setup: "Fri 6 Nov pays for work up to Sun 1 Nov". A shift goes on the first payday whose last day covered is on or after it. Monthly pay keeps a day of the month; any other pay keeps days before payday, 5 for Sam (D131). Replaces `work_week_starts` and `shift_pay_delay` (D125) |
 
 **Pay week** (a saved set of pay lines, D5)
 
@@ -606,10 +616,11 @@ Planned transfers into a goal are series with `goal_id` set.
 | Field | Type | Notes |
 | --- | --- | --- |
 | `family_id` | id | The pay series' family (D49). **Built in step 1f (D123):** found by family and payment number, not series and original date, so a split or a new date never loses it |
-| `payment_number` | number | The payday it lands on (D125) |
+| `payment_number` | number | The payday it lands on (D131) |
 | `kind` | choice: overtime, missed shift | |
 | `worked_on` | date | The day of the shift |
 | `hours`, `rate` | decimal | |
+| `extras` | pence, or empty | A change to the pay week's fixed extras, such as its shift premium: added for overtime, taken off for a missed shift (D130) |
 | `change` | pence | Worked out by the calculator when saved (D5): more for overtime, less for a missed shift |
 | `tax_year` | text | `"2026-27"` |
 
@@ -748,7 +759,7 @@ Signing out wipes all of it (brief 4.13). Other people's private records are nev
 | D2 Budgets and the bank | Spend `recorded_at`, Budget, Balance update |
 | D3 Left to spend line | Account `warning_level`, Plan member `main_pay_family_id` |
 | D4 Skipping | Payment change `skipped`; Series `end_rule` still counts it |
-| D5 Overtime | Series `cycle_pay_weeks`, Pay week, Pay adjustment, Pay profile `shift_pay_delay` |
+| D5 Overtime | Series `cycle_pay_weeks`, Pay week, Pay adjustment, Pay profile `covered_to` (D131) |
 | D6, D7, D8 | Test data and test tolerances only |
 | D9 Rounding | Decimals stored as exact text; the engine rounds once |
 | D10, D11 | Rules in the engine and on screen; nothing stored |
@@ -779,7 +790,7 @@ Brief Part 10 lists six things to leave out but design for. None of them needs t
 | **Bank connections** that tick payments, through an FCA-authorised Open Banking provider | Ticks and balance updates already have a `source` field ("typed" or "bank"). The engine treats a tick the same however it was made | A **Bank link** record (provider, consent expiry, which account it fills) and a **Bank item** record (what the bank reported, matched to a payment). Matching creates ordinary ticks and balance updates with `source = bank`. The provider's keys live only on the server |
 | **Housemates** (more than two people) | Plan members are already a list with roles, and `max_members` is a setting. "From Jess" halves work for any number of people | Raise `max_members`. Add an optional `shares` list to a series (person and percentage) to split a bill, worked out by the engine. Who owes whom is a new engine function, not new stored data |
 | **Reading a payslip or statement from a photo** | The pay calculator and "Update from statement" already take typed figures | A step that fills those same fields from a photo. The photo is read and thrown away; only the typed-in figures are kept, as today |
-| **A shift rota that predicts paydays** | Pay weeks, pay profiles and `shift_pay_delay` already link shifts to paydays (D5) | A **Shift** record (person, date, hours, kind). The engine builds each payday's pay lines from the shifts and saves the difference as a pay adjustment, as "I did overtime" does now |
+| **A shift rota that predicts paydays** | Pay weeks, pay profiles and `covered_to` already link shifts to paydays (D5, D131) | A **Shift** record (person, date, hours, kind). The engine builds each payday's pay lines from the shifts and saves the difference as a pay adjustment, as "I did overtime" does now |
 | **Comparing ways to clear several debts** | Debts already hold balances, rates and minimum rules | A new engine function only. No new data |
 | **Other countries, currencies and languages** | Accounts and debts store a currency; all words live in one strings file (VOICE.md); dates and money go through one formatter; tax rules are data files | Plan `nation` becomes country and region; one strings file per language; tax files per country; bank holiday lists per country |
 
@@ -1578,12 +1589,12 @@ No expected number in these tests is ever changed to make a test pass (CLAUDE.md
 | 38 | An emergency code on week 1/month 1 | 8.6 | 1f |
 | 39 | A monthly salary | 8.6 | 1f |
 | 40 | A pension taken after tax | 8.6 | 1f |
-| 41 | "I did overtime": 11.5 hours at £19.07 worked Mon 26 Oct 2026, with pay one week behind, lands on Fri 6 Nov 2026 | 8.6, D5 | 1f |
+| 41 | "I did overtime": 11.5 hours at £19.07 worked Mon 26 Oct 2026, with pay one week behind, lands on Fri 6 Nov 2026 (from step 1g, each payday covering work up to 5 days before it, D131) | 8.6, D5 | 1f |
 | 42 | With week 27's lines it raises that payday by about £155: £155.23, within £1 (D7) | 8.6, D5 | 1f |
 | 43 | The same overtime on week 26's lines gives £150.89, which is how 30 Oct became £603.06 | D5 | 1f |
-| 44 | Property: the end balance equals the start balance plus every applied payment | 5.8 | 1b, and again in 1g |
-| 45 | Property: splitting a series without changing anything gives exactly the same payments | 5.8 | 1c (brought forward), and again in 1g |
-| 46 | Property: undo returns the exact earlier state | 5.8 | 1c (brought forward), and again in 1g |
+| 44 | Property: the end balance equals the start balance plus every applied payment | 5.8 | 1b, and again in 1g on the six people's plans |
+| 45 | Property: splitting a series without changing anything gives exactly the same payments | 5.8 | 1c (brought forward), and again in 1g on the six people's plans |
+| 46 | Property: undo returns the exact earlier state | 5.8 | 1c (brought forward), and again in 1g for What if's Keep |
 | 47 | Sam: lowest end-of-day balance £4.53 on Sun 1 Nov 2026, after Rent | 8.3 | 1b, and again in 1g |
 | 48 | Sam: current account at the end of Oct, Nov, Dec, Jan, Feb is £604.53, £732.91, £1,024.60, £2,235.89, £3,304.87 | 8.3 | 1b, and again in 1g |
 | 49 | Sam: total pay £9,748.96 from 18 paydays | 8.3 | 1g |
@@ -1677,6 +1688,14 @@ The brief 8.3 tests use the D15 names, and the brief's view to the end of Februa
 | Week 29's worked check: £10,732.73 − 29 × £241.92 = £3,717.05, so £3,717, £743.40 so far and £140.20 this week | 8.6 | 1f |
 | Worked by hand: an emergency code on week 1/month 1, a monthly salary, a pension after tax, Plan 2 on a payslip, a K code held to half the pay, week 53, and pay every 2 weeks | 8.6, D121, D124, D126 | 1f |
 | "I missed a shift" on Tue 3 Nov comes off Fri 13 Nov (−£100.43), and changes nothing once that payday's real amount is typed in | D44, D123, D125 | 1f |
+| Owner test 3's £120.00 case on Sun 8 Nov: Left to spend is £0.00 | D129 | 1g |
+| A missed shift losing £47.43 of shift premium takes £133.17 off Fri 13 Nov; extras are refused on pay with none, and a missed shift can't take off more than the payday has | D130 | 1g |
+| Sam, 5 days before payday: overtime on Mon 26 Oct lands on Fri 6 Nov and a missed shift on Tue 3 Nov on Fri 13 Nov, with the step 1f figures; pay every 2 weeks from Fri 6 Nov covering work to the Sunday before puts Tue 3 Nov on Fri 20 Nov; monthly pay on the last working day covering work to the 15th puts Wed 16 Dec 2026 on Fri 29 Jan 2027 | D131 | 1g |
+| A new amount for every payday from now on pay linked to pay weeks drops the pattern's pay weeks; Only this week of the pattern keeps a single pay week on every step | D136 | 1g |
+| Brief 8.3 in full on Sam's plan with every engine part switched on at once (debts, the pay-later food budget, his pay profile and pay weeks, a savings goal, periods, Left to spend and What if), with the D15 names | 8.3, D15 | 1g |
+| What if on Sam: the Fri 30 Oct pay £100 lower gives −£95.47 on Sun 1 Nov (Short) beside £4.53 (Tight), the D69 list, and every paid-off date the same; keeping it is one edit and one undo | 4.10, D69, D135 | 1g |
+| Each of the other five people's plans works out with no errors and shows what brief Part 2 says they need most: Priya's yearly car insurance once, Dee's Universal Credit on Thu 24 Dec 2026, Kofi's Monday to Sunday weeks with 25% set aside, Jess and Tom's £600 transfer with the total unchanged, Ali's −£300 as Tight | Part 2, 8.5 | 1g |
+| Property, on all six people's plans with any practice changes in What if: tests 44 to 46 again, What if never changes the real plan, and Keep saves exactly the practice plan | 5.8, D135 | 1g |
 | Property: take-home is gross less every deduction; no payday takes more than half its pay in tax; week by week gives the same tax as no year so far when every week pays the same; overtime shift by shift adds up to all at once | D121, D124 | 1f |
 
 **After Phase 1:** each of the six people gets an end-to-end test from Phase 2 on, at 320px and 360px wide (brief Part 10, D37): setup, update balance, add a payment, change "this and later", move to next payday, "I spent" and what if.
