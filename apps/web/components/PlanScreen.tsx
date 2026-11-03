@@ -14,7 +14,13 @@ import { formatDay, formatMonth } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
 import { type Filters, filtersOn, NO_FILTERS, rowMatches, type Show } from '../lib/plan-filters.ts';
 import { PLAN_MONTHS_AHEAD } from '../lib/plan-input.ts';
-import type { AccountView, Grouping, PeriodView, PlanView } from '../lib/plan-view.ts';
+import {
+  type AccountView,
+  type Grouping,
+  monthsUpTo,
+  type PeriodView,
+  type PlanView,
+} from '../lib/plan-view.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { workOutPlanInBackground } from '../worker/client.ts';
@@ -64,7 +70,19 @@ const showLabels: Readonly<Record<Show, string>> = {
   debts: t.filtersSheet.debts,
 };
 
-function Lowest({ account, today }: { readonly account: AccountView; readonly today: string }) {
+function Lowest({
+  account,
+  today,
+  shownTo,
+  onShowUpTo,
+}: {
+  readonly account: AccountView;
+  readonly today: string;
+  /** The last day the plan shows. */
+  readonly shownTo: string;
+  /** Shows the months up to the lowest point, when it's after them (D190). */
+  readonly onShowUpTo: (date: string) => void;
+}) {
   const { lowest } = account;
   const day = (date: string) => formatDay(date, today);
   const warning = formatMoney(account.warningLevel, { wholePounds: true });
@@ -75,17 +93,31 @@ function Lowest({ account, today }: { readonly account: AccountView; readonly to
     context = strings.home.underWarningFrom(warning, day(lowest.underWarningFrom));
   }
   const amount = formatMoney(lowest.balance);
+  const line =
+    lowest.after === null
+      ? t.lowestOn(amount, day(lowest.date))
+      : t.lowestOnAfter(amount, day(lowest.date), lowest.after);
+  // The lowest point looks 12 months ahead, like Home's, even when fewer
+  // months are shown. Then tapping it shows the months up to it (D190).
+  const later = lowest.date > shownTo;
   return (
     <section className={styles.card} data-testid="plan-lowest">
       <div className={styles.cardHead}>
         <h2 className={styles.label}>{t.lowestPointAhead}</h2>
         {lowest.status === 'ok' ? null : <StatusPill status={lowest.status} />}
       </div>
-      <p className={`${styles.lowestLine} num`}>
-        {lowest.after === null
-          ? t.lowestOn(amount, day(lowest.date))
-          : t.lowestOnAfter(amount, day(lowest.date), lowest.after)}
-      </p>
+      {later ? (
+        <button
+          type="button"
+          className={styles.lowestButton}
+          onClick={() => onShowUpTo(lowest.date)}
+        >
+          <span className={`${styles.lowestLine} num`}>{line}</span>
+          <span className={styles.lowestShow}>{t.showUpTo(day(lowest.date))}</span>
+        </button>
+      ) : (
+        <p className={`${styles.lowestLine} num`}>{line}</p>
+      )}
       {context === null ? null : <p className={styles.context}>{context}</p>}
     </section>
   );
@@ -217,6 +249,8 @@ export function PlanScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const furthest = useRef<HTMLParagraphElement>(null);
   const showMore = useRef(false);
+  // After showing the months up to the lowest point, focus goes to its row (D190).
+  const toLowest = useRef(false);
   const name = useId();
 
   useEffect(() => setGrouping(storedGrouping()), []);
@@ -250,6 +284,19 @@ export function PlanScreen() {
       furthest.current?.focus();
     }
   }, [shown]);
+
+  useEffect(() => {
+    if (!toLowest.current || shown === null) return;
+    const lowest = shown.view.accounts
+      .flatMap((one) => one.periods)
+      .flatMap((period) => period.rows)
+      .find((row) => row.isLowest);
+    if (lowest === undefined) return;
+    const row = document.querySelector<HTMLElement>(`[data-row-key="${CSS.escape(lowest.key)}"]`);
+    if (row === null) return;
+    toLowest.current = false;
+    row.focus();
+  });
 
   const sheet = useEditSheet(shown?.version ?? null);
 
@@ -334,7 +381,15 @@ export function PlanScreen() {
           )
         ) : (
           <>
-            <Lowest account={account} today={today} />
+            <Lowest
+              account={account}
+              today={today}
+              shownTo={view.to}
+              onShowUpTo={(date) => {
+                toLowest.current = true;
+                setMonths((now) => Math.max(now, monthsUpTo(today, date)));
+              }}
+            />
             {failed ? (
               // The figures below are from before the last change: say so plainly.
               <p className={styles.card} role="alert">
