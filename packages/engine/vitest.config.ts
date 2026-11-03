@@ -17,9 +17,9 @@ export default defineConfig({
         },
       },
       {
-        // The speed test (test 54, ARCHITECTURE.md 2.8) runs on its own once
-        // every other test has finished, so nothing else competes with it for
-        // the machine. It loads the engine with Node's own import, as the
+        // The speed test (test 54, ARCHITECTURE.md 2.8) runs in a group of
+        // its own, never at the same time as the other tests, so nothing else
+        // competes with it for the machine. It loads the engine with Node's own import, as the
         // app's build will, not through Vitest's module runner, which slows
         // down every call from one engine file to another (D134).
         extends: true,

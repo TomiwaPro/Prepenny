@@ -1339,11 +1339,11 @@ Decided 3 Nov 2026 in step 1g. Adds to D72 and ARCHITECTURE.md 2.8.
 
 - The plan: 100 weekly series over 24 months, from Sun 25 Oct 2026 to Wed 25 Oct 2028, on a current account with an overdraft and a savings account. One in ten is money coming in, four move money to savings, a third move to the working day before a weekend or bank holiday, and some have one-off changes and ticks. That's about 10,500 rows.
 - It's worked out 5 times to warm up, then 20 times. The time is the middle of the 20: the average of the 10th and 11th fastest. It must be under 12 milliseconds. The target is unchanged.
-- It runs on its own, once every other test has finished, so the other tests never compete with it for the machine.
+- It runs in a group of its own, never at the same time as the other tests, so they never compete with it for the machine.
 - It loads the engine with Node's own `import`, the way the app's build will run it, not through the test tool's module runner. On the test machine the same plan took 9 to 11 milliseconds through the module runner and 4.5 to 7 milliseconds with Node's own import, because the runner slows down every call from one engine file to another. So the engine is written in TypeScript that Node can run directly, and the type check refuses anything else.
 - To get there, the engine writes each date as text once and keeps it, writes payments out without copying, puts each day's rows in a bucket for that day instead of one big sort, collects them in the same-day order so most days need no sorting, and keeps what every row of a series shares once for the series. The order of rows and every figure stay exactly the same: every earlier test passes unchanged.
 
-Result: about 5 milliseconds on the test machine, from about 28 before step 1g.
+Result: about 5 milliseconds on the test machine, from about 28 before step 1g, and 3.30 milliseconds on GitHub's machine.
 
 Why: the test should measure the engine as the app will run it, and nothing else running at the same time. The target leaves room for a phone four times slower to stay under the brief's 50 milliseconds (ARCHITECTURE.md 2.8).
 

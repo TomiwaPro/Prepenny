@@ -20,6 +20,18 @@ Progress against brief Part 9 (`docs/BRIEF.md`). Each phase is done in small ste
 - [ ] **Phase 5: ready to launch**
 - [ ] **Phase 6: the app stores**
 
+## Left for later phases
+
+Found by the step 1g engine review. None needs an answer from the owner, but each must be done in the phase named.
+
+1. **Adding and changing records as edits** (first step of Phase 2). The engine's edit commands change payments, ticks, balances, debts' statements, spends and pay adjustments, but there's no command to add or change a payment, account, debt, budget, savings goal, pay profile or pay week. Setup, Add a payment and the other Add sheets need them, so every change goes through the same checks and can be undone (brief 5.4). The usual hours for "I did overtime" after D136 need one too.
+2. **The app keeps out what the engine accepts** (Phase 2): only currencies with hundredths (D98), a budget's start date of today or later, like a payment's "Next payment" (D86), and a balance date of today unless the person changes it.
+3. **A budget that starts after the plan's last day** (Phase 2) shows no current period, as if it had ended. The budget screen should say when it starts.
+4. **Ticks and changes after a series' dates move** (Phase 3). Undoing an old edit after "this and all later ones" has moved that series' dates by a whole week or month can put a tick back on a different payment. Storing each tick's and change's payment number, with the Phase 3 records, lets undo check it.
+5. **A partner's view of a payment to a private debt** (Phase 3). A payment from the joint account to Jess's private debt makes the engine refuse Tom's Debts screen, because the debt isn't in his records. The server's copy for Tom should leave that link out (D65).
+6. **Small pay cases** (Phase 2, with the pay calculator screen): a payday moved back into the tax week of the payslip just before it is refused, and on week 1/month 1 the year so far skips the weeks in between when the payslip is an older one.
+7. **The credit card comparison when payments are due the day after the statement** (Phase 2): in a short month both fall on one day and the comparison pays one minimum twice. Rare in the UK.
+
 ## Waiting for the owner
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.

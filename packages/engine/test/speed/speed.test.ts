@@ -4,8 +4,8 @@
 // phone four times slower than the test machine to stay under the brief's
 // 50 milliseconds. Phase 4 checks it on a real mid-range Android phone.
 //
-// This file runs on its own, after every other test file has finished
-// (vitest.config.ts), so the other tests never compete with it for the
+// This file runs in a group of its own (vitest.config.ts), never at the
+// same time as the other test files, so they never compete with it for the
 // machine.
 
 import { describe, expect, it } from 'vitest';
