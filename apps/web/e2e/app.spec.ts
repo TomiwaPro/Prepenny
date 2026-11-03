@@ -24,9 +24,9 @@ test('the bottom navigation goes to Home, Plan, Debts and More', async ({ page }
   await expect(page.getByTestId('balance')).toHaveText('£267.54');
 });
 
-test('every tap target is at least 44 by 44 pixels', async ({ page }) => {
-  await openHome(page);
-  const small = await page.evaluate(() =>
+/** Every link, button and choice on screen smaller than 44 by 44 pixels. */
+async function smallTargets(page: Page) {
+  return page.evaluate(() =>
     [...document.querySelectorAll('a, button, input, label')]
       // A radio button's whole row is its label, so the row is what's tapped.
       .filter((element) => !element.closest('.visually-hidden') && !element.closest('label input'))
@@ -39,7 +39,21 @@ test('every tap target is at least 44 by 44 pixels', async ({ page }) => {
       .filter(({ box }) => box.width < 44 || box.height < 44)
       .map(({ text }) => text),
   );
-  expect(small).toEqual([]);
+}
+
+test('every tap target is at least 44 by 44 pixels, on every screen and in a sheet', async ({
+  page,
+}) => {
+  await openHome(page);
+  expect(await smallTargets(page)).toEqual([]);
+  await page.getByRole('button', { name: 'I spent' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  expect(await smallTargets(page)).toEqual([]);
+  for (const path of ['/', '/app/plan/', '/app/debts/', '/app/more/', '/app/parts/']) {
+    await page.goto(path);
+    await page.waitForLoadState('networkidle');
+    expect(await smallTargets(page), path).toEqual([]);
+  }
 });
 
 test('Light or Dark can be picked on More, and stays picked', async ({ page }) => {
@@ -85,7 +99,7 @@ test('says so when the phone is offline', async ({ page, context }) => {
   await expect(page.getByTestId('offline-note')).toHaveCount(0);
   await context.setOffline(true);
   await expect(page.getByTestId('offline-note')).toHaveText(
-    "You're offline. Your plan is saved on this phone, so everything here still works.",
+    "You're offline. PrePenny keeps working with what's on this phone.",
   );
   await context.setOffline(false);
   await expect(page.getByTestId('offline-note')).toHaveCount(0);

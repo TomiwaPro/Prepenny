@@ -148,6 +148,19 @@ test.describe('Home, with Sam’s example plan', () => {
     expect(await clippedText(page)).toEqual([]);
   });
 
+  test('keeps the actions 2 by 2, on a phone and on a laptop', async ({ page }) => {
+    for (const width of [page.viewportSize()?.width ?? 360, 480, 1024]) {
+      await page.setViewportSize({ width, height: 800 });
+      await openHome(page);
+      const tops = await page
+        .getByRole('region', { name: 'Quick actions' })
+        .getByRole('button')
+        .evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().top));
+      expect(tops, `${width}px`).toHaveLength(4);
+      expect(new Set(tops).size, `${width}px`).toBe(2);
+    }
+  });
+
   test('each action opens a sheet saying it is still being built, and closes', async ({ page }) => {
     await openHome(page);
     for (const name of ['Update balance', 'Add a payment', 'I spent', 'I did overtime']) {
@@ -187,20 +200,34 @@ test.describe('Home, with Sam’s example plan', () => {
   });
 
   test('moves nothing when the phone asks for reduced motion', async ({ page }) => {
-    // With motion allowed, the sheet rises into view: proof the check below means something.
+    const sheetAnimation = () =>
+      page.getByRole('dialog').evaluate((element) => getComputedStyle(element).animationName);
+    const skeletonAnimation = () =>
+      page
+        .getByTestId('home-skeleton')
+        .locator('[aria-hidden="true"]')
+        .first()
+        .evaluate((element) => getComputedStyle(element).animationName);
+
+    // With motion allowed, the sheet rises into view and the skeleton pulses:
+    // proof the checks below mean something.
     await openHome(page);
     await page.getByRole('button', { name: 'Add a payment' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    expect(await page.evaluate(() => document.getAnimations().length)).toBeGreaterThan(0);
+    expect(await sheetAnimation()).not.toBe('none');
+    await page.goto('/app/parts/');
+    await expect(page.getByTestId('home-skeleton')).toBeVisible();
+    expect(await skeletonAnimation()).not.toBe('none');
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/app/');
-    await expect(page.getByTestId('balance')).toBeVisible();
+    await openHome(page);
     await page.getByRole('button', { name: 'Add a payment' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
+    expect(await sheetAnimation()).toBe('none');
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     await page.goto('/app/parts/');
     await expect(page.getByTestId('home-skeleton')).toBeVisible();
+    expect(await skeletonAnimation()).toBe('none');
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   });
 
@@ -208,19 +235,28 @@ test.describe('Home, with Sam’s example plan', () => {
     page,
   }) => {
     const others: string[] = [];
+    const fonts: string[] = [];
     page.on('request', (request) => {
       if (!request.url().startsWith('http://127.0.0.1:4173/')) others.push(request.url());
+      if (request.url().endsWith('.woff2')) fonts.push(request.url());
     });
     await openHome(page);
     await page.evaluate(() => document.fonts.ready);
     expect(others).toEqual([]);
+    expect(fonts.length).toBeGreaterThan(0);
     const balance = page.getByTestId('balance');
     expect(await balance.evaluate((element) => getComputedStyle(element).fontVariantNumeric)).toBe(
       'lining-nums tabular-nums',
     );
+    // The balance's font is Figtree, and Figtree's bold face has really loaded.
     const family = await balance.evaluate((element) => getComputedStyle(element).fontFamily);
     expect(family.toLowerCase()).toContain('figtree');
-    expect(await page.evaluate(() => document.fonts.check('700 46px Figtree'))).toBe(true);
+    const loaded = await page.evaluate(() =>
+      [...document.fonts]
+        .filter((face) => /figtree/i.test(face.family) && face.status === 'loaded')
+        .map((face) => face.weight),
+    );
+    expect(loaded).toContain('700');
   });
 });
 
