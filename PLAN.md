@@ -42,7 +42,7 @@ Found by the step 1g engine review. None needs an answer from the owner, but eac
 
 Found while building step 2b:
 
-8. **Closing an account** (step 2f): the engine must refuse to close an account that doesn't show £0.00 at the end of today, and the account sheet offers "Move £3.12 to another account first" (D158).
+8. **Closing an account** (step 2f): the engine must refuse to close an account that doesn't show £0.00 at the end of today, and the account sheet offers "Move £3.12 to another account first" (D158), or "Move £3.12 into it from another account first" when it's overdrawn (D181).
 9. **Fresh bank holidays from PrePenny's own site** (Phase 4, D57): the app uses the engine's built-in copy of GOV.UK's list for now.
 10. **A dependency and security check in GitHub's checks** (Phase 4, brief 7.2): `pnpm audit` is clean today (D171), but nothing runs it on every push yet. In the same check, list each of Next.js's small page scripts in the security policy instead of allowing every script written into a page (D175).
 11. **The parts page** (Phase 5): `/app/parts/` is for checking the look and is removed before launch (D175).
@@ -54,12 +54,8 @@ Found while building step 2b:
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
 1. **Set up Cloudflare** (now, for the preview link). Follow "Putting PrePenny online" in `README.md`: a free Cloudflare account, a workers.dev name, and two secrets in GitHub. Until then, nothing is online and there's no preview link.
-2. **The dark mode colours, the text box border and the focus outline (D164)** (before 2c, which builds the first text boxes). Look at `docs/screens/2b/home-360-dark.png`, or pick Dark on the More screen. Say if they're right, or what to change.
-3. **The icon** (before launch). A navy square with a cream penny and a navy line that dips to its lowest point and rises again (`apps/web/public/icons/icon-512.png`). Say if it's right, or what you'd like instead.
-4. **How far ahead Home looks (D167)** (before 2c, which builds the Plan screen with the same view). Home's lowest point looks 3 months ahead, the same as the Plan screen. For Sam it's £4.53 on Sun 1 Nov either way, but a yearly bill 5 months away wouldn't show on Home. Say if 3 months is right, or if Home should look further, for example 12 months.
-5. **Next due includes money coming in (D168)** (before 2c). Home's "Next due" lists the next three things in the plan, pay included, so on a Thursday it could show Friday's pay. Say if that's right, or if it should list only money going out.
-6. **A budget and a savings goal in the example (D165)** (before 2f, which builds those screens). Sam's example has none, because brief 8.2 has none, so someone looking around the example won't see those screens filled in. Adding a budget would change Home's figures from the ones you listed: with his £25 a week Travel budget, Left to spend would be £45.00, not £30.00. The proposal: keep the example exactly as brief 8.2, so it always matches the tests (D15). Say if that's right, or if you'd rather it had a budget and a goal.
-7. **Closing an account that's overdrawn (D158)** (before 2f). D158 covers money left in an account. When an account ends today below £0.00, the proposal is the same one tap the other way: "Move £3.12 into it from another account first". Say if that's right.
+
+The owner answered the other six questions from step 2b on 3 Nov 2026: D176 to D182.
 
 ## Launch checklist (started)
 

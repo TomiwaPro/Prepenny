@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 onwards were decided while building step 2b, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 onwards were decided while building step 2c, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -1682,9 +1682,11 @@ Why: the owner's answer. A plan with no balance can't show anything left after a
 
 ## Made during step 2b
 
-D164 to D175 were decided on 3 Nov 2026 while building step 2b. D164 waits for the owner's approval, and the questions are in `PLAN.md`.
+D164 to D175 were decided on 3 Nov 2026 while building step 2b. The owner approved D164 and answered the questions the same day: D176 to D182.
 
 ### D164. Dark mode colours, the text box border and the focus outline (proposed)
+
+Approved by the owner on 3 Nov 2026: D176.
 
 Decided 3 Nov 2026 in step 2b. Proposed for the owner's approval (DESIGN.md: "Propose its values in Phase 2"). Adds to DESIGN.md.
 
@@ -1741,6 +1743,8 @@ Why: the owner's wording for Home and the Home sketch write the warning level as
 
 ### D167. Home looks 3 months ahead
 
+Replaced for Home by D178: Home looks 12 months ahead. The Plan screen still shows 3 months by default.
+
 Decided 3 Nov 2026 in step 2b. Adds to brief 4.8 and 4.9. A question for the owner in `PLAN.md`.
 
 Home works the plan out to the same date 3 months after today, or that month's last day when it's shorter: Sun 25 Oct 2026 looks to Mon 25 Jan 2027. That's the Plan screen's default (brief 4.8: "Three months shown by default"), so Lowest point ahead on Home and on the Plan screen always agree. Left to spend counts to the next payday whatever the view (D143).
@@ -1748,6 +1752,8 @@ Home works the plan out to the same date 3 months after today, or that month's l
 Why: the brief doesn't say how far ahead Home's lowest point looks. For Sam it's £4.53 on Sun 1 Nov whichever way, but for a yearly bill, such as Priya's car insurance, it decides whether Home warns months early.
 
 ### D168. Home's account, "This pay has to cover" and "Next due"
+
+The third point is confirmed by D179.
 
 Decided 3 Nov 2026 in step 2b. Adds to brief 4.9.
 
@@ -1821,3 +1827,68 @@ Decided 3 Nov 2026 in step 2b. Adds to DESIGN.md and the Home sketch in ARCHITEC
 - The live app is updated from `main` only after GitHub's checks have passed on that exact commit. The very first time, before anything is merged, a pull request's version also goes live once, but only when Cloudflare says the app doesn't exist yet; any other problem stops the workflow with Cloudflare's own message. The Cloudflare key is given only to the steps that use it.
 
 Why: each follows the sample, DESIGN.md or the brief where they didn't say exactly, and keeps every screen working at 320px and at 200% text (D37). The last five points came from the outside review.
+
+## From the owner's review of step 2b
+
+D176 to D182 were agreed by the owner on 3 Nov 2026, answering the seven questions left at the end of step 2b (all but the Cloudflare set-up, which is still waiting). They were built in step 2c, or are built in the step named.
+
+### D176. Dark mode colours, the text box border and the focus outline: approved
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Approves D164 as proposed.
+
+The dark mode colours in D164, the text box border (#7A7365 light, #8790A6 dark) and the focus outline (#14213D light, #F4EFE6 dark, 3px wide, 2px outside the control) are approved. They're DESIGN.md's dark mode, and every text box from step 2c on uses them.
+
+Why: the owner approved them.
+
+### D177. The icon marks its lowest point with a brass dot
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Adds to the icon in step 2b.
+
+The icon stays: a navy square with a cream penny and a navy line that dips and rises again. A small brass dot sits at the bottom of the dip, so the line reads as "lowest point", not a tick or a smile. It's checked at 48px, the size of an icon on a phone's home screen. Brass is a line and border colour in DESIGN.md; here it's a mark in a drawing, not text, so it doesn't need text contrast.
+
+Why: the owner's answer.
+
+### D178. Home looks 12 months ahead
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Replaces D167's 3 months for Home. The Plan screen still shows 3 months by default (brief 4.8).
+
+- Home's lowest point, its first day under the warning level, its shortfall and Next due look 12 months ahead: to the same date 12 months after today, or that month's last day when it's shorter. Sun 25 Oct 2026 looks to Mon 25 Oct 2027.
+- Sam's Home still shows £4.53 on Sun 1 Nov.
+- Left to spend still counts to the day before the next payday (D143), and "This pay has to cover" is still this pay period (D168).
+
+Why: the owner's answer, so a yearly bill is never missed.
+
+### D179. Next due includes money coming in: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Confirms the third point of D168.
+
+Next due lists the next three rows, money coming in as well as going out, each with the payment's full name, never shortened.
+
+Why: the owner confirmed it.
+
+### D180. Sam's example stays exactly as the brief: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Confirms the second point of D165.
+
+The example has no budget and no savings goal, so it always matches the tests (D15). The Budgets and Savings goals screens (step 2f) show what they say when there are none.
+
+Why: the owner confirmed it.
+
+### D181. Closing an account that's overdrawn
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Adds to D158. Built in step 2f, with the account screens.
+
+When an account ends today below £0.00, the account sheet offers one tap the other way to D158: "Move £3.12 into it from another account first". That adds a transfer today from an account the person picks into this one, for the whole amount it's under. Then the account can be closed. The engine refuses to close it until it shows £0.00 (D158).
+
+Why: the owner's answer. Money owed never quietly drops out of the plan either.
+
+### D182. The example can be changed on this phone, and started again
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Adds to D15, D133 and D165. The points after the first were decided in step 2c.
+
+- Sam's example can be changed to try things out. Every change is saved on this phone only, like any change, and is never sent anywhere.
+- More has "Start again with the example". It asks once more ("Your changes to the example will go."), then puts the example back exactly as it is in the app, and clears the undo.
+- Decided in step 2c: an example that has been changed is kept when a new version of the app brings a changed example (D165). It's replaced only by "Start again with the example". An example that hasn't been changed is still replaced straight away, as before.
+- Decided in step 2c: today is still Sun 25 Oct 2026 in the example (D133), so ticks and moves are worked out for that day. The time stored with a tick is the phone's own clock, which only orders it after the example's balance update (D33).
+
+Why: the owner's answer. Someone trying the example shouldn't lose what they tried because the app was updated.
