@@ -65,6 +65,10 @@
   font-weight: 600;
 }
 
+.in {
+  color: var(--money-in);
+}
+
 /* "£12.54 left", with its Tight or Short pill under it. */
 .leftLine {
   display: flex;

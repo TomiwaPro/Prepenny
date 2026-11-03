@@ -22,7 +22,7 @@ export function Actions() {
   const [open, setOpen] = useState<ActionId | null>(null);
   const action = actions.find((one) => one.id === open);
   return (
-    <section aria-label={strings.actions.label}>
+    <section className={styles.actions} aria-label={strings.actions.label}>
       <div className={styles.grid}>
         {actions.map((one) => (
           <button

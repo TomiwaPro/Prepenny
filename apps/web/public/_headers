@@ -7,6 +7,10 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
 
+# The app's own files have their contents in their names, so they never change.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # The offline helper is checked for a new version on every visit.
 /sw.js
   Cache-Control: no-cache

@@ -11,11 +11,13 @@ export interface PaymentRowProps {
   /** "Sun 25 Oct", and "Estimate" when it is one. */
   readonly second: string;
   readonly amount: string;
+  /** Money coming in: its amount is green (brief Part 6), and the plus sign says so too. */
+  readonly moneyIn: boolean;
   readonly left: string;
   readonly status: Status | null;
 }
 
-export function PaymentRow({ tile, name, second, amount, left, status }: PaymentRowProps) {
+export function PaymentRow({ tile, name, second, amount, moneyIn, left, status }: PaymentRowProps) {
   return (
     <li className={styles.row}>
       <span className={styles.tile} aria-hidden="true">
@@ -27,7 +29,7 @@ export function PaymentRow({ tile, name, second, amount, left, status }: Payment
         <span className={styles.second}>{second}</span>
       </span>
       <span className={styles.right}>
-        <span className={`${styles.amount} num`}>{amount}</span>
+        <span className={`${styles.amount} ${moneyIn ? styles.in : ''} num`}>{amount}</span>
         <span className={styles.leftLine}>
           <span className={`${styles.left} num`}>{left}</span>
           {status === null ? null : <StatusPill status={status} />}

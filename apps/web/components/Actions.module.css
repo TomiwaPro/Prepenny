@@ -1,8 +1,18 @@
-/* Two columns, or one when big text needs the room. */
+/* Always 2 by 2 (DESIGN.md), or one column when big text needs the room. */
+.actions {
+  container-type: inline-size;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@container (width < 16rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .button {

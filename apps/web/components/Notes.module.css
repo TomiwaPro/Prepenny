@@ -1,6 +1,6 @@
 .note {
   border-radius: var(--radius-inner);
-  padding: 10px 14px;
+  padding: var(--space-3) 14px;
   font-size: var(--size-second);
   font-weight: 500;
 }

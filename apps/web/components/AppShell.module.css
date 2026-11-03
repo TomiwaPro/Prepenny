@@ -2,7 +2,8 @@
 .column {
   max-width: var(--column);
   margin: 0 auto;
-  padding: 10px var(--gutter) calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-6));
+  padding: var(--space-3) var(--gutter)
+    calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-6));
 }
 
 .notes > * {
