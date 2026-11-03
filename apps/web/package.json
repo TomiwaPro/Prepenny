@@ -1,0 +1,36 @@
+{
+  "name": "@prepenny/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PrePenny's app and website: Next.js as a static export (D17).",
+  "type": "module",
+  "scripts": {
+    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev",
+    "build": "NEXT_TELEMETRY_DISABLED=1 next build && NO_UPDATE_NOTIFIER=1 serwist build serwist.config.js",
+    "test": "vitest run",
+    "typecheck": "next typegen && tsc --project tsconfig.json && tsc --project service-worker/tsconfig.json",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@prepenny/engine": "workspace:*",
+    "dexie": "4.4.7",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "serwist": "9.5.13"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@fontsource/figtree": "5.3.0",
+    "@playwright/test": "1.64.1",
+    "@serwist/cli": "9.5.13",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "esbuild": "0.28.2",
+    "fake-indexeddb": "6.2.6",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5",
+    "wrangler": "4.151.3"
+  }
+}
