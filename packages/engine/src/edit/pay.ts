@@ -18,11 +18,12 @@ type PayCommand = Extract<EditCommand, { kind: 'overtime' | 'missed-shift' }>;
 /**
  * Where to look for the payday a shift is paid on. A monthly payday can
  * cover work up to a day after it (pay on the 29th for work up to the 31st),
- * so the search starts a month and a fortnight before the shift, and it ends
- * more than a year after, the longest a pay schedule waits between paydays.
+ * so the search starts a month and a fortnight before the shift. It ends
+ * after the longest wait there can be: pay every 52 weeks, covering work up
+ * to 62 days before payday, is 364 + 62 days after the shift.
  */
 const SEARCH_BEFORE_SHIFT_DAYS = 45;
-const SEARCH_AFTER_SHIFT_DAYS = 400;
+const SEARCH_AFTER_SHIFT_DAYS = 430;
 
 function adjustmentWrite(id: string, value: PayAdjustment | null): RecordWrite {
   return { kind: 'pay-adjustment', id, value };
