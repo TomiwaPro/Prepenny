@@ -56,7 +56,7 @@ export interface LoadedPlan {
 
 /** The change the undo bar is about (ARCHITECTURE.md 4.5). */
 export interface LastChange {
-  /** Goes up with every change, so the bar is announced again. */
+  /** Goes up with every change, so the bar is drawn afresh and announced again, even with the same words. */
   readonly id: number;
   readonly message: string;
   /** The edit Undo puts back, or null when there's nothing to undo, such as just after an undo. */
@@ -76,7 +76,8 @@ export interface PlanActions {
   readonly lastChange: LastChange | null;
   /** Makes one change and, when it works, shows `message` in the undo bar. */
   makeChange(command: EditCommand, message: string): Promise<ChangeOutcome>;
-  undoLastChange(): Promise<ChangeOutcome>;
+  /** Undoes the change the bar showed, and refuses when a newer one has been made since. */
+  undoLastChange(id: number): Promise<ChangeOutcome>;
   dismissLastChange(): void;
   /** Puts Sam's example back exactly as it is in the app (D182). */
   startAgainWithExample(): Promise<ChangeOutcome>;
@@ -84,7 +85,10 @@ export interface PlanActions {
 
 const PlanContext = createContext<PlanState>({ status: 'loading', plan: null });
 
-const noPlan = async (): Promise<ChangeOutcome> => ({ ok: false, code: 'not-ready' });
+const noPlan = async (..._: unknown[]): Promise<ChangeOutcome> => ({
+  ok: false,
+  code: 'not-ready',
+});
 
 const ActionsContext = createContext<PlanActions>({
   loaded: null,
@@ -133,6 +137,10 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
   const loadedRef = useRef<LoadedPlan | null>(null);
   const lastChangeRef = useRef<LastChange | null>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
+  // Once the phone's database has failed, nothing more is saved there this
+  // time: saving later changes alone, on top of a plan missing earlier ones,
+  // could mix two plans together.
+  const canSave = useRef(true);
   const changeCount = useRef(0);
 
   const keepLoaded = useCallback((next: LoadedPlan) => {
@@ -156,6 +164,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       } catch {
         // No database on this phone, for example in some private windows:
         // the example still works, it just isn't saved.
+        canSave.current = false;
         found = { plan: freshExample(), records: examplePlan };
       }
       if (!current) return;
@@ -209,17 +218,20 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
         return { ok: false, code: codeOf(error) };
       }
       let plan: StoredPlan = now.plan.isExample ? { ...now.plan, edited: true } : now.plan;
-      let kept = true;
-      try {
-        const db = openDb();
+      let kept = canSave.current;
+      if (kept) {
         try {
-          plan = await saveChange(db, now.plan, result.edit.writes);
-        } finally {
-          db.close();
+          const db = openDb();
+          try {
+            plan = await saveChange(db, now.plan, result.edit.writes);
+          } finally {
+            db.close();
+          }
+        } catch {
+          // The change still shows until PrePenny closes, and the undo bar says so.
+          canSave.current = false;
+          kept = false;
         }
-      } catch {
-        // The change still shows until PrePenny closes, and the undo bar says so.
-        kept = false;
       }
       const version = now.version + 1;
       keepLoaded({ ...now, plan, records: result.records, version });
@@ -240,12 +252,11 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
   );
 
   const undoLastChange = useCallback(
-    () =>
+    (id: number) =>
       inTurn(async (): Promise<ChangeOutcome> => {
         const last = lastChangeRef.current;
-        if (last?.edit === undefined || last.edit === null) {
-          return { ok: false, code: 'nothing-to-undo' };
-        }
+        if (last === null || last.id !== id) return { ok: false, code: 'not-last-change' };
+        if (last.edit === null) return { ok: false, code: 'nothing-to-undo' };
         const outcome = await apply({ kind: 'undo', edit: last.edit });
         if (!outcome.ok) return outcome;
         showChange(strings.undo.undone, null);
@@ -266,11 +277,14 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
           const db = openDb();
           try {
             await savePlan(db, plan, examplePlan);
+            // The whole plan is saved again, so changes can be saved from here on.
+            canSave.current = true;
           } finally {
             db.close();
           }
         } catch {
           // Without a database the example is only ever in memory anyway.
+          canSave.current = false;
         }
         const version = (loadedRef.current?.version ?? 0) + 1;
         keepLoaded({ plan, records: examplePlan, today: todayFor(plan), version });

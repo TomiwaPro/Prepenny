@@ -160,6 +160,8 @@ export const strings = {
     'patterns-differ':
       'The pay pattern has changed part of the way along. Choose every payday from now.',
     'nothing-to-undo': "There's nothing to undo.",
+    'not-last-change':
+      'A newer change has been made since, so this one can no longer be undone here.',
     'not-ready': 'Your plan is still being worked out. Try again in a moment.',
     other: "That change couldn't be made, so nothing was changed. Try again.",
   },

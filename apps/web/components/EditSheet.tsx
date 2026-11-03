@@ -38,15 +38,27 @@ export interface EditSheetProps {
 
 export function EditSheet({ row, today, onClose }: EditSheetProps) {
   // The row stays on screen while the sheet closes, and the form starts
-  // afresh each time the sheet opens.
+  // afresh each time the sheet opens. It's set while drawing, so the sheet's
+  // name and form are the new row's before the sheet takes focus.
   const [shown, setShown] = useState<{ row: RowView; opened: number } | null>(null);
-  useEffect(() => {
-    if (row !== null) setShown((last) => ({ row, opened: (last?.opened ?? 0) + 1 }));
-  }, [row]);
+  if (row !== null && shown?.row !== row) {
+    setShown({ row, opened: (shown?.opened ?? 0) + 1 });
+  }
+  // A change that finishes after its sheet has closed mustn't close the next one.
+  const openNow = useRef<number | null>(null);
+  openNow.current = row === null ? null : (shown?.opened ?? null);
+  const current = row ?? shown?.row ?? null;
   return (
-    <Sheet open={row !== null} title={shown?.row.name ?? ''} onClose={() => onClose(null)}>
+    <Sheet open={row !== null} title={current?.name ?? ''} onClose={() => onClose(null)}>
       {shown === null ? null : (
-        <EditForm key={shown.opened} row={shown.row} today={today} onDone={onClose} />
+        <EditForm
+          key={shown.opened}
+          row={shown.row}
+          today={today}
+          onDone={(version) => {
+            if (openNow.current === shown.opened) onClose(version);
+          }}
+        />
       )}
     </Sheet>
   );
@@ -170,6 +182,10 @@ function EditForm({
     if (showNameAndNote && name.trim() !== row.name) edits.name = name.trim();
     if (showNameAndNote && note.trim() !== (row.note ?? '')) edits.note = note.trim();
     if (isEstimate !== row.isEstimate) edits.isEstimate = isEstimate;
+    // Unticking "This is an estimate" for just this one says the amount shown
+    // is the real one, so it's sent as the real amount even when it's the
+    // same as the estimate: a pay-later bill's real amount always stands (D111, D185).
+    if (!later && row.isEstimate && !isEstimate && amount !== null) edits.amount = amount;
     if (Object.keys(edits).length === 0) {
       setProblem({ text: t.nothingChanged, at: 'save' });
       return;

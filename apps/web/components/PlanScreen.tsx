@@ -280,7 +280,7 @@ export function PlanScreen() {
         <Segmented<Grouping>
           legend={t.showBy}
           name={`${name}-by`}
-          value={grouping}
+          value={view?.grouping ?? grouping}
           options={[
             { value: 'pay', label: t.payPeriods },
             { value: 'months', label: t.months },
@@ -335,6 +335,12 @@ export function PlanScreen() {
         ) : (
           <>
             <Lowest account={account} today={today} />
+            {failed ? (
+              // The figures below are from before the last change: say so plainly.
+              <p className={styles.card} role="alert">
+                {strings.errors.plan}
+              </p>
+            ) : null}
             {view.mainPayEnded ? <p className={styles.card}>{strings.home.mainPayEnded}</p> : null}
             {account.notTickedYet.length > 0 ? (
               <section className={styles.card} data-testid="not-ticked-yet">
