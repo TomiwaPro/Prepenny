@@ -25,6 +25,12 @@ export interface PeriodWork extends Bounds {
   readonly left: Pence;
   /** A spread budget's amount each day, from the first day it leaves (D31). */
   readonly perDay: Pence | null;
+  /**
+   * It has ended and what's left of it rolls into the next period (D30,
+   * D110). A pay-later bill for it is then estimated at what was spent, so
+   * the unspent part counts once, in the next bill (D147).
+   */
+  readonly rollsOn: boolean;
 }
 
 /** A row a budget puts in its account's plan: part of the budget leaving, or a spend (D2, D31). */
@@ -122,15 +128,17 @@ export function workOutBudget(
     if (index >= 0) spentIn[index] = add(spentIn[index] as Pence, spend.spend.amount, what);
   }
 
+  // An ended period rolls what's left of it into the next one, when
+  // roll-over is on and was on when it ended (D30, D110).
+  const endsAndRolls = (period: Bounds): boolean =>
+    budget.rollOver &&
+    period.end < today &&
+    (checked.rollOverFrom === null || period.end >= checked.rollOverFrom) &&
+    (lastStart === null || period.start < lastStart);
   const periods: PeriodWork[] = [];
   bounds.forEach((period, i) => {
     const before = periods[i - 1];
-    const rolls =
-      before !== undefined &&
-      budget.rollOver &&
-      before.end < today &&
-      (checked.rollOverFrom === null || before.end >= checked.rollOverFrom);
-    const rolledOver = rolls ? before.left : 0;
+    const rolledOver = before?.rollsOn === true ? before.left : 0;
     const amount = add(budget.amount, rolledOver, what);
     const spent = spentIn[i] as Pence;
     const left = Math.max(0, amount - spent);
@@ -139,7 +147,16 @@ export function workOutBudget(
       budget.leaves === 'spread' && period.end >= today
         ? Math.floor(left / (period.end - firstDay + 1))
         : null;
-    periods.push({ ...period, base: budget.amount, rolledOver, amount, spent, left, perDay });
+    periods.push({
+      ...period,
+      base: budget.amount,
+      rolledOver,
+      amount,
+      spent,
+      left,
+      perDay,
+      rollsOn: endsAndRolls(period),
+    });
   });
 
   let currentIndex = periods.findIndex((period) => period.end >= today);
@@ -194,7 +211,10 @@ export function workOutBudget(
     const known = billIndex.get(billDay);
     if (known !== undefined) {
       const period = periods[known] as PeriodWork;
-      return Math.max(period.amount, period.spent);
+      // With roll-over, once the statement period has ended, what wasn't
+      // spent has rolled into the next period, so this bill is what was
+      // really spent (D147). Otherwise the budget, or more if more was spent (D32).
+      return period.rollsOn ? period.spent : Math.max(period.amount, period.spent);
     }
     // A bill after the plan's last day: its period hasn't started by today,
     // so nothing has rolled over into it.
