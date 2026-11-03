@@ -1,4 +1,5 @@
 import type { Budget, BudgetPlan, Spend } from '../budgets/types.ts';
+import type { Nation } from '../dates/bank-holiday-rules.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Goal } from '../goals/types.ts';
 import type { Pence } from '../money/pence.ts';
@@ -13,11 +14,30 @@ export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 /** An account (brief 5.2, ARCHITECTURE.md 3.3). Its balance comes from its balance updates. */
 export interface Account {
   readonly id: string;
+  /** "Current account". Every account added with a command has one (D151). */
+  readonly name?: string;
   readonly kind: AccountKind;
   /** 0 if none. The floor is minus this: −£1,000.00 for Ali (brief 5.5, 8.5). */
   readonly overdraftLimit: Pence;
   /** Strictly under this is Tight (D10). Can be below zero, near an overdraft floor. */
   readonly warningLevel: Pence;
+  /**
+   * Closed: nothing is planned in it any more (D151). It keeps its balance
+   * updates for the history, and the plan still works it out.
+   */
+  readonly closed?: boolean;
+}
+
+/**
+ * The plan's settings (D155): the nation whose bank holidays apply (brief
+ * 4.3, 5.7) and the main pay (D14). The app passes them to the engine as
+ * `holidays` and `mainPayFamilyId`. In a shared plan, each person's main pay
+ * moves to their own plan member record in Phase 3 (ARCHITECTURE.md 3.2).
+ */
+export interface PlanSettings {
+  readonly nation: Nation;
+  /** The family of the main pay, or null when there's none (D14). */
+  readonly mainPayFamilyId: string | null;
 }
 
 /** What the bank showed, typed in with Update balance (brief 4.2, D33). */
@@ -213,10 +233,21 @@ export interface PayLaterLeft {
   readonly until: string;
 }
 
-/** Left to spend (D3, D28, D112, D117, D118). */
+/** Left to spend (D3, D28, D112, D117, D118, D143, D144). */
 export interface LeftToSpend {
-  /** The next main payday, "YYYY-MM-DD": "Left to spend until Fri 30 Oct" (D28). */
+  /**
+   * The day it lasts until, "YYYY-MM-DD": the next main payday, "Left to
+   * spend until Fri 30 Oct" (D28). When the main pay has no more paydays,
+   * the 1st of next month, because it then runs to the end of this month (D144).
+   */
   readonly until: string;
+  /** Why it stops there: the next main payday, or the end of this month when the main pay has stopped (D144). */
+  readonly runsTo: 'payday' | 'month-end';
+  /**
+   * The last day it counts, "YYYY-MM-DD": the day before `until`. It's
+   * worked out to this day whatever the plan's last day is (D143).
+   */
+  readonly lastDay: string;
   /**
    * L: spending money still due to leave the account from today to the day
    * before the next main payday. Budget rows, and payments of the type
@@ -224,7 +255,7 @@ export interface LeftToSpend {
    * aren't in it (D28, D61).
    */
   readonly amount: Pence;
-  /** M: the lowest end-of-day balance from today to the day before the next main payday. */
+  /** M: the lowest end-of-day balance from today to the last day it counts. */
   readonly lowest: DayBalance;
   /**
    * X in "Spend no more than £X to keep at least £20 until Fri 30 Oct": the
@@ -266,7 +297,10 @@ export interface AccountPlan {
   /** The first day from today on that ends strictly under the warning level (D8, D10). */
   readonly firstUnderWarning: DayBalance | null;
   readonly shortfalls: readonly Shortfall[];
-  /** Left to spend until the next main payday (D28), or null when there's no main pay. */
+  /**
+   * Left to spend until the next main payday (D28), or to the end of this
+   * month when the main pay has stopped (D144). Null when there's no main pay.
+   */
   readonly leftToSpend: LeftToSpend | null;
 }
 
@@ -280,6 +314,13 @@ export interface Plan {
   readonly mainPay: MainPayKind;
   /** The first main payday after today (D14), or the next Monday for irregular pay (D66). */
   readonly nextMainPayday: string | null;
+  /**
+   * There's a main pay, but it has no payday after today: the plan is
+   * grouped by calendar month after its last payday, Left to spend runs to
+   * the end of this month, and the app suggests choosing another main pay
+   * (D144). False when there's no main pay at all.
+   */
+  readonly mainPayEnded: boolean;
   /**
    * Main paydays from the last one on or before today to the first one after
    * the plan's last day, in order. Plan periods are worked out from these.

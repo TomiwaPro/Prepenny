@@ -42,18 +42,21 @@ export const premium = (amount: string) => [{ name: 'Shift premium', amount: pou
 export const samPayWeeks: readonly PayWeek[] = [
   {
     id: 'week-26',
+    name: '3-shift week',
     payProfileId: 'warehouse',
     lines: [basic('34.5')],
     fixed: premium('114.69'),
   },
   {
     id: 'week-27',
+    name: '4-shift week',
     payProfileId: 'warehouse',
     lines: [basic('46')],
     fixed: premium('210.23'),
   },
   {
     id: 'week-28',
+    name: 'Short 3-shift week',
     payProfileId: 'warehouse',
     lines: [basic('34.25')],
     fixed: premium('142.29'),
@@ -69,6 +72,7 @@ export const samPayWeeks: readonly PayWeek[] = [
 export const samPayProfile: PayProfile = {
   ...samSettings,
   id: 'warehouse',
+  name: 'Warehouse job',
   soFar: {
     taxYear: '2026-27',
     period: 29,

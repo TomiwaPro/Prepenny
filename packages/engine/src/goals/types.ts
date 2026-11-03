@@ -19,6 +19,8 @@ export interface Goal {
   readonly startingAmount: Pence;
   /** The person it belongs to, or none when it's shared (brief 4.14, D65). */
   readonly belongsTo?: string;
+  /** Closed: finished with. It's still worked out, and payments can stay linked to it (D153). */
+  readonly closed?: boolean;
 }
 
 /** Everything the goals need. */

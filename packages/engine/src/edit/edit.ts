@@ -15,6 +15,9 @@ import { EngineInputError } from '../errors.ts';
 import { checkPence, checkPenceNotNegative } from '../money/pence.ts';
 import { mainPaydaysOf } from '../periods/main-pay.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
+import type { Series } from '../schedule/types.ts';
+import { addAccount, changeAccount, closeAccount } from './accounts.ts';
+import { addBudget, changeBudget, endBudget } from './budget-commands.ts';
 import {
   type Context,
   changeOne,
@@ -26,8 +29,17 @@ import {
   otherHalfPayment,
   refuse,
 } from './context.ts';
+import { addDebt, addGoal, changeDebt, changeGoal, closeDebt, closeGoal } from './debts-goals.ts';
 import { removeThisAndLater, thisAndLater } from './later.ts';
-import { recordPayAdjustment, refuseUndoOfPay, removePayAdjustment } from './pay.ts';
+import { addPayment, deletePayment, linkPay } from './new-payments.ts';
+import {
+  recordPayAdjustment,
+  refuseMovedShifts,
+  refuseUndoOfPay,
+  removePayAdjustment,
+  reworkPayAdjustments,
+} from './pay.ts';
+import { addPayProfile, addPayWeek, changePayProfile, changePayWeek } from './pay-records.ts';
 import {
   applyWrites,
   changeWrite,
@@ -38,6 +50,7 @@ import {
   sameValue,
   tickWrite,
 } from './records.ts';
+import { chooseMainPay, setNation } from './settings.ts';
 import type {
   Edit,
   EditCommand,
@@ -461,6 +474,43 @@ function undo(context: Context, edit: Edit): void {
     }
   }
   refuseUndoOfPay(context, writes, before);
+  // Putting back a pay profile, a pay week or pay's links works out the
+  // overtime and missed shifts saved since on them again, from what's put
+  // back, so they match it (D154).
+  const beforeByKey = new Map(before.map((write) => [keyOf(write), write]));
+  const links = (value: RecordWrite['value']) => {
+    const series = value as Series | null;
+    return series === null ? null : [series.payProfileId ?? null, series.cyclePayWeeks ?? null];
+  };
+  const putsBackPay = writes.some(
+    (write) =>
+      write.kind === 'pay-profile' ||
+      write.kind === 'pay-week' ||
+      (write.kind === 'series' &&
+        !sameValue(links(write.value), links(beforeByKey.get(keyOf(write))?.value ?? null))),
+  );
+  if (putsBackPay) {
+    for (const write of before) {
+      if (write.kind === 'pay-profile' && write.value !== null) {
+        refuseMovedShifts(context, write.id, write.value.coveredTo);
+      }
+    }
+    reworkPayAdjustments(context);
+  }
+  // Something saved since may use what this edit added, such as a payment in
+  // a new account, or a goal's new account (D149). The records before the
+  // edit made a plan, so if putting them back doesn't, something has changed since.
+  try {
+    checkRecords(applyWrites(context.input, context.draft.result().writes), context.today, true);
+  } catch (error) {
+    if (error instanceof EngineInputError) {
+      refuse(
+        'changed-since',
+        'Something saved since depends on what this edit changed, so it can no longer be undone.',
+      );
+    }
+    throw error;
+  }
   for (const write of before) {
     if (write.kind !== 'series') continue;
     const now = context.byId.get(write.id) ?? null;
@@ -580,6 +630,69 @@ function run(context: Context, command: EditCommand): void {
     case 'undo':
       undo(context, command.edit);
       break;
+    case 'add-account':
+      addAccount(context, command);
+      break;
+    case 'change-account':
+      changeAccount(context, command.accountId, command.edits);
+      break;
+    case 'close-account':
+      closeAccount(context, command.accountId);
+      break;
+    case 'add-payment':
+      addPayment(context, command);
+      break;
+    case 'delete-payment':
+      deletePayment(context, command.seriesId);
+      break;
+    case 'link-pay':
+      linkPay(context, command);
+      break;
+    case 'add-debt':
+      addDebt(context, command);
+      break;
+    case 'change-debt':
+      changeDebt(context, command.debtId, command.edits);
+      break;
+    case 'close-debt':
+      closeDebt(context, command.debtId);
+      break;
+    case 'add-budget':
+      addBudget(context, command);
+      break;
+    case 'change-budget':
+      changeBudget(context, command.budgetId, command.edits);
+      break;
+    case 'end-budget':
+      endBudget(context, command.budgetId, command.endsOn);
+      break;
+    case 'add-goal':
+      addGoal(context, command);
+      break;
+    case 'change-goal':
+      changeGoal(context, command.goalId, command.edits);
+      break;
+    case 'close-goal':
+      closeGoal(context, command.goalId);
+      break;
+    case 'add-pay-profile':
+      addPayProfile(context, command);
+      break;
+    case 'change-pay-profile':
+      changePayProfile(context, command.payProfileId, command.edits);
+      break;
+    case 'add-pay-week':
+      addPayWeek(context, command);
+      break;
+    case 'change-pay-week':
+      changePayWeek(context, command.payWeekId, command.edits);
+      break;
+    case 'choose-main-pay':
+      chooseMainPay(context, command.familyId);
+      break;
+    case 'set-nation':
+      setNation(context, command.nation);
+      break;
     default:
       refuse('bad-command', 'The command is missing or unknown.');
   }
@@ -606,7 +719,7 @@ export function editPlan(input: EditInput, command: EditCommand): Edit {
   ) {
     refuse('bad-main-pay', 'The main pay must be a family id, or null.');
   }
-  const checked = checkRecords(input, today);
+  const checked = checkRecords(input, today, true);
   const context: Context = {
     input,
     today,
@@ -618,7 +731,7 @@ export function editPlan(input: EditInput, command: EditCommand): Edit {
   const edit = context.draft.result();
   // A safety net: the records after the edit must still make a plan.
   try {
-    checkRecords(applyWrites(input, edit.writes), today);
+    checkRecords(applyWrites(input, edit.writes), today, true);
   } catch (error) {
     if (error instanceof EngineInputError) {
       refuse('edit-breaks-plan', `The edit would leave the plan unusable. ${error.message}`);

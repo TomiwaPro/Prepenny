@@ -33,6 +33,7 @@ function payOff(
   paysOn: number,
   way: Way,
   fixed: MinorUnits,
+  paidOnFrom: boolean,
 ): PayingOff {
   if (left <= PAID_OFF_AT) {
     return { paidOff: true, payments: 0, interest: 0, lastPaymentOn: null };
@@ -56,7 +57,9 @@ function payOff(
     ];
     order.sort((a, b) => a[1] - b[1]);
     for (const [what, day] of order) {
-      if (day <= from) continue;
+      // A payment due on `from` counts until it's ticked, as in the bank
+      // balance (D146). A statement on `from` is already in what's left.
+      if (day < from || (day === from && (what === 'statement' || paidOnFrom))) continue;
       if (what === 'statement') {
         const made = statementOf(card, balance, day);
         interest += made.interest;
@@ -79,7 +82,8 @@ function payOff(
  * Compares paying a credit card's minimum, a fixed amount and the full
  * balance (brief 4.6, D102), starting from what's left on `from`. Each month
  * the statement adds interest and sets the minimum (D101), and the payment
- * goes out on the next `paysOn` day. All of it is an estimate.
+ * goes out on the next `paysOn` day, counting one due on `from` unless it's
+ * ticked (D146). All of it is an estimate.
  */
 export function compareCardPayments(input: CardComparisonInput): CardComparison {
   if (input === null || typeof input !== 'object') {
@@ -102,9 +106,14 @@ export function compareCardPayments(input: CardComparisonInput): CardComparison 
   if (typeof paysOn !== 'number' || !Number.isInteger(paysOn) || paysOn < 1 || paysOn > 31) {
     throw new EngineInputError('bad-day', 'The payment day must be a whole number from 1 to 31.');
   }
+  if (input.paidOnFrom !== undefined && typeof input.paidOnFrom !== 'boolean') {
+    throw new EngineInputError('bad-input', 'paidOnFrom must be true or false, or left out.');
+  }
+  const paid = input.paidOnFrom === true;
   return {
-    minimum: card.minimum?.kind === 'rule' ? payOff(card, left, from, paysOn, 'minimum', 0) : null,
-    fixed: payOff(card, left, from, paysOn, 'fixed', fixed),
-    full: payOff(card, left, from, paysOn, 'full', 0),
+    minimum:
+      card.minimum?.kind === 'rule' ? payOff(card, left, from, paysOn, 'minimum', 0, paid) : null,
+    fixed: payOff(card, left, from, paysOn, 'fixed', fixed, paid),
+    full: payOff(card, left, from, paysOn, 'full', 0, paid),
   };
 }

@@ -29,8 +29,14 @@ export const samViewEnd = '2027-02-28';
 
 /** Brief 8.1. The brief gives the savings account no warning level, so it has none (£0). */
 export const samAccounts: readonly Account[] = [
-  { id: 'current', kind: 'current', overdraftLimit: 0, warningLevel: pounds('20.00') },
-  { id: 'savings', kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
+  {
+    id: 'current',
+    name: 'Current account',
+    kind: 'current',
+    overdraftLimit: 0,
+    warningLevel: pounds('20.00'),
+  },
+  { id: 'savings', name: 'Savings', kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
 ];
 
 /** Both balances were typed in on Sun 25 Oct 2026, before any payment was added (brief 8.1). */

@@ -4,7 +4,7 @@
 import { type Day, parseDate } from '../dates/day.ts';
 import { type Moment, parseTime } from '../dates/time.ts';
 import { EngineInputError } from '../errors.ts';
-import { checkPence, checkPenceNotNegative } from '../money/pence.ts';
+import { checkPence, checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { BUDGET_EVERY, BUDGET_LEAVES, type Budget, type Spend } from './types.ts';
 
 /** A budget, checked, with its dates and time ready to use. */
@@ -14,6 +14,8 @@ export interface CheckedBudget {
   readonly endsOn: Day | null;
   readonly rollOverFrom: Day | null;
   readonly createdAt: Moment;
+  /** Its amounts before it was changed, oldest first (D152). */
+  readonly amountsBefore: readonly { readonly until: Day; readonly amount: Pence }[];
   /** Pay-later only. */
   readonly billDay: number | null;
   /** Pay-later only, and only when the card's own statement day is set. */
@@ -69,6 +71,23 @@ export function checkBudget(budget: Budget, accounts: ReadonlySet<string>): Chec
       ? null
       : parseDate(budget.rollOverFrom, `Budget ${id}: when roll-over was switched on`);
   const createdAt = parseTime(budget.createdAt, `Budget ${id}: when it was made`);
+  const amountsBefore: { until: Day; amount: Pence }[] = [];
+  if (budget.amountsBefore !== undefined) {
+    if (!Array.isArray(budget.amountsBefore)) {
+      fail(id, 'bad-budget', 'its earlier amounts must be a list.');
+    }
+    budget.amountsBefore.forEach((one, i) => {
+      const until = parseDate(one?.until, `Budget ${id}: earlier amount ${i + 1}`);
+      const previous = amountsBefore.at(-1);
+      if (previous !== undefined && until <= previous.until) {
+        fail(id, 'bad-budget', 'its earlier amounts must be in date order.');
+      }
+      amountsBefore.push({
+        until,
+        amount: checkPenceNotNegative(one.amount, `Budget ${id}: earlier amount ${i + 1}`),
+      });
+    });
+  }
 
   let billDay: number | null = null;
   let statementDay: number | null = null;
@@ -84,7 +103,16 @@ export function checkBudget(budget: Budget, accounts: ReadonlySet<string>): Chec
   } else if (budget.billDay !== undefined || budget.statementDay !== undefined) {
     fail(id, 'pay-later-only', 'only a pay-later budget has a bill day or a statement day.');
   }
-  return { budget, startsOn, endsOn, rollOverFrom, createdAt, billDay, statementDay };
+  return {
+    budget,
+    startsOn,
+    endsOn,
+    rollOverFrom,
+    createdAt,
+    amountsBefore,
+    billDay,
+    statementDay,
+  };
 }
 
 /** Checks every budget, and that no two share an id. */

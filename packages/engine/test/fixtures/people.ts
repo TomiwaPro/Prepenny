@@ -69,8 +69,14 @@ function paidBefore(seriesId: string, originalDate: string, tickedAt: string): T
  */
 export function priyaPlan(): WhatIfInput {
   const accounts: Account[] = [
-    { id: 'current', kind: 'current', overdraftLimit: 0, warningLevel: pounds('50.00') },
-    { id: 'savings', kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
+    {
+      id: 'current',
+      name: 'Current account',
+      kind: 'current',
+      overdraftLimit: 0,
+      warningLevel: pounds('50.00'),
+    },
+    { id: 'savings', name: 'Holiday savings', kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
   ];
   const series = seriesInOrder('2026-10-24T19:00:00Z', [
     {
@@ -80,7 +86,8 @@ export function priyaPlan(): WhatIfInput {
       name: 'Salary',
       direction: 'in',
       amount: pounds('2100.00'),
-      start: '2026-10-01',
+      // Her next payday when she set up (D86).
+      start: '2026-10-30',
       schedule: { kind: 'monthly', every: 1, on: { kind: 'last-working-day' } },
       holidayRule: 'working-day-before',
       type: 'pay',
@@ -196,7 +203,7 @@ export function priyaPlan(): WhatIfInput {
       name: 'To the holiday fund',
       direction: 'transfer',
       amount: pounds('150.00'),
-      start: '2026-10-01',
+      start: '2026-10-30',
       schedule: { kind: 'monthly', every: 1, on: { kind: 'last-working-day' } },
       holidayRule: 'working-day-before',
       type: 'savings',
@@ -243,6 +250,9 @@ export function priyaPlan(): WhatIfInput {
   return {
     accounts,
     balanceUpdates: [
+      // Set up on Sat 24 Oct (D157), then updated on Sun 25 Oct.
+      balance('current', '1240.00', '2026-10-24', '2026-10-24T18:30:00Z'),
+      balance('savings', '300.00', '2026-10-24', '2026-10-24T18:30:00Z'),
       balance('current', '1240.00', '2026-10-25', '2026-10-25T09:00:00Z'),
       balance('savings', '300.00', '2026-10-25', '2026-10-25T09:00:00Z'),
     ],
@@ -263,6 +273,7 @@ export function priyaPlan(): WhatIfInput {
 /** Dee's job: a café, paid every 2 weeks, 32 hours at £12.71 (brief 4.15). */
 export const deeCafe: PayProfile = {
   id: 'cafe',
+  name: 'Café',
   frequency: 'two-weekly',
   taxCode: '1257L',
   basis: 'cumulative',
@@ -273,6 +284,7 @@ export const deeCafe: PayProfile = {
 
 export const deeFortnight: PayWeek = {
   id: 'cafe-fortnight',
+  name: 'Usual fortnight',
   payProfileId: 'cafe',
   lines: [{ name: 'Basic', kind: 'basic', hours: '32', rate: '12.71' }],
 };
@@ -283,9 +295,10 @@ export const deeFortnight: PayWeek = {
  * she corrects when the real amount arrives. Wages every 2 weeks. Council
  * tax in 10 instalments, April to January. Childcare. Tight every month.
  * Today is Mon 2 Nov 2026: October's Universal Credit came in at £812.46.
+ * She set up her plan on Tue 27 Oct (D157).
  */
 export function deePlan(): WhatIfInput {
-  const series = seriesInOrder('2026-10-30T20:00:00Z', [
+  const series = seriesInOrder('2026-10-27T20:00:00Z', [
     {
       // Brief 8.5: due on the 28th, moved to the working day before.
       id: 'universal-credit',
@@ -409,9 +422,19 @@ export function deePlan(): WhatIfInput {
   return {
     accounts: [
       // She's chosen a £50 warning level, to be warned well before she's overdrawn.
-      { id: 'current', kind: 'current', overdraftLimit: 0, warningLevel: pounds('50.00') },
+      {
+        id: 'current',
+        name: 'Current account',
+        kind: 'current',
+        overdraftLimit: 0,
+        warningLevel: pounds('50.00'),
+      },
     ],
-    balanceUpdates: [balance('current', '427.40', '2026-11-02', '2026-11-02T08:00:00Z')],
+    balanceUpdates: [
+      // From setup on Tue 27 Oct, before Universal Credit and her wages came in.
+      balance('current', '121.22', '2026-10-27', '2026-10-27T19:30:00Z'),
+      balance('current', '427.40', '2026-11-02', '2026-11-02T08:00:00Z'),
+    ],
     series,
     changes,
     ticks,
@@ -571,10 +594,19 @@ export function kofiPlan(): WhatIfInput {
   ];
   return {
     accounts: [
-      { id: 'current', kind: 'current', overdraftLimit: 0, warningLevel: pounds('50.00') },
-      { id: 'tax', kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
+      {
+        id: 'current',
+        name: 'Current account',
+        kind: 'current',
+        overdraftLimit: 0,
+        warningLevel: pounds('50.00'),
+      },
+      { id: 'tax', name: 'Tax', kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
     ],
     balanceUpdates: [
+      // Set up on Tue 27 Oct (D157), then updated on Wed 28 Oct.
+      balance('current', '640.00', '2026-10-27', '2026-10-27T20:30:00Z'),
+      balance('tax', '1180.00', '2026-10-27', '2026-10-27T20:30:00Z'),
       balance('current', '640.00', '2026-10-28', '2026-10-28T08:00:00Z'),
       balance('tax', '1180.00', '2026-10-28', '2026-10-28T08:00:00Z'),
     ],
@@ -783,11 +815,33 @@ export function jessAndTomPlan(): WhatIfInput {
   ];
   return {
     accounts: [
-      { id: 'jess', kind: 'current', overdraftLimit: 0, warningLevel: pounds('50.00') },
-      { id: 'tom', kind: 'current', overdraftLimit: 0, warningLevel: pounds('50.00') },
-      { id: 'joint', kind: 'joint', overdraftLimit: 0, warningLevel: pounds('100.00') },
+      {
+        id: 'jess',
+        name: 'Jess current account',
+        kind: 'current',
+        overdraftLimit: 0,
+        warningLevel: pounds('50.00'),
+      },
+      {
+        id: 'tom',
+        name: 'Tom current account',
+        kind: 'current',
+        overdraftLimit: 0,
+        warningLevel: pounds('50.00'),
+      },
+      {
+        id: 'joint',
+        name: 'Joint account',
+        kind: 'joint',
+        overdraftLimit: 0,
+        warningLevel: pounds('100.00'),
+      },
     ],
     balanceUpdates: [
+      // Set up on Sat 24 Oct (D157), then updated on Sun 25 Oct.
+      balance('jess', '410.00', '2026-10-24', '2026-10-24T17:30:00Z'),
+      balance('tom', '520.00', '2026-10-24', '2026-10-24T17:30:00Z'),
+      balance('joint', '1050.00', '2026-10-24', '2026-10-24T17:30:00Z'),
       balance('jess', '410.00', '2026-10-25', '2026-10-25T10:00:00Z'),
       balance('tom', '520.00', '2026-10-25', '2026-10-25T10:00:00Z'),
       balance('joint', '1050.00', '2026-10-25', '2026-10-25T10:00:00Z'),
@@ -901,9 +955,19 @@ export function aliPlan(): WhatIfInput {
   return {
     accounts: [
       // Brief 8.5: a £1,000 overdraft. He's chosen to be warned once he's in it.
-      { id: 'current', kind: 'current', overdraftLimit: pounds('1000.00'), warningLevel: 0 },
+      {
+        id: 'current',
+        name: 'Student account',
+        kind: 'current',
+        overdraftLimit: pounds('1000.00'),
+        warningLevel: 0,
+      },
     ],
-    balanceUpdates: [balance('current', '-300.00', '2026-11-02', '2026-11-02T09:00:00Z')],
+    balanceUpdates: [
+      // From setup on Sun 20 Sep, the day before his first loan payment (D157).
+      balance('current', '45.00', '2026-09-20', '2026-09-20T11:30:00Z'),
+      balance('current', '-300.00', '2026-11-02', '2026-11-02T09:00:00Z'),
+    ],
     series,
     changes: [],
     ticks: [

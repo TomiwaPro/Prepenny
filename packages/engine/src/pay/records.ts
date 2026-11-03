@@ -63,14 +63,18 @@ function checkCoveredTo(coveredTo: CoveredTo, what: string): void {
       if (!whole(coveredTo.day, 1, 31)) {
         bad('bad-pay-profile', `${what}: the last day covered is a day of the month, 1 to 31.`);
       }
-      return;
+      break;
     case 'last-day':
-      return;
+      break;
     default:
       bad(
         'bad-pay-profile',
         `${what}: the last day covered is a day of the month, the last day, or days before payday.`,
       );
+  }
+  // Monthly pay can cover work up to a day of the month before (D142).
+  if (coveredTo.monthBefore !== undefined && coveredTo.monthBefore !== true) {
+    bad('bad-pay-profile', `${what}: monthBefore is true, or left out.`);
   }
 }
 
@@ -113,6 +117,9 @@ export function checkPay(records: PayRecords, series: readonly Series[]): Checke
     const what = `Pay profile ${profile.id}`;
     if (profiles.has(profile.id)) bad('repeated-pay-profile', `${what} is listed twice.`);
     checkSettings(profile);
+    if (profile.name !== undefined && typeof profile.name !== 'string') {
+      bad('bad-pay-profile', `${what}: its name must be text.`);
+    }
     if (profile.overtimeRate !== undefined)
       parseDecimal(profile.overtimeRate, `${what}: overtime rate`);
     if (profile.coveredTo !== undefined) checkCoveredTo(profile.coveredTo, what);
@@ -123,6 +130,9 @@ export function checkPay(records: PayRecords, series: readonly Series[]): Checke
     if (!isId(week?.id)) bad('bad-pay-week', 'A pay week needs an id.');
     const what = `Pay week ${week.id}`;
     if (weeks.has(week.id)) bad('repeated-pay-week', `${what} is listed twice.`);
+    if (week.name !== undefined && typeof week.name !== 'string') {
+      bad('bad-pay-week', `${what}: its name must be text.`);
+    }
     if (records.payProfiles !== undefined && !profiles.has(week.payProfileId)) {
       bad('unknown-pay-profile', `${what} is for a pay profile not in the plan.`);
     }

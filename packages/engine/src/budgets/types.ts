@@ -17,6 +17,13 @@ export const BUDGET_LEAVES = ['at-start', 'spread', 'pay-later'] as const;
 
 export type BudgetLeaves = (typeof BUDGET_LEAVES)[number];
 
+/** What a budget was before a change to its amount (D152). */
+export interface BudgetAmountBefore {
+  /** Periods that start on or before this day, "YYYY-MM-DD", had `amount`. */
+  readonly until: string;
+  readonly amount: Pence;
+}
+
 /** A budget (brief 4.5, ARCHITECTURE.md 3.3): food £200 a month, travel £25 a week. */
 export interface Budget {
   readonly id: string;
@@ -24,8 +31,15 @@ export interface Budget {
   readonly accountId: string;
   /** Food, Travel. Its rows count as Spending money (D79), and a pay-later bill as Bills. */
   readonly name: string;
-  /** The budget for each period, in whole pence. */
+  /** The budget for each period, in whole pence: from the period with today in it when it was last changed (D152). */
   readonly amount: Pence;
+  /**
+   * Its amounts before it was changed, oldest first (D152). A period that
+   * starts on or before the first `until` has that amount, and so on; later
+   * periods have `amount`. Periods that had ended when the amount changed
+   * keep what they had, for roll-over and pay-later bills.
+   */
+  readonly amountsBefore?: readonly BudgetAmountBefore[];
   readonly every: BudgetEvery;
   readonly leaves: BudgetLeaves;
   /** Roll-over (D30): off unless it's switched on for this budget. */

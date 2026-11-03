@@ -9,6 +9,7 @@
 // Step 1e: budgets, spends, Left to spend, savings goals and "Set aside".
 // Step 1f: the take-home pay calculator, "I did overtime" and "I missed a shift".
 // Step 1g: What if, the last day of work a payday covers, and speed.
+// Step 2a: commands for adding and changing records, and the owner's answers to step 1g.
 
 export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';
@@ -27,6 +28,7 @@ export {
   type Plan,
   type PlanInput,
   type PlanRow,
+  type PlanSettings,
   type RowKind,
   type Shortfall,
   type ShortOnDay,
@@ -36,6 +38,7 @@ export {
   BUDGET_EVERY,
   BUDGET_LEAVES,
   type Budget,
+  type BudgetAmountBefore,
   type BudgetBill,
   type BudgetEvery,
   type BudgetLeaves,
@@ -122,11 +125,20 @@ export {
 export { editPlan } from './edit/edit.ts';
 export { applyWrites, sameValue } from './edit/records.ts';
 export type {
+  AccountEdits,
+  BudgetEdits,
+  DebtEdits,
   Edit,
   EditCommand,
   EditInput,
+  GoalEdits,
   JustThisOneEdits,
+  NewBudget,
+  NewGoal,
+  NewSeries,
   PaymentRef,
+  PayProfileEdits,
+  PayWeekEdits,
   PlanRecords,
   RecordWrite,
   ThisAndLaterEdits,
@@ -171,7 +183,12 @@ export {
   type PayslipFigure,
   takeHomeAsEstimate,
 } from './pay/payslip.ts';
-export { lastDayCovered, type PayChange, workOutPayChange } from './pay/shifts.ts';
+export {
+  coveredToFromDates,
+  lastDayCovered,
+  type PayChange,
+  workOutPayChange,
+} from './pay/shifts.ts';
 export {
   checkStudentLoans,
   studentLoanDeduction,
