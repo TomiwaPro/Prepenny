@@ -135,7 +135,7 @@ export function paymentAtIndex(
   const adjustment = isEstimate ? adjustments.get(series.familyId)?.get(number) : undefined;
   if (adjustment !== undefined) amount = Math.max(0, amount + adjustment);
 
-  return {
+  const payment: PaymentOnDays = {
     seriesId: series.id,
     number,
     originalDay,
@@ -154,8 +154,10 @@ export function paymentAtIndex(
     moved: newDay !== null && newDay !== ruleDay,
     skipped: change?.skipped ?? false,
     changed: change !== undefined,
-    ...(adjustment === undefined ? {} : { payAdjustment: adjustment }),
   };
+  // Without a spread, so the plan's thousands of payments are quick to make
+  // (ARCHITECTURE.md 2.8).
+  return adjustment === undefined ? payment : { ...payment, payAdjustment: adjustment };
 }
 
 /**
@@ -206,8 +208,30 @@ export function paymentsOfSeriesBetween(
 
 /** Writes a payment's dates as "YYYY-MM-DD" for the engine's edge. */
 export function paymentWithDates(payment: PaymentOnDays): Payment {
-  const { originalDay, day, ...rest } = payment;
-  return { ...rest, originalDate: formatDate(originalDay), date: formatDate(day) };
+  // Field by field rather than with a spread: the plan writes out thousands
+  // of these, and this is several times quicker (ARCHITECTURE.md 2.8).
+  const written: Payment = {
+    seriesId: payment.seriesId,
+    number: payment.number,
+    originalDate: formatDate(payment.originalDay),
+    date: formatDate(payment.day),
+    accountId: payment.accountId,
+    toAccountId: payment.toAccountId,
+    direction: payment.direction,
+    amount: payment.amount,
+    name: payment.name,
+    note: payment.note,
+    type: payment.type,
+    isEstimate: payment.isEstimate,
+    isLast: payment.isLast,
+    movedByRule: payment.movedByRule,
+    moved: payment.moved,
+    skipped: payment.skipped,
+    changed: payment.changed,
+  };
+  return payment.payAdjustment === undefined
+    ? written
+    : { ...written, payAdjustment: payment.payAdjustment };
 }
 
 export interface PaymentsRequest {

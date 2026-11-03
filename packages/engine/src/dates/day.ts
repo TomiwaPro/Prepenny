@@ -122,12 +122,23 @@ export function parseDate(text: string, field = 'date'): Day {
   }
 }
 
+// Each date's text, worked out once (ARCHITECTURE.md 2.8): the plan writes
+// the same few hundred dates on thousands of rows. The text for a day never
+// changes, so keeping it changes no answer. Kept to a size no plan reaches.
+const DATE_TEXTS = new Map<Day, string>();
+const MOST_DATE_TEXTS = 20_000;
+
 /** Writes a Day as "YYYY-MM-DD". */
 export function formatDate(day: Day): string {
+  const known = DATE_TEXTS.get(day);
+  if (known !== undefined) return known;
   const { year, month, day: dayOfMonth } = civilFromDays(day);
   const mm = month.toString().padStart(2, '0');
   const dd = dayOfMonth.toString().padStart(2, '0');
-  return `${year.toString().padStart(4, '0')}-${mm}-${dd}`;
+  const text = `${year.toString().padStart(4, '0')}-${mm}-${dd}`;
+  if (DATE_TEXTS.size >= MOST_DATE_TEXTS) DATE_TEXTS.clear();
+  DATE_TEXTS.set(day, text);
+  return text;
 }
 
 /** The day of the week: 1 is Monday, 7 is Sunday. Day 0 was a Thursday. */
