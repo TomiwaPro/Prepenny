@@ -1,0 +1,219 @@
+/* The edit sheet (DESIGN.md): rows of plain controls on the card colour,
+   48px buttons, text boxes with the 3:1 border (D164, D176). */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--divider);
+}
+
+.where {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-1) var(--space-3);
+}
+
+.amount {
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+.in {
+  color: var(--money-in);
+}
+
+.leftLine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  margin-left: auto;
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.withHint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.hint,
+.note {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.note {
+  padding: var(--space-3);
+  border-radius: var(--radius-inner);
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--divider);
+}
+
+.subheading {
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+.subheading:focus {
+  outline: none;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label,
+.legend {
+  font-size: var(--size-second);
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  min-height: var(--button-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--size-name);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--short-text);
+}
+
+/* "£" in front of the amount, inside the same border. */
+.money {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+}
+
+.money:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.money .input {
+  border: 0;
+  padding-left: var(--space-1);
+}
+
+.money .input:focus-visible {
+  outline: none;
+}
+
+.money:has(.input[aria-invalid="true"]) {
+  border-color: var(--short-text);
+}
+
+.pound {
+  padding-left: var(--space-3);
+  font-size: var(--size-name);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.error,
+.problem {
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--short-text);
+}
+
+.problem {
+  padding: var(--space-3);
+  border-radius: var(--radius-inner);
+  background: var(--short-bg);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  font-size: var(--size-name);
+  cursor: pointer;
+}
+
+.option input {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--accent-text);
+}
+
+.main,
+.outlined,
+.quiet {
+  min-height: var(--button-height);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-inner);
+  font-size: var(--size-name);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.main {
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.outlined {
+  border: 1px solid var(--button-border);
+  background: var(--card);
+  color: var(--accent-text);
+}
+
+.quiet {
+  border: 0;
+  background: transparent;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.main[aria-disabled="true"],
+.outlined[aria-disabled="true"],
+.quiet[aria-disabled="true"] {
+  cursor: progress;
+}

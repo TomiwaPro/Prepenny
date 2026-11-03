@@ -2,8 +2,10 @@
 // so working out the plan never makes the screen stutter on a cheap phone.
 
 import { EngineInputError } from '@prepenny/engine';
+import { runEdit } from '../lib/edit.ts';
 import { workOutHome } from '../lib/home.ts';
-import type { WorkRequest, WorkResponse } from './messages.ts';
+import { workOutPlanView } from '../lib/plan-view.ts';
+import type { Answers, Ask, WorkRequest, WorkResponse } from './messages.ts';
 
 interface WorkerScope {
   addEventListener(type: 'message', listener: (event: MessageEvent<WorkRequest>) => void): void;
@@ -12,14 +14,23 @@ interface WorkerScope {
 
 const scope = self as unknown as WorkerScope;
 
+function answer(ask: Ask): Answers[Ask['kind']] {
+  switch (ask.kind) {
+    case 'home':
+      return workOutHome(ask.records, ask.today);
+    case 'plan':
+      return workOutPlanView(ask.records, ask.today, ask.options);
+    case 'edit':
+      return runEdit(ask.records, ask.today, ask.command);
+    default:
+      throw new EngineInputError('bad-request', 'The worker was asked something it does not know.');
+  }
+}
+
 scope.addEventListener('message', (event) => {
   const request = event.data;
   try {
-    scope.postMessage({
-      id: request.id,
-      ok: true,
-      home: workOutHome(request.records, request.today),
-    });
+    scope.postMessage({ id: request.id, ok: true, answer: answer(request) });
   } catch (error) {
     const code = error instanceof EngineInputError ? error.code : 'unexpected';
     scope.postMessage({ id: request.id, ok: false, code });

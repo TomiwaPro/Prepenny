@@ -6,6 +6,11 @@
     calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-6));
 }
 
+/* Room for the undo bar above the navigation, so it never covers the last row. */
+.withBar {
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 8rem);
+}
+
 .notes > * {
   margin-bottom: var(--card-gap);
 }

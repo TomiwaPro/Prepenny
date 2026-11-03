@@ -1,7 +1,7 @@
 // The phone's own database (ARCHITECTURE.md 3.8), in the browser's IndexedDB
 // through Dexie. Each plan's records are kept one by one, the way the engine
-// gives them back after an edit (D87), so step 2c can save an edit's writes
-// as they are, and Phase 3 can sync each record on its own (ARCHITECTURE.md 3.5).
+// gives them back after an edit (D87), so an edit's writes are saved as they
+// are, and Phase 3 can sync each record on its own (ARCHITECTURE.md 3.5).
 //
 // Nothing here ever writes an amount, a name or a note anywhere but this
 // database: no logs, no error reports (CLAUDE.md).
@@ -16,6 +16,12 @@ export interface StoredPlan {
   readonly isExample: boolean;
   /** For the example: which version of its records this phone holds, as a fingerprint. */
   readonly exampleVersion?: string;
+  /**
+   * The person has changed the example to try things out (D182). A changed
+   * example is kept when the app's own example changes, until "Start again
+   * with the example".
+   */
+  readonly edited?: boolean;
 }
 
 /** The kinds of record, as the engine's edits name them (D87). */
@@ -190,4 +196,30 @@ export async function askToKeepData(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Saves one change to a plan (D87): its writes, and for the example, that
+ * it has been changed (D182). All in one go, so nothing is half saved.
+ */
+export async function saveChange(
+  db: PrePennyDb,
+  plan: StoredPlan,
+  writes: readonly RecordWrite[],
+): Promise<StoredPlan> {
+  const saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
+  await db.transaction('rw', db.plans, db.records, async () => {
+    await saveWrites(db, plan.id, writes);
+    await db.plans.put(saved);
+  });
+  return saved;
+}
+
+/**
+ * True when the example on this phone should be replaced by the app's own:
+ * it isn't there, or it's an older version the person hasn't changed (D165, D182).
+ */
+export function exampleNeedsReplacing(stored: StoredPlan | undefined, version: string): boolean {
+  if (stored === undefined) return true;
+  return stored.exampleVersion !== version && stored.edited !== true;
 }

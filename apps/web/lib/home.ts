@@ -5,45 +5,14 @@
 
 import {
   type AccountPlan,
-  addMonths,
   type BalanceStatus,
-  formatDate,
   groupIntoPeriods,
-  LAST_YEAR,
   type Pence,
   type Plan,
   type PlanRecords,
-  type PlanRow,
-  parseDate,
-  partsOfDay,
-  workOutPlan,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
-
-/** How far ahead Home and the Plan screen look by default: 3 months (brief 4.8, D167). */
-export const PLAN_MONTHS_AHEAD = 3;
-
-/** The plan's last day: the same date 3 months after today, or that month's last day (D167). */
-export function planLookAhead(today: string, months = PLAN_MONTHS_AHEAD): string {
-  const day = parseDate(today, 'today');
-  if (partsOfDay(day).year + Math.ceil(months / 12) > LAST_YEAR) {
-    return `${LAST_YEAR}-12-31`;
-  }
-  return formatDate(addMonths(day, months));
-}
-
-export interface HomeRow {
-  /** Unique within the list, for React. */
-  readonly key: string;
-  readonly date: string;
-  readonly name: string;
-  /** Above zero coming in, below zero going out. */
-  readonly change: Pence;
-  /** "Left after this". */
-  readonly leftAfter: Pence;
-  readonly status: BalanceStatus;
-  readonly isEstimate: boolean;
-}
+import { HOME_MONTHS_AHEAD, planLookAhead, workOutPlanTo } from './plan-input.ts';
+import { type RowView, rowMaker } from './rows.ts';
 
 export type LeftToSpendLine =
   | { readonly kind: 'spend-no-more-than'; readonly amount: Pence }
@@ -51,7 +20,7 @@ export type LeftToSpendLine =
 
 export interface HomeView {
   readonly today: string;
-  /** The plan's last day: Home looks this far ahead (D167). */
+  /** The plan's last day: Home looks this far ahead, 12 months (D178). */
   readonly lookAheadTo: string;
   readonly account: {
     readonly name: string;
@@ -70,17 +39,7 @@ export interface HomeView {
     readonly payLater: readonly { readonly left: Pence; readonly until: string }[];
   } | null;
   readonly mainPayEnded: boolean;
-  readonly lowest: {
-    readonly balance: Pence;
-    readonly date: string;
-    /** The name of the payment it's after, or null when nothing has gone out yet. */
-    readonly after: string | null;
-    readonly status: BalanceStatus;
-    /** The first day under the warning level (D8), when it's under. */
-    readonly underWarningFrom: string | null;
-    /** The first shortfall: "£95.47 short on Sun 1 Nov" (D82). */
-    readonly short: { readonly amount: Pence; readonly date: string } | null;
-  };
+  readonly lowest: LowestView;
   /** "This pay has to cover": this pay period's money out and in (D84). Null without pay periods. */
   readonly cover: {
     readonly goingOut: Pence;
@@ -88,8 +47,21 @@ export interface HomeView {
     /** The period's last day: "Going out by Thu 29 Oct". */
     readonly by: string;
   } | null;
-  /** The next three rows from today on that aren't ticked (D168). */
-  readonly nextDue: readonly HomeRow[];
+  /** The next three rows from today on that aren't ticked (D168, D179). */
+  readonly nextDue: readonly RowView[];
+}
+
+/** Lowest point ahead, with its warning (brief 5.5, D8, D82). */
+export interface LowestView {
+  readonly balance: Pence;
+  readonly date: string;
+  /** The name of the payment it's after, or null when nothing has gone out yet. */
+  readonly after: string | null;
+  readonly status: BalanceStatus;
+  /** The first day under the warning level (D8), when it's under. */
+  readonly underWarningFrom: string | null;
+  /** The first shortfall: "£95.47 short on Sun 1 Nov" (D82). */
+  readonly short: { readonly amount: Pence; readonly date: string } | null;
 }
 
 /**
@@ -111,27 +83,22 @@ export function homeAccountId(records: PlanRecords): string {
   return chosen.id;
 }
 
-/** Works out the plan for Home, looking as far ahead as the Plan screen does (D167). */
+/** Works out the plan for Home, looking 12 months ahead (D178). */
 export function workOutHomePlan(records: PlanRecords, today: string): Plan {
-  const settings = records.settings ?? { nation: 'england-and-wales', mainPayFamilyId: null };
-  return workOutPlan({
-    ...records,
-    mainPayFamilyId: settings.mainPayFamilyId,
-    holidays: holidaysFor(settings.nation),
-    today,
-    to: planLookAhead(today),
-  });
+  return workOutPlanTo(records, today, planLookAhead(today, HOME_MONTHS_AHEAD));
 }
 
-function rowOf(row: PlanRow): HomeRow {
+/** An account's lowest point ahead and its first warning (brief 5.5). */
+export function lowestOf(account: AccountPlan): LowestView {
+  const lowest = account.lowestPoint;
+  const short = account.shortfalls[0];
   return {
-    key: `${row.kind} ${row.payment.seriesId} ${row.payment.originalDate} ${row.spendId ?? ''} ${row.flow}`,
-    date: row.date,
-    name: row.payment.name,
-    change: row.change,
-    leftAfter: row.leftAfter,
-    status: row.status,
-    isEstimate: row.payment.isEstimate,
+    balance: lowest.balance,
+    date: lowest.date,
+    after: lowest.after?.payment.name ?? null,
+    status: lowest.status,
+    underWarningFrom: account.firstUnderWarning?.date ?? null,
+    short: short === undefined ? null : { amount: short.amount, date: short.date },
   };
 }
 
@@ -175,8 +142,7 @@ export function workOutHome(records: PlanRecords, today: string): HomeView {
   if (account === undefined) {
     throw new Error(`No plan for account ${accountId}.`);
   }
-  const lowest = account.lowestPoint;
-  const short = account.shortfalls[0];
+  const makeRow = rowMaker(plan, records);
   return {
     today,
     lookAheadTo: plan.to,
@@ -188,18 +154,11 @@ export function workOutHome(records: PlanRecords, today: string): HomeView {
     },
     leftToSpend: leftToSpendOf(account),
     mainPayEnded: plan.mainPayEnded,
-    lowest: {
-      balance: lowest.balance,
-      date: lowest.date,
-      after: lowest.after?.payment.name ?? null,
-      status: lowest.status,
-      underWarningFrom: account.firstUnderWarning?.date ?? null,
-      short: short === undefined ? null : { amount: short.amount, date: short.date },
-    },
+    lowest: lowestOf(account),
     cover: coverOf(plan, accountId),
     nextDue: account.rows
       .filter((row) => !row.atStart && !row.ticked && row.date >= today)
       .slice(0, 3)
-      .map(rowOf),
+      .map((row) => makeRow(row, null)),
   };
 }

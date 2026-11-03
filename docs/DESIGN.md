@@ -53,11 +53,34 @@ Every text and background pair must pass WCAG 2.2 AA (4.5:1).
 
 Checked on 27 Oct 2026: every text pair above passes. The lowest is Money in on Sunk, 5.35:1. Brass is 2.97:1 on paper, too low for text, so it stays lines and borders only.
 
-Dark mode uses the same roles. Propose its values in Phase 2 for the owner's approval.
+### Dark mode, the text box border and the focus outline
 
-### Still to choose in Phase 2
+Approved by the owner on 3 Nov 2026 (D164, D176). Dark mode uses the same roles. Two roles were added: **Navy as text** (links, outlined buttons, the wordmark and the active navigation item) and the two lines WCAG needs at 3:1 against the colours around them.
 
-WCAG also needs 3:1 for the edges of text boxes and for focus outlines, against the colour around them. The row, card and button line colours above are only 1.1 to 1.5:1, so they can't be used for those. Propose a text box border and a focus outline colour in Phase 2, with the dark mode values.
+| Role | Light | Dark |
+| --- | --- | --- |
+| Paper | #F4EFE6 | #0E1424 |
+| Card | #FFFDF8 | #172036 |
+| Sunk | #EFE8DA | #212B44 |
+| Ink | #1A2238 | #F2ECE0 |
+| Ink muted | #4A5060 | #B9B2A3 |
+| Navy | #14213D | #22345E |
+| Navy raised | #22304F | #2E4272 |
+| Text on navy | #F4EFE6 | #F4EFE6 |
+| Muted text on navy | #C9BFA8 | #D3C9B3 |
+| Brass (lines only) | #A8864B | #B08E55 |
+| Row dividers | #EDE5D6 | #27314B |
+| Card edges | #E3D9C6 | #2C3752 |
+| Button borders | #D9D2C3 | #3B4662 |
+| Active navigation pill | #E6E2D6 | #2B3757 |
+| Money in | #1E6B3A | #74CC92 |
+| Tight | #7A4E00 on #FBF0D9 | #F2C46A on #3B2D0F |
+| Short | #A1281E on #FBE4E1 | #FFB2A6 on #4B1D18 |
+| Navy as text | #14213D | #F2ECE0 |
+| Text box border | #7A7365 | #8790A6 |
+| Focus outline (3px, 2px outside the control) | #14213D | #F4EFE6 |
+
+Every text pair passes 4.5:1 in both modes, and the text box border and focus outline pass 3:1 against Paper, Card and Sunk. `apps/web/test/unit/colours.test.ts` checks them all.
 
 ## Shape and space
 

@@ -6,19 +6,22 @@
 // from the engine, worked out in the background; every word from the strings file.
 
 import type { ReactNode } from 'react';
-import { dateTile, formatDay } from '../lib/dates.ts';
+import { formatDay } from '../lib/dates.ts';
 import type { HomeView } from '../lib/home.ts';
 import { formatMoney } from '../lib/money.ts';
+import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { Actions } from './Actions.tsx';
 import { BalanceCard } from './BalanceCard.tsx';
+import { EditSheet } from './EditSheet.tsx';
 import { FigureCard } from './FigureCard.tsx';
 import styles from './HomeScreen.module.css';
 import { HomeSkeleton } from './HomeSkeleton.tsx';
 import { PaymentList } from './PaymentList.tsx';
-import { PaymentRow } from './PaymentRow.tsx';
 import { usePlan } from './PlanProvider.tsx';
+import { RowItem } from './RowItem.tsx';
 import { TotalsCard } from './TotalsCard.tsx';
+import { useEditSheet } from './useEditSheet.ts';
 
 const t = strings.home;
 
@@ -48,7 +51,13 @@ function leftToSpend(home: HomeView) {
   };
 }
 
-function Figures({ home }: { readonly home: HomeView }) {
+function Figures({
+  home,
+  onOpen,
+}: {
+  readonly home: HomeView;
+  readonly onOpen: (row: RowView) => void;
+}) {
   const day = (date: string) => formatDay(date, home.today);
   const warning = formatMoney(home.account.warningLevel, { wholePounds: true });
   const { lowest, cover } = home;
@@ -98,16 +107,7 @@ function Figures({ home }: { readonly home: HomeView }) {
         empty={t.nothingDue(day(home.lookAheadTo))}
       >
         {home.nextDue.map((row) => (
-          <PaymentRow
-            key={row.key}
-            tile={dateTile(row.date)}
-            name={row.name}
-            second={row.isEstimate ? t.withEstimate(day(row.date)) : day(row.date)}
-            amount={formatMoney(row.change, { sign: 'always' })}
-            moneyIn={row.change > 0}
-            left={t.left(formatMoney(row.leftAfter))}
-            status={row.status === 'ok' ? null : row.status}
-          />
+          <RowItem key={row.key} row={row} today={home.today} onOpen={onOpen} />
         ))}
       </PaymentList>
     </>
@@ -116,6 +116,7 @@ function Figures({ home }: { readonly home: HomeView }) {
 
 export function HomeScreen() {
   const state = usePlan();
+  const sheet = useEditSheet(state.status === 'ready' ? state.version : null);
   return (
     <>
       <header className={styles.header}>
@@ -124,7 +125,7 @@ export function HomeScreen() {
       </header>
       <div className={styles.figures} aria-busy={state.status === 'loading'}>
         {state.status === 'ready' ? (
-          <Figures home={state.home} />
+          <Figures home={state.home} onOpen={sheet.open} />
         ) : state.status === 'failed' ? (
           <p className={styles.failed} role="alert">
             {strings.errors.plan}
@@ -134,6 +135,9 @@ export function HomeScreen() {
         )}
       </div>
       <Actions />
+      {state.status === 'ready' ? (
+        <EditSheet row={sheet.editing} today={state.home.today} onClose={sheet.close} />
+      ) : null}
     </>
   );
 }

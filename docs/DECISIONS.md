@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 onwards were decided while building step 2b, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 onwards were decided while building step 2c, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -1682,9 +1682,11 @@ Why: the owner's answer. A plan with no balance can't show anything left after a
 
 ## Made during step 2b
 
-D164 to D175 were decided on 3 Nov 2026 while building step 2b. D164 waits for the owner's approval, and the questions are in `PLAN.md`.
+D164 to D175 were decided on 3 Nov 2026 while building step 2b. The owner approved D164 and answered the questions the same day: D176 to D182.
 
 ### D164. Dark mode colours, the text box border and the focus outline (proposed)
+
+Approved by the owner on 3 Nov 2026: D176.
 
 Decided 3 Nov 2026 in step 2b. Proposed for the owner's approval (DESIGN.md: "Propose its values in Phase 2"). Adds to DESIGN.md.
 
@@ -1741,6 +1743,8 @@ Why: the owner's wording for Home and the Home sketch write the warning level as
 
 ### D167. Home looks 3 months ahead
 
+Replaced for Home by D178: Home looks 12 months ahead. The Plan screen still shows 3 months by default.
+
 Decided 3 Nov 2026 in step 2b. Adds to brief 4.8 and 4.9. A question for the owner in `PLAN.md`.
 
 Home works the plan out to the same date 3 months after today, or that month's last day when it's shorter: Sun 25 Oct 2026 looks to Mon 25 Jan 2027. That's the Plan screen's default (brief 4.8: "Three months shown by default"), so Lowest point ahead on Home and on the Plan screen always agree. Left to spend counts to the next payday whatever the view (D143).
@@ -1748,6 +1752,8 @@ Home works the plan out to the same date 3 months after today, or that month's l
 Why: the brief doesn't say how far ahead Home's lowest point looks. For Sam it's £4.53 on Sun 1 Nov whichever way, but for a yearly bill, such as Priya's car insurance, it decides whether Home warns months early.
 
 ### D168. Home's account, "This pay has to cover" and "Next due"
+
+The third point is confirmed by D179.
 
 Decided 3 Nov 2026 in step 2b. Adds to brief 4.9.
 
@@ -1821,3 +1827,174 @@ Decided 3 Nov 2026 in step 2b. Adds to DESIGN.md and the Home sketch in ARCHITEC
 - The live app is updated from `main` only after GitHub's checks have passed on that exact commit. The very first time, before anything is merged, a pull request's version also goes live once, but only when Cloudflare says the app doesn't exist yet; any other problem stops the workflow with Cloudflare's own message. The Cloudflare key is given only to the steps that use it.
 
 Why: each follows the sample, DESIGN.md or the brief where they didn't say exactly, and keeps every screen working at 320px and at 200% text (D37). The last five points came from the outside review.
+
+## From the owner's review of step 2b
+
+D176 to D182 were agreed by the owner on 3 Nov 2026, answering the seven questions left at the end of step 2b (all but the Cloudflare set-up, which is still waiting). They were built in step 2c, or are built in the step named.
+
+### D176. Dark mode colours, the text box border and the focus outline: approved
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Approves D164 as proposed.
+
+The dark mode colours in D164, the text box border (#7A7365 light, #8790A6 dark) and the focus outline (#14213D light, #F4EFE6 dark, 3px wide, 2px outside the control) are approved. They're DESIGN.md's dark mode, and every text box from step 2c on uses them.
+
+Why: the owner approved them.
+
+### D177. The icon marks its lowest point with a brass dot
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Adds to the icon in step 2b.
+
+The icon stays: a navy square with a cream penny and a navy line that dips and rises again. A small brass dot sits at the bottom of the dip, so the line reads as "lowest point", not a tick or a smile. It's checked at 48px, the size of an icon on a phone's home screen. Brass is a line and border colour in DESIGN.md; here it's a mark in a drawing, not text, so it doesn't need text contrast.
+
+Why: the owner's answer.
+
+### D178. Home looks 12 months ahead
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Replaces D167's 3 months for Home. The Plan screen still shows 3 months by default (brief 4.8).
+
+- Home's lowest point, its first day under the warning level, its shortfall and Next due look 12 months ahead: to the same date 12 months after today, or that month's last day when it's shorter. Sun 25 Oct 2026 looks to Mon 25 Oct 2027.
+- Sam's Home still shows £4.53 on Sun 1 Nov.
+- Left to spend still counts to the day before the next payday (D143), and "This pay has to cover" is still this pay period (D168).
+
+Why: the owner's answer, so a yearly bill is never missed.
+
+### D179. Next due includes money coming in: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Confirms the third point of D168.
+
+Next due lists the next three rows, money coming in as well as going out, each with the payment's full name, never shortened.
+
+Why: the owner confirmed it.
+
+### D180. Sam's example stays exactly as the brief: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Confirms the second point of D165.
+
+The example has no budget and no savings goal, so it always matches the tests (D15). The Budgets and Savings goals screens (step 2f) show what they say when there are none.
+
+Why: the owner confirmed it.
+
+### D181. Closing an account that's overdrawn
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Adds to D158. Built in step 2f, with the account screens.
+
+When an account ends today below £0.00, the account sheet offers one tap the other way to D158: "Move £3.12 into it from another account first". That adds a transfer today from an account the person picks into this one, for the whole amount it's under. Then the account can be closed. The engine refuses to close it until it shows £0.00 (D158).
+
+Why: the owner's answer. Money owed never quietly drops out of the plan either.
+
+### D182. The example can be changed on this phone, and started again
+
+Agreed 3 Nov 2026, from the owner's review of step 2b. Adds to D15, D133 and D165. The points after the first were decided in step 2c.
+
+- Sam's example can be changed to try things out. Every change is saved on this phone only, like any change, and is never sent anywhere.
+- More has "Start again with the example". It asks once more ("Your changes to the example will go."), then puts the example back exactly as it is in the app, and clears the undo.
+- Decided in step 2c: an example that has been changed is kept when a new version of the app brings a changed example (D165). It's replaced only by "Start again with the example". An example that hasn't been changed is still replaced straight away, as before.
+- Decided in step 2c: today is still Sun 25 Oct 2026 in the example (D133), so ticks and moves are worked out for that day. The time stored with a tick is the phone's own clock, which only orders it after the example's balance update (D33).
+
+Why: the owner's answer. Someone trying the example shouldn't lose what they tried because the app was updated.
+
+## Made during step 2c
+
+D183 to D189 were decided on 3 Nov 2026 while building step 2c. Questions for the owner are in `PLAN.md`.
+
+### D183. The Plan screen shows whole periods, and its lowest point looks as far as Home's
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.8, D84 and D178.
+
+- Three months at first, and "Show another month" adds one, up to 24 (brief 4.8).
+- Pay periods: every pay period up to the date that many months after today, the last one in full, so "Left at the end" is always the true end of a period. Sam on Sun 25 Oct, 3 months: to Thu 28 Jan 2027. Each month added shows at least one more period, so "Show another month" never does nothing: Dee, paid on the 28th, on Wed 25 Nov sees to Wed 27 Jan 2027 with 1 month and to Thu 25 Feb 2027 with 2.
+- Calendar months: the month with today in it and the next ones, that many in all: October, November and December for 3 months. Each shows its rows from today on (D84).
+- The first pay period is headed "Today to Thu 29 Oct", because its rows start today; the sketch's "This week" wouldn't be true for monthly pay. The others are "Fri 30 Oct to Thu 5 Nov", and months are "October" or "January 2027".
+- "Lowest point ahead" at the top looks as far as Home does, 12 months (D178), or as far as the plan is shown when that's further. So up to 12 months shown, Home and the Plan screen always show the same lowest point; with more shown, the Plan screen also looks at the months beyond. The row it's after says "Lowest point ahead" when it's on screen.
+- One account at a time, Home's account first (D168), with a switch between the open accounts.
+- "Not ticked yet" is above the periods, and only there when something is in it (D11).
+
+Why: brief 4.8 asks for three months and up to 24, but a period cut off part of the way through would show a "Left at the end" that isn't the end. The owner's test 2 lists October, November and December, then January and February after two taps.
+
+### D184. Filters only hide rows
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.8.
+
+- Show: Everything, Still to pay (going out and not ticked), Money in (coming in, money moved in from another account included), or Debt payments (linked to a debt, or of the type Debt, D79). And a type: all types, or one of the eight (D79). Together, a row has to match both.
+- Every figure stays the whole plan's: Came in, Left after this, Left at the end and the lowest point are worked out from every row, so a filter never changes a number. A period with nothing that matches says "Nothing here matches the filters."
+- "Showing only: Debt payments." and "Clear filters" sit under the Filters button while any filter is on.
+- The account is the switch at the top, not one of the filters.
+
+Why: a number that changed with a filter would no longer match the bank (brief Part 3, principle 1).
+
+### D185. Typing the real amount of an estimate
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.3 and 8.4 test 3.
+
+When the amount of an estimate is changed for just this one, "This is an estimate" unticks itself, because the real amount has arrived, and the sheet says how far it is from the estimate: "£21.54 more than the estimate." The person can tick the box again. For this and all later ones the box stays as it was, because a new amount for paydays still to come is still an estimate.
+
+When the real amount is the same as the estimate, the person unticks the box and saves: the amount shown is saved as the real amount, so it stands from then on. For a pay-later bill this matters: until a real amount is typed in, the bill follows what's spent (D111).
+
+Why: brief 4.3 says the person types the real amount when pay lands and sees the difference, and brief 8.4 test 3 (the owner's step 2c test 4) expects the payday to lose its Estimate label.
+
+### D186. The undo bar
+
+Decided 3 Nov 2026 in step 2c. Adds to brief Part 3, principle 4, D87 and ARCHITECTURE.md 4.5.
+
+- After every change the bar says what changed: "Rent changed for this and all later ones.", "Driving lesson moved to Fri 30 Oct.", "Family loan marked as paid.", "Driving lesson skipped.", "Rent removed for this and all later ones." and so on, with Undo. One tap undoes the whole change (D87), then it says "Change undone."
+- It stays until the next change, or until the person goes to another screen. There's no time limit, so nobody has to be quick (WCAG 2.2.1).
+- After Undo, focus moves to the bar's words, because the Undo button has gone. Each message is read out by screen readers, even the same words twice in a row, and a row that gets focus is never hidden behind the bar.
+- Undo takes back the change the bar names. If a newer change has been made since, it says so: "A newer change has been made since, so this one can no longer be undone here."
+- Once the phone's database has failed, nothing more is saved there until PrePenny opens again or the example starts again, so a plan is never saved half one way and half another.
+- Only the last change can be undone from the bar. Older changes will be in Activity (brief 4.12).
+- When an undo is refused, the bar says why: "This can't be undone, because something it changed has been changed again since."
+- When the phone can't save a change, as in some private windows, the bar says: "This phone couldn't save it, so it will go when PrePenny closes."
+
+Why: brief Part 3, principle 4 asks for undo straight after any change, and a bar that vanished on a timer would be missed by someone slow to read it.
+
+### D187. What the Plan screen remembers
+
+Decided 3 Nov 2026 in step 2c. Changes ARCHITECTURE.md 3.8, which planned to keep the filters and the number of months on the phone.
+
+Pay periods or Months is kept on this phone, like Light or Dark (D173). The filters, the extra months and the account chosen are kept while PrePenny is open, and go back to the start the next time it opens: everything, 3 months, Home's account.
+
+Why: the plan should always open the way brief 4.8 describes it, with nothing hidden by a filter set days ago.
+
+### D188. The edit sheet
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.4 and 5.4 and the edit sketch in ARCHITECTURE.md 4.6.
+
+- At the top: the payment's name, its date and account ("Sun 1 Nov, Current account", or "Wed 28 Oct, Savings to Current account" for money moved between accounts), the amount, and what's left after it with Tight or Short.
+- Quick actions: Mark as paid, or Mark as not paid once it's ticked. Move to next payday, saying where it goes ("Moves it to Fri 6 Nov"); it isn't offered for money coming in, where it would put two paydays on one day, or once a payment is ticked. Skip this one.
+- Change it: the amount (after a £), the date (with the date written PrePenny's way under the box, because each phone shows the box its own way), name, note and "This is an estimate". Then "Just this one" or "This and all later ones", and for pay with a pattern and a new amount for later ones, "Every payday from now" or "Only this week of the pattern" (D97). Only what was changed is sent (D60, D93). Saving with nothing changed says "Change something first, then save."
+- Remove asks "Remove just this one" or "Remove this and all later ones", with "Don't remove it".
+- A pay-later card's bill can be changed one bill at a time only (D111), money set aside can only be ticked (D116), and a budget's own rows are changed on the budget (step 2f).
+- A mistake is explained beside its box ("Type an amount, for example 25."), and a refusal beside what was tapped (D189).
+- A ticked payment's row says so: "Sun 25 Oct, paid".
+- Focus goes into the sheet. Escape and Close put it back on the row. After a change it goes back to the row, or to Undo when the row has gone.
+- Rows in Home's Next due open the same sheet.
+- New ids are made on the phone as UUID version 7 (ARCHITECTURE.md 3.3), and the time stored with a tick is the phone's own clock (D182).
+
+Why: these follow the brief and the sketch where they didn't say exactly.
+
+### D189. The engine's refusals, in words
+
+Decided 3 Nov 2026 in step 2c. Adds to D87 and D149.
+
+The edit sheet never shows the engine's code. Each code people could meet has a sentence in the strings file:
+
+| Code | What the sheet says |
+| --- | --- |
+| `ticked` | One of these payments is ticked as paid. Untick it first. (D92) |
+| `already-ticked` | This payment is already ticked as paid. |
+| `not-ticked` | This payment isn't ticked as paid. |
+| `already-removed` | This payment is already removed. |
+| `no-main-pay` | There's no main pay in the plan, so there's no next payday to move it to. |
+| `no-next-payday` | There's no payday after this one in the plan, so it can't move to the next payday. |
+| `date-before-earlier-payment` | Choose a date after the payment before this one. (D91) |
+| `date-after-later-payment` | Choose a date before the next payment. (D96) |
+| `date-not-in-schedule`, `dates-dont-fit` | Choose a date that fits how often it repeats. |
+| `changed-since` | This can't be undone, because something it changed has been changed again since. |
+| `budget-bills` | This is a pay-later card bill. To change later bills, change the budget. (D111) |
+| `shared-half` | This half of a transfer has no name or note of its own. (D94) |
+| `no-pattern` | This pay doesn't follow a pattern. Choose every payday from now. |
+| `patterns-differ` | The pay pattern has changed part of the way along. Choose every payday from now. (D97) |
+| `not-last-change` | A newer change has been made since, so this one can no longer be undone here. (D186) |
+| anything else | That change couldn't be made, so nothing was changed. Try again. |
+
+Why: CLAUDE.md asks for plain English, and a code means nothing to someone tired at 11pm.
