@@ -1,8 +1,8 @@
 // Sam's example plan (brief Part 8, D15): every number and date from brief
 // 8.1 and 8.2, with the brand names changed. Today is always Sun 25 Oct 2026
 // (D133), nothing is ticked, and every payment keeps its date. Sam's pay
-// profile and pay weeks come from his payslips in brief 8.6, so "I did
-// overtime" works on it from step 2d (D165).
+// profile and his four pay weeks come from his payslips in brief 8.6, so "I
+// did overtime" works on it (D165, D196). None of them changes a figure.
 //
 // test/unit/example-plan.test.ts proves these are exactly the records of the
 // engine's tested fixture (packages/engine/test/fixtures/sam.ts and pay.ts),
@@ -103,7 +103,7 @@ const series: readonly SeriesWithoutFamily[] = [
     schedule: { kind: 'weekly', every: 1 },
     isEstimate: true,
     payProfileId: 'warehouse',
-    cyclePayWeeks: ['week-26', 'week-27', 'week-28', 'week-27'],
+    cyclePayWeeks: ['week-26', 'week-27', 'week-28', 'week-29'],
   },
   {
     ...base,
@@ -341,28 +341,41 @@ const payProfile: PayProfile = {
 const basic = (hours: string) => ({ name: 'Basic', kind: 'basic', hours, rate: '12.71' }) as const;
 const premium = (amount: string) => [{ name: 'Shift premium', amount: pounds(amount) }];
 
-/** The pay lines of the payslips in brief 8.6, as saved pay weeks (D5). */
+/**
+ * The pay lines of the four payslips in brief 8.6, weeks 26 to 29, as saved
+ * pay weeks (D5, D196). Each step of the pay pattern is worked out from its
+ * own week: steps 1 and 3 are 3-shift weeks, steps 2 and 4 are 4-shift weeks.
+ * Week 29's 11.5 hours of overtime aren't in its lines: overtime is what "I
+ * did overtime" adds.
+ */
 const payWeeks: readonly PayWeek[] = [
   {
     id: 'week-26',
-    name: '3-shift week',
+    name: 'Rota week 1, 3 shifts',
     payProfileId: 'warehouse',
     lines: [basic('34.5')],
     fixed: premium('114.69'),
   },
   {
     id: 'week-27',
-    name: '4-shift week',
+    name: 'Rota week 2, 4 shifts',
     payProfileId: 'warehouse',
     lines: [basic('46')],
     fixed: premium('210.23'),
   },
   {
     id: 'week-28',
-    name: 'Short 3-shift week',
+    name: 'Rota week 3, 3 shifts',
     payProfileId: 'warehouse',
     lines: [basic('34.25')],
     fixed: premium('142.29'),
+  },
+  {
+    id: 'week-29',
+    name: 'Rota week 4, 4 shifts',
+    payProfileId: 'warehouse',
+    lines: [basic('46')],
+    fixed: premium('172.01'),
   },
 ];
 

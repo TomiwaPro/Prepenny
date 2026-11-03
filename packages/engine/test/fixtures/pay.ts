@@ -42,26 +42,38 @@ export const premium = (amount: string) => [{ name: 'Shift premium', amount: pou
 export const samPayWeeks: readonly PayWeek[] = [
   {
     id: 'week-26',
-    name: '3-shift week',
+    name: 'Rota week 1, 3 shifts',
     payProfileId: 'warehouse',
     lines: [basic('34.5')],
     fixed: premium('114.69'),
   },
   {
     id: 'week-27',
-    name: '4-shift week',
+    name: 'Rota week 2, 4 shifts',
     payProfileId: 'warehouse',
     lines: [basic('46')],
     fixed: premium('210.23'),
   },
   {
     id: 'week-28',
-    name: 'Short 3-shift week',
+    name: 'Rota week 3, 3 shifts',
     payProfileId: 'warehouse',
     lines: [basic('34.25')],
     fixed: premium('142.29'),
   },
+  {
+    // Week 29's usual lines. Its 11.5 hours of overtime aren't in them:
+    // overtime is what "I did overtime" adds (D5, D196).
+    id: 'week-29',
+    name: 'Rota week 4, 4 shifts',
+    payProfileId: 'warehouse',
+    lines: [basic('46')],
+    fixed: premium('172.01'),
+  },
 ];
+
+/** Each step of Sam's pay pattern linked to the pay week it's worked out from (D5, D196). */
+export const SAM_CYCLE_PAY_WEEKS: readonly string[] = ['week-26', 'week-27', 'week-28', 'week-29'];
 
 /**
  * Sam's pay profile on Sun 25 Oct 2026: the year so far from his week 29
@@ -86,11 +98,11 @@ export const samPayProfile: PayProfile = {
 /**
  * Sam's plan with his pay linked to the profile. The pattern's steps are
  * 3-shift, 4-shift, 3-shift and 4-shift weeks (D5): Fri 30 Oct is week 26's
- * lines, Fri 6 Nov week 27's, Fri 13 Nov week 28's and Fri 20 Nov week 27's again.
+ * lines, Fri 6 Nov week 27's, Fri 13 Nov week 28's and Fri 20 Nov week 29's (D196).
  */
 export function samPayPlan(
   overrides: Partial<PlanInput> = {},
-  cyclePayWeeks: readonly string[] = ['week-26', 'week-27', 'week-28', 'week-27'],
+  cyclePayWeeks: readonly string[] = SAM_CYCLE_PAY_WEEKS,
 ): PlanInput {
   return samPlan({
     series: samSeries.map((one) =>
