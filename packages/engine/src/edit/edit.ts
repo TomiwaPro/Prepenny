@@ -27,7 +27,7 @@ import {
   refuse,
 } from './context.ts';
 import { removeThisAndLater, thisAndLater } from './later.ts';
-import { recordPayAdjustment, removePayAdjustment } from './pay.ts';
+import { recordPayAdjustment, refuseUndoOfPay, removePayAdjustment } from './pay.ts';
 import {
   applyWrites,
   changeWrite,
@@ -460,6 +460,7 @@ function undo(context: Context, edit: Edit): void {
       );
     }
   }
+  refuseUndoOfPay(context, writes, before);
   for (const write of before) {
     if (write.kind !== 'series') continue;
     const now = context.byId.get(write.id) ?? null;

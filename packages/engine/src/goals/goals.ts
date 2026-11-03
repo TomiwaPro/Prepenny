@@ -210,19 +210,20 @@ function workOutGoal(
   const what = `Goal ${goal.id}`;
   let saved = goal.startingAmount;
   let savedSoFar = goal.startingAmount;
-  let reachedOn: Day | null = null;
-  let reachedWith: number | null = null;
-  let reached = saved >= goal.target;
-  let isEstimate = false;
+  // The goal is reached on the day of the payment that takes it to the
+  // target and keeps it there: money taken out again starts it over (D139).
+  let atTarget = saved >= goal.target;
+  let reachedIndex: number | null = null;
   const rows: GoalRow[] = [];
   counted.forEach((one, i) => {
     saved = checkPence(saved + one.amount, `${what}: what's saved`);
     if (one.ticked) savedSoFar = checkPence(savedSoFar + one.amount, `${what}: what's saved`);
-    if (!reached && !one.ticked && one.payment.isEstimate) isEstimate = true;
-    if (!reached && saved >= goal.target) {
-      reached = true;
-      reachedOn = one.day;
-      reachedWith = i + 1;
+    if (!atTarget && saved >= goal.target) {
+      atTarget = true;
+      reachedIndex = i;
+    } else if (atTarget && saved < goal.target) {
+      atTarget = false;
+      reachedIndex = null;
     }
     rows.push({
       payment: paymentWithDates(one.payment),
@@ -233,8 +234,15 @@ function workOutGoal(
     });
   });
 
+  const reachedAt = atTarget ? (reachedIndex as number | null) : null;
+  const reachedDay = reachedAt === null ? null : (counted[reachedAt]?.day ?? null);
+  const reachedWith = reachedAt === null ? null : reachedAt + 1;
+  // The date, or what's saved at the end, depends on any estimate before it.
+  const dependsOn = atTarget ? (reachedAt ?? -1) : counted.length - 1;
+  const isEstimate = counted
+    .slice(0, dependsOn + 1)
+    .some((one) => !one.ticked && one.payment.isEstimate);
   const reachedNow = savedSoFar >= goal.target;
-  const reachedDay = reachedOn as Day | null;
   return {
     goal,
     savedSoFar,

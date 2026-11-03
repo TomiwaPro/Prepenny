@@ -93,6 +93,15 @@ function mod(a: number, b: number): number {
 }
 
 /**
+ * The step of an amount pattern that payment number k is on:
+ * (k + offset) mod length (brief 5.3). Each part is taken mod the length
+ * first, so a large offset can't lose precision.
+ */
+export function stepOf(number: number, offset: number, length: number): number {
+  return mod(mod(number, length) + mod(offset, length), length);
+}
+
+/**
  * The payment at a local index of a prepared series. In order (brief 5.3, D4,
  * D38): the date from the schedule; the amount from the change, else the last
  * amount on the last payment, else the pattern, else the series amount; then
@@ -121,7 +130,7 @@ export function paymentAtIndex(
   } else if (isLast && series.lastAmount !== undefined) {
     amount = series.lastAmount;
   } else if (cycle !== null) {
-    amount = cycle[mod(number + prepared.cycleOffset, cycle.length)] as Pence;
+    amount = cycle[stepOf(number, prepared.cycleOffset, cycle.length)] as Pence;
   } else {
     amount = series.amount;
   }
@@ -135,7 +144,7 @@ export function paymentAtIndex(
   const adjustment = isEstimate ? adjustments.get(series.familyId)?.get(number) : undefined;
   if (adjustment !== undefined) amount = Math.max(0, amount + adjustment);
 
-  return {
+  const payment: PaymentOnDays = {
     seriesId: series.id,
     number,
     originalDay,
@@ -154,8 +163,10 @@ export function paymentAtIndex(
     moved: newDay !== null && newDay !== ruleDay,
     skipped: change?.skipped ?? false,
     changed: change !== undefined,
-    ...(adjustment === undefined ? {} : { payAdjustment: adjustment }),
   };
+  // Without a spread, so the plan's thousands of payments are quick to make
+  // (ARCHITECTURE.md 2.8).
+  return adjustment === undefined ? payment : { ...payment, payAdjustment: adjustment };
 }
 
 /**
@@ -206,8 +217,30 @@ export function paymentsOfSeriesBetween(
 
 /** Writes a payment's dates as "YYYY-MM-DD" for the engine's edge. */
 export function paymentWithDates(payment: PaymentOnDays): Payment {
-  const { originalDay, day, ...rest } = payment;
-  return { ...rest, originalDate: formatDate(originalDay), date: formatDate(day) };
+  // Field by field rather than with a spread: the plan writes out thousands
+  // of these, and this is several times quicker (ARCHITECTURE.md 2.8).
+  const written: Payment = {
+    seriesId: payment.seriesId,
+    number: payment.number,
+    originalDate: formatDate(payment.originalDay),
+    date: formatDate(payment.day),
+    accountId: payment.accountId,
+    toAccountId: payment.toAccountId,
+    direction: payment.direction,
+    amount: payment.amount,
+    name: payment.name,
+    note: payment.note,
+    type: payment.type,
+    isEstimate: payment.isEstimate,
+    isLast: payment.isLast,
+    movedByRule: payment.movedByRule,
+    moved: payment.moved,
+    skipped: payment.skipped,
+    changed: payment.changed,
+  };
+  return payment.payAdjustment === undefined
+    ? written
+    : { ...written, payAdjustment: payment.payAdjustment };
 }
 
 export interface PaymentsRequest {

@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 onwards were decided while building step 1g, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -1157,6 +1157,8 @@ Why: spending money due after the lowest day can't be spent before it, so counti
 
 ### D119. "I spent" takes only today or an earlier date
 
+The question in the third point is answered by D129.
+
 Agreed 1 Nov 2026, from the owner's review of step 1e. Replaces the third point of D109.
 
 - The I spent sheet takes today or an earlier date. The engine refuses a new spend dated after today, and a change that moves a spend to a day after today.
@@ -1204,6 +1206,8 @@ Why: it's the method HMRC prefers, and it matches all four of Sam's payslips to 
 
 ### D123. "I did overtime" and "I missed a shift" are pay adjustments
 
+The last point's "a shift premium or other fixed pay isn't changed" is replaced by D130.
+
 Decided 1 Nov 2026 in step 1f. Adds to D5, D44 and ARCHITECTURE.md 3.4.
 
 - Each is saved as a pay adjustment with the change to take-home pay worked out when it's saved (D5). It's found by the pay series' family and the payday's payment number, not by series and original date, so a split or a new date for this and all later ones never loses it (D49, D89).
@@ -1225,6 +1229,8 @@ Decided 1 Nov 2026 in step 1f. Adds to brief 4.15. The owner asked for this to b
 Why: what someone will really earn in the weeks before a future payday isn't known, and their usual week is the best guess. The overtime's own effect is what the person asked for.
 
 ### D125. Which payday a shift is paid on
+
+The first point, the working week and how many weeks behind pay is, is replaced by D131.
 
 Decided 1 Nov 2026 in step 1f. Adds to D5 and ARCHITECTURE.md 3.4.
 
@@ -1264,3 +1270,167 @@ Decided 1 Nov 2026 in step 1f. Adds to D45 and ARCHITECTURE.md 2.7 and 3.4.
 - A pay series links to its pay profile and to a pay week for each step of its amount pattern (D5). A pay profile also keeps the year so far, with the tax year and the tax week or month it's from.
 
 Why: the brief asks for one file per tax year with its source links, and the app and the server can then use the same check.
+
+## From the owner's review of step 1f
+
+D129 to D133 were agreed by the owner on 3 Nov 2026, answering the four questions left in `PLAN.md` at the end of step 1f and adding one rule. They were built in step 1g.
+
+### D129. Left to spend on Sun 8 Nov is £0.00
+
+Agreed 3 Nov 2026, from the owner's review of step 1f. Answers the question in D119.
+
+In owner test 3's £120.00 case, with today on Sun 8 Nov 2026, Left to spend until Fri 13 Nov is £0.00. Sam's spending money for that week left on payday, Fri 6 Nov. The test only needed the pay-later card's line ("On the pay-later card: £80.00 left until Sat 28 Nov") to be separate from Left to spend, and it is.
+
+Why: the owner confirmed it. Left to spend runs from today to the day before the next payday (D28), and nothing of Sam's spending money is due then.
+
+### D130. A change to the extras with overtime or a missed shift
+
+Agreed 3 Nov 2026, from the owner's review of step 1f. Replaces the last point of D123 that a shift premium or other fixed pay isn't changed. The points after the first were decided in step 1g.
+
+- When a payday's pay week has fixed extras (a shift premium, bonus or allowance), "I did overtime" and "I missed a shift" take an optional change to those extras. Leave it empty and the extras stay as they are. People whose pay has no extras are never asked, and the engine refuses a change to extras on pay without them.
+- The change is typed as an amount above zero: how much more the extras are with the overtime, or how much less with the missed shift. £0.00 is the same as leaving it empty.
+- It's worked out with the hours by the pay calculator, so the tax, National Insurance and pension on it are right, and saved on the pay adjustment.
+- A missed shift can't take off more in extras than the payday has, counting changes already saved for that payday.
+
+Test: Sam misses his shift on Tue 3 Nov and loses £47.43 of shift premium: Fri 13 Nov goes down by £133.17 instead of £100.43, to £335.89.
+
+Why: the owner's answer. Sam's shift premium isn't the same for every shift, so only the person knows how much of it a shift was worth.
+
+### D131. Which payday a shift is paid on: the last day of work each payday covers
+
+Agreed 3 Nov 2026, from the owner's review of step 1f. Replaces the first point of D125: the working week and how many weeks behind pay is, and the pay profile fields for them. The owner's message named D124, but those are in D125; D124, the year so far, stays as it is. The points marked "decided in step 1g" weren't in the owner's answer.
+
+- Setup asks once for the last day of work the next payday covers, for example "Fri 6 Nov pays for work up to Sun 1 Nov".
+- For monthly pay, it's stored as a day of the month, such as the 15th, or the last day. For any other pay, it's stored as a number of days before payday: 5 for Sam.
+- A shift goes on the first payday whose last day covered is on or after the shift's date.
+- Decided in step 1g: the last day covered is worked out from the payday's date from its schedule, before any weekend or bank holiday move, so a payday moved for Christmas still covers the same work. For monthly pay it's in the payday's own month, and a day the month is too short for is its last day. Days before payday can be 0 to 62, the same 8 weeks and 6 days the working week and weeks behind allowed. A day of the month for pay that isn't monthly, or days before for monthly pay, is refused. A removed payday isn't a payday (D81).
+
+Tests:
+
+- Sam, 5 days before payday: overtime on Mon 26 Oct lands on Fri 6 Nov, and a missed shift on Tue 3 Nov lands on Fri 13 Nov. Every step 1f figure stays the same (£155.12 and −£100.43).
+- Pay every 2 weeks on Fridays from Fri 6 Nov, covering work up to the Sunday before: a shift on Tue 3 Nov goes on Fri 20 Nov.
+- Monthly pay on the last working day, covering work up to the 15th: a shift on Wed 16 Dec 2026 goes on Fri 29 Jan 2027.
+
+Why: it's the owner's answer, and one question in setup works the same for weekly, fortnightly, four-weekly and monthly pay. The schedule's date is used because payroll decides what a payday covers before the bank moves it. A question about monthly pay that covers work in the month before is in `PLAN.md`.
+
+### D132. A pension taken after tax: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 1f. Confirms the third point of D126.
+
+The percentage typed in is what the payslip takes. Nothing else changes.
+
+Why: the owner confirmed it.
+
+### D133. Sam's example plan always shows Sun 25 Oct 2026 as today
+
+Agreed 3 Nov 2026, from the owner's review of step 1f. Adds to D15. Phase 2 builds it.
+
+Sam's example plan always shows Sun 25 Oct 2026 as today, whatever the date really is, so every number matches the tests and the website's screenshots.
+
+Why: the example and the tests stay the same plan (D15), and the screenshots never go out of date.
+
+## Made during step 1g
+
+D134 onwards were decided on 3 Nov 2026 while building step 1g.
+
+### D134. How the speed test is measured
+
+Decided 3 Nov 2026 in step 1g. Adds to D72 and ARCHITECTURE.md 2.8.
+
+- The plan: 100 weekly series over 24 months, from Sun 25 Oct 2026 to Wed 25 Oct 2028, on a current account with an overdraft and a savings account. One in ten is money coming in, four move money to savings, a third move to the working day before a weekend or bank holiday, and some have one-off changes and ticks. That's about 10,500 rows.
+- It's worked out 5 times to warm up, then 20 times. The time is the middle of the 20: the average of the 10th and 11th fastest. It must be under 12 milliseconds. The target is unchanged.
+- It runs in a group of its own, never at the same time as the other tests, so they never compete with it for the machine.
+- It loads the engine with Node's own `import`, the way the app's build will run it, not through the test tool's module runner. On the test machine the same plan took 9 to 11 milliseconds through the module runner and 4.5 to 7 milliseconds with Node's own import, because the runner slows down every call from one engine file to another. So the engine is written in TypeScript that Node can run directly, and the type check refuses anything else.
+- To get there, the engine writes each date as text once and keeps it, writes payments out without copying, puts each day's rows in a bucket for that day instead of one big sort, collects them in the same-day order so most days need no sorting, and keeps what every row of a series shares once for the series. The order of rows and every figure stay exactly the same: every earlier test passes unchanged.
+
+Result: about 5 milliseconds on the test machine, from about 28 before step 1g, and 3.30 milliseconds on GitHub's machine.
+
+Why: the test should measure the engine as the app will run it, and nothing else running at the same time. The target leaves room for a phone four times slower to stay under the brief's 50 milliseconds (ARCHITECTURE.md 2.8).
+
+### D135. What if
+
+Decided 3 Nov 2026 in step 1g. Adds to brief 4.10 and ARCHITECTURE.md 2.1.
+
+- Practice changes are ordinary edit commands, made one after another on a copy of the plan's records, each on the records the ones before it left. Anything that can be edited for real can be practised, including "I did overtime" and Update balance.
+- What if gives the real plan and the practice plan side by side: for each account its lowest point, the first day under the warning level and each shortfall with the payments that could move; for each debt "Paid off on", or what's still left at the end; and for each savings goal the date it's reached. Debts and goals look 24 months ahead, like the Debts screen (D43), unless told otherwise.
+- The real records are never changed. To throw the practice away, the app forgets it.
+- Keeping it gives one edit holding every practice change: for each record, how it was before the first practice change and how it is after the last. It's one undo step (brief 5.4, D87). A record that ends up as it started isn't in it.
+- Before keeping, the app works What if out again on the newest real records with the same practice commands, as a sync clash runs a command again (ARCHITECTURE.md 3.5), so a partner's change that arrived in the meantime is never overwritten.
+- A practice change the engine can't make is refused with its usual code, and the message says which practice change it was.
+
+Tests: owner test 2 (Kofi with no work next week: from a lowest point of £156.00 to £237.75 short on Thu 5 Nov, beside each other) and owner test 3 (Sam's Fri 30 Oct pay £100 lower: −£95.47 Short on Sun 1 Nov beside £4.53 Tight, the D69 list, and every paid-off date the same). Property tests on all six people's plans prove the real plan never changes, Keep saves exactly the practice plan, and one undo puts it back.
+
+Why: the brief asks for a practice mode with the same changes as real ones, side by side, then kept or thrown away. Using the same commands means practice and real changes always agree, and one edit for Keep follows the rule that every change can be undone straight away.
+
+### D136. Pay weeks after a new amount for this and all later ones
+
+Decided 3 Nov 2026 in step 1g. Adds to D5, D90 and D97.
+
+- A new amount for every payday from now (D90) replaces an amount pattern with one amount. The pay weeks linked to each step of the pattern (D5) go with the pattern, so those paydays have no pay week. "I did overtime" and "I missed a shift" on them then ask once for the usual hours and rate, as D5 says for pay with no linked week. A series with one amount and one pay week keeps it.
+- "Only this week of the pattern" (D97) on a series that has one amount and one pay week gives every step of its new pattern that same pay week.
+
+Why: the step 1g property tests found that a new amount for every payday from now, on pay linked to pay weeks, left four pay weeks on a series with one amount, so the edit was refused. With one amount, which step's week to use can't be known, and guessing would put a wrong overtime figure in the plan. A single week was already used for every payday, so it carries on.
+
+### D137. The other five people's plans
+
+Decided 3 Nov 2026 in step 1g. Adds to brief Part 2 and D15.
+
+The plans for Priya, Dee, Kofi, Jess and Tom, and Ali in `packages/engine/test/fixtures/people.ts` use the details in brief Part 2 and amounts made up to fit each person. They're test data for Phase 2's end-to-end tests, not example plans people see: Sam's is the only example (D15).
+
+- Priya: today Sun 25 Oct 2026, looking a year ahead so the yearly bills show. Salary £2,100 on the last working day, moved to the working day before (brief 8.5), rent, council tax over 10 months, energy, a quarterly water bill, yearly car insurance and TV licence, subscriptions, monthly food and weekly spread travel budgets, and £150 to a holiday fund each payday, reached on Fri 28 May 2027. No debts.
+- Dee: today Mon 2 Nov 2026. Her main pay is Universal Credit on the 28th, moved to the working day before, as an estimate, with October's real £812.46 typed in. Café wages every 2 weeks (32 hours at £12.71), with a pay profile so "I missed a shift" works. Council tax in 10 instalments, April to January, weekly childcare, and a weekly food budget. A £50 warning level, so she's Tight from Mon 9 Nov and never overdrawn.
+- Kofi: today Wed 28 Oct 2026. Three platforms as irregular weekly estimates, with Rides as his main pay, so his weeks run Monday to Sunday. 25% of each set aside to his Tax account, which pays his Self Assessment. Van finance as a loan with 24 payments left, rent, insurance, phone, and weekly fuel and food budgets.
+- Jess and Tom: today Sun 25 Oct 2026. Three accounts: Jess's, Tom's and the joint one. Jess is paid on the 28th and Tom on the 15th, both moved to the working day before. Jess moves £600 to the joint account on her payday (brief 8.5) and Tom £950 on his. The joint account pays the rent, bills and a monthly food budget. Tom's car loan belongs to Tom (D65). Jess's pay is the main pay here; Tom's own view uses his. Sharing between their phones, with private accounts, comes in Phase 3.
+- Ali: today Mon 2 Nov 2026, £300 into a £1,000 overdraft with a warning level of £0. His main pay is the student loan, three termly payments on chosen dates, so his plan runs term by term and Left to spend lasts until Mon 11 Jan. A weekly shop job, rent each term, a phone contract, a bus pass and a weekly food budget.
+- Everything paid before each person's balance was checked is ticked, so nothing is in Not ticked yet.
+
+Why: the brief asks for all six people as personas and end-to-end tests. Each plan has what that person needs most, and every engine part is used by at least one of them.
+
+### D138. A tick made before an update, for money paid after its balance date
+
+Decided 3 Nov 2026 in step 1g, from the engine review. Follows brief 5.5 rule 1 and D1 where the engine didn't. Adds to D33, D62 and D99.
+
+- A payment's tick is inside an account's balance when it was ticked at or before the balance update and its paid date is on or before the balance date (brief 5.5 rule 1, D1, D33), or when it was ticked inside that account's Update balance steps.
+- So a payment ticked before an update, but paid after the balance date, isn't inside it. It goes out on its paid date. This only happens when the balance is typed in with a date before today.
+- Debts work the same way (D62, D99): a payment ticked before an Update from statement, but paid after the statement's balance date, comes off the debt on its paid date. Ticks made inside the update's steps are still inside it (D103).
+
+Test: on Tue 3 Nov at 9am a balance of £500.00 is typed in as it was on Sun 1 Nov. The £25.00 phone bill paid on Mon 2 Nov, ticked at 6pm that day, comes off on Mon 2 Nov, leaving £475.00. A loan updated the same way from a £100.00 statement dated Sun 1 Nov shows £75.00 left now, and is paid off on Tue 2 Feb 2027, not Tue 2 Mar.
+
+Why: the engine counted every tick made before an update as inside it, whatever the paid date, so a balance dated before today showed money that had already gone: £25.00 too much in the test.
+
+### D139. A savings goal that drops back below its target
+
+Decided 3 Nov 2026 in step 1g, from the engine review. Adds to D114.
+
+- The date a goal is reached is the day of the payment that takes it to the target and keeps it there to the last day looked at. Money taken out again, below the target, starts it over: the date is the day it gets back to the target, or none if it doesn't.
+- A goal that starts at its target, and never drops below it, has no date, as before (D114).
+- The date is labelled an estimate when a payment marked as an estimate comes before it.
+
+Test: a £1,000.00 goal starting at £1,000.00, with £300.00 taken out on Tue 20 Oct and £50.00 a week in from Fri 6 Nov, is reached again on Fri 11 Dec 2026, with its 7th linked payment counting the £300.00 out. One that went over its target then back under, and stays under, has no date, beside 70%. D114's test still gives Fri 9 Apr 2027 with the 24th move.
+
+Why: D114's "first takes it to the target" said a goal was reached on a date it later fell back from, so the screen could show "Reached on 10 Oct" beside 70%, and missed the real date when money was taken out first.
+
+### D140. Overtime and missed shifts on the same payday, and smaller pay rules
+
+Decided 3 Nov 2026 in step 1g, from the engine review. Adds to D5, D121, D123, D124, D130 and D131.
+
+- **Every shift on one payday is worked out together.** The overtime and missed shifts on one payday are worked out in the order they were saved (by id, which is made in time order), each on top of the ones before it, so they add up to exactly all of them together (D124). Removing one works the others out again. An undo that would take away or change one that a later one was worked out on top of is refused, as is an undo that would take away the payday of one saved since (D87). Removing overtime is refused when a missed shift on that payday would then take off more extras than the payday has (D130).
+- **The payday that covers the shift.** A shift goes on the payday whose last day covered is the earliest on or after the shift (D131). Paydays usually land in that order anyway; this matters only when a payday has been moved before another one, which still covers the same work.
+- **NONCUM.** A tax code ending in NONCUM is an emergency code on the week 1/month 1 basis, like W1, M1 and X. GOV.UK's "Emergency tax codes" page says payslips can show it (D121).
+- **Check my payslip** doesn't list National Insurance or take-home pay that's 1p away from the calculator, because some payroll software uses HMRC's National Insurance tables (brief 8.6). Any other difference, even 1p, is listed.
+- **Other deductions** typed in can't be below zero, because a deduction below zero would add to take-home pay.
+
+Tests: with two overtimes on Fri 6 Nov, removing the first leaves £773.58, the same as the second alone. With Fri 13 Nov's pay moved to Thu 5 Nov, overtime on Mon 26 Oct still lands on Fri 6 Nov.
+
+Why: each was found by the review with an example that put a wrong figure in the plan or refused something valid: removing one of two shifts left Fri 6 Nov £16.00 too high.
+
+### D141. Smaller fixes to records and edits
+
+Decided 3 Nov 2026 in step 1g, from the engine review.
+
+- Two balance updates for one account at the same moment are refused whatever order they come in (D85). Before, it depended on the order.
+- A payment's own date from its schedule, sent as the new date for this and all later ones, isn't a new date: the schedule and any one-off moved dates stay as they are (D60, D91). Before, the later dates were worked out again from it, so a payment on the 31st became the 30th in later months.
+- A pattern's step is worked out without losing accuracy whatever the pattern position stored, and a payment number above 100,000 is refused: weekly payments from 1900 to 2999 are about 57,400.
+- A series ending on Tue 31 Dec 2999, the last day a date can be, counts as never ending. Before, it was refused.
+
+Why: each could refuse a valid plan or change payments nobody asked to change.

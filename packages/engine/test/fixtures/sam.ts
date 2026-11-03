@@ -6,6 +6,7 @@
 // types (D79), families and main pay. Step 1d adds the debts (brief 8.1) and
 // links each debt payment to its debt (brief 8.2). Step 1e adds a Travel
 // budget, its spends and the pay-later food budget for the owner's tests.
+// Step 1g adds his whole plan with every engine part switched on at once.
 
 import type {
   Account,
@@ -17,9 +18,11 @@ import type {
   PlanInput,
   Series,
   Spend,
+  WhatIfInput,
 } from '../../src/index.ts';
 import { parsePounds as pounds } from '../../src/index.ts';
 import { englandAndWales } from './holidays.ts';
+import { samPayProfile, samPayWeeks } from './pay.ts';
 
 export const samToday = '2026-10-25';
 export const samViewEnd = '2027-02-28';
@@ -522,3 +525,60 @@ export const samFood: Budget = {
 export const samSeriesWithoutFood: readonly Series[] = samSeries.filter(
   (one) => one.id !== 'pay-later-card-food',
 );
+
+/**
+ * Step 1g: Sam's whole plan with every engine part switched on at once, for
+ * brief 8.3 in full. None of these changes a figure in brief 8.3:
+ *
+ * - his debts, linked from their payments (brief 8.2), with the Credit
+ *   card's statement on the 10th and its £25.00 minimum typed in (no
+ *   interest in this test, brief 8.1)
+ * - his food on the pay-later card as a pay-later budget instead of a
+ *   series (owner test 3, D32)
+ * - his pay linked to his pay profile and his saved pay weeks (D5, D131)
+ * - a savings goal linked to the moves into and out of savings (D114)
+ *
+ * Nothing is ticked, and every payment keeps its date (brief Part 8).
+ */
+export function samEverything(): WhatIfInput {
+  const goalLinked = new Set(['from-savings', 'to-savings', 'back-from-savings']);
+  return {
+    accounts: samAccounts,
+    balanceUpdates: samBalanceUpdates,
+    series: samSeriesWithoutFood.map((one) => {
+      if (one.id === 'pay') {
+        return {
+          ...one,
+          payProfileId: 'warehouse',
+          cyclePayWeeks: ['week-26', 'week-27', 'week-28', 'week-27'],
+        };
+      }
+      return goalLinked.has(one.id) ? { ...one, goalId: 'savings-pot' } : one;
+    }),
+    changes: samChanges,
+    ticks: [],
+    debts: samDebts.map((debt) =>
+      debt.id === 'credit-card'
+        ? { ...debt, statementDay: 10, minimumRule: { kind: 'typed', amount: pounds('25.00') } }
+        : debt,
+    ),
+    budgets: [samFood],
+    spends: [],
+    goals: [
+      {
+        id: 'savings-pot',
+        name: 'Savings pot',
+        target: pounds('1000.00'),
+        accountId: 'savings',
+        startingAmount: pounds('500.00'),
+      },
+    ],
+    payProfiles: [samPayProfile],
+    payWeeks: samPayWeeks,
+    payAdjustments: [],
+    mainPayFamilyId: samMainPay,
+    holidays: englandAndWales,
+    today: samToday,
+    to: samViewEnd,
+  };
+}

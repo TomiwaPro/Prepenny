@@ -101,9 +101,15 @@ function statementDays(card: CheckedDebt, to: Day): Day[] {
   return days;
 }
 
-/** True when a tick is already inside the debt's balance: made at or before it, or in its steps (D62). */
+/**
+ * True when a tick is already inside the debt's balance (D62, D105, D138):
+ * made in its steps, or made at or before it with a paid date on or before
+ * its balance date. A payment ticked before a statement update but paid
+ * after the statement's date isn't inside that statement's balance.
+ */
 function insideBalance(tick: CheckedTick, card: CheckedDebt): boolean {
-  return tick.tickedAt <= card.balanceAt || tick.inDebtUpdate === card.debt.id;
+  if (tick.inDebtUpdate === card.debt.id) return true;
+  return tick.tickedAt <= card.balanceAt && tick.paidOn <= card.balanceOn;
 }
 
 interface Records {

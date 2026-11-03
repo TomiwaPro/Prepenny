@@ -36,8 +36,8 @@ import {
   paymentWithDates,
 } from '../schedule/payments.ts';
 import { markFamilies, type PreparedSeries, prepareSeries } from '../schedule/series.ts';
-import type { Payment, Series, SetAside } from '../schedule/types.ts';
-import { compareRows } from './order.ts';
+import type { Payment, Series } from '../schedule/types.ts';
+import { compareSameDay, type SameDayRow } from './order.ts';
 import { findShortfalls, lowestAndFirstUnder, statusOf } from './shortfalls.ts';
 import { type CheckedTick, indexTicks, type TickIndex } from './ticks.ts';
 import {
@@ -56,24 +56,86 @@ import {
 } from './types.ts';
 
 /**
- * Something that moves money in the plan: a payment, a pay-later bill, a
- * set-aside, part of a budget leaving, or a spend (see `RowKind`).
+ * What every row of one series, one set-aside or one budget row shares, kept
+ * once instead of on each row, so the plan holds less while it works
+ * (ARCHITECTURE.md 2.8).
  */
-interface Movement {
+interface Source {
   readonly kind: RowKind;
-  readonly payment: PaymentOnDays;
+  /**
+   * How it moves money for the account it leaves or arrives in. A transfer
+   * is `transfer-out` here; for the same-day order only the group counts.
+   */
+  readonly flow: Flow;
+  readonly accountId: string;
+  /** For a transfer or a set-aside: the account it arrives in. */
+  readonly toAccountId: string | null;
   readonly familyCreatedAt: Moment;
   readonly familyId: string;
+  readonly seriesId: string;
   /** On the same day, inside one budget: its spends first, then the budget row. */
   readonly within: number;
-  /** A payment's, bill's or set-aside's tick, if it has one. */
-  readonly tick: CheckedTick | null;
   /** A spend's time, compared with each account's balance update (D2, D33). */
   readonly recordedAt: Moment | null;
   readonly budgetId: string | null;
   readonly spendId: string | null;
-  /** Written out once, and shared by both rows of a transfer. */
-  withDates: Payment | null;
+}
+
+/**
+ * Something that moves money in the plan: a payment, a pay-later bill, a
+ * set-aside, part of a budget leaving, or a spend (see `RowKind`).
+ */
+class Movement implements SameDayRow {
+  readonly source: Source;
+  /** The payment as the plan shows it, written out once and shared by both rows of a transfer. */
+  readonly payment: Payment;
+  /** When it's due, as a day number: the payment's `date`. */
+  readonly day: Day;
+  readonly amount: Pence;
+  readonly skipped: boolean;
+  /** A payment's, bill's or set-aside's tick, if it has one. */
+  readonly tick: CheckedTick | null;
+  readonly name: string;
+  readonly number: number;
+
+  constructor(
+    source: Source,
+    payment: Payment,
+    day: Day,
+    amount: Pence,
+    skipped: boolean,
+    tick: CheckedTick | null,
+    name: string,
+    number: number,
+  ) {
+    this.source = source;
+    this.payment = payment;
+    this.day = day;
+    this.amount = amount;
+    this.skipped = skipped;
+    this.tick = tick;
+    this.name = name;
+    this.number = number;
+  }
+
+  get kind(): RowKind {
+    return this.source.kind;
+  }
+  get flow(): Flow {
+    return this.source.flow;
+  }
+  get familyCreatedAt(): Moment {
+    return this.source.familyCreatedAt;
+  }
+  get familyId(): string {
+    return this.source.familyId;
+  }
+  get seriesId(): string {
+    return this.source.seriesId;
+  }
+  get within(): number {
+    return this.source.within;
+  }
 }
 
 /** Where an account starts: its latest balance update (brief 5.5, D33). */
@@ -136,6 +198,9 @@ function latestBalances(
   }
   const starts = new Map<string, Start>();
   const accountOfUpdate = new Map<string, string>();
+  // Every moment each account has an update at: two at the same moment are
+  // refused, whatever order they come in (D85).
+  const moments = new Map<string, Set<Moment>>();
   updates.forEach((update, i) => {
     if (!isNonEmptyText(update?.id)) {
       throw new EngineInputError('bad-balance', `Balance update ${i + 1} needs an id.`);
@@ -157,13 +222,16 @@ function latestBalances(
     }
     const at = parseTime(update.checkedAt, `${what}: when it was made`);
     accountOfUpdate.set(update.id, update.accountId);
-    const latest = starts.get(update.accountId);
-    if (latest !== undefined && latest.at === at) {
+    const seen = moments.get(update.accountId) ?? new Set<Moment>();
+    if (seen.has(at)) {
       throw new EngineInputError(
         'same-time-balances',
         `${what}: account ${update.accountId} has two balance updates at the same time.`,
       );
     }
+    seen.add(at);
+    moments.set(update.accountId, seen);
+    const latest = starts.get(update.accountId);
     if (latest === undefined || at > latest.at) {
       starts.set(update.accountId, { update, day, at });
     }
@@ -340,23 +408,27 @@ function setAsideAmount(amount: Pence, percent: Decimal): Pence {
  */
 function setAsideOf(
   movement: Movement,
-  setAside: SetAside,
+  source: Source,
   percent: Decimal,
   tick: CheckedTick | null,
 ): Movement {
-  return {
-    ...movement,
-    kind: 'set-aside',
-    tick,
-    payment: {
+  const amount = setAsideAmount(movement.amount, percent);
+  return new Movement(
+    source,
+    {
       ...movement.payment,
       direction: 'transfer',
-      toAccountId: setAside.accountId,
-      amount: setAsideAmount(movement.payment.amount, percent),
+      toAccountId: source.toAccountId,
+      amount,
       type: 'savings',
     },
-    withDates: null,
-  };
+    movement.day,
+    amount,
+    movement.skipped,
+    tick,
+    movement.name,
+    movement.number,
+  );
 }
 
 /**
@@ -376,44 +448,76 @@ function collectPayments(
   const { prepared, familyTimes, changes, ticks, setAsideTicks } = checked;
   const adjustments = checked.pay.index;
   const all: Movement[] = [];
-  for (const one of prepared) {
+  // In the same-day order of the series, so each day's rows mostly arrive in
+  // order already and putting them in order is quick (D12, ARCHITECTURE.md
+  // 2.8). The order they're collected in never changes the plan.
+  const inOrder = prepared
+    .map((one) => ({
+      one,
+      flow: flowOf(one.series.direction),
+      familyCreatedAt: familyTimes.get(one.series.familyId) as Moment,
+      familyId: one.series.familyId,
+      seriesId: one.series.id,
+      name: one.series.name,
+      number: one.firstNumber,
+    }))
+    .sort(compareSameDay);
+  for (const { one } of inOrder) {
     const id = one.series.id;
     let from = addDays(one.start, -LONGEST_RUN_WITHOUT_A_WORKING_DAY);
     for (const { newDay } of changes.get(id)?.values() ?? []) {
       if (newDay !== null && newDay < from) from = newDay;
     }
     const ticksOfSeries = ticks.get(id);
-    const familyCreatedAt = familyTimes.get(one.series.familyId) as Moment;
     const bill = worked.get(id) ?? null;
     const setAside = one.series.setAside;
+    const source: Source = {
+      kind: bill === null ? 'payment' : 'bill',
+      flow: flowOf(one.series.direction),
+      accountId: one.series.accountId,
+      toAccountId: one.series.toAccountId ?? null,
+      familyCreatedAt: familyTimes.get(one.series.familyId) as Moment,
+      familyId: one.series.familyId,
+      seriesId: id,
+      within: 0,
+      recordedAt: null,
+      budgetId: bill === null ? null : id,
+      spendId: null,
+    };
+    // Money set aside moves to its own account on the same day (D64, D113).
+    const setAsideSource: Source | null =
+      setAside === undefined
+        ? null
+        : { ...source, kind: 'set-aside', flow: 'transfer-out', toAccountId: setAside.accountId };
     // A set-aside tick on a series with no money set aside is ignored (D83, D116).
     const setAsideTicksOfSeries = setAside === undefined ? undefined : setAsideTicks.get(id);
     const percent =
       setAside === undefined ? null : parseDecimal(setAside.percent, `Series ${id}: set aside`);
-    const found = new Set<Day>();
+    // The payments already added, only needed when some of them are ticked.
+    const found =
+      ticksOfSeries === undefined && setAsideTicksOfSeries === undefined ? null : new Set<Day>();
     const add = (payment: PaymentOnDays) => {
-      found.add(payment.originalDay);
+      found?.add(payment.originalDay);
       // A bill without its real amount yet is the budget's estimate (D32).
       const estimate =
         bill !== null && changes.get(id)?.get(payment.originalDay)?.change.amount === undefined;
-      const movement: Movement = {
-        kind: bill === null ? 'payment' : 'bill',
-        payment: estimate
-          ? { ...payment, amount: bill.billEstimate(payment.originalDay) }
-          : payment,
-        familyCreatedAt,
-        familyId: one.series.familyId,
-        within: 0,
-        tick: ticksOfSeries?.get(payment.originalDay) ?? null,
-        recordedAt: null,
-        budgetId: bill === null ? null : id,
-        spendId: null,
-        withDates: null,
-      };
+      const shown = paymentWithDates(
+        estimate ? { ...payment, amount: bill.billEstimate(payment.originalDay) } : payment,
+      );
+      const movement = new Movement(
+        source,
+        shown,
+        payment.day,
+        shown.amount,
+        shown.skipped,
+        ticksOfSeries?.get(payment.originalDay) ?? null,
+        shown.name,
+        shown.number,
+      );
       all.push(movement);
-      if (setAside !== undefined && percent !== null) {
+      if (setAsideSource !== null && percent !== null) {
         const tick = setAsideTicksOfSeries?.get(payment.originalDay) ?? null;
-        all.push(setAsideOf(movement, setAside, percent, tick));
+        all.push(setAsideOf(movement, setAsideSource, percent, tick));
       }
     };
     if (from <= to) {
@@ -433,7 +537,7 @@ function collectPayments(
       ...(ticksOfSeries?.keys() ?? []),
       ...(setAsideTicksOfSeries?.keys() ?? []),
     ]) {
-      if (found.has(originalDay)) continue;
+      if (found?.has(originalDay)) continue;
       const index = one.firstIndexOnOrAfter(originalDay);
       if (index < one.count && one.dateAt(index) === originalDay) {
         add(paymentAtIndex(one, index, changes, holidays, adjustments));
@@ -447,65 +551,77 @@ function collectPayments(
 /** The rows a budget puts in the plan (D2, D31): parts of it leaving, and its spends. */
 function budgetMovements(worked: WorkedBudget): Movement[] {
   const { budget, createdAt } = worked.checked;
-  return worked.rows.map((row: BudgetRow) => ({
-    kind: row.kind,
-    payment: {
-      seriesId: budget.id,
-      number: row.period,
-      originalDay: row.day,
-      day: row.day,
-      accountId: budget.accountId,
-      toAccountId: null,
-      direction: 'out',
-      amount: row.amount,
-      name: budget.name,
-      note: (row.spend?.spend.note ?? '') || null,
-      // A budget's rows count as Spending money (D28, D79).
-      type: 'spending-money',
-      isEstimate: false,
-      isLast: false,
-      movedByRule: false,
-      moved: false,
-      skipped: false,
-      changed: false,
-    },
-    familyCreatedAt: createdAt,
-    familyId: budget.id,
-    within: row.within,
-    tick: null,
-    recordedAt: row.spend?.recordedAt ?? null,
-    budgetId: budget.id,
-    spendId: row.spend?.spend.id ?? null,
-    withDates: null,
-  }));
+  return worked.rows.map(
+    (row: BudgetRow) =>
+      new Movement(
+        {
+          kind: row.kind,
+          flow: 'out',
+          accountId: budget.accountId,
+          toAccountId: null,
+          familyCreatedAt: createdAt,
+          familyId: budget.id,
+          seriesId: budget.id,
+          within: row.within,
+          recordedAt: row.spend?.recordedAt ?? null,
+          budgetId: budget.id,
+          spendId: row.spend?.spend.id ?? null,
+        },
+        {
+          seriesId: budget.id,
+          number: row.period,
+          originalDate: formatDate(row.day),
+          date: formatDate(row.day),
+          accountId: budget.accountId,
+          toAccountId: null,
+          direction: 'out',
+          amount: row.amount,
+          name: budget.name,
+          note: (row.spend?.spend.note ?? '') || null,
+          // A budget's rows count as Spending money (D28, D79).
+          type: 'spending-money',
+          isEstimate: false,
+          isLast: false,
+          movedByRule: false,
+          moved: false,
+          skipped: false,
+          changed: false,
+        },
+        row.day,
+        row.amount,
+        false,
+        null,
+        budget.name,
+        row.period,
+      ),
+  );
 }
 
-/** True when a tick is already inside the account's latest balance (brief 5.5, D33, D83). */
+/**
+ * True when a tick is already inside the account's latest balance (brief
+ * 5.5, D1, D33, D83, D138): ticked inside the steps of one of this account's
+ * updates, or ticked at or before the latest one with a paid date on or
+ * before its balance date. A payment ticked before the update but paid after
+ * the balance date isn't inside a balance from before it was paid.
+ */
 function insideBalance(
   tick: CheckedTick,
   accountId: string,
   start: Start,
   accountOfUpdate: ReadonlyMap<string, string>,
 ): boolean {
-  if (tick.tickedAt <= start.at) return true;
   // Ticked inside the steps of one of this account's updates: before that
   // update, so before the latest one too.
-  return tick.inBalanceUpdate !== null && accountOfUpdate.get(tick.inBalanceUpdate) === accountId;
+  if (tick.inBalanceUpdate !== null && accountOfUpdate.get(tick.inBalanceUpdate) === accountId) {
+    return true;
+  }
+  return tick.tickedAt <= start.at && tick.paidOn <= start.day;
 }
 
-interface WorkingRow {
+/** A row dated before the balance date, which goes at the start (brief 5.5, D39). */
+interface AtStart {
   readonly planned: Movement;
   readonly day: Day;
-  readonly flow: Flow;
-  readonly change: Pence;
-  readonly ticked: boolean;
-  // For the same-day order (D12).
-  readonly familyCreatedAt: Moment;
-  readonly familyId: string;
-  readonly seriesId: string;
-  readonly name: string;
-  readonly number: number;
-  readonly within: number;
 }
 
 /** Only payments, bills and their set-asides can be ticked (D109, D116). */
@@ -513,22 +629,36 @@ function tickable(kind: RowKind): boolean {
   return kind === 'payment' || kind === 'bill' || kind === 'set-aside';
 }
 
-function rowFor(planned: Movement, accountId: string): { flow: Flow; change: Pence } | null {
-  const { payment } = planned;
-  if (payment.accountId === accountId) {
-    switch (payment.direction) {
-      case 'in':
-        return { flow: 'in', change: payment.amount };
-      case 'out':
-        return { flow: 'out', change: -payment.amount };
-      case 'transfer':
-        return { flow: 'transfer-out', change: -payment.amount };
-    }
+/** How a payment moves money for the account it leaves or arrives in. */
+function flowOf(direction: Payment['direction']): Flow {
+  switch (direction) {
+    case 'in':
+      return 'in';
+    case 'out':
+      return 'out';
+    case 'transfer':
+      return 'transfer-out';
   }
-  if (payment.direction === 'transfer' && payment.toAccountId === accountId) {
-    return { flow: 'transfer-in', change: payment.amount };
-  }
+}
+
+/** How a movement moves money for this account, or null when it doesn't touch it. */
+function flowIn(planned: Movement, accountId: string): Flow | null {
+  const { source } = planned;
+  if (source.accountId === accountId) return source.flow;
+  if (source.flow === 'transfer-out' && source.toAccountId === accountId) return 'transfer-in';
   return null;
+}
+
+/**
+ * True when a day's rows are already in the same-day order. They usually are,
+ * because payments are collected in that order, and checking is much quicker
+ * than sorting (ARCHITECTURE.md 2.8).
+ */
+function inSameDayOrder(rows: readonly Movement[]): boolean {
+  for (let i = 1; i < rows.length; i += 1) {
+    if (compareSameDay(rows[i - 1] as Movement, rows[i] as Movement) > 0) return false;
+  }
+  return true;
 }
 
 /** The balance rule for one account (brief 5.5, ARCHITECTURE.md 2.4). */
@@ -541,23 +671,27 @@ function workOutAccount(
   to: Day,
 ): AccountWork {
   const floor = -account.overdraftLimit;
-  const working: WorkingRow[] = [];
+  // Rows dated before the balance date, then one bucket for each day from the
+  // balance date to the plan's last day, so there's no big sort: each day is
+  // put in the same-day order on its own (D12, ARCHITECTURE.md 2.8). Sorting
+  // by day first gives exactly the order of one sort of every row.
+  const before: AtStart[] = [];
+  const buckets: (Movement[] | undefined)[] = new Array(Math.max(0, to - start.day + 1));
 
   for (const planned of payments) {
-    const effect = rowFor(planned, account.id);
-    if (effect === null) continue;
-    const { payment, tick } = planned;
+    if (flowIn(planned, account.id) === null) continue;
+    const { tick, source } = planned;
     let day: Day;
-    if (planned.kind === 'spend') {
+    if (source.kind === 'spend') {
       // Recorded at or before the balance update: already inside the
       // balance, so ignored. Recorded after it: a row on its day, or at the
       // start when that's before the balance date (D2, D33, D109).
-      if ((planned.recordedAt as Moment) <= start.at) continue;
-      day = payment.day;
-    } else if (planned.kind === 'budget') {
+      if ((source.recordedAt as Moment) <= start.at) continue;
+      day = planned.day;
+    } else if (source.kind === 'budget') {
       // Worked out from today, so never inside the balance (D2, D67).
-      day = payment.day;
-    } else if (payment.skipped && tick === null) {
+      day = planned.day;
+    } else if (planned.skipped && tick === null) {
       // A removed payment moves no money, unless it was ticked: a tick says the
       // money really went, and the plan stays true to the bank (D83).
       continue;
@@ -569,71 +703,65 @@ function workOutAccount(
       // balance date, that's at the start, with the overdue payments (D39).
       day = tick.paidOn;
     } else {
-      day = payment.day;
+      day = planned.day;
     }
     if (day > to) continue;
-    working.push({
-      planned,
-      day,
-      flow: effect.flow,
-      change: effect.change,
-      ticked: tick !== null,
-      familyCreatedAt: planned.familyCreatedAt,
-      familyId: planned.familyId,
-      seriesId: payment.seriesId,
-      name: payment.name,
-      number: payment.number,
-      within: planned.within,
-    });
+    if (day < start.day) {
+      before.push({ planned, day });
+    } else {
+      const bucket = buckets[day - start.day];
+      if (bucket === undefined) buckets[day - start.day] = [planned];
+      else bucket.push(planned);
+    }
   }
 
   // 2 and 3. Everything dated before the balance date first, oldest first,
   // then from the balance date on, in date order and the same-day order (D12).
-  working.sort(compareRows);
+  before.sort((a, b) => a.day - b.day || compareSameDay(a.planned, b.planned));
 
   const rows: PlanRow[] = [];
   const rowDays: Day[] = [];
   const days: DayBalance[] = [];
   let balance = start.update.balance;
   let last: PlanRow | null = null;
-  let next = 0;
 
   // 4. The balance after every row.
-  const apply = (row: WorkingRow, atStart: boolean) => {
-    balance += row.change;
+  const apply = (planned: Movement, day: Day, atStart: boolean) => {
+    const flow = flowIn(planned, account.id) as Flow;
+    const amount = planned.amount;
+    const change = flow === 'in' || flow === 'transfer-in' ? amount : -amount;
+    balance += change;
     if (!Number.isSafeInteger(balance)) {
       throw new EngineInputError('too-large', `Account ${account.id}: the balance is too large.`);
     }
-    const planned = row.planned;
-    planned.withDates ??= paymentWithDates(planned.payment);
+    const { source } = planned;
+    const ticked = planned.tick !== null;
     const planRow: PlanRow = {
-      kind: planned.kind,
-      payment: planned.withDates,
-      budgetId: planned.budgetId,
-      spendId: planned.spendId,
+      kind: source.kind,
+      payment: planned.payment,
+      budgetId: source.budgetId,
+      spendId: source.spendId,
       accountId: account.id,
-      date: formatDate(row.day),
-      flow: row.flow,
-      change: row.change,
+      date: formatDate(day),
+      flow,
+      change,
       leftAfter: balance,
       status: statusOf(balance, account.warningLevel, floor),
-      ticked: row.ticked,
+      ticked,
       atStart,
-      notTickedYet: tickable(planned.kind) && !row.ticked && row.day < today,
+      notTickedYet: tickable(source.kind) && !ticked && day < today,
     };
     rows.push(planRow);
-    rowDays.push(row.day);
+    rowDays.push(day);
     last = planRow;
   };
 
-  while (next < working.length && (working[next] as WorkingRow).day < start.day) {
-    apply(working[next] as WorkingRow, true);
-    next += 1;
-  }
+  for (const { planned, day } of before) apply(planned, day, true);
   for (let day = start.day; day <= to; day += 1) {
-    while (next < working.length && (working[next] as WorkingRow).day === day) {
-      apply(working[next] as WorkingRow, false);
-      next += 1;
+    const bucket = buckets[day - start.day];
+    if (bucket !== undefined) {
+      if (!inSameDayOrder(bucket)) bucket.sort(compareSameDay);
+      for (const planned of bucket) apply(planned, day, false);
     }
     // The day's figure is the balance after its last row.
     days.push({

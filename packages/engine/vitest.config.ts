@@ -2,11 +2,34 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
     // The property tests try hundreds of made-up plans each, and on GitHub's
     // shared machines one can take longer than Vitest's usual 5 seconds. This
-    // limit only stops a test that hangs: the engine's speed has its own test
-    // (step 1g, ARCHITECTURE.md 2.8).
+    // limit only stops a test that hangs: the engine's speed has its own test.
     testTimeout: 30_000,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'engine',
+          include: ['test/**/*.test.ts'],
+          exclude: ['test/speed/**'],
+          sequence: { groupOrder: 0 },
+        },
+      },
+      {
+        // The speed test (test 54, ARCHITECTURE.md 2.8) runs in a group of
+        // its own, never at the same time as the other tests, so nothing else
+        // competes with it for the machine. It loads the engine with Node's own import, as the
+        // app's build will, not through Vitest's module runner, which slows
+        // down every call from one engine file to another (D134).
+        extends: true,
+        test: {
+          name: 'speed',
+          include: ['test/speed/**/*.test.ts'],
+          sequence: { groupOrder: 1 },
+          experimental: { viteModuleRunner: false },
+        },
+      },
+    ],
   },
 });

@@ -3,7 +3,6 @@
 // plan with the pay linked to them.
 
 import {
-  MONDAY,
   type PayLine,
   type PayProfile,
   type PaySettings,
@@ -63,8 +62,9 @@ export const samPayWeeks: readonly PayWeek[] = [
 
 /**
  * Sam's pay profile on Sun 25 Oct 2026: the year so far from his week 29
- * payslip, paid Fri 23 Oct (D6), overtime at £19.07, a working week from
- * Monday, and pay one week behind the shifts (D5).
+ * payslip, paid Fri 23 Oct (D6), overtime at £19.07, and each payday
+ * covering work up to 5 days before it: "Fri 6 Nov pays for work up to Sun
+ * 1 Nov" (D131).
  */
 export const samPayProfile: PayProfile = {
   ...samSettings,
@@ -76,8 +76,7 @@ export const samPayProfile: PayProfile = {
     taxPaid: pounds('743.40'),
   },
   overtimeRate: '19.07',
-  workWeekStarts: MONDAY,
-  weeksBehind: 1,
+  coveredTo: { kind: 'days-before', days: 5 },
 };
 
 /**

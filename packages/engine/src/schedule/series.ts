@@ -1,7 +1,9 @@
 import {
   addDays,
   type Day,
+  dayFromParts,
   dayOfMonthOrLast,
+  LAST_YEAR,
   lastDayOfMonth,
   monthFromNumber,
   monthNumberOfDay,
@@ -14,6 +16,12 @@ import { EngineInputError } from '../errors.ts';
 import { parseDecimal, powerOfTen } from '../money/decimal.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { type MonthlyDay, PAYMENT_TYPES, type Schedule, type Series } from './types.ts';
+
+/** No payment number reaches this: weekly payments from 1900 to 2999 are about 57,400. */
+const MOST_PAYMENT_NUMBER = 100_000;
+
+/** The last day a PrePenny date can be: Tue 31 Dec 2999. */
+const LAST_DAY = dayFromParts(LAST_YEAR, 12, 31);
 
 /** A checked series, ready to give the date of any payment directly. */
 export interface PreparedSeries {
@@ -348,7 +356,9 @@ function checkSeries(series: Series): void {
     fail(id, 'bad-cycle', 'the pattern offset must be a whole number.');
   }
   if (series.firstNumber !== undefined) {
-    checkWholeNumber(id, series.firstNumber, 0, Number.MAX_SAFE_INTEGER, 'The first number');
+    // Weekly from 1900 to 2999 is about 57,400 payments, so no real payment
+    // number is near this.
+    checkWholeNumber(id, series.firstNumber, 0, MOST_PAYMENT_NUMBER, 'The first number');
   }
   if (series.debtId !== undefined) {
     if (typeof series.debtId !== 'string' || series.debtId === '') {
@@ -409,7 +419,8 @@ export function prepareSeries(series: Series, holidays: BankHolidayLookup): Prep
     }
     case 'on': {
       const last = parseDate(end.date, `Series ${id}: the end date`);
-      count = Math.min(count, dates.firstIndexOnOrAfter(addDays(last, 1)));
+      // Ending on the last day there can be is the same as never ending.
+      if (last < LAST_DAY) count = Math.min(count, dates.firstIndexOnOrAfter(addDays(last, 1)));
       break;
     }
     default:

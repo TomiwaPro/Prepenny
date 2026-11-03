@@ -8,6 +8,7 @@
 // Step 1d: debts, currencies and credit cards, and "Only this week of the pattern".
 // Step 1e: budgets, spends, Left to spend, savings goals and "Set aside".
 // Step 1f: the take-home pay calculator, "I did overtime" and "I missed a shift".
+// Step 1g: What if, the last day of work a payday covers, and speed.
 
 export { balanceAtEndOf, workOutPlan } from './balance/plan.ts';
 export { paidDate } from './balance/ticks.ts';
@@ -170,7 +171,7 @@ export {
   type PayslipFigure,
   takeHomeAsEstimate,
 } from './pay/payslip.ts';
-export { type PayChange, shiftPaidFrom, workOutPayChange, workWeekStart } from './pay/shifts.ts';
+export { lastDayCovered, type PayChange, workOutPayChange } from './pay/shifts.ts';
 export {
   checkStudentLoans,
   studentLoanDeduction,
@@ -204,6 +205,7 @@ export {
   taxYearsOf,
 } from './pay/tax-year.ts';
 export {
+  type CoveredTo,
   type EstimateReason,
   type FixedPay,
   type OtherDeduction,
@@ -247,3 +249,12 @@ export {
   type Series,
   type SetAside,
 } from './schedule/types.ts';
+export {
+  type AccountOutcome,
+  type DebtOutcome,
+  type GoalOutcome,
+  type WhatIf,
+  type WhatIfInput,
+  type WhatIfSide,
+  whatIf,
+} from './whatif/whatif.ts';

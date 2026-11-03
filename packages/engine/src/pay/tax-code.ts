@@ -46,14 +46,14 @@ function refuse(): never {
 /**
  * Reads a tax code as typed, in capitals or not, with or without spaces:
  * "1257L", "s1257l", "C0T", "BR", "SD1", "K475", "NT", "1257L W1", "1257L X".
- * A code ending in W1, M1 or X is an emergency code on the week 1/month 1
- * basis (GOV.UK, "Emergency tax codes").
+ * A code ending in W1, M1, X or NONCUM is an emergency code on the week
+ * 1/month 1 basis (GOV.UK, "Emergency tax codes", D140).
  */
 export function parseTaxCode(text: string): TaxCode {
   if (typeof text !== 'string') refuse();
   let code = text.replace(/\s+/g, '').toUpperCase();
   let weekOne = false;
-  const marker = /(W1|M1|X)$/.exec(code);
+  const marker = /(W1|M1|X|NONCUM)$/.exec(code);
   if (marker !== null && code.length > marker[0].length) {
     weekOne = true;
     code = code.slice(0, -marker[0].length);

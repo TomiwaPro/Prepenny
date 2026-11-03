@@ -4,7 +4,7 @@
 
 import { addDays, type Day, formatDate, parseDate } from '../dates/day.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
-import { paymentAtIndex } from '../schedule/payments.ts';
+import { paymentAtIndex, stepOf } from '../schedule/payments.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
 import type { EndRule, PaymentChange, Schedule, Series } from '../schedule/types.ts';
 import {
@@ -221,7 +221,7 @@ function withStepAmount(series: Series, j: number, length: number, amount: Pence
   }
   const offset = series.amountCycle === undefined ? 0 : (series.cycleOffset ?? 0);
   const next = [...cycle];
-  next[mod(j + offset, length)] = amount;
+  next[stepOf(j, offset, length)] = amount;
   return {
     amountCycle: next,
     cycleOffset: series.amountCycle === undefined ? undefined : series.cycleOffset,
@@ -398,12 +398,21 @@ function changeStretch(
       next.amount = edits.amount;
       next.amountCycle = undefined;
       next.cycleOffset = undefined;
+      // A pay week for each step of the pattern goes with the pattern: with
+      // one amount, no step's week can be assumed, so "I did overtime" asks
+      // once for the usual hours and rate (D5, D136).
+      if ((series.cyclePayWeeks?.length ?? 0) > 1) next.cyclePayWeeks = undefined;
       if (holdsThisPayment && editedIsLast) next.lastAmount = undefined;
     }
     if (edits.stepAmount !== undefined) {
       const { amountCycle, cycleOffset } = withStepAmount(series, j, stepLength, edits.stepAmount);
       next.amountCycle = amountCycle;
       next.cycleOffset = cycleOffset;
+      // One amount made into a pattern keeps its one pay week on every step (D136).
+      const weeks = series.cyclePayWeeks;
+      if (series.amountCycle === undefined && weeks?.length === 1) {
+        next.cyclePayWeeks = amountCycle.map(() => weeks[0] as string);
+      }
       // As with every payday from now (D90): the different last amount stays,
       // unless this is the last payment.
       if (holdsThisPayment && editedIsLast) next.lastAmount = undefined;
@@ -542,7 +551,13 @@ export function thisAndLater(
   newOtherHalfSeriesId: string | undefined,
 ): void {
   const found = findPayment(context, ref);
-  const edits = checkEdits(rawEdits, `Series ${ref.seriesId}`);
+  const checked = checkEdits(rawEdits, `Series ${ref.seriesId}`);
+  // The payment's own date from its schedule, with no new schedule, isn't a
+  // new date: nothing about the dates is changed or replaced (D60, D91).
+  const edits =
+    checked.day === found.payment.originalDay && checked.schedule === undefined
+      ? { ...checked, day: undefined }
+      : checked;
   if (edits.stepAmount !== undefined && found.prepared.cycle === null) {
     refuse(
       'no-pattern',

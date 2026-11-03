@@ -127,7 +127,8 @@ export function checkSettings(settings: PaySettings): { code: TaxCode; weekOne: 
   checkStudentLoans(settings.studentLoans ?? []);
   for (const one of settings.otherDeductions ?? []) {
     text(one?.name, 'A deduction’s name');
-    checkPence(one.amount, 'A deduction');
+    // A deduction takes money off: below zero it would add to take-home pay.
+    checkPenceNotNegative(one.amount, 'A deduction');
   }
   return { code, weekOne: settings.basis === 'week-one' || code.weekOne };
 }
