@@ -198,6 +198,9 @@ function latestBalances(
   }
   const starts = new Map<string, Start>();
   const accountOfUpdate = new Map<string, string>();
+  // Every moment each account has an update at: two at the same moment are
+  // refused, whatever order they come in (D85).
+  const moments = new Map<string, Set<Moment>>();
   updates.forEach((update, i) => {
     if (!isNonEmptyText(update?.id)) {
       throw new EngineInputError('bad-balance', `Balance update ${i + 1} needs an id.`);
@@ -219,13 +222,16 @@ function latestBalances(
     }
     const at = parseTime(update.checkedAt, `${what}: when it was made`);
     accountOfUpdate.set(update.id, update.accountId);
-    const latest = starts.get(update.accountId);
-    if (latest !== undefined && latest.at === at) {
+    const seen = moments.get(update.accountId) ?? new Set<Moment>();
+    if (seen.has(at)) {
       throw new EngineInputError(
         'same-time-balances',
         `${what}: account ${update.accountId} has two balance updates at the same time.`,
       );
     }
+    seen.add(at);
+    moments.set(update.accountId, seen);
+    const latest = starts.get(update.accountId);
     if (latest === undefined || at > latest.at) {
       starts.set(update.accountId, { update, day, at });
     }
@@ -591,17 +597,25 @@ function budgetMovements(worked: WorkedBudget): Movement[] {
   );
 }
 
-/** True when a tick is already inside the account's latest balance (brief 5.5, D33, D83). */
+/**
+ * True when a tick is already inside the account's latest balance (brief
+ * 5.5, D1, D33, D83, D138): ticked inside the steps of one of this account's
+ * updates, or ticked at or before the latest one with a paid date on or
+ * before its balance date. A payment ticked before the update but paid after
+ * the balance date isn't inside a balance from before it was paid.
+ */
 function insideBalance(
   tick: CheckedTick,
   accountId: string,
   start: Start,
   accountOfUpdate: ReadonlyMap<string, string>,
 ): boolean {
-  if (tick.tickedAt <= start.at) return true;
   // Ticked inside the steps of one of this account's updates: before that
   // update, so before the latest one too.
-  return tick.inBalanceUpdate !== null && accountOfUpdate.get(tick.inBalanceUpdate) === accountId;
+  if (tick.inBalanceUpdate !== null && accountOfUpdate.get(tick.inBalanceUpdate) === accountId) {
+    return true;
+  }
+  return tick.tickedAt <= start.at && tick.paidOn <= start.day;
 }
 
 /** A row dated before the balance date, which goes at the start (brief 5.5, D39). */
