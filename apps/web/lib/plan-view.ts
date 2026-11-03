@@ -8,6 +8,7 @@
 // worked out from the whole plan (D184).
 
 import {
+  addDays,
   addMonths,
   formatDate,
   groupIntoPeriods,
@@ -102,27 +103,36 @@ export function monthsShown(months: number): number {
 /**
  * The last day the Plan screen shows (D183). In calendar months: the end of
  * the month some months after today's, counting today's. In pay periods: the
- * end of the pay period with the date that many months ahead in it.
+ * end of the pay period with the date that many months ahead in it, and at
+ * least one more period for each month added, so "Show another month"
+ * always shows more, even when pay comes monthly a few days apart.
  */
 function lastDayShown(records: PlanRecords, today: string, options: PlanViewOptions) {
   const months = monthsShown(options.months);
   const byMonths = { grouping: 'months' as const, to: endOfMonthsShown(today, months), plan: null };
   if (options.grouping === 'months') return byMonths;
-  const target = planLookAhead(today, months);
-  // Far enough to find the end of the pay period around the target.
+  // Far enough to find the end of the pay period around the last month shown.
   const far = later(
     planLookAhead(today, HOME_MONTHS_AHEAD),
     planLookAhead(today, Math.min(months + 6, PLAN_MONTHS_MOST + 6)),
   );
   const plan = workOutPlanTo(records, today, far);
   if (plan.mainPay === 'none') return { ...byMonths, plan };
-  const periods = groupIntoPeriods({ ...plan, to: target }, 'pay').accounts[0]?.periods ?? [];
-  const last = periods.at(-1);
-  return {
-    grouping: 'pay' as const,
-    to: last === undefined ? target : earlier(last.end, plan.to),
-    plan,
+  /** The last day of the pay period with `date` in it, inside the plan. */
+  const endOfPeriodWith = (date: string) => {
+    const periods = groupIntoPeriods({ ...plan, to: date }, 'pay').accounts[0]?.periods ?? [];
+    const last = periods.at(-1);
+    return last === undefined ? date : earlier(last.end, plan.to);
   };
+  let to = endOfPeriodWith(planLookAhead(today, 1));
+  for (let month = 2; month <= months; month += 1) {
+    let next = endOfPeriodWith(planLookAhead(today, month));
+    if (next <= to && to < plan.to) {
+      next = endOfPeriodWith(formatDate(addDays(parseDate(to), 1)));
+    }
+    to = next;
+  }
+  return { grouping: 'pay' as const, to, plan };
 }
 
 /** Everything the Plan screen shows, from the stored records and today. */

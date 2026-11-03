@@ -4,6 +4,7 @@
 
 import type { EditCommand, PlanRecords } from '@prepenny/engine';
 import { describe, expect, it } from 'vitest';
+import { deePlan } from '../../../../packages/engine/test/fixtures/people.ts';
 import { examplePlan } from '../../data/example-plan.ts';
 import { runEdit } from '../../lib/edit.ts';
 import { workOutHome } from '../../lib/home.ts';
@@ -257,5 +258,23 @@ describe('Filters only hide rows (D184)', () => {
     expect(names({ show: 'everything', type: 'other' })).toEqual(['Driving lesson']);
     expect(filtersOn({ show: 'debts', type: 'other' })).toBe(2);
     expect(names({ show: 'debts', type: 'other' })).toEqual([]);
+  });
+});
+
+describe('Show another month always shows more, even with monthly pay (D183)', () => {
+  it('adds at least one pay period for each month, for Dee paid on the 28th', () => {
+    const dee = deePlan();
+    const records: PlanRecords = {
+      ...dee,
+      settings: { nation: 'england-and-wales', mainPayFamilyId: dee.mainPayFamilyId },
+    };
+    // On Wed 25 Nov, 1 and 2 months ahead are both in the pay period from Thu 24 Dec.
+    const ends = [1, 2, 3, 4, 5, 6].map(
+      (months) => workOutPlanView(records, '2026-11-25', { grouping: 'pay', months }).to,
+    );
+    expect(ends.slice(0, 2)).toEqual(['2027-01-27', '2027-02-25']);
+    for (let i = 1; i < ends.length; i += 1) {
+      expect((ends[i] ?? '') > (ends[i - 1] ?? ''), `${i + 1} months`).toBe(true);
+    }
   });
 });
