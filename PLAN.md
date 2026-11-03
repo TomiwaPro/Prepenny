@@ -61,7 +61,7 @@ Questions that need an answer before the step that uses them. Move each one to `
 
 1. **Set up Cloudflare** (now, for the preview link). Follow "Putting PrePenny online" in `README.md`: a free Cloudflare account, a workers.dev name, and two secrets in GitHub. Until then, nothing is online and there's no preview link.
 
-2. **The Plan screen's lowest point (D183)** (before 2d). It looks as far ahead as Home, 12 months, so the two always show the same lowest point, even though the Plan screen lists 3 months. Say if that's right, or if the Plan screen's should look only as far as the months it shows.
+2. **The Plan screen's lowest point (D183)** (before 2d). It looks as far ahead as Home, 12 months, so the two show the same lowest point, even though the Plan screen lists 3 months. Say if that's right, or if the Plan screen's should look only as far as the months it shows.
 3. **The first pay period's heading (D183)**. The sketch said "This week, to Thu 29 Oct". It now says "Today to Thu 29 Oct", because "This week" isn't true for someone paid monthly. Say if that's right.
 4. **Typing the real pay (D185)**. When you change an estimate's amount for just this one, "This is an estimate" unticks itself, and the sheet says "£21.54 more than the estimate." You can tick it again. Say if that's right.
 5. **Move to next payday for money coming in (D188)**. It isn't offered for pay or other money coming in, because moving pay to the next payday would put two paydays on one day. Say if that's right.

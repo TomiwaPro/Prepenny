@@ -1902,10 +1902,10 @@ D183 to D189 were decided on 3 Nov 2026 while building step 2c. Questions for th
 Decided 3 Nov 2026 in step 2c. Adds to brief 4.8, D84 and D178.
 
 - Three months at first, and "Show another month" adds one, up to 24 (brief 4.8).
-- Pay periods: every pay period up to the date that many months after today, the last one in full, so "Left at the end" is always the true end of a period. Sam on Sun 25 Oct, 3 months: to Thu 28 Jan 2027.
+- Pay periods: every pay period up to the date that many months after today, the last one in full, so "Left at the end" is always the true end of a period. Sam on Sun 25 Oct, 3 months: to Thu 28 Jan 2027. Each month added shows at least one more period, so "Show another month" never does nothing: Dee, paid on the 28th, on Wed 25 Nov sees to Wed 27 Jan 2027 with 1 month and to Thu 25 Feb 2027 with 2.
 - Calendar months: the month with today in it and the next ones, that many in all: October, November and December for 3 months. Each shows its rows from today on (D84).
 - The first pay period is headed "Today to Thu 29 Oct", because its rows start today; the sketch's "This week" wouldn't be true for monthly pay. The others are "Fri 30 Oct to Thu 5 Nov", and months are "October" or "January 2027".
-- "Lowest point ahead" at the top looks as far as Home does, 12 months (D178), or as far as the plan is shown when that's further, so Home and the Plan screen never disagree. The row it's after says "Lowest point ahead" when it's on screen.
+- "Lowest point ahead" at the top looks as far as Home does, 12 months (D178), or as far as the plan is shown when that's further. So up to 12 months shown, Home and the Plan screen always show the same lowest point; with more shown, the Plan screen also looks at the months beyond. The row it's after says "Lowest point ahead" when it's on screen.
 - One account at a time, Home's account first (D168), with a switch between the open accounts.
 - "Not ticked yet" is above the periods, and only there when something is in it (D11).
 
@@ -1928,6 +1928,8 @@ Decided 3 Nov 2026 in step 2c. Adds to brief 4.3 and 8.4 test 3.
 
 When the amount of an estimate is changed for just this one, "This is an estimate" unticks itself, because the real amount has arrived, and the sheet says how far it is from the estimate: "£21.54 more than the estimate." The person can tick the box again. For this and all later ones the box stays as it was, because a new amount for paydays still to come is still an estimate.
 
+When the real amount is the same as the estimate, the person unticks the box and saves: the amount shown is saved as the real amount, so it stands from then on. For a pay-later bill this matters: until a real amount is typed in, the bill follows what's spent (D111).
+
 Why: brief 4.3 says the person types the real amount when pay lands and sees the difference, and brief 8.4 test 3 (the owner's step 2c test 4) expects the payday to lose its Estimate label.
 
 ### D186. The undo bar
@@ -1936,6 +1938,9 @@ Decided 3 Nov 2026 in step 2c. Adds to brief Part 3, principle 4, D87 and ARCHIT
 
 - After every change the bar says what changed: "Rent changed for this and all later ones.", "Driving lesson moved to Fri 30 Oct.", "Family loan marked as paid.", "Driving lesson skipped.", "Rent removed for this and all later ones." and so on, with Undo. One tap undoes the whole change (D87), then it says "Change undone."
 - It stays until the next change, or until the person goes to another screen. There's no time limit, so nobody has to be quick (WCAG 2.2.1).
+- After Undo, focus moves to the bar's words, because the Undo button has gone. Each message is read out by screen readers, even the same words twice in a row, and a row that gets focus is never hidden behind the bar.
+- Undo takes back the change the bar names. If a newer change has been made since, it says so: "A newer change has been made since, so this one can no longer be undone here."
+- Once the phone's database has failed, nothing more is saved there until PrePenny opens again or the example starts again, so a plan is never saved half one way and half another.
 - Only the last change can be undone from the bar. Older changes will be in Activity (brief 4.12).
 - When an undo is refused, the bar says why: "This can't be undone, because something it changed has been changed again since."
 - When the phone can't save a change, as in some private windows, the bar says: "This phone couldn't save it, so it will go when PrePenny closes."
@@ -1989,6 +1994,7 @@ The edit sheet never shows the engine's code. Each code people could meet has a 
 | `shared-half` | This half of a transfer has no name or note of its own. (D94) |
 | `no-pattern` | This pay doesn't follow a pattern. Choose every payday from now. |
 | `patterns-differ` | The pay pattern has changed part of the way along. Choose every payday from now. (D97) |
+| `not-last-change` | A newer change has been made since, so this one can no longer be undone here. (D186) |
 | anything else | That change couldn't be made, so nothing was changed. Try again. |
 
 Why: CLAUDE.md asks for plain English, and a code means nothing to someone tired at 11pm.
