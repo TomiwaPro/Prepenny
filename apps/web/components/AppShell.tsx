@@ -45,19 +45,33 @@ function ChangeBar() {
     if (lastChange !== null) setRefused(null);
   }, [lastChange]);
 
+  // After Undo its button goes, so focus moves to the bar's words rather
+  // than being lost (WCAG 2.4.3).
+  const undoing = useRef(false);
+  const holder = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!undoing.current) return;
+    undoing.current = false;
+    holder.current?.querySelector<HTMLElement>('[data-undo-message]')?.focus();
+  });
+
   const message = refused ?? lastChange?.message ?? null;
   const canUndo = refused === null && lastChange?.edit !== null && lastChange?.edit !== undefined;
-  // The live region is always on the page, so screen readers hear each new message.
+  // The live region is always on the page, and each message is drawn afresh
+  // inside it, so screen readers hear every one, even the same words twice.
   return (
-    <div role="status">
-      {message === null ? null : (
+    <div role="status" ref={holder}>
+      {message === null || lastChange === null ? null : (
         <UndoBar
+          key={refused === null ? lastChange.id : `${lastChange.id} refused`}
           announce={false}
           message={message}
           {...(canUndo
             ? {
                 onUndo: async () => {
-                  const outcome = await undoLastChange();
+                  if (undoing.current) return;
+                  undoing.current = true;
+                  const outcome = await undoLastChange(lastChange.id);
                   if (!outcome.ok) setRefused(refusalMessage(outcome.code));
                 },
               }

@@ -29,8 +29,11 @@ export function UndoBar({
       className={`${styles.bar} ${placement === 'floating' ? styles.floating : ''}`}
       role={announce ? 'status' : undefined}
       data-testid="undo-bar"
+      data-undo-bar={placement}
     >
-      <p className={styles.message}>{message}</p>
+      <p className={styles.message} tabIndex={-1} data-undo-message>
+        {message}
+      </p>
       {onUndo === undefined ? null : (
         <button type="button" className={styles.undo} onClick={onUndo}>
           {strings.undo.undo}

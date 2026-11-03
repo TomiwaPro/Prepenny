@@ -22,7 +22,7 @@
   justify-content: center;
   min-height: var(--tap);
   padding: var(--space-1) var(--space-3);
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   border-radius: 9px;
   font-size: var(--size-second);
   font-weight: 600;
@@ -31,12 +31,16 @@
   cursor: pointer;
 }
 
-/* The picked one stands out as a card, with its word in navy, never by colour alone: it's bold too. */
-.option:has(.input:checked) {
+/*
+ * The picked one stands out as a card with a border that's 3:1 against the
+ * colours around it (WCAG 1.4.11), its word in navy and bold: never by
+ * colour alone.
+ */
+.picked {
   background: var(--card);
   color: var(--accent-text);
   font-weight: 700;
-  border-color: var(--button-border);
+  border: 2px solid var(--field-border);
 }
 
 .option:has(.input:focus-visible) {

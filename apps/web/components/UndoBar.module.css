@@ -22,6 +22,7 @@
 
 .message {
   flex: 1 1 10rem;
+  border-radius: 4px;
   padding: var(--space-2) 0;
   font-size: var(--size-second);
 }
@@ -43,4 +44,9 @@
 .undo:focus-visible {
   outline-color: var(--on-navy);
   outline-offset: -3px;
+}
+
+.message:focus-visible {
+  outline-color: var(--on-navy);
+  outline-offset: 2px;
 }

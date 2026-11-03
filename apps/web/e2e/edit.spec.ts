@@ -37,6 +37,8 @@ const undoBar = (page: Page) => page.getByTestId('undo-bar');
 async function undo(page: Page) {
   await undoBar(page).getByRole('button', { name: 'Undo' }).click();
   await expect(undoBar(page)).toHaveText('Change undone.');
+  // The Undo button has gone, so focus is on the bar's words, not lost.
+  await expect(undoBar(page).getByText('Change undone.')).toBeFocused();
 }
 
 for (const colorScheme of ['light', 'dark'] as const) {
@@ -106,6 +108,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(leftAtEnd(page, '2026-11-06')).toHaveText('£177.23');
       // Only that payday: the next one is still an estimate.
       await expect(rowIn(page, '2026-11-13', 'Pay')).toContainText('Fri 13 Nov, estimate');
+
+      // The real amount can be the same as the estimate: untick the box and save (D185).
+      const next = await openRow(page, '2026-11-13', 'Pay');
+      await next.getByLabel('This is an estimate').uncheck();
+      await next.getByRole('button', { name: 'Save' }).click();
+      await expect(next).toBeHidden();
+      await expect(rowIn(page, '2026-11-13', 'Pay')).toContainText('Fri 13 Nov');
+      await expect(rowIn(page, '2026-11-13', 'Pay')).not.toContainText('estimate');
+      await expect(rowIn(page, '2026-11-13', 'Pay')).toContainText('+£469.06');
     });
 
     test('test 5: Move to next payday, and Home warns from Sun 1 Nov', async ({ page }) => {

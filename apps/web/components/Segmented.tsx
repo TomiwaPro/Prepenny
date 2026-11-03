@@ -27,7 +27,10 @@ export function Segmented<T extends string>({
       <legend className="visually-hidden">{legend}</legend>
       <div className={styles.options}>
         {options.map((option) => (
-          <label key={option.value} className={styles.option}>
+          <label
+            key={option.value}
+            className={`${styles.option} ${value === option.value ? styles.picked : ''}`}
+          >
             <input
               className={styles.input}
               type="radio"
