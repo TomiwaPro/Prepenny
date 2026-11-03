@@ -2092,7 +2092,7 @@ Decided 3 Nov 2026 in step 2d. Adds to brief 4.5, D2, D115 and D119.
 - Pick the budget (when there's more than one), type how much, and it's saved for today. The date can be changed to an earlier day, never a later one (D119).
 - The sheet shows that budget's week or month: "This week, to Thu 29 Oct", Spent and Left, and "£25 + £7 from last time" when something rolled over (D30). With an amount typed: "With this: £10.00 spent, £15.00 left." A spend dated before this week or month says it goes in an earlier one.
 - The undo bar says "£6.00 spent on Travel. This week: £10.00 spent, £15.00 left."
-- With no budgets, the sheet says "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, are added on the Budgets screen in More." The Budgets screen is built in step 2f.
+- With no budgets, the sheet says "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, come with the Budgets screen, which is still being built." The Budgets screen is built in step 2f, and the words change then to say where it is.
 - A spend's amount must be above zero (D115). No note is asked, to keep it to two taps.
 
 Why: brief 4.5 asks for "I spent" in two taps with spent and left for the week or month.
@@ -2116,10 +2116,10 @@ Why: these are the choices brief 4.3 and 4.4 list, in the order a person thinks 
 Decided 3 Nov 2026 in step 2d. Adds to brief 4.3, D5, D44, D124, D130, D131 and D140.
 
 - One sheet, opened by Home's "I did overtime", with "Overtime" or "Missed a shift" at the top. Its title follows the choice.
-- The day starts as today and can be any day. The hours start as the hours of the last one saved of that kind.
+- The day starts as today and can be any day. The hours start as the hours of the last one saved of that kind. Overtime and a missed shift each keep their own hours and rate while the sheet is open, and choosing another pay starts from that pay's own.
 - The rate is remembered: overtime uses the rate of the last overtime saved, or the pay profile's (£19.07 for Sam), shown as "At £19.07 an hour." with "Change the rate". A missed shift uses the pay week's basic rate (D123), shown the same way. Remembering the rate this way needs no second change, so one Undo takes the shift back.
 - Before saving, the engine makes the change on a copy of the plan and the sheet says what it does: "This adds £155.12 to your pay on Fri 6 Nov, making it £773.58." or "This takes £100.43 off your pay on Fri 13 Nov, making it £368.63." Save makes exactly that change. The undo bar says "Overtime added. Your pay on Fri 6 Nov goes up by £155.12."
-- The box for extras shows only when that payday's pay week has extras, such as a shift premium (D130). It goes, with anything typed in it, when the day moves to a payday without them.
+- The box for extras shows only when that payday's pay week has extras, such as a shift premium (D130). It stays while the hours or extras are typed, and goes, with anything typed in it, when the day moves to a payday without them.
 - With no pay details, the sheet says they come with the pay calculator (step 2g). A payday with no saved pay week gets the engine's refusal in words; asking once for the usual hours and rate (D5) is for setup and the pay calculator.
 - Refusals in words: a payday with its real pay in (D44), no payday for that day, no pay week, no rate, and too much in extras.
 
@@ -2151,7 +2151,9 @@ Why: the owner's instruction. Without it, someone could keep using an old screen
 Decided 3 Nov 2026 in step 2d.
 
 - Every sheet uses the same boxes and styles as the edit sheet (D188): a label above each box, a hint or the mistake under it, the date written PrePenny's way under each date box, and an amount after a "£".
-- A sheet starts afresh each time it opens, and closing it puts focus back on its button (WCAG 2.4.3).
+- A sheet starts afresh each time it opens, with the plan's figures worked out again then, never the ones from the last time it was open. Closing it puts focus back on its button (WCAG 2.4.3).
+- Every mistake moves focus to its box, or to the choice in a group, and is read out with it.
+- The engine's random test of every command (step 2a's owner test 3) also runs one fixed case that adds an account and then closes it. Random runs alone made a close about 1 time in 20 too few, so the test failed by chance on GitHub; its checks are unchanged.
 - Amounts in the sheets' sentences have no plus or minus sign, so a line never breaks between "+" and "£" on a 320px screen.
 - Months to leave out are in two columns, so "September" fits at 320px.
 

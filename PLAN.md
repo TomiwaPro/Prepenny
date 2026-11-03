@@ -58,7 +58,7 @@ Found while building step 2c:
 Found while building step 2d:
 
 17. **Asking once for the usual hours and rate** (steps 2e and 2g, D5): "I did overtime" on a payday with no saved pay week says so in words (D200). Setup and the pay calculator save the pay weeks.
-18. **The Budgets screen** (step 2f): with no budgets, "I spent" points to the Budgets screen in More (D198), which is built in step 2f.
+18. **The Budgets screen** (step 2f): with no budgets, "I spent" says budgets come with the Budgets screen (D198). Once it's built, the words say where it is in More.
 
 ## Waiting for the owner
 
@@ -67,7 +67,7 @@ Questions that need an answer before the step that uses them. Move each one to `
 1. **Update balance's tick boxes (D197)** (before 2e). In step 3, every payment from today or earlier starts unticked, so nothing is ticked without your tap, and "Tick all" ticks them all at once. Say if that's right, or if they should start ticked.
 2. **A balance from an earlier day (D197)**. Update balance always records the balance for today. Say if that's right, or if it should also take a balance from an earlier day, such as last night's.
 3. **"This pay has to cover" on payday (D168)**. On payday, once you've ticked your pay in Update balance, Home says "Coming in £0.00", because the pay is already in the balance you typed. Say if that's right, or if it should still show the pay that came in today.
-4. **I spent with no budgets (D198)**. The sheet says budgets are added on the Budgets screen in More, which comes in step 2f. Say if that's enough, or if the sheet should also let you add a budget there and then.
+4. **I spent with no budgets (D198)**. Sam's example has no budget, so the sheet says budgets come with the Budgets screen, which is still being built (step 2f). Say if that's enough, or if the sheet should also let you add a budget there and then, once budgets can be added.
 
 The owner answered the six questions from step 2c on 3 Nov 2026: D190 to D195.
 

@@ -58,6 +58,7 @@ export function OvertimeSheet({
         <OvertimeForm
           key={opened}
           shown={shown}
+          open={open}
           kind={now}
           onKind={(next) => setKind({ opened, kind: next })}
           onDone={onClose}
@@ -106,11 +107,13 @@ function rateWords(rate: string): string {
 
 function OvertimeForm({
   shown,
+  open,
   kind,
   onKind,
   onDone,
 }: {
   readonly shown: ShownActions;
+  readonly open: boolean;
   readonly kind: Kind;
   readonly onKind: (kind: Kind) => void;
   readonly onDone: () => void;
@@ -128,20 +131,56 @@ function OvertimeForm({
     );
   }
   return (
-    <ShiftFields pay={view.pay} today={view.today} kind={kind} onKind={onKind} onDone={onDone} />
+    <ShiftFields
+      pay={view.pay}
+      today={view.today}
+      kind={kind}
+      open={open}
+      onKind={onKind}
+      onDone={onDone}
+    />
   );
+}
+
+/** What each kind starts with for a pay: the hours last saved, and the remembered rate (D200). */
+function startFor(pay: PayView | undefined): Record<Kind, ShiftWords> {
+  return {
+    overtime: {
+      hours: pay?.lastHours.overtime ?? '',
+      rate: pay?.overtimeRate ?? '',
+      changingRate: (pay?.overtimeRate ?? null) === null,
+    },
+    // A missed shift uses the pay week's basic rate unless it's changed (D123).
+    'missed-shift': { hours: pay?.lastHours.missed ?? '', rate: '', changingRate: false },
+  };
+}
+
+interface ShiftWords {
+  readonly hours: string;
+  readonly rate: string;
+  readonly changingRate: boolean;
+}
+
+interface ShiftErrors {
+  readonly date?: string;
+  readonly hours?: string;
+  readonly rate?: string;
+  readonly extras?: string;
 }
 
 function ShiftFields({
   pay,
   today,
   kind,
+  open,
   onKind,
   onDone,
 }: {
   readonly pay: readonly PayView[];
   readonly today: string;
   readonly kind: Kind;
+  /** The sheet is open: nothing is worked out while it's closed. */
+  readonly open: boolean;
   readonly onKind: (kind: Kind) => void;
   readonly onDone: () => void;
 }) {
@@ -152,27 +191,35 @@ function ShiftFields({
   const [familyId, setFamilyId] = useState(pay[0]?.familyId ?? '');
   const chosen = pay.find((one) => one.familyId === familyId) ?? pay[0];
   const [date, setDate] = useState(today);
-  const [hoursText, setHoursText] = useState<Record<Kind, string>>({
-    overtime: chosen?.lastHours.overtime ?? '',
-    'missed-shift': chosen?.lastHours.missed ?? '',
-  });
-  const [rateText, setRateText] = useState(chosen?.overtimeRate ?? '');
-  const [changingRate, setChangingRate] = useState(chosen?.overtimeRate === null);
+  // Overtime and a missed shift each keep their own hours and rate.
+  const [words, setWords] = useState<Record<Kind, ShiftWords>>(() => startFor(chosen));
   const [extrasText, setExtrasText] = useState('');
-  const [errors, setErrors] = useState<{ hours?: string; rate?: string; extras?: string }>({});
+  const [errors, setErrors] = useState<ShiftErrors>({});
   const [preview, setPreview] = useState<{ key: string; result: PayPreview } | null>(null);
+  // What's known about the payday the shift lands on, kept while a new
+  // preview is worked out, so the boxes don't come and go while typing.
+  const [payday, setPayday] = useState<{
+    key: string;
+    hasExtras: boolean;
+    rate: string | null;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
   const hoursRef = useRef<HTMLInputElement>(null);
   const rateRef = useRef<HTMLInputElement>(null);
   const extrasRef = useRef<HTMLInputElement>(null);
+  const focusRate = useRef(false);
 
-  const hours = readHours(hoursText[kind]);
-  const rate = readRate(rateText);
+  const now = words[kind];
+  const setNow = (change: Partial<ShiftWords>) =>
+    setWords((all) => ({ ...all, [kind]: { ...all[kind], ...change } }));
+  const hours = readHours(now.hours);
+  const rate = readRate(now.rate);
   const extras: Pence | null = parseAmount(extrasText);
   // Overtime uses the remembered rate, or the one typed; a missed shift the
   // pay week's own basic rate unless the person changes it (D123).
-  const sendRate = kind === 'overtime' ? rate : changingRate ? rate : null;
+  const sendRate = kind === 'overtime' || now.changingRate ? rate : null;
   const command: PayCommand | null =
     hours === null || chosen === undefined || date === ''
       ? null
@@ -186,11 +233,12 @@ function ShiftFields({
           ...(extras === null || extras === 0 ? {} : { extras }),
         };
   const key = command === null ? '' : JSON.stringify(command);
+  const paydayKey = JSON.stringify([kind, chosen?.familyId, date]);
 
   // The command is rebuilt on every draw; `key` says when it has changed.
   // biome-ignore lint/correctness/useExhaustiveDependencies: key stands for the command
   useEffect(() => {
-    if (command === null || loaded === null) return;
+    if (!open || command === null || loaded === null) return;
     let current = true;
     const wait = setTimeout(() => {
       previewPayInBackground(loaded.records, loaded.today, command).then(
@@ -206,18 +254,39 @@ function ShiftFields({
       current = false;
       clearTimeout(wait);
     };
-  }, [key, loaded]);
+  }, [key, loaded, open]);
 
   const result = preview !== null && preview.key === key ? preview.result : null;
+  const known = payday !== null && payday.key === paydayKey ? payday : null;
 
-  // A payday with no extras can't take a change to them: the box goes, and so does what was typed in it.
-  const noExtras = result !== null && !result.ok && result.code === 'no-extras';
+  // Remember what the payday has. A payday with no extras can't take a
+  // change to them, so the box goes, and so does what was typed in it.
   useEffect(() => {
-    if (noExtras) setExtrasText('');
-  }, [noExtras]);
+    if (result === null) return;
+    if (result.ok) {
+      setPayday({ key: paydayKey, hasExtras: result.hasExtras, rate: result.rate });
+    } else if (result.code === 'no-extras') {
+      setPayday((was) => ({
+        key: paydayKey,
+        hasExtras: false,
+        rate: was?.key === paydayKey ? was.rate : null,
+      }));
+      setExtrasText('');
+    }
+  }, [result, paydayKey]);
+
+  // "Change the rate" puts focus in the rate box it shows.
+  useEffect(() => {
+    if (focusRate.current && now.changingRate) {
+      focusRate.current = false;
+      rateRef.current?.focus();
+    }
+  });
+
   const day = (when: string) => formatDay(when, today);
-  const hasExtras = result?.ok === true && result.hasExtras;
-  const shownRate = kind === 'overtime' ? rate : result?.ok === true ? result.rate : null;
+  const hasExtras = known?.hasExtras === true;
+  const shownRate = kind === 'overtime' ? rate : (known?.rate ?? null);
+  const showRateBox = now.changingRate || (kind === 'overtime' && rate === null);
 
   let previewWords: string | null = null;
   if (command !== null) {
@@ -229,13 +298,15 @@ function ShiftFields({
   async function save() {
     if (busy || loaded === null) return;
     setProblem(null);
-    const found: { hours?: string; rate?: string; extras?: string } = {};
+    const found: { -readonly [K in keyof ShiftErrors]: ShiftErrors[K] } = {};
+    if (date === '') found.date = strings.form.dateError;
     if (hours === null) found.hours = t.hoursError;
-    if ((kind === 'overtime' || changingRate) && rate === null) found.rate = t.rateError;
+    if (showRateBox && rate === null) found.rate = t.rateError;
     if (hasExtras && extrasText.trim() !== '' && extras === null) {
       found.extras = strings.form.amountError;
     }
     setErrors(found);
+    if (found.date !== undefined) return dateRef.current?.focus();
     if (found.hours !== undefined) return hoursRef.current?.focus();
     if (found.rate !== undefined) return rateRef.current?.focus();
     if (found.extras !== undefined) return extrasRef.current?.focus();
@@ -295,7 +366,13 @@ function ShiftFields({
           name={`${id}-pay`}
           value={chosen?.familyId ?? ''}
           options={pay.map((one) => ({ value: one.familyId, label: one.name }))}
-          onChange={setFamilyId}
+          onChange={(next) => {
+            // Another pay has its own remembered hours and rate.
+            setFamilyId(next);
+            setWords(startFor(pay.find((one) => one.familyId === next)));
+            setExtrasText('');
+            setErrors({});
+          }}
         />
       ) : null}
       <DateField
@@ -304,6 +381,8 @@ function ShiftFields({
         value={date}
         today={today}
         onChange={setDate}
+        error={errors.date}
+        inputRef={dateRef}
       />
       <Field id={`${id}-hours`} label={t.hours} error={errors.hours}>
         <input
@@ -313,21 +392,21 @@ function ShiftFields({
           type="text"
           inputMode="decimal"
           autoComplete="off"
-          value={hoursText[kind]}
+          value={now.hours}
           aria-invalid={errors.hours !== undefined}
           aria-describedby={describedBy(`${id}-hours`, errors.hours, [
-            shownRate === null || changingRate ? null : `${id}-rate-line`,
+            shownRate === null || showRateBox ? null : `${id}-rate-line`,
           ])}
-          onChange={(event) => setHoursText({ ...hoursText, [kind]: event.target.value })}
+          onChange={(event) => setNow({ hours: event.target.value })}
         />
       </Field>
-      {changingRate || (kind === 'overtime' && rate === null) ? (
+      {showRateBox ? (
         <Field id={`${id}-rate`} label={t.rate} error={errors.rate}>
           <MoneyInput
             id={`${id}-rate`}
             inputRef={rateRef}
-            value={rateText}
-            onChange={setRateText}
+            value={now.rate}
+            onChange={(value) => setNow({ rate: value })}
             invalid={errors.rate !== undefined}
             describedBy={describedBy(`${id}-rate`, errors.rate)}
           />
@@ -341,8 +420,11 @@ function ShiftFields({
             type="button"
             className={styles.quiet}
             onClick={() => {
-              if (kind === 'missed-shift' && result?.ok === true) setRateText(result.rate);
-              setChangingRate(true);
+              focusRate.current = true;
+              setNow({
+                changingRate: true,
+                ...(kind === 'missed-shift' && known?.rate != null ? { rate: known.rate } : {}),
+              });
             }}
           >
             {t.changeRate}

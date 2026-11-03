@@ -20,6 +20,16 @@ export function useActionsView(open: boolean): ShownActions {
   const { loaded } = usePlanActions();
   const [shown, setShown] = useState<{ view: ActionsView; version: number } | null>(null);
   const [failed, setFailed] = useState(false);
+  // Each time a sheet opens it waits for figures worked out now, never the
+  // ones from the last time it was open: a change made since would be missing.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setShown(null);
+      setFailed(false);
+    }
+  }
 
   useEffect(() => {
     if (!open || loaded === null) return;

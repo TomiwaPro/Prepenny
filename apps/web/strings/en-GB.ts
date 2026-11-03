@@ -183,7 +183,7 @@ export const strings = {
   spent: {
     title: 'I spent',
     noBudgets:
-      "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, are added on the Budgets screen in More.",
+      "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, come with the Budgets screen, which is still being built.",
     whichBudget: 'Which budget',
     amount: 'How much',
     day: 'When',

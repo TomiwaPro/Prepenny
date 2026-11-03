@@ -131,6 +131,7 @@
 }
 
 .money .input {
+  min-width: 0;
   border: 0;
   padding-left: var(--space-1);
 }
@@ -377,6 +378,7 @@
 
 .dateRow > :first-child {
   flex: 1 1 10rem;
+  min-width: 0;
 }
 
 .group {
@@ -385,4 +387,16 @@
   gap: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--divider);
+}
+
+/* A group of boxes with a legend, drawn with no border of its own. */
+.plain {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.plain > legend {
+  padding: 0 0 var(--space-1);
 }

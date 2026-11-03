@@ -295,6 +295,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
         'Overtime added. Your pay on Fri\u00a06\u00a0Nov goes up by £155.12.',
       );
 
+      // Opened again, it remembers the hours and the rate (D200).
+      const again = await openAction(page, 'I did overtime');
+      await expect(again.getByLabel('Hours')).toHaveValue('11.5');
+      await expect(again.getByText('At £19.07 an hour.')).toBeVisible();
+      await again.getByRole('button', { name: 'Close', exact: true }).click();
+
       await openPlan(page);
       await expect(rowIn(page, '2026-11-06', 'Pay')).toContainText('+£773.58');
       await expect(leftAtEnd(page, '2026-11-06')).toHaveText('£310.81');
@@ -439,11 +445,47 @@ for (const colorScheme of ['light', 'dark'] as const) {
   });
 }
 
+test('the overtime sheet keeps the extras box while typing, and each kind its own rate', async ({
+  page,
+}) => {
+  await openHome(page);
+  const sheet = await openAction(page, 'I did overtime');
+  await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
+  await sheet.getByLabel('Hours').fill('11.5');
+  const extras = sheet.getByLabel('Extras it adds, such as shift premium, if any');
+  await expect(extras).toBeVisible();
+  await extras.pressSequentially('10');
+  await expect(extras).toBeFocused();
+  await expect(extras).toHaveValue('10');
+  await expect(sheet.getByTestId('shift-preview')).toContainText('Fri\u00a06\u00a0Nov');
+
+  // A missed shift has its own rate: the pay week's basic rate.
+  await sheet.getByText('Missed a shift', { exact: true }).click();
+  const missed = page.getByRole('dialog', { name: 'I missed a shift' });
+  await missed.getByLabel('Day of the shift').fill('2026-11-03');
+  await missed.getByLabel('Hours').fill('11.5');
+  await expect(missed.getByText('At £12.71 an hour.')).toBeVisible();
+  await missed.getByRole('button', { name: 'Change the rate' }).click();
+  await expect(missed.getByLabel('Rate an hour')).toBeFocused();
+  await expect(missed.getByLabel('Rate an hour')).toHaveValue('12.71');
+  await missed.getByText('Overtime', { exact: true }).click();
+  const overtime = page.getByRole('dialog', { name: 'I did overtime' });
+  await expect(overtime.getByText('At £19.07 an hour.')).toBeVisible();
+  await expect(overtime.getByLabel('Hours')).toHaveValue('11.5');
+
+  // A cleared date says what to do.
+  await overtime.getByLabel('Day of the overtime').fill('');
+  await overtime.getByRole('button', { name: 'Save' }).click();
+  await expect(overtime.getByText('Choose a date.')).toBeVisible();
+  await expect(overtime.getByLabel('Day of the overtime')).toBeFocused();
+  await noAxeProblems(page);
+});
+
 test('with no budgets, I spent says how to add one', async ({ page }) => {
   await openHome(page);
   const sheet = await openAction(page, 'I spent');
   await expect(sheet.getByTestId('no-budgets')).toHaveText(
-    "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, are added on the Budgets screen in More.",
+    "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, come with the Budgets screen, which is still being built.",
   );
   await noAxeProblems(page);
 });

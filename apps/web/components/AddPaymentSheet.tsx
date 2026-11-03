@@ -26,6 +26,7 @@ import {
   type HowOften,
   type MonthlyOn,
   monthlyChoices,
+  monthOf,
   type PaymentErrors,
   type PaymentField,
   type PaymentForm,
@@ -105,19 +106,24 @@ function PaymentFields({
     () => holidaysFor(loaded?.records.settings?.nation ?? 'england-and-wales'),
     [loaded?.records.settings?.nation],
   );
-  const refs: Record<PaymentField, RefObject<HTMLInputElement | null>> = {
+  // Each box, or for a group of choices the group, so focus can go to the first mistake.
+  const inputs = {
     name: useRef<HTMLInputElement>(null),
     amount: useRef<HTMLInputElement>(null),
-    toAccount: useRef<HTMLInputElement>(null),
     date: useRef<HTMLInputElement>(null),
     weeks: useRef<HTMLInputElement>(null),
     months: useRef<HTMLInputElement>(null),
-    leaveOut: useRef<HTMLInputElement>(null),
-    dates: useRef<HTMLInputElement>(null),
     count: useRef<HTMLInputElement>(null),
     endDate: useRef<HTMLInputElement>(null),
     lastAmount: useRef<HTMLInputElement>(null),
   };
+  const groups = {
+    toAccount: useRef<HTMLDivElement>(null),
+    leaveOut: useRef<HTMLFieldSetElement>(null),
+    dates: useRef<HTMLFieldSetElement>(null),
+  };
+  const refs: Record<PaymentField, RefObject<HTMLElement | null>> = { ...inputs, ...groups };
+  const addDate = useRef<HTMLButtonElement>(null);
 
   const set = <K extends keyof PaymentForm>(key: K, value: PaymentForm[K]) =>
     setForm((now) => ({ ...now, [key]: value }));
@@ -165,7 +171,23 @@ function PaymentFields({
 
   function focusFirst(found: PaymentErrors) {
     const field = FIELD_ORDER.find((one) => found[one] !== undefined);
-    if (field !== undefined) refs[field].current?.focus();
+    if (field === undefined) return;
+    const element = refs[field].current;
+    if (element instanceof HTMLInputElement) {
+      element.focus();
+      return;
+    }
+    // In a group: the next payment's month when that's the mistake, or the
+    // choice that's picked, or the first box.
+    const month =
+      found.leaveOut === 'leaveOutNext' && validDate
+        ? element?.querySelector<HTMLInputElement>(`input[data-month="${monthOf(form.date)}"]`)
+        : null;
+    (
+      month ??
+      element?.querySelector<HTMLInputElement>('input:checked') ??
+      element?.querySelector<HTMLInputElement>('input')
+    )?.focus();
   }
 
   async function save() {
@@ -233,7 +255,7 @@ function PaymentFields({
 
       <Field id={`${id}-name`} label={t.name} error={error('name')}>
         <input
-          ref={refs.name}
+          ref={inputs.name}
           id={`${id}-name`}
           className={styles.input}
           type="text"
@@ -248,7 +270,7 @@ function PaymentFields({
       <Field id={`${id}-amount`} label={t.amount} error={error('amount')}>
         <MoneyInput
           id={`${id}-amount`}
-          inputRef={refs.amount}
+          inputRef={inputs.amount}
           value={form.amount}
           onChange={(value) => set('amount', value)}
           invalid={errors.amount !== undefined}
@@ -266,16 +288,17 @@ function PaymentFields({
         />
       ) : null}
       {form.direction === 'transfer' ? (
-        <div className={styles.field}>
+        <div className={styles.field} ref={groups.toAccount}>
           <ChoiceList<string>
             legend={t.to}
             name={`${id}-to`}
             value={form.toAccountId}
             options={accountOptions}
             onChange={(value) => set('toAccountId', value)}
+            describedBy={errors.toAccount === undefined ? undefined : `${id}-to-error`}
           />
           {errors.toAccount === undefined ? null : (
-            <p className={styles.error} role="alert">
+            <p id={`${id}-to-error`} className={styles.error}>
               {error('toAccount')}
             </p>
           )}
@@ -290,7 +313,7 @@ function PaymentFields({
         min={today}
         onChange={(value) => set('date', value)}
         error={error('date')}
-        inputRef={refs.date}
+        inputRef={inputs.date}
       />
 
       <ChoiceList<HowOften>
@@ -318,7 +341,7 @@ function PaymentFields({
           }
         >
           <input
-            ref={refs.weeks}
+            ref={inputs.weeks}
             id={`${id}-weeks`}
             className={`${styles.input} num`}
             type="text"
@@ -341,7 +364,7 @@ function PaymentFields({
             hint={t.monthsApartHint}
           >
             <input
-              ref={refs.months}
+              ref={inputs.months}
               id={`${id}-months`}
               className={`${styles.input} num`}
               type="text"
@@ -370,15 +393,19 @@ function PaymentFields({
             {t.leaveOut}
           </CheckOption>
           {form.leaveOut ? (
-            <fieldset className={styles.months}>
+            <fieldset
+              className={styles.months}
+              ref={groups.leaveOut}
+              aria-describedby={errors.leaveOut === undefined ? undefined : `${id}-leave-out-error`}
+            >
               <legend>{t.leaveOutLegend}</legend>
               {strings.dates.monthsLong.map((name, index) => {
                 const month = index + 1;
                 return (
                   <label key={name} className={styles.option}>
                     <input
-                      ref={index === 0 ? refs.leaveOut : undefined}
                       type="checkbox"
+                      data-month={month}
                       checked={form.leftOut.includes(month)}
                       onChange={(event) =>
                         set(
@@ -404,8 +431,12 @@ function PaymentFields({
       ) : null}
 
       {form.howOften === 'dates' ? (
-        <div className={styles.stack}>
-          <p className={styles.label}>{t.chosenDates}</p>
+        <fieldset
+          className={`${styles.stack} ${styles.plain}`}
+          ref={groups.dates}
+          aria-describedby={errors.dates === undefined ? undefined : `${id}-dates-error`}
+        >
+          <legend className={styles.label}>{t.chosenDates}</legend>
           {form.laterDates.map((date, index) => (
             <div className={styles.dateRow} key={dateKeys[index] ?? `extra-${date}`}>
               <DateField
@@ -414,7 +445,6 @@ function PaymentFields({
                 value={date}
                 today={today}
                 min={form.date}
-                inputRef={index === 0 ? refs.dates : undefined}
                 onChange={(value) =>
                   set(
                     'laterDates',
@@ -431,6 +461,8 @@ function PaymentFields({
                     form.laterDates.filter((_, at) => at !== index),
                   );
                   setDateKeys(dateKeys.filter((_, at) => at !== index));
+                  // The box and its button go: focus moves to "Add a date".
+                  addDate.current?.focus();
                 }}
               >
                 {t.removeDate(date === '' ? t.laterDate(index + 2) : day(date))}
@@ -438,6 +470,7 @@ function PaymentFields({
             </div>
           ))}
           <button
+            ref={addDate}
             type="button"
             className={styles.outlined}
             onClick={() => {
@@ -448,11 +481,11 @@ function PaymentFields({
             {t.addDate}
           </button>
           {errors.dates === undefined ? null : (
-            <p className={styles.error} role="alert">
+            <p id={`${id}-dates-error`} className={styles.error}>
               {error('dates')}
             </p>
           )}
-        </div>
+        </fieldset>
       ) : null}
 
       {repeats ? (
@@ -471,7 +504,7 @@ function PaymentFields({
           {form.ends === 'after' ? (
             <Field id={`${id}-count`} label={t.howMany} error={error('count')}>
               <input
-                ref={refs.count}
+                ref={inputs.count}
                 id={`${id}-count`}
                 className={`${styles.input} num`}
                 type="text"
@@ -493,7 +526,7 @@ function PaymentFields({
               min={form.date}
               onChange={(value) => set('endDate', value)}
               error={error('endDate')}
-              inputRef={refs.endDate}
+              inputRef={inputs.endDate}
             />
           ) : null}
           {form.ends === 'never' ? null : (
@@ -508,7 +541,7 @@ function PaymentFields({
                 <Field id={`${id}-last`} label={t.lastAmount} error={error('lastAmount')}>
                   <MoneyInput
                     id={`${id}-last`}
-                    inputRef={refs.lastAmount}
+                    inputRef={inputs.lastAmount}
                     value={form.lastAmount}
                     onChange={(value) => set('lastAmount', value)}
                     invalid={errors.lastAmount !== undefined}

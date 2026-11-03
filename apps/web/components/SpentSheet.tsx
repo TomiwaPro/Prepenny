@@ -112,7 +112,8 @@ function SpentForm({
   const day = date ?? today;
   const amount = parseAmount(amountText);
   const preview = amount === null || amount === 0 ? null : withThis(budget, amount, day);
-  const earlier = day < budget.current.start;
+  // Dated before this week or month, when the budget's week or month has today in it.
+  const earlier = day !== '' && budget.current.start <= today && day < budget.current.start;
 
   async function save() {
     if (busy || budget === undefined) return;

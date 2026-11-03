@@ -249,8 +249,9 @@ export function PlanScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const furthest = useRef<HTMLParagraphElement>(null);
   const showMore = useRef(false);
-  // After showing the months up to the lowest point, focus goes to its row (D190).
-  const toLowest = useRef(false);
+  // After showing the months up to the lowest point, focus goes to its row
+  // (D190): the view it was tapped on, and the account, so the next view decides.
+  const toLowest = useRef<{ view: PlanView; accountId: string } | null>(null);
   const name = useId();
 
   useEffect(() => setGrouping(storedGrouping()), []);
@@ -286,16 +287,15 @@ export function PlanScreen() {
   }, [shown]);
 
   useEffect(() => {
-    if (!toLowest.current || shown === null) return;
+    const wanted = toLowest.current;
+    if (wanted === null || shown === null || shown.view === wanted.view) return;
+    toLowest.current = null;
     const lowest = shown.view.accounts
-      .flatMap((one) => one.periods)
-      .flatMap((period) => period.rows)
+      .find((one) => one.id === wanted.accountId)
+      ?.periods.flatMap((period) => period.rows)
       .find((row) => row.isLowest);
     if (lowest === undefined) return;
-    const row = document.querySelector<HTMLElement>(`[data-row-key="${CSS.escape(lowest.key)}"]`);
-    if (row === null) return;
-    toLowest.current = false;
-    row.focus();
+    document.querySelector<HTMLElement>(`[data-row-key="${CSS.escape(lowest.key)}"]`)?.focus();
   });
 
   const sheet = useEditSheet(shown?.version ?? null);
@@ -386,7 +386,7 @@ export function PlanScreen() {
               today={today}
               shownTo={view.to}
               onShowUpTo={(date) => {
-                toLowest.current = true;
+                toLowest.current = { view, accountId: account.id };
                 setMonths((now) => Math.max(now, monthsUpTo(today, date)));
               }}
             />
