@@ -19,9 +19,6 @@ import {
   type Series,
 } from '@prepenny/engine';
 
-/** Bumped whenever the example's records change, so phones replace their copy. */
-export const EXAMPLE_VERSION = 1;
-
 /** The example plan's id in the phone's database. */
 export const EXAMPLE_PLAN_ID = 'example';
 
@@ -413,3 +410,20 @@ export const examplePlan: PlanRecords = {
   payAdjustments: [],
   settings: { nation: 'england-and-wales', mainPayFamilyId: 'pay' },
 };
+
+/** A short fingerprint of some records: any change to them changes it. */
+export function fingerprint(records: PlanRecords): string {
+  // FNV-1a over the records as text. Not for security: only to notice a change.
+  let hash = 0x811c9dc5;
+  for (const char of JSON.stringify(records)) {
+    hash ^= char.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
+/**
+ * The example's version: a fingerprint of its records, so whenever they
+ * change, every phone replaces its copy the next time the app opens.
+ */
+export const EXAMPLE_VERSION = fingerprint(examplePlan);

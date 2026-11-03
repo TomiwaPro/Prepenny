@@ -45,15 +45,63 @@ function editInput(records: PlanRecords, today: string) {
 }
 
 describe('the phone’s database', () => {
-  it('turns records into rows and back without changing anything', () => {
-    expect(allRecords(recordsOf(rowsOf('p', examplePlan)))).toEqual(allRecords(examplePlan));
+  it('turns records into rows and back without changing anything, order included', () => {
+    expect(recordsOf(rowsOf('p', examplePlan))).toEqual(examplePlan);
+  });
+
+  it('keeps accounts in the order they were added, whatever their ids', async () => {
+    const plan: PlanRecords = {
+      accounts: [
+        {
+          id: 'zz-first',
+          name: 'Current account',
+          kind: 'current',
+          overdraftLimit: 0,
+          warningLevel: 0,
+        },
+        { id: 'aa-second', name: 'Joint', kind: 'joint', overdraftLimit: 0, warningLevel: 0 },
+      ],
+      balanceUpdates: [],
+      series: [],
+    };
+    await savePlan(db, { id: 'p', isExample: false }, plan);
+    await saveWrites(db, 'p', [
+      {
+        kind: 'account',
+        id: '00-third',
+        value: {
+          id: '00-third',
+          name: 'Savings',
+          kind: 'savings',
+          overdraftLimit: 0,
+          warningLevel: 0,
+        },
+      },
+      {
+        kind: 'account',
+        id: 'zz-first',
+        value: {
+          id: 'zz-first',
+          name: 'Main',
+          kind: 'current',
+          overdraftLimit: 0,
+          warningLevel: 0,
+        },
+      },
+    ]);
+    const loaded = await loadRecords(db, 'p');
+    expect(loaded.accounts.map((one) => [one.id, one.name])).toEqual([
+      ['zz-first', 'Main'],
+      ['aa-second', 'Joint'],
+      ['00-third', 'Savings'],
+    ]);
   });
 
   it('saves the example plan and reads back exactly the same records', async () => {
     await savePlan(db, examplePlanRecord, examplePlan);
     expect(await db.plans.get(EXAMPLE_PLAN_ID)).toEqual(examplePlanRecord);
     const loaded = await loadRecords(db, EXAMPLE_PLAN_ID);
-    expect(allRecords(loaded)).toEqual(allRecords(examplePlan));
+    expect(loaded).toEqual(examplePlan);
     expect(workOutHome(loaded, '2026-10-25')).toEqual(workOutHome(examplePlan, '2026-10-25'));
   });
 

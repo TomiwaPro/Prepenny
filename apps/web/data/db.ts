@@ -14,8 +14,8 @@ export interface StoredPlan {
   readonly id: string;
   /** Sam's example plan (brief 4.1, D15), always shown with Sun 25 Oct 2026 as today (D133). */
   readonly isExample: boolean;
-  /** For the example: which version of its records this phone holds. */
-  readonly exampleVersion?: number;
+  /** For the example: which version of its records this phone holds, as a fingerprint. */
+  readonly exampleVersion?: string;
 }
 
 /** The kinds of record, as the engine's edits name them (D87). */
@@ -27,6 +27,11 @@ export interface StoredRecord {
   readonly kind: RecordKind;
   /** The record's id, or "seriesId|originalDate" for a change or tick ("|set-aside" for that tick). */
   readonly key: string;
+  /**
+   * The record's place among its kind, so lists come back in the order they
+   * were made: the first account added stays first (D168).
+   */
+  readonly seq: number;
   readonly value: unknown;
 }
 
@@ -100,12 +105,13 @@ export function keyOfWrite(write: RecordWrite): string {
 export function rowsOf(planId: string, records: PlanRecords): StoredRecord[] {
   const rows: StoredRecord[] = [];
   for (const [kind, list] of Object.entries(listOf) as [ListKind, keyof PlanRecords][]) {
-    for (const value of (records[list] as readonly unknown[] | undefined) ?? []) {
-      rows.push({ planId, kind, key: keyOfValue(kind, value), value });
-    }
+    const values = (records[list] as readonly unknown[] | undefined) ?? [];
+    values.forEach((value, seq) => {
+      rows.push({ planId, kind, key: keyOfValue(kind, value), seq, value });
+    });
   }
   if (records.settings !== undefined) {
-    rows.push({ planId, kind: 'settings', key: SETTINGS_KEY, value: records.settings });
+    rows.push({ planId, kind: 'settings', key: SETTINGS_KEY, seq: 0, value: records.settings });
   }
   return rows;
 }
@@ -115,7 +121,9 @@ export function recordsOf(rows: readonly StoredRecord[]): PlanRecords {
   const lists: Record<string, unknown[]> = {};
   for (const list of Object.values(listOf)) lists[list] = [];
   let settings: PlanSettings | undefined;
-  const sorted = [...rows].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  const sorted = [...rows].sort(
+    (a, b) => (a.seq ?? 0) - (b.seq ?? 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
+  );
   for (const row of sorted) {
     if (row.kind === 'settings') {
       settings = row.value as PlanSettings;
@@ -143,16 +151,29 @@ export async function loadRecords(db: PrePennyDb, planId: string): Promise<PlanR
   return recordsOf(await db.records.where('planId').equals(planId).toArray());
 }
 
-/** Saves an edit's writes (D87): each one replaces its record, or removes it when its value is null. */
+/**
+ * Saves an edit's writes (D87): each one replaces its record, keeping its
+ * place, or removes it when its value is null. A new record goes last among its kind.
+ */
 export async function saveWrites(db: PrePennyDb, planId: string, writes: readonly RecordWrite[]) {
   await db.transaction('rw', db.records, async () => {
     for (const write of writes) {
       const key = [planId, write.kind, keyOfWrite(write)] as [string, RecordKind, string];
       if (write.value === null) {
         await db.records.delete(key);
-      } else {
-        await db.records.put({ planId, kind: write.kind, key: key[2], value: write.value });
+        continue;
       }
+      const existing = await db.records.get(key);
+      let seq = existing?.seq;
+      if (seq === undefined) {
+        const sameKind = await db.records
+          .where('planId')
+          .equals(planId)
+          .filter((row) => row.kind === write.kind)
+          .toArray();
+        seq = sameKind.reduce((last, row) => Math.max(last, (row.seq ?? 0) + 1), 0);
+      }
+      await db.records.put({ planId, kind: write.kind, key: key[2], seq, value: write.value });
     }
   });
 }
