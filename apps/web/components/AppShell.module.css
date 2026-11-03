@@ -1,0 +1,20 @@
+/* The app in one column, centred on a laptop (brief Part 6), clear of the bottom navigation. */
+.column {
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: 10px var(--gutter) calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-6));
+}
+
+.notes > * {
+  margin-bottom: var(--card-gap);
+}
+
+.notes > :empty {
+  margin-bottom: 0;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}

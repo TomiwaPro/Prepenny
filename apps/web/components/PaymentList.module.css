@@ -1,0 +1,36 @@
+.card {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: 4px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: var(--space-3);
+}
+
+.heading {
+  font-size: var(--size-heading);
+  font-weight: 700;
+  padding: var(--space-3) 0;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  font-size: var(--size-body);
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.empty {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--divider);
+  color: var(--ink-muted);
+}

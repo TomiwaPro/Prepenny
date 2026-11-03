@@ -1,0 +1,78 @@
+.card {
+  container-type: inline-size;
+  background: var(--navy);
+  color: var(--on-navy);
+  border-radius: var(--radius-balance);
+  padding: 18px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account {
+  font-size: var(--size-second);
+  font-weight: 500;
+  color: var(--on-navy-muted);
+}
+
+/* 46px, but never wider than the card, so a long balance at 200% text still fits. */
+.balance {
+  font-size: min(var(--size-balance), 18cqi);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  overflow-wrap: anywhere;
+}
+
+.checked {
+  font-size: var(--size-second);
+  color: var(--on-navy-muted);
+}
+
+.line {
+  margin: 0;
+  border: 0;
+  height: 1px;
+  background: var(--brass);
+}
+
+.raised {
+  background: var(--navy-raised);
+  border-radius: var(--radius-inner);
+  padding: 11px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.raisedTop {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  column-gap: var(--space-3);
+}
+
+.raisedLabel {
+  flex: 1 1 9rem;
+  font-size: var(--size-body);
+  font-weight: 400;
+  color: var(--on-navy);
+}
+
+.raisedAmount {
+  margin-left: auto;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.raisedLine {
+  font-size: var(--size-second);
+  color: var(--on-navy-muted);
+}

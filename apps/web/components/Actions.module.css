@@ -1,0 +1,27 @@
+/* Two columns, or one when big text needs the room. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 10px;
+}
+
+.button {
+  min-height: var(--button-height);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-inner);
+  font-size: var(--size-name);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.main {
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.outlined {
+  border: 1px solid var(--button-border);
+  background: var(--card);
+  color: var(--accent-text);
+}
