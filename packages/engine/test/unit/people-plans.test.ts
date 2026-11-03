@@ -342,11 +342,14 @@ describe('Ali: three big payments to last a term, and the overdraft as the floor
     expect(plan.mainPaydays).toEqual(['2026-09-21', '2027-01-11', '2027-04-26']);
     expect(current.leftToSpend?.until).toBe('2027-01-11');
     const periods = groupIntoPeriods(plan, 'pay').accounts[0]?.periods ?? [];
-    // The first term started on Mon 21 Sep, the last loan payday on or before today (D84).
+    // The first term started on Mon 21 Sep, the last loan payday on or before
+    // today (D84). After the last loan payday, Mon 26 Apr, the student loan
+    // has no more paydays, so the plan goes by calendar month (D144).
     expect(periods.map((one) => [one.start, one.end])).toEqual([
       ['2026-09-21', '2027-01-10'],
       ['2027-01-11', '2027-04-25'],
-      ['2027-04-26', '2027-05-31'],
+      ['2027-04-26', '2027-04-30'],
+      ['2027-05-01', '2027-05-31'],
     ]);
   });
 

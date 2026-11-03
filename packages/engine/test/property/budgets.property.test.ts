@@ -19,6 +19,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
+  type AccountPlan,
   addDays,
   applyWrites,
   type Budget,
@@ -27,9 +28,11 @@ import {
   type EditInput,
   editPlan,
   formatDate,
+  lastDayOfMonth,
   type Plan,
   type PlanInput,
   parseDate,
+  partsOfDay,
   type Series,
   type Spend,
   workOutPlan,
@@ -276,15 +279,32 @@ function checkPlan(input: PlanInput, plan: Plan): void {
     }
   }
 
-  // Left to spend (D3, D28): budget rows and Spending money from today to the day before payday.
-  for (const account of plan.accounts) {
-    const left = account.leftToSpend;
-    if (plan.nextMainPayday === null) {
+  // Left to spend (D3, D28): budget rows and Spending money from today to
+  // the day before payday, or to the end of this month when the main pay has
+  // stopped (D144), however far the plan looks (D143).
+  for (const shown of plan.accounts) {
+    const left = shown.leftToSpend;
+    if (plan.mainPay === 'none') {
       expect(left).toBeNull();
       continue;
     }
     if (left === null) throw new Error('Left to spend is missing.');
-    const last = [at(plan.nextMainPayday, -1), input.to].sort()[0] as string;
+    const { year, month } = partsOfDay(parseDate(today));
+    const last =
+      plan.nextMainPayday === null
+        ? formatDate(lastDayOfMonth(year, month))
+        : at(plan.nextMainPayday, -1);
+    expect([left.lastDay, left.runsTo]).toEqual([
+      last,
+      plan.nextMainPayday === null ? 'month-end' : 'payday',
+    ]);
+    expect(plan.mainPayEnded).toBe(plan.nextMainPayday === null);
+    const account =
+      last > input.to
+        ? (workOutPlan({ ...input, to: last }).accounts.find(
+            (one) => one.account.id === shown.account.id,
+          ) as AccountPlan)
+        : shown;
     const spending = account.rows.filter(
       (row) =>
         row.date >= today &&

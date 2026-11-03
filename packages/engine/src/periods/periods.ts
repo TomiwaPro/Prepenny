@@ -8,6 +8,7 @@ import {
   monthFromNumber,
   monthNumberOfDay,
   parseDate,
+  partsOfDay,
 } from '../dates/day.ts';
 import { EngineInputError } from '../errors.ts';
 import type { Pence } from '../money/pence.ts';
@@ -51,11 +52,22 @@ interface Bounds {
   readonly end: Day;
 }
 
+/** The last day of the month a day is in. */
+function monthEnd(day: Day): Day {
+  const { year, month } = partsOfDay(day);
+  return lastDayOfMonth(year, month);
+}
+
 /**
  * Pay periods: from one main payday to the day before the next (D14). The
  * first runs from the last main payday on or before today, or from today when
  * there's none. The last ends the day before the first main payday after the
- * plan's last day, or on the plan's last day when there's none.
+ * plan's last day.
+ *
+ * When the main pay has no payday after the plan's last day, it has
+ * stopped: the period from its last payday runs to the end of that month,
+ * and calendar months follow (D144). Periods that ended before today are
+ * left out.
  */
 function payPeriods(paydays: readonly Day[], today: Day, to: Day): Bounds[] {
   const starts = [paydays.filter((day) => day <= today).at(-1) ?? today];
@@ -63,10 +75,20 @@ function payPeriods(paydays: readonly Day[], today: Day, to: Day): Bounds[] {
     if (day > today && day <= to) starts.push(day);
   }
   const after = paydays.find((day) => day > to);
-  return starts.map((start, i) => {
+  const bounds: Bounds[] = starts.map((start, i) => {
     const next = starts[i + 1] ?? after;
-    return { start, end: next === undefined ? to : addDays(next, -1) };
+    return { start, end: next === undefined ? monthEnd(start) : addDays(next, -1) };
   });
+  if (after === undefined) {
+    // The main pay has stopped: calendar months after its last payday (D144).
+    let last = (bounds.at(-1) as Bounds).end;
+    while (last < to) {
+      const start = addDays(last, 1);
+      last = monthEnd(start);
+      bounds.push({ start, end: last });
+    }
+  }
+  return bounds.filter((period) => period.end >= today);
 }
 
 /** Calendar months, from today's month to the month of the plan's last day. */

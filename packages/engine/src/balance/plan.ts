@@ -13,7 +13,14 @@ import {
 } from '../budgets/check.ts';
 import { budgetPay } from '../budgets/periods.ts';
 import type { BudgetBill } from '../budgets/types.ts';
-import { addDays, type Day, formatDate, parseDate } from '../dates/day.ts';
+import {
+  addDays,
+  type Day,
+  formatDate,
+  lastDayOfMonth,
+  parseDate,
+  partsOfDay,
+} from '../dates/day.ts';
 import { type Moment, parseTime } from '../dates/time.ts';
 import {
   type BankHolidayLookup,
@@ -794,10 +801,39 @@ function mainPaydayList(main: MainPaydays | null, today: Day, to: Day): Day[] {
   return main.between(from, until);
 }
 
+/** Where Left to spend stops (D28, D143, D144). */
+interface LeftToSpendWindow {
+  /** The next main payday, or the 1st of next month when the main pay has stopped. */
+  readonly until: Day;
+  readonly runsTo: LeftToSpend['runsTo'];
+  /** The day before `until`: the last day it counts. */
+  readonly last: Day;
+}
+
+/**
+ * Where Left to spend stops (D28, D143, D144): the day before the next main
+ * payday, or the end of this month when the main pay has no payday after
+ * today. Null when there's no main pay.
+ */
+function leftToSpendWindow(
+  main: MainPaydays | null,
+  nextPayday: Day | null,
+  today: Day,
+): LeftToSpendWindow | null {
+  if (main === null) return null;
+  if (nextPayday !== null) {
+    return { until: nextPayday, runsTo: 'payday', last: addDays(nextPayday, -1) };
+  }
+  const { year, month } = partsOfDay(today);
+  const last = lastDayOfMonth(year, month);
+  return { until: addDays(last, 1), runsTo: 'month-end', last };
+}
+
 /**
  * Left to spend until the next main payday (D3, D28, D112, D117, D118): spending
  * money still due to leave from today to the day before it, the lowest
- * end-of-day balance in that time, and the line under it.
+ * end-of-day balance in that time, and the line under it. The account's
+ * days must reach the window's last day, whatever the plan's last day (D143).
  *
  * "Spend no more than £X" counts, for each day, only the spending money due
  * by that day: X is the smallest, over each day from today to the day before
@@ -808,13 +844,12 @@ function mainPaydayList(main: MainPaydays | null, today: Day, to: Day): Day[] {
  */
 function leftToSpendOf(
   work: AccountWork,
-  nextPayday: Day | null,
+  window: LeftToSpendWindow | null,
   today: Day,
-  to: Day,
   payLater: readonly PayLaterLeft[],
 ): LeftToSpend | null {
-  if (nextPayday === null) return null;
-  const last = Math.min(addDays(nextPayday, -1), to);
+  if (window === null) return null;
+  const { last } = window;
   let amount = 0;
   const dueOn = new Map<Day, Pence>();
   work.rows.forEach((row, i) => {
@@ -848,13 +883,47 @@ function leftToSpendOf(
   // A line only when spending it all goes under the warning level (D3, D10).
   const needsLine = lowest.balance < warning;
   return {
-    until: formatDate(nextPayday),
+    until: formatDate(window.until),
+    runsTo: window.runsTo,
+    lastDay: formatDate(last),
     amount,
     lowest,
     spendNoMoreThan: needsLine && underOn === null ? Math.max(0, room ?? 0) : null,
     underEvenSpendingNothing: needsLine && underOn !== null ? formatDate(underOn) : null,
     payLater,
   };
+}
+
+/**
+ * Each budget worked out, and each account's rows and days, from the
+ * balance date to `to` (brief 5.5, D2, D29 to D32).
+ */
+function workOutAccounts(
+  checked: CheckedRecords,
+  pay: ReturnType<typeof budgetPay>,
+  holidays: BankHolidayLookup,
+  today: Day,
+  to: Day,
+): { worked: Map<string, WorkedBudget>; works: Map<string, AccountWork> } {
+  // Budgets (D2, D29 to D32): their periods follow the main pay.
+  const worked = new Map<string, WorkedBudget>();
+  for (const [id, budget] of checked.budgets) {
+    worked.set(id, workOutBudget(budget, checked.spends.get(id) ?? [], pay, today, to));
+  }
+  const bills = new Map([...worked].filter(([, one]) => one.checked.billDay !== null));
+  const movements = [
+    ...collectPayments(checked, bills, to, holidays),
+    ...[...worked.values()].flatMap(budgetMovements),
+  ];
+  const works = new Map<string, AccountWork>();
+  for (const account of checked.accounts.values()) {
+    const start = checked.starts.get(account.id) as Start;
+    works.set(
+      account.id,
+      workOutAccount(account, start, movements, checked.accountOfUpdate, today, to),
+    );
+  }
+  return { worked, works };
 }
 
 /**
@@ -879,26 +948,10 @@ export function workOutPlan(input: PlanInput): Plan {
   }
 
   const checked = checkRecords(input, today);
-  const { accounts, starts, accountOfUpdate, prepared, changes, ticks } = checked;
+  const { prepared, changes, ticks } = checked;
   const main = mainPaydaysOf(input.mainPayFamilyId, prepared, changes, input.holidays);
-
-  // Budgets (D2, D29 to D32): their periods follow the main pay.
   const pay = budgetPay(main, input.mainPayFamilyId, prepared, today);
-  const worked = new Map<string, WorkedBudget>();
-  for (const [id, budget] of checked.budgets) {
-    worked.set(id, workOutBudget(budget, checked.spends.get(id) ?? [], pay, today, to));
-  }
-  const bills = new Map([...worked].filter(([, one]) => one.checked.billDay !== null));
-  const movements = [
-    ...collectPayments(checked, bills, to, input.holidays),
-    ...[...worked.values()].flatMap(budgetMovements),
-  ];
-
-  const works = new Map<string, AccountWork>();
-  for (const account of accounts.values()) {
-    const start = starts.get(account.id) as Start;
-    works.set(account.id, workOutAccount(account, start, movements, accountOfUpdate, today, to));
-  }
+  const { worked, works } = workOutAccounts(checked, pay, input.holidays, today, to);
 
   // A pay-later bill as the budget shows it (D32, D111).
   const preparedById = new Map(prepared.map((one) => [one.series.id, one]));
@@ -923,6 +976,14 @@ export function workOutPlan(input: PlanInput): Plan {
   const budgetPlans = [...worked.values()].map((one) => budgetPlanOf(one, billOf(one)));
 
   const nextMainPayday = main?.firstAfter(today) ?? null;
+  // Left to spend always looks as far as the day before the next main
+  // payday, however far the plan looks (D143). When that's further, the
+  // accounts are worked out again to that day for it alone.
+  const window = leftToSpendWindow(main, nextMainPayday, today);
+  const forLeftToSpend =
+    window !== null && window.last > to
+      ? workOutAccounts(checked, pay, input.holidays, today, window.last).works
+      : works;
   const accountPlans: AccountPlan[] = [...works.values()].map((work) => {
     const { lowestPoint, firstUnderWarning } = lowestAndFirstUnder(work, today);
     const payLater: PayLaterLeft[] = budgetPlans.flatMap(({ budget, current }) =>
@@ -941,7 +1002,12 @@ export function workOutPlan(input: PlanInput): Plan {
       lowestPoint,
       firstUnderWarning,
       shortfalls: findShortfalls(work, works, main, today, to),
-      leftToSpend: leftToSpendOf(work, nextMainPayday, today, to, payLater),
+      leftToSpend: leftToSpendOf(
+        forLeftToSpend.get(work.account.id) as AccountWork,
+        window,
+        today,
+        payLater,
+      ),
     };
   });
 
@@ -950,6 +1016,7 @@ export function workOutPlan(input: PlanInput): Plan {
     to: formatDate(to),
     mainPay: main === null ? 'none' : main.kind,
     nextMainPayday: nextMainPayday === null ? null : formatDate(nextMainPayday),
+    mainPayEnded: main !== null && nextMainPayday === null,
     mainPaydays: mainPaydayList(main, today, to).map(formatDate),
     accounts: accountPlans,
     budgets: budgetPlans,
