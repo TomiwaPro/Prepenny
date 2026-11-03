@@ -93,6 +93,15 @@ function mod(a: number, b: number): number {
 }
 
 /**
+ * The step of an amount pattern that payment number k is on:
+ * (k + offset) mod length (brief 5.3). Each part is taken mod the length
+ * first, so a large offset can't lose precision.
+ */
+export function stepOf(number: number, offset: number, length: number): number {
+  return mod(mod(number, length) + mod(offset, length), length);
+}
+
+/**
  * The payment at a local index of a prepared series. In order (brief 5.3, D4,
  * D38): the date from the schedule; the amount from the change, else the last
  * amount on the last payment, else the pattern, else the series amount; then
@@ -121,7 +130,7 @@ export function paymentAtIndex(
   } else if (isLast && series.lastAmount !== undefined) {
     amount = series.lastAmount;
   } else if (cycle !== null) {
-    amount = cycle[mod(number + prepared.cycleOffset, cycle.length)] as Pence;
+    amount = cycle[stepOf(number, prepared.cycleOffset, cycle.length)] as Pence;
   } else {
     amount = series.amount;
   }

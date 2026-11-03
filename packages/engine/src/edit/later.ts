@@ -4,7 +4,7 @@
 
 import { addDays, type Day, formatDate, parseDate } from '../dates/day.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
-import { paymentAtIndex } from '../schedule/payments.ts';
+import { paymentAtIndex, stepOf } from '../schedule/payments.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
 import type { EndRule, PaymentChange, Schedule, Series } from '../schedule/types.ts';
 import {
@@ -221,7 +221,7 @@ function withStepAmount(series: Series, j: number, length: number, amount: Pence
   }
   const offset = series.amountCycle === undefined ? 0 : (series.cycleOffset ?? 0);
   const next = [...cycle];
-  next[mod(j + offset, length)] = amount;
+  next[stepOf(j, offset, length)] = amount;
   return {
     amountCycle: next,
     cycleOffset: series.amountCycle === undefined ? undefined : series.cycleOffset,
@@ -551,7 +551,13 @@ export function thisAndLater(
   newOtherHalfSeriesId: string | undefined,
 ): void {
   const found = findPayment(context, ref);
-  const edits = checkEdits(rawEdits, `Series ${ref.seriesId}`);
+  const checked = checkEdits(rawEdits, `Series ${ref.seriesId}`);
+  // The payment's own date from its schedule, with no new schedule, isn't a
+  // new date: nothing about the dates is changed or replaced (D60, D91).
+  const edits =
+    checked.day === found.payment.originalDay && checked.schedule === undefined
+      ? { ...checked, day: undefined }
+      : checked;
   if (edits.stepAmount !== undefined && found.prepared.cycle === null) {
     refuse(
       'no-pattern',
