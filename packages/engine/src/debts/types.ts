@@ -188,6 +188,12 @@ export interface CardComparisonInput {
   readonly paysOn: number;
   /** The fixed amount to compare, paid every month. */
   readonly fixed: MinorUnits;
+  /**
+   * The card's payment due on `from` is ticked, so `left` already has it
+   * taken off. Left out or false, a payment due on `from` counts as the
+   * first payment, as the bank balance counts it until it's ticked (D146).
+   */
+  readonly paidOnFrom?: boolean;
 }
 
 /** How one way of paying works out. Numbers only (brief Part 3, principle 10). */
