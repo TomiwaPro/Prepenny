@@ -1,6 +1,6 @@
 // Draws the home-screen icons from public/icons/icon.svg (brief 7.1): a navy
-// square with a cream penny, and a navy line that dips to its lowest point
-// and rises again. Run once after changing the drawing, then commit the PNGs:
+// square with a cream penny, and a navy line that dips to its lowest point,
+// marked with a brass dot (D177), and rises again. Run once after changing the drawing, then commit the PNGs:
 //
 //   node scripts/make-icons.ts
 //
