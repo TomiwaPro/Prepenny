@@ -19,8 +19,14 @@ html {
 }
 
 /* And clear of the undo bar above it while it shows, however big the text (WCAG 2.4.11). */
-html:has([data-undo-bar="floating"]) {
+html:has([data-undo-bar="floating"]),
+html:has([data-bottom-notes] :is([data-undo-bar], [data-update-note])) {
   scroll-padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 8rem);
+}
+
+/* The update note and the undo bar together (D202). */
+html:has([data-bottom-notes] [data-undo-bar]):has([data-bottom-notes] [data-update-note]) {
+  scroll-padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 12rem);
 }
 
 body {

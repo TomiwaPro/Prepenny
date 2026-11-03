@@ -12,6 +12,7 @@ import { BottomNav } from './BottomNav.tsx';
 import { ExampleBanner, OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlan, usePlanActions } from './PlanProvider.tsx';
 import { UndoBar } from './UndoBar.tsx';
+import { UpdateNote, useUpdated } from './UpdateNote.tsx';
 
 function Notes() {
   const state = usePlan();
@@ -65,6 +66,7 @@ function ChangeBar() {
         <UndoBar
           key={refused === null ? lastChange.id : `${lastChange.id} refused`}
           announce={false}
+          placement="inline"
           message={message}
           {...(canUndo
             ? {
@@ -84,8 +86,11 @@ function ChangeBar() {
 
 function Column({ children }: { readonly children: ReactNode }) {
   const { lastChange } = usePlanActions();
+  const updated = useUpdated();
   return (
-    <div className={`${styles.column} ${lastChange === null ? '' : styles.withBar}`}>
+    <div
+      className={`${styles.column} ${lastChange === null && !updated ? '' : styles.withBar} ${lastChange !== null && updated ? styles.withBoth : ''}`}
+    >
       <Notes />
       <main className={styles.main}>{children}</main>
     </div>
@@ -96,7 +101,11 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
   return (
     <PlanProvider>
       <Column>{children}</Column>
-      <ChangeBar />
+      {/* Above the navigation: the update note, then the undo bar (D186, D202). */}
+      <div className={styles.bottom} data-bottom-notes>
+        <UpdateNote />
+        <ChangeBar />
+      </div>
       <BottomNav />
     </PlanProvider>
   );
