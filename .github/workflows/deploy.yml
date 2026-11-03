@@ -1,0 +1,100 @@
+name: Deploy
+
+# Puts the app online with Cloudflare Workers (D68): the live app on every
+# push to main, and a preview link for every pull request, posted on it.
+# Needs two secrets, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: see
+# "Putting PrePenny online" in README.md. Until they're added, it builds the
+# app and says plainly that nothing was put online.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Put the app online
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Pull requests from other people's copies of the repository never get the secrets.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up pnpm (the version in package.json)
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Build the app
+        run: pnpm build
+
+      - name: Check Cloudflare is set up
+        id: cloudflare
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::warning title=Not put online::Cloudflare isn't set up yet, so nothing was put online. Follow 'Putting PrePenny online' in README.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Put the live app online (main)
+        if: steps.cloudflare.outputs.ready == 'true' && github.event_name != 'pull_request'
+        working-directory: apps/web
+        run: pnpm exec wrangler deploy --message "Commit ${GITHUB_SHA::7}"
+
+      - name: Upload a preview of this pull request
+        id: preview
+        if: steps.cloudflare.outputs.ready == 'true' && github.event_name == 'pull_request'
+        working-directory: apps/web
+        env:
+          NUMBER: ${{ github.event.number }}
+        run: |
+          # A preview needs the app to exist on Cloudflare. The very first
+          # time, before anything has been merged, put it online once.
+          if ! pnpm exec wrangler deployments list > /dev/null 2>&1; then
+            pnpm exec wrangler deploy --message "First version, from pull request $NUMBER"
+          fi
+          pnpm exec wrangler versions upload --preview-alias "pr-$NUMBER" --message "Pull request $NUMBER" | tee upload.log
+          url=$(grep -oE "https://pr-$NUMBER-[a-z0-9.-]+\.workers\.dev" upload.log | head -n 1)
+          if [ -z "$url" ]; then
+            url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' upload.log | head -n 1)
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Post the preview link on the pull request
+        if: steps.preview.outputs.url != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.number }}
+          URL: ${{ steps.preview.outputs.url }}
+        run: |
+          body="Preview of this pull request: $URL/app/
+
+          Open it on your phone to try it. It updates with every new commit."
+          gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" \
+            || gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"
