@@ -1,0 +1,38 @@
+// A list of choices with a legend, one of which is picked (radio buttons):
+// each row is at least 44px tall and the whole row can be tapped.
+
+import styles from './ChoiceList.module.css';
+
+export interface ChoiceListProps<T extends string> {
+  readonly legend: string;
+  readonly name: string;
+  readonly value: T;
+  readonly options: readonly { readonly value: T; readonly label: string }[];
+  readonly onChange: (value: T) => void;
+}
+
+export function ChoiceList<T extends string>({
+  legend,
+  name,
+  value,
+  options,
+  onChange,
+}: ChoiceListProps<T>) {
+  return (
+    <fieldset className={styles.choice}>
+      <legend className={styles.legend}>{legend}</legend>
+      {options.map((option) => (
+        <label key={option.value} className={styles.option}>
+          <input
+            type="radio"
+            name={name}
+            value={option.value}
+            checked={value === option.value}
+            onChange={() => onChange(option.value)}
+          />
+          <span>{option.label}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}

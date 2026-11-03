@@ -1,9 +1,11 @@
 // Every figure Home shows for Sam's example plan on Sun 25 Oct 2026 (brief
 // 4.9, the Home sketch in ARCHITECTURE.md 4.6, brief 8.3, D3, D8).
 
+import type { PlanRecords } from '@prepenny/engine';
 import { describe, expect, it } from 'vitest';
 import { examplePlan } from '../../data/example-plan.ts';
-import { homeAccountId, planLookAhead, workOutHome } from '../../lib/home.ts';
+import { homeAccountId, workOutHome, workOutHomePlan } from '../../lib/home.ts';
+import { planLookAhead, workOutPlanTo } from '../../lib/plan-input.ts';
 
 const home = workOutHome(examplePlan, '2026-10-25');
 
@@ -72,8 +74,42 @@ describe('Home for Sam’s example plan', () => {
     expect(new Set(home.nextDue.map((row) => row.key)).size).toBe(3);
   });
 
-  it('looks 3 months ahead, to Mon 25 Jan 2027 (D167)', () => {
-    expect(home.lookAheadTo).toBe('2027-01-25');
+  it('looks 12 months ahead, to Mon 25 Oct 2027 (D178)', () => {
+    expect(home.lookAheadTo).toBe('2027-10-25');
+  });
+
+  it('opens each of the next three due in the edit sheet as a whole payment', () => {
+    expect(
+      home.nextDue.map(({ seriesId, originalDate, editing, amount, nextPayday }) => ({
+        seriesId,
+        originalDate,
+        editing,
+        amount,
+        nextPayday,
+      })),
+    ).toEqual([
+      {
+        seriesId: 'spending-until-payday',
+        originalDate: '2026-10-25',
+        editing: 'payment',
+        amount: 3000,
+        nextPayday: '2026-10-30',
+      },
+      {
+        seriesId: 'family-loan-first',
+        originalDate: '2026-10-26',
+        editing: 'payment',
+        amount: 12500,
+        nextPayday: '2026-10-30',
+      },
+      {
+        seriesId: 'driving-lessons',
+        originalDate: '2026-10-26',
+        editing: 'payment',
+        amount: 10000,
+        nextPayday: '2026-10-30',
+      },
+    ]);
   });
 
   it('uses the account the main pay arrives in', () => {
@@ -81,10 +117,49 @@ describe('Home for Sam’s example plan', () => {
   });
 });
 
-describe('planLookAhead (D167)', () => {
-  it('looks to the same date 3 months on, or that month’s last day', () => {
-    expect(planLookAhead('2026-10-25')).toBe('2027-01-25');
-    expect(planLookAhead('2026-11-30')).toBe('2027-02-28');
-    expect(planLookAhead('2027-11-30')).toBe('2028-02-29');
+describe('planLookAhead (D167, D178)', () => {
+  it('looks to the same date some months on, or that month’s last day', () => {
+    expect(planLookAhead('2026-10-25', 3)).toBe('2027-01-25');
+    expect(planLookAhead('2026-11-30', 3)).toBe('2027-02-28');
+    expect(planLookAhead('2027-11-30', 3)).toBe('2028-02-29');
+    expect(planLookAhead('2026-10-25', 12)).toBe('2027-10-25');
+    expect(planLookAhead('2028-02-29', 12)).toBe('2029-02-28');
+  });
+});
+
+describe('Home looks 12 months ahead, so a yearly bill is never missed (D178)', () => {
+  it('warns about a bill 11 months away that 3 months would miss', () => {
+    // A yearly bill on Mon 20 Sep 2027 of £100.00 more than Sam will have that day.
+    const before = workOutHomePlan(examplePlan, '2026-10-25');
+    const current = before.accounts.find((one) => one.account.id === 'current');
+    const balance = current?.days.find((one) => one.date === '2027-09-20')?.balance ?? 0;
+    expect(balance).toBeGreaterThan(0);
+    const yearly: PlanRecords = {
+      ...examplePlan,
+      series: [
+        ...examplePlan.series,
+        {
+          id: 'car-insurance',
+          familyId: 'car-insurance',
+          familyCreatedAt: '2026-10-25T09:00:00Z',
+          accountId: 'current',
+          name: 'Car insurance',
+          direction: 'out',
+          type: 'bills',
+          amount: balance + 10000,
+          start: '2027-09-20',
+          schedule: { kind: 'monthly', every: 12, on: { kind: 'day', day: 20 } },
+          end: { kind: 'never' },
+          holidayRule: 'keep',
+          isEstimate: false,
+        },
+      ],
+    };
+    const later = workOutHome(yearly, '2026-10-25');
+    expect(later.lowest.status).toBe('short');
+    expect(later.lowest.short).toEqual({ amount: 10000, date: '2027-09-20' });
+    // Looking only 3 months ahead, it wouldn't show.
+    const threeMonths = workOutPlanTo(yearly, '2026-10-25', planLookAhead('2026-10-25', 3));
+    expect(threeMonths.accounts[0]?.lowestPoint.balance).toBe(453);
   });
 });

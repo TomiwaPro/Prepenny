@@ -8,11 +8,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { allRecords } from '../../../../packages/engine/test/fixtures/from-empty.ts';
 import { englandAndWales } from '../../../../packages/engine/test/fixtures/holidays.ts';
 import {
+  exampleNeedsReplacing,
   loadRecords,
   openDb,
   type PrePennyDb,
   recordsOf,
   rowsOf,
+  saveChange,
   savePlan,
   saveWrites,
 } from '../../data/db.ts';
@@ -149,5 +151,28 @@ describe('the phone’s database', () => {
     expect((await loadRecords(db, EXAMPLE_PLAN_ID)).ticks).toHaveLength(1);
     await saveWrites(db, EXAMPLE_PLAN_ID, edit.undo);
     expect((await loadRecords(db, EXAMPLE_PLAN_ID)).ticks).toEqual([]);
+  });
+});
+
+describe('Changing the example on this phone (D182)', () => {
+  it('saves a change with its writes, and marks the example as changed', async () => {
+    await savePlan(db, examplePlanRecord, examplePlan);
+    const edit = editPlan(editInput(examplePlan, '2026-10-25'), {
+      kind: 'remove-this-one',
+      seriesId: 'driving-lessons',
+      originalDate: '2026-10-26',
+    });
+    const saved = await saveChange(db, examplePlanRecord, edit.writes);
+    expect(saved.edited).toBe(true);
+    expect(await db.plans.get(EXAMPLE_PLAN_ID)).toEqual({ ...examplePlanRecord, edited: true });
+    expect(await loadRecords(db, EXAMPLE_PLAN_ID)).toEqual(applyWrites(examplePlan, edit.writes));
+  });
+
+  it('replaces an unchanged older example, and keeps a changed one', () => {
+    expect(exampleNeedsReplacing(undefined, EXAMPLE_VERSION)).toBe(true);
+    expect(exampleNeedsReplacing(examplePlanRecord, EXAMPLE_VERSION)).toBe(false);
+    const older = { ...examplePlanRecord, exampleVersion: 'older' };
+    expect(exampleNeedsReplacing(older, EXAMPLE_VERSION)).toBe(true);
+    expect(exampleNeedsReplacing({ ...older, edited: true }, EXAMPLE_VERSION)).toBe(false);
   });
 });

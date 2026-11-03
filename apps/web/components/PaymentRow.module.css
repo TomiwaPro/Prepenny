@@ -1,10 +1,32 @@
+.item {
+  border-top: 1px solid var(--divider);
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
   padding: var(--space-2) 0;
-  border-top: 1px solid var(--divider);
+}
+
+/* The whole row as a button that opens the edit sheet: it looks like the row. */
+.button {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: var(--radius-inner);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+
+@media (hover: hover) {
+  .button:hover .name {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 
 .tile {
@@ -45,9 +67,14 @@
   font-weight: 600;
 }
 
-.second {
+.second,
+.third {
   font-size: var(--size-small);
   color: var(--ink-muted);
+}
+
+.third {
+  font-weight: 600;
 }
 
 .right {

@@ -36,3 +36,11 @@ export function dateTile(date: string): { readonly day: string; readonly month: 
   const parts = partsOf(date);
   return { day: parts.day.toString(), month: monthName(parts.month) };
 }
+
+/** A calendar month's heading: "October", or "January 2027" when it isn't in today's year. */
+export function formatMonth(date: string, today: string): string {
+  const parts = partsOf(date);
+  const name = strings.dates.monthsLong[parts.month - 1];
+  if (name === undefined) throw new RangeError(`No month ${parts.month}.`);
+  return parts.year === partsOf(today).year ? name : `${name}${KEEP_TOGETHER}${parts.year}`;
+}
