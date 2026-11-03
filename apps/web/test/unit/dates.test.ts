@@ -4,29 +4,37 @@ import { EXAMPLE_TODAY, localToday, todayFor } from '../../lib/today.ts';
 
 const today = '2026-10-25';
 
+/** The same date with non-breaking spaces, as formatDay writes it. */
+const nb = (text: string) => text.replaceAll(' ', '\u00a0');
+
 describe('formatDay (brief Part 6, VOICE.md)', () => {
   it('writes a date as "Fri 30 Oct"', () => {
-    expect(formatDay('2026-10-30', today)).toBe('Fri 30 Oct');
-    expect(formatDay('2026-10-25', today)).toBe('Sun 25 Oct');
-    expect(formatDay('2026-11-01', today)).toBe('Sun 1 Nov');
-    expect(formatDay('2026-10-26', today)).toBe('Mon 26 Oct');
-    expect(formatDay('2026-10-29', today)).toBe('Thu 29 Oct');
+    expect(formatDay('2026-10-30', today)).toBe(nb('Fri 30 Oct'));
+    expect(formatDay('2026-10-25', today)).toBe(nb('Sun 25 Oct'));
+    expect(formatDay('2026-11-01', today)).toBe(nb('Sun 1 Nov'));
+    expect(formatDay('2026-10-26', today)).toBe(nb('Mon 26 Oct'));
+    expect(formatDay('2026-10-29', today)).toBe(nb('Thu 29 Oct'));
   });
 
   it('adds the year only when it isn’t this year', () => {
-    expect(formatDay('2027-01-01', today)).toBe('Fri 1 Jan 2027');
-    expect(formatDay('2027-08-23', today)).toBe('Mon 23 Aug 2027');
-    expect(formatDay('2025-12-31', today)).toBe('Wed 31 Dec 2025');
-    expect(formatDay('2027-01-01', '2027-03-04')).toBe('Fri 1 Jan');
+    expect(formatDay('2027-01-01', today)).toBe(nb('Fri 1 Jan 2027'));
+    expect(formatDay('2027-08-23', today)).toBe(nb('Mon 23 Aug 2027'));
+    expect(formatDay('2025-12-31', today)).toBe(nb('Wed 31 Dec 2025'));
+    expect(formatDay('2027-01-01', '2027-03-04')).toBe(nb('Fri 1 Jan'));
+  });
+
+  it('keeps a date on one line, with non-breaking spaces between its parts', () => {
+    expect(formatDay('2026-10-30', today)).toBe('Fri\u00a030\u00a0Oct');
+    expect(formatDay('2026-10-30', today)).not.toContain(' ');
   });
 
   it('gets every weekday right, leap days included', () => {
-    expect(formatDay('2028-02-29', today)).toBe('Tue 29 Feb 2028');
-    expect(formatDay('2026-12-28', today)).toBe('Mon 28 Dec');
-    expect(formatDay('2026-12-24', today)).toBe('Thu 24 Dec');
-    expect(formatDay('2026-11-07', today)).toBe('Sat 7 Nov');
-    expect(formatDay('2026-11-17', today)).toBe('Tue 17 Nov');
-    expect(formatDay('2026-11-18', today)).toBe('Wed 18 Nov');
+    expect(formatDay('2028-02-29', today)).toBe(nb('Tue 29 Feb 2028'));
+    expect(formatDay('2026-12-28', today)).toBe(nb('Mon 28 Dec'));
+    expect(formatDay('2026-12-24', today)).toBe(nb('Thu 24 Dec'));
+    expect(formatDay('2026-11-07', today)).toBe(nb('Sat 7 Nov'));
+    expect(formatDay('2026-11-17', today)).toBe(nb('Tue 17 Nov'));
+    expect(formatDay('2026-11-18', today)).toBe(nb('Wed 18 Nov'));
   });
 
   it('refuses a date that isn’t a real calendar date', () => {

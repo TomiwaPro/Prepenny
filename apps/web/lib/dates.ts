@@ -17,12 +17,18 @@ function monthName(month: number): string {
   return name;
 }
 
-/** "Fri 30 Oct", or "Fri 1 Jan 2027" when the date isn't in today's year. */
+/** Between the parts of a date, so "Fri 30 Oct" never splits across two lines. */
+const KEEP_TOGETHER = '\u00a0';
+
+/**
+ * "Fri 30 Oct", or "Fri 1 Jan 2027" when the date isn't in today's year. The
+ * parts are joined with non-breaking spaces, so a date stays on one line.
+ */
 export function formatDay(date: string, today: string): string {
   const parts = partsOf(date);
-  const weekdayName = strings.dates.weekdays[parts.weekday - 1];
-  const text = `${weekdayName} ${parts.day} ${monthName(parts.month)}`;
-  return parts.year === partsOf(today).year ? text : `${text} ${parts.year}`;
+  const words = [strings.dates.weekdays[parts.weekday - 1], parts.day, monthName(parts.month)];
+  if (parts.year !== partsOf(today).year) words.push(parts.year);
+  return words.join(KEEP_TOGETHER);
 }
 
 /** The date tile on a payment row: the day number over the month (DESIGN.md). */
