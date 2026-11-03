@@ -135,7 +135,11 @@ export function paymentAtIndex(
     amount = series.amount;
   }
 
-  const ruleDay = applyHolidayRule(originalDay, series.holidayRule, holidays);
+  // The last working day lands on the working day on or before the month's
+  // last day, its original date, whatever the series' rule (D145).
+  const ruleDay = prepared.lastWorkingDay
+    ? workingDayOnOrBefore(originalDay, holidays)
+    : applyHolidayRule(originalDay, series.holidayRule, holidays);
   const newDay = found?.newDay ?? null;
   const isEstimate = change?.isEstimate ?? series.isEstimate;
   // "I did overtime" and "I missed a shift" change a payday only while it's
@@ -159,7 +163,8 @@ export function paymentAtIndex(
     type: series.type,
     isEstimate,
     isLast,
-    movedByRule: ruleDay !== originalDay,
+    // Landing on the last working day is the schedule itself, not a move (D145).
+    movedByRule: !prepared.lastWorkingDay && ruleDay !== originalDay,
     moved: newDay !== null && newDay !== ruleDay,
     skipped: change?.skipped ?? false,
     changed: change !== undefined,

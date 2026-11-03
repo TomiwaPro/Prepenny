@@ -11,7 +11,7 @@ import {
   weekdayOfMonth,
 } from '../dates/day.ts';
 import { parseTime } from '../dates/time.ts';
-import { type BankHolidayLookup, lastWorkingDayOfMonth } from '../dates/working-days.ts';
+import type { BankHolidayLookup } from '../dates/working-days.ts';
 import { EngineInputError } from '../errors.ts';
 import { parseDecimal, powerOfTen } from '../money/decimal.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
@@ -42,6 +42,13 @@ export interface PreparedSeries {
    * family's last, so it isn't "last" and doesn't take a different last amount.
    */
   readonly continues: boolean;
+  /**
+   * Paid on the last working day of each month. Its original date is the
+   * month's last day, so a new bank holiday never moves a tick or a change
+   * to another day, and it lands on the working day on or before it,
+   * whatever the series' weekend and bank holiday rule (D145).
+   */
+  readonly lastWorkingDay: boolean;
   /** The original date of the payment at this index, worked out from the start. */
   dateAt(index: number): Day;
   /** The index of the first payment whose original date is on or after `day`. */
@@ -151,7 +158,6 @@ function monthly(
   every: number,
   on: MonthlyDay,
   leaveOut: readonly number[],
-  holidays: BankHolidayLookup,
 ): DatesOfSchedule {
   // The schedule's date in a month, worked out for that month alone (brief 5.3).
   const dateInMonth = (monthValue: number): Day => {
@@ -160,9 +166,10 @@ function monthly(
       case 'day':
         return dayOfMonthOrLast(year, month, on.day);
       case 'last-day':
-        return lastDayOfMonth(year, month);
+      // The last working day is stored against the month's last day, and
+      // lands on the working day on or before it (D145).
       case 'last-working-day':
-        return lastWorkingDayOfMonth(year, month, holidays);
+        return lastDayOfMonth(year, month);
       case 'weekday':
         return weekdayOfMonth(year, month, on.weekday, on.position);
     }
@@ -215,12 +222,7 @@ function monthly(
   };
 }
 
-function datesOf(
-  series: Series,
-  start: Day,
-  schedule: Schedule,
-  holidays: BankHolidayLookup,
-): DatesOfSchedule {
+function datesOf(series: Series, start: Day, schedule: Schedule): DatesOfSchedule {
   const id = series.id;
   switch (schedule?.kind) {
     case 'once':
@@ -238,7 +240,7 @@ function datesOf(
       for (const month of leaveOut) {
         checkWholeNumber(id, month, 1, 12, 'A month to leave out');
       }
-      return monthly(id, start, every, checkMonthlyDay(id, schedule.on), leaveOut, holidays);
+      return monthly(id, start, every, checkMonthlyDay(id, schedule.on), leaveOut);
     }
     case 'dates':
       return chosenDates(id, start, schedule.dates);
@@ -394,12 +396,15 @@ function checkSeries(series: Series): void {
  * dates, so the weekend and bank holiday rule and moved dates never add or
  * remove a payment (D78).
  */
-export function prepareSeries(series: Series, holidays: BankHolidayLookup): PreparedSeries {
+export function prepareSeries(series: Series, _holidays: BankHolidayLookup): PreparedSeries {
+  // Original dates never depend on bank holidays (D145): the weekend and
+  // bank holiday rule is applied to each payment afterwards. The holidays
+  // stay a parameter so every caller prepares a series the same way.
   checkSeries(series);
   const id = series.id;
   const start = parseDate(series.start, `Series ${id}: the start`);
   const firstNumber = series.firstNumber ?? 0;
-  const dates = datesOf(series, start, series.schedule, holidays);
+  const dates = datesOf(series, start, series.schedule);
 
   let count = dates.count;
   const end = series.end;
@@ -435,6 +440,8 @@ export function prepareSeries(series: Series, holidays: BankHolidayLookup): Prep
     cycleOffset: series.cycleOffset ?? 0,
     count,
     continues: false,
+    lastWorkingDay:
+      series.schedule.kind === 'monthly' && series.schedule.on.kind === 'last-working-day',
     dateAt: dates.dateAt,
     firstIndexOnOrAfter: dates.firstIndexOnOrAfter,
   };

@@ -3,6 +3,7 @@
 // the family, so a payment split off earlier is changed or removed too.
 
 import { addDays, type Day, formatDate, parseDate } from '../dates/day.ts';
+import { workingDayOnOrBefore } from '../dates/working-days.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { paymentAtIndex, stepOf } from '../schedule/payments.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
@@ -553,11 +554,14 @@ export function thisAndLater(
   const found = findPayment(context, ref);
   const checked = checkEdits(rawEdits, `Series ${ref.seriesId}`);
   // The payment's own date from its schedule, with no new schedule, isn't a
-  // new date: nothing about the dates is changed or replaced (D60, D91).
-  const edits =
-    checked.day === found.payment.originalDay && checked.schedule === undefined
-      ? { ...checked, day: undefined }
-      : checked;
+  // new date: nothing about the dates is changed or replaced (D60, D91). For
+  // pay on the last working day, that's the working day it lands on as well
+  // as the month's last day it's stored against (D145).
+  const ownDay =
+    checked.day === found.payment.originalDay ||
+    (found.prepared.lastWorkingDay &&
+      checked.day === workingDayOnOrBefore(found.payment.originalDay, context.input.holidays));
+  const edits = ownDay && checked.schedule === undefined ? { ...checked, day: undefined } : checked;
   if (edits.stepAmount !== undefined && found.prepared.cycle === null) {
     refuse(
       'no-pattern',
