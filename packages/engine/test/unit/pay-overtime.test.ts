@@ -549,3 +549,68 @@ describe('D130: a change to the extras with "I missed a shift" or "I did overtim
     );
   });
 });
+
+describe('D136: pay weeks after a new amount for this and all later ones', () => {
+  const plan = samPayPlan();
+
+  it('drops the pattern’s pay weeks with the pattern, so I did overtime asks for the usual hours', () => {
+    // "Every payday from now" £600.00 from Fri 4 Dec (D90).
+    const { after } = edited(plan, {
+      kind: 'this-and-later',
+      seriesId: 'pay',
+      originalDate: '2026-12-04',
+      edits: { amount: pounds('600.00') },
+      newSeriesId: 'pay-from-december',
+    });
+    const fromDecember = after.series.find((one) => one.id === 'pay-from-december');
+    expect([fromDecember?.amountCycle, fromDecember?.cyclePayWeeks]).toEqual([
+      undefined,
+      undefined,
+    ]);
+    // Paydays before it keep their pay weeks: Fri 6 Nov is still worked out from week 27.
+    expect(adjustmentOf(edited(after, overtimeOn26Oct).after).change).toBe(pounds('155.12'));
+    // From Fri 4 Dec there's no pay week to work it out from (D5).
+    expect(() => editPlan(after, { ...overtimeOn26Oct, workedOn: '2026-12-01' })).toThrow(
+      expect.objectContaining({ code: 'no-pay-week' }),
+    );
+  });
+
+  it('keeps one pay week on every step when only this week of the pattern changes (D97)', () => {
+    // Sam's pay with its pattern to Thu 3 Dec, then one amount from Fri 4 Dec
+    // (payment 5) that's worked out from week 27 every payday.
+    const {
+      amountCycle: _pattern,
+      cycleOffset: _offset,
+      ...pay
+    } = plan.series.find((one) => one.id === 'pay') as Series;
+    const split = samPayPlan({
+      series: [
+        ...plan.series.map((one) =>
+          one.id === 'pay' ? { ...one, end: { kind: 'on' as const, date: '2026-12-03' } } : one,
+        ),
+        {
+          ...pay,
+          id: 'pay-from-december',
+          amount: pounds('600.00'),
+          cyclePayWeeks: ['week-27'],
+          start: '2026-12-04',
+          firstNumber: 5,
+          splitFrom: 'pay',
+        },
+      ],
+    });
+    // Only this week of the pattern, from Fri 6 Nov: £640.00 on its step.
+    const { after } = edited(split, {
+      kind: 'this-and-later',
+      seriesId: 'pay',
+      originalDate: '2026-11-06',
+      edits: { stepAmount: pounds('640.00') },
+      newSeriesId: 'pay-step',
+    });
+    const later = after.series.find((one) => one.id === 'pay-from-december');
+    // Its one amount becomes a pattern of four, and its one pay week goes with every step.
+    expect(later?.amountCycle).toHaveLength(4);
+    expect(later?.cyclePayWeeks).toEqual(['week-27', 'week-27', 'week-27', 'week-27']);
+    expect(() => workOutPlan(after as PlanInput)).not.toThrow();
+  });
+});

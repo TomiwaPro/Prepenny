@@ -398,12 +398,21 @@ function changeStretch(
       next.amount = edits.amount;
       next.amountCycle = undefined;
       next.cycleOffset = undefined;
+      // A pay week for each step of the pattern goes with the pattern: with
+      // one amount, no step's week can be assumed, so "I did overtime" asks
+      // once for the usual hours and rate (D5, D136).
+      if ((series.cyclePayWeeks?.length ?? 0) > 1) next.cyclePayWeeks = undefined;
       if (holdsThisPayment && editedIsLast) next.lastAmount = undefined;
     }
     if (edits.stepAmount !== undefined) {
       const { amountCycle, cycleOffset } = withStepAmount(series, j, stepLength, edits.stepAmount);
       next.amountCycle = amountCycle;
       next.cycleOffset = cycleOffset;
+      // One amount made into a pattern keeps its one pay week on every step (D136).
+      const weeks = series.cyclePayWeeks;
+      if (series.amountCycle === undefined && weeks?.length === 1) {
+        next.cyclePayWeeks = amountCycle.map(() => weeks[0] as string);
+      }
       // As with every payday from now (D90): the different last amount stays,
       // unless this is the last payment.
       if (holdsThisPayment && editedIsLast) next.lastAmount = undefined;
