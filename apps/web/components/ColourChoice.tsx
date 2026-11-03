@@ -4,12 +4,9 @@
 // phone, or always light, or always dark. Kept in this phone's browser only.
 
 import { useEffect, useId, useState } from 'react';
+import { applyColours, type ColourChoice as Choice, COLOURS_KEY } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './ColourChoice.module.css';
-
-const KEY = 'prepenny-colours';
-
-type Choice = 'phone' | 'light' | 'dark';
 
 const choices: readonly { readonly value: Choice; readonly label: string }[] = [
   { value: 'phone', label: strings.more.matchPhone },
@@ -19,7 +16,7 @@ const choices: readonly { readonly value: Choice; readonly label: string }[] = [
 
 function stored(): Choice {
   try {
-    const value = localStorage.getItem(KEY);
+    const value = localStorage.getItem(COLOURS_KEY);
     return value === 'light' || value === 'dark' ? value : 'phone';
   } catch {
     return 'phone';
@@ -27,12 +24,10 @@ function stored(): Choice {
 }
 
 function apply(choice: Choice) {
-  const root = document.documentElement;
-  if (choice === 'phone') delete root.dataset.theme;
-  else root.dataset.theme = choice;
+  applyColours(choice);
   try {
-    if (choice === 'phone') localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, choice);
+    if (choice === 'phone') localStorage.removeItem(COLOURS_KEY);
+    else localStorage.setItem(COLOURS_KEY, choice);
   } catch {
     // The choice still applies until the app is closed.
   }

@@ -5,6 +5,7 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { PAPER } from '../../lib/theme.ts';
 
 const css = readFileSync(new URL('../../styles/tokens.css', import.meta.url), 'utf8').replaceAll(
   '"',
@@ -119,6 +120,10 @@ describe('the tokens', () => {
       'short-text': '#a1281e',
       'short-bg': '#fbe4e1',
     });
+  });
+
+  it('give the browser bar the same paper colours', () => {
+    expect(PAPER).toEqual({ light: light.paper, dark: dark.paper });
   });
 
   it('give dark mode a value for every colour role, the same both ways in', () => {

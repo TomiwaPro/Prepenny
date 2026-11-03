@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 import { ServiceWorker } from '../components/ServiceWorker.tsx';
+import { coloursScript, PAPER } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
 import '../styles/tokens.css';
 import '../styles/globals.css';
@@ -55,14 +56,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f4efe6' },
-    { media: '(prefers-color-scheme: dark)', color: '#0e1424' },
+    { media: '(prefers-color-scheme: light)', color: PAPER.light },
+    { media: '(prefers-color-scheme: dark)', color: PAPER.dark },
   ],
 };
-
-// Picks Light or Dark before the page is drawn, when the person chose one on
-// the More screen, so the colours never flash. Kept on this phone only.
-const coloursScript = `try{var c=localStorage.getItem('prepenny-colours');if(c==='light'||c==='dark')document.documentElement.dataset.theme=c}catch(e){}`;
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (

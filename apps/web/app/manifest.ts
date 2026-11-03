@@ -2,6 +2,7 @@
 // /manifest.webmanifest, with its words from the strings file.
 
 import type { MetadataRoute } from 'next';
+import { PAPER } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
 
 export const dynamic = 'force-static';
@@ -17,8 +18,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/app/',
     scope: '/',
     display: 'standalone',
-    background_color: '#f4efe6',
-    theme_color: '#f4efe6',
+    background_color: PAPER.light,
+    theme_color: PAPER.light,
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
