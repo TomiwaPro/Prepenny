@@ -1892,3 +1892,103 @@ Agreed 3 Nov 2026, from the owner's review of step 2b. Adds to D15, D133 and D16
 - Decided in step 2c: today is still Sun 25 Oct 2026 in the example (D133), so ticks and moves are worked out for that day. The time stored with a tick is the phone's own clock, which only orders it after the example's balance update (D33).
 
 Why: the owner's answer. Someone trying the example shouldn't lose what they tried because the app was updated.
+
+## Made during step 2c
+
+D183 to D189 were decided on 3 Nov 2026 while building step 2c. Questions for the owner are in `PLAN.md`.
+
+### D183. The Plan screen shows whole periods, and its lowest point looks as far as Home's
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.8, D84 and D178.
+
+- Three months at first, and "Show another month" adds one, up to 24 (brief 4.8).
+- Pay periods: every pay period up to the date that many months after today, the last one in full, so "Left at the end" is always the true end of a period. Sam on Sun 25 Oct, 3 months: to Thu 28 Jan 2027.
+- Calendar months: the month with today in it and the next ones, that many in all: October, November and December for 3 months. Each shows its rows from today on (D84).
+- The first pay period is headed "Today to Thu 29 Oct", because its rows start today; the sketch's "This week" wouldn't be true for monthly pay. The others are "Fri 30 Oct to Thu 5 Nov", and months are "October" or "January 2027".
+- "Lowest point ahead" at the top looks as far as Home does, 12 months (D178), or as far as the plan is shown when that's further, so Home and the Plan screen never disagree. The row it's after says "Lowest point ahead" when it's on screen.
+- One account at a time, Home's account first (D168), with a switch between the open accounts.
+- "Not ticked yet" is above the periods, and only there when something is in it (D11).
+
+Why: brief 4.8 asks for three months and up to 24, but a period cut off part of the way through would show a "Left at the end" that isn't the end. The owner's test 2 lists October, November and December, then January and February after two taps.
+
+### D184. Filters only hide rows
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.8.
+
+- Show: Everything, Still to pay (going out and not ticked), Money in (coming in, money moved in from another account included), or Debt payments (linked to a debt, or of the type Debt, D79). And a type: all types, or one of the eight (D79). Together, a row has to match both.
+- Every figure stays the whole plan's: Came in, Left after this, Left at the end and the lowest point are worked out from every row, so a filter never changes a number. A period with nothing that matches says "Nothing here matches the filters."
+- "Showing only: Debt payments." and "Clear filters" sit under the Filters button while any filter is on.
+- The account is the switch at the top, not one of the filters.
+
+Why: a number that changed with a filter would no longer match the bank (brief Part 3, principle 1).
+
+### D185. Typing the real amount of an estimate
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.3 and 8.4 test 3.
+
+When the amount of an estimate is changed for just this one, "This is an estimate" unticks itself, because the real amount has arrived, and the sheet says how far it is from the estimate: "£21.54 more than the estimate." The person can tick the box again. For this and all later ones the box stays as it was, because a new amount for paydays still to come is still an estimate.
+
+Why: brief 4.3 says the person types the real amount when pay lands and sees the difference, and brief 8.4 test 3 (the owner's step 2c test 4) expects the payday to lose its Estimate label.
+
+### D186. The undo bar
+
+Decided 3 Nov 2026 in step 2c. Adds to brief Part 3, principle 4, D87 and ARCHITECTURE.md 4.5.
+
+- After every change the bar says what changed: "Rent changed for this and all later ones.", "Driving lesson moved to Fri 30 Oct.", "Family loan marked as paid.", "Driving lesson skipped.", "Rent removed for this and all later ones." and so on, with Undo. One tap undoes the whole change (D87), then it says "Change undone."
+- It stays until the next change, or until the person goes to another screen. There's no time limit, so nobody has to be quick (WCAG 2.2.1).
+- Only the last change can be undone from the bar. Older changes will be in Activity (brief 4.12).
+- When an undo is refused, the bar says why: "This can't be undone, because something it changed has been changed again since."
+- When the phone can't save a change, as in some private windows, the bar says: "This phone couldn't save it, so it will go when PrePenny closes."
+
+Why: brief Part 3, principle 4 asks for undo straight after any change, and a bar that vanished on a timer would be missed by someone slow to read it.
+
+### D187. What the Plan screen remembers
+
+Decided 3 Nov 2026 in step 2c. Changes ARCHITECTURE.md 3.8, which planned to keep the filters and the number of months on the phone.
+
+Pay periods or Months is kept on this phone, like Light or Dark (D173). The filters, the extra months and the account chosen are kept while PrePenny is open, and go back to the start the next time it opens: everything, 3 months, Home's account.
+
+Why: the plan should always open the way brief 4.8 describes it, with nothing hidden by a filter set days ago.
+
+### D188. The edit sheet
+
+Decided 3 Nov 2026 in step 2c. Adds to brief 4.4 and 5.4 and the edit sketch in ARCHITECTURE.md 4.6.
+
+- At the top: the payment's name, its date and account ("Sun 1 Nov, Current account", or "Wed 28 Oct, Savings to Current account" for money moved between accounts), the amount, and what's left after it with Tight or Short.
+- Quick actions: Mark as paid, or Mark as not paid once it's ticked. Move to next payday, saying where it goes ("Moves it to Fri 6 Nov"); it isn't offered for money coming in, where it would put two paydays on one day, or once a payment is ticked. Skip this one.
+- Change it: the amount (after a £), the date (with the date written PrePenny's way under the box, because each phone shows the box its own way), name, note and "This is an estimate". Then "Just this one" or "This and all later ones", and for pay with a pattern and a new amount for later ones, "Every payday from now" or "Only this week of the pattern" (D97). Only what was changed is sent (D60, D93). Saving with nothing changed says "Change something first, then save."
+- Remove asks "Remove just this one" or "Remove this and all later ones", with "Don't remove it".
+- A pay-later card's bill can be changed one bill at a time only (D111), money set aside can only be ticked (D116), and a budget's own rows are changed on the budget (step 2f).
+- A mistake is explained beside its box ("Type an amount, for example 25."), and a refusal beside what was tapped (D189).
+- A ticked payment's row says so: "Sun 25 Oct, paid".
+- Focus goes into the sheet. Escape and Close put it back on the row. After a change it goes back to the row, or to Undo when the row has gone.
+- Rows in Home's Next due open the same sheet.
+- New ids are made on the phone as UUID version 7 (ARCHITECTURE.md 3.3), and the time stored with a tick is the phone's own clock (D182).
+
+Why: these follow the brief and the sketch where they didn't say exactly.
+
+### D189. The engine's refusals, in words
+
+Decided 3 Nov 2026 in step 2c. Adds to D87 and D149.
+
+The edit sheet never shows the engine's code. Each code people could meet has a sentence in the strings file:
+
+| Code | What the sheet says |
+| --- | --- |
+| `ticked` | One of these payments is ticked as paid. Untick it first. (D92) |
+| `already-ticked` | This payment is already ticked as paid. |
+| `not-ticked` | This payment isn't ticked as paid. |
+| `already-removed` | This payment is already removed. |
+| `no-main-pay` | There's no main pay in the plan, so there's no next payday to move it to. |
+| `no-next-payday` | There's no payday after this one in the plan, so it can't move to the next payday. |
+| `date-before-earlier-payment` | Choose a date after the payment before this one. (D91) |
+| `date-after-later-payment` | Choose a date before the next payment. (D96) |
+| `date-not-in-schedule`, `dates-dont-fit` | Choose a date that fits how often it repeats. |
+| `changed-since` | This can't be undone, because something it changed has been changed again since. |
+| `budget-bills` | This is a pay-later card bill. To change later bills, change the budget. (D111) |
+| `shared-half` | This half of a transfer has no name or note of its own. (D94) |
+| `no-pattern` | This pay doesn't follow a pattern. Choose every payday from now. |
+| `patterns-differ` | The pay pattern has changed part of the way along. Choose every payday from now. (D97) |
+| anything else | That change couldn't be made, so nothing was changed. Try again. |
+
+Why: CLAUDE.md asks for plain English, and a code means nothing to someone tired at 11pm.
