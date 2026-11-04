@@ -27,3 +27,10 @@
   margin: 0;
   accent-color: var(--accent-text);
 }
+.hint {
+  margin-left: auto;
+  padding-left: var(--space-2);
+  font-size: var(--size-small);
+  color: var(--ink-muted);
+  text-align: right;
+}

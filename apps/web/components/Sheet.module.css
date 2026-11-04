@@ -57,6 +57,11 @@
   font-weight: 600;
 }
 
+.intro {
+  font-size: var(--size-body);
+  color: var(--ink-muted);
+}
+
 .body {
   font-size: var(--size-body);
 }

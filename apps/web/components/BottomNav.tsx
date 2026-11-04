@@ -1,7 +1,8 @@
 'use client';
 
-// The bottom navigation (brief Part 6, DESIGN.md): Home, Plan, Debts and
-// More, each a line icon with its word under it, the active one in a soft pill.
+// The bottom navigation (brief Part 6, DESIGN.md): Home, Coming up, Debts
+// and More (D208), each a line icon with its word under it, the active one
+// in a soft pill.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,7 +16,7 @@ const places: readonly {
   readonly label: string;
 }[] = [
   { href: '/app/', icon: 'home', label: strings.nav.home },
-  { href: '/app/plan/', icon: 'plan', label: strings.nav.plan },
+  { href: '/app/coming-up/', icon: 'comingUp', label: strings.nav.comingUp },
   { href: '/app/debts/', icon: 'debts', label: strings.nav.debts },
   { href: '/app/more/', icon: 'more', label: strings.nav.more },
 ];
