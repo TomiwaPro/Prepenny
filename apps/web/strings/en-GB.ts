@@ -524,7 +524,8 @@ export const strings = {
     title: 'I spent',
     intro: "Write down what you've spent from a budget, to see what's left in it.",
     noBudgets:
-      "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, come with the Budgets screen, which is still being built.",
+      "There's no budget to spend from yet. Add one, such as Travel at £25 a week, then write down what you spend from it.",
+    addBudget: 'Add a budget',
     whichBudget: 'Which budget',
     amount: 'How much',
     day: 'When',
@@ -711,6 +712,29 @@ export const strings = {
     'no-extras': 'That payday has no extras, such as a shift premium, to change.',
     'too-much-extras': "That's more than the extras on that payday. Type a smaller amount.",
     'same-time-balances': 'Wait a moment, then try again.',
+    'account-has-money':
+      "This account doesn't show £0.00 at the end of today yet. Move its money first.",
+    'account-in-use':
+      'Payments, a budget or a savings goal still use this account. Remove them, or move them to another account, first.',
+    'account-closed': 'This account is closed, so nothing new can use it.',
+    'debt-closed': 'This debt is closed, so nothing new can be linked to it.',
+    'goal-closed': 'This goal is closed, so nothing new can be linked to it.',
+    'budget-ended': 'This budget has ended, so it stays as it was.',
+    'budget-zero': 'Type an amount above £0.00, for example 25.',
+    'budget-has-history':
+      'This budget already has spending or bills, so it can only change that way as a new budget. End this one and add another.',
+    'bill-before-today': 'That would put a card bill on a day before today. Choose another day.',
+    'starts-before-today': 'Pick today or a later date.',
+    'ends-before-today': 'Pick today or a later date.',
+    'ends-before-start': 'Pick a day on or after the day it starts.',
+    'target-zero': 'Type a target above £0.00, for example 1200.',
+    'target-date-before-today': 'Pick today or a later date, or leave it empty.',
+    'bad-goal-link':
+      "Its payments move money into another account, so it can't move. Change those payments first.",
+    'needs-statement-day': 'Type the statement day, a number from 1 to 31. Interest needs it.',
+    'statement-not-newer': 'Wait a moment, then try again.',
+    'balance-after-today': 'Pick today or an earlier date.',
+    'currency-not-in-hundredths': "That currency can't be used yet.",
     other: "That change couldn't be made, so nothing was changed. Try again.",
   },
 
@@ -833,8 +857,10 @@ export const strings = {
     billRow: 'This is a pay-later card bill. To change later bills, change the budget.',
     setAsideRow:
       'This is money set aside from pay. It moves with its pay, and is ticked on its own.',
-    budgetRow:
-      'This is spending money from a budget. Budgets will be changed on their own screen, which is still being built.',
+    budgetRow: 'This is spending money from a budget. Change it on the Budgets screen, under More.',
+    goToBudgets: 'Go to Budgets',
+    changeOften: 'Change how often it repeats',
+    changeOftenHint: 'From this payment on. The date above is the first one.',
     amountError: 'Type an amount, for example 25.',
     dateError: 'Choose a date.',
     nameError: 'Type a name, for example Rent.',
@@ -843,13 +869,335 @@ export const strings = {
   debts: {
     heading: 'Debts',
     purpose: 'What you owe, and the date each debt will be paid off.',
-    stillBeingBuilt: 'This page is still being built.',
+    loading: 'Working out your debts.',
+    owedNow: 'Owed now',
+    estimate: 'Estimate',
+    count: (count: number) => (count === 1 ? '1 debt.' : `${count} debts.`),
+    countedAt: (name: string, rate: string) => `${name} counted at ${rate} per £1.`,
+    eachDebt: 'Each debt',
+    eachDebtIntro: "In the order they're paid off. Tap one to see its payments.",
+    noDebts: 'No debts',
+    noDebtsLine: 'Nothing to pay off. Add a debt to see the date it will be paid off.',
+    add: 'Add a debt',
+    about: (pounds: string) => `about ${pounds}`,
+    paidOffOn: (date: string) => `Paid off on ${date}`,
+    paidOff: 'Paid off',
+    stillLeft: (amount: string, date: string) => `${amount} still left on ${date}`,
+    percentPaid: (percent: number) => `${percent}% paid`,
+    closedHeading: 'Closed debts',
+    closedLine: 'Closed. Not counted in Owed now.',
+  },
+
+  /** One debt (brief 4.6, the "One debt" sketch in ARCHITECTURE.md 4.6). */
+  debt: {
+    back: 'Back to Debts',
+    purpose: "What's left on this debt, and each payment that pays it off.",
+    notFound: "This debt isn't in your plan any more.",
+    kind: (kind: string, currency: string) => `${kind}, in ${currency}`,
+    currencyNames: { GBP: 'pounds', EUR: 'euros', USD: 'US dollars' },
+    leftNow: 'Left now',
+    aboutAt: (pounds: string, rate: string) => `About ${pounds} at ${rate} per £1`,
+    interestIncluded: (amount: string) =>
+      `Includes ${amount} of interest added since your last update, an estimate.`,
+    interestNotIncluded: 'Interest not included',
+    paidOfStarted: (paid: string, started: string) => `${paid} paid of ${started}`,
+    card: 'Interest and minimum',
+    rateAYear: (rate: string) => `${rate}% a year`,
+    noRate: 'No interest rate. Add one with Change its details.',
+    zeroUntil: (date: string) => `0% until ${date}`,
+    statementDay: (day: string) => `Statement on the ${day} of each month`,
+    minimumRule: (percent: string, atLeast: string) =>
+      `Minimum: interest plus ${percent}% of the balance, at least ${atLeast}`,
+    minimumTyped: (amount: string) => `Minimum: ${amount}, from your statement`,
+    nextStatement: (date: string, interest: string) =>
+      `Next statement, ${date}: about ${interest} of interest, an estimate.`,
+    nextMinimum: (amount: string) => `Its minimum: about ${amount}, an estimate.`,
+    payments: 'Payments',
+    paymentsIntro: 'What comes off the debt each time, and what is left after it.',
+    noPayments: "No payments are planned for it yet. Add one to see the date it's paid off.",
+    toChange: 'To change one payment, tap it on Coming up.',
+    secondForeign: (date: string, amount: string) => `${date}, ${amount}`,
+    interestRow: 'Interest, estimate',
+    minimumRow: (amount: string) => `Minimum about ${amount}`,
+    left: (amount: string) => `${amount} left`,
+    moreThanLeft: (amount: string) => `${amount} more than what's left`,
+    fix: (amount: string) => `Make it ${amount} and stop after it`,
+    fixHint: 'Later payments to this debt are removed. Undo puts them back.',
+    fixed: (name: string, amount: string) =>
+      `${name} made ${amount}, and later payments to it removed.`,
+    actions: 'Change this debt',
+    updateFromStatement: 'Update from statement',
+    changeRate: 'Change the rate',
+    addPayment: 'Add a payment',
+    changeDetails: 'Change its details',
+    close: 'Close this debt',
+    closedNote: 'This debt is closed, so it is not counted in Owed now.',
+  },
+
+  /** Compare ways to pay a credit card (brief 4.6, D102). Numbers only (brief Part 3, principle 10). */
+  compare: {
+    heading: 'Compare ways to pay',
+    intro:
+      'How many payments it takes to clear the card, and the interest on the way, for three ways to pay.',
+    fixed: 'A fixed amount each month',
+    fixedError: 'Type an amount, for example 25.',
+    paysOn: 'Day of the month you pay',
+    paysOnError: 'Type a day, a number from 1 to 31.',
+    minimum: 'Paying the minimum each month',
+    fixedEach: (amount: string) => `Paying ${amount} each month`,
+    full: 'Paying the full balance',
+    result: (payments: number, interest: string) =>
+      payments === 1
+        ? `1 payment, ${interest} interest`
+        : `${payments} payments, ${interest} interest`,
+    never: 'It never clears: the interest is more than the payment.',
+    noMinimum: 'Not known: later minimums need a rule, such as interest plus 1% of the balance.',
+    estimates:
+      "Estimates from the card's interest rate. PrePenny shows the numbers, not which to choose.",
+    working: 'Working it out.',
+  },
+
+  /** Add or change a debt (brief 4.6, D98, D101, D106, D153). */
+  debtSheet: {
+    addTitle: 'Add a debt',
+    addIntro: "Add something you're paying off, to see the date it's paid off.",
+    changeTitle: 'Change this debt',
+    changeIntro: "Change this debt's details. What's left changes with Update from statement.",
+    zeroUntil: '0% until, if it has an offer',
+    zeroUntilHint: 'Leave it empty if it has no 0% offer.',
+    minimum: 'Minimum payment',
+    minimumNone: "I don't know it",
+    minimumTyped: 'As on my statement',
+    minimumRule: 'A rule, such as interest plus 1%',
+    minimumAmount: 'Minimum from the statement',
+    minimumPercent: 'Interest plus this percentage of the balance',
+    minimumPercentHint: 'Most cards use 1.',
+    minimumAtLeast: 'At least',
+    minimumError: 'Type an amount, for example 25.',
+    percentError: 'Type a percentage, for example 1.',
+    statementDayNeeded: 'Type the statement day, a number from 1 to 31. A rule needs it.',
+    save: 'Add this debt',
+    saveChanges: 'Save',
+    nothingChanged: 'Change something first, then save.',
+    added: (name: string) => `${name} added.`,
+    changed: (name: string) => `${name} changed.`,
+  },
+
+  /** Update from statement (brief 4.6, D62, D103). */
+  statement: {
+    title: 'Update from statement',
+    intro:
+      "Type what the statement shows now, so the date it's paid off starts from the right amount.",
+    amount: 'What the statement shows now',
+    amountError: 'Type what the statement shows, for example 420.99.',
+    tickHeading: 'Tick any payment to it that has already gone',
+    tickIntro: 'The statement shows these already, so they come off the debt once.',
+    tickLabel: (date: string, name: string, amount: string) => `${date}, ${name}, ${amount}`,
+    save: 'Update',
+    updated: (name: string) => `${name} updated from its statement.`,
+    updatedTicked: (name: string, count: number) =>
+      count === 1
+        ? `${name} updated from its statement, and 1 payment ticked.`
+        : `${name} updated from its statement, and ${count} payments ticked.`,
+  },
+
+  /** Change the rate of a debt in another currency (brief 4.6). */
+  rate: {
+    title: 'Change the rate',
+    intro: (currency: string) =>
+      `Set how many ${currency} make £1, so PrePenny can show this debt in pounds too.`,
+    saved: (name: string) => `${name}'s rate changed.`,
+  },
+
+  /** Closing a debt, a goal or an account. */
+  closing: {
+    debtTitle: 'Close this debt',
+    debtIntro:
+      'Closing it takes it out of Owed now. Its payments stay in your plan until you remove them.',
+    debtConfirm: 'Close this debt',
+    goalTitle: 'Close this goal',
+    goalIntro:
+      'Closing it takes it off this list. Its payments stay in your plan until you remove them.',
+    goalConfirm: 'Close this goal',
+    keep: 'Keep it open',
+    debtClosed: (name: string) => `${name} closed.`,
+    goalClosed: (name: string) => `${name} closed.`,
+  },
+
+  /** Budgets (brief 4.5, D29, D30, D31, D32, D152, D161). */
+  budgets: {
+    heading: 'Budgets',
+    back: 'Back to More',
+    purpose:
+      "Money for everyday things, such as food and travel, with what's spent and left this week or month.",
+    loading: 'Working out your budgets.',
+    none: 'No budgets yet',
+    noneLine: 'A budget, such as Travel at £25 a week, plans money for everyday spending.',
+    add: 'Add a budget',
+    aWeek: (amount: string, account: string) => `${amount} a week, from ${account}`,
+    aMonth: (amount: string, account: string) => `${amount} a month, from ${account}`,
+    atStart: 'All leaves at the start of the week or month.',
+    spread: (amount: string) => `Spread across the days: ${amount} a day.`,
+    spreadNoDay: 'Spread across the days.',
+    payLater: (day: string) => `On a pay-later card, with the bill on the ${day} of each month.`,
+    rollOverOn: "Roll-over on: what's left moves to the next week or month.",
+    thisWeek: (end: string) => `This week, to ${end}`,
+    thisMonth: (end: string) => `This month, to ${end}`,
+    startsOn: (date: string) => `Starts ${date}`,
+    spent: 'Spent',
+    left: 'Left',
+    rolledOverWeek: (base: string, rolled: string) => `${base} + ${rolled} from last week`,
+    rolledOverMonth: (base: string, rolled: string) => `${base} + ${rolled} from last month`,
+    payLaterLeft: (amount: string, date: string) =>
+      `On the pay-later card: ${amount} left until ${date}.`,
+    bill: (date: string, amount: string) => `Bill on ${date}: ${amount}.`,
+    billEstimate: (date: string, amount: string) => `Bill on ${date}: ${amount}, an estimate.`,
+    change: (name: string) => `Change ${name}`,
+  },
+
+  /** Add, change or end a budget (brief 4.5, D152, D161). */
+  budgetSheet: {
+    addTitle: 'Add a budget',
+    addIntro: 'Plan money for everyday things, such as food or travel, each week or month.',
+    changeTitle: 'Change this budget',
+    changeIntro:
+      'Change it from this week or month on. Weeks and months that have ended stay as they were.',
+    amountFromWeek: 'From this week on.',
+    amountFromMonth: 'From this month on.',
+    statementDay: "The card's statement day, if you know it",
+    statementDayHint: 'Leave it empty and each bill covers spending up to the day before it.',
+    statementDayError: 'Type a day, a number from 1 to 31, or leave it empty.',
+    starts: 'Starts',
+    startsHint:
+      'Its first week or month is the one with this day in it. The whole amount is planned for it.',
+    rollOver: "Roll over what's left to the next week or month",
+    save: 'Add budget',
+    saveChanges: 'Save',
+    nothingChanged: 'Change something first, then save.',
+    added: (name: string) => `${name} added.`,
+    changed: (name: string) => `${name} changed.`,
+    endHeading: 'End this budget',
+    endIntro: 'It stops after the week or month with this day in it.',
+    endOn: 'Its last week or month has this day in it',
+    endError: 'Pick today or a later date.',
+    end: 'End this budget',
+    ended: (name: string, date: string) => `${name} ends after the week or month with ${date}.`,
+  },
+
+  /** Savings goals (brief 4.7, D114, D139, D153). */
+  goals: {
+    heading: 'Savings goals',
+    back: 'Back to More',
+    purpose: "What you're saving for, how much is saved, and the date you'll get there.",
+    loading: 'Working out your savings goals.',
+    none: 'No savings goals yet',
+    noneLine: "Save towards something, such as a holiday, and see the date you'll get there.",
+    add: 'Add a savings goal',
+    savedOf: (saved: string, target: string) => `${saved} saved of ${target}`,
+    percentSaved: (percent: number) => `${percent}% saved`,
+    reached: 'Reached',
+    reachedOn: (date: string) => `Reached on ${date}`,
+    reachedOnEstimate: (date: string) => `Reached on ${date}, an estimate`,
+    notReached: (amount: string, date: string) =>
+      `Not reached in the next 24 months: ${amount} saved by ${date}.`,
+    yourDate: (date: string) => `Your date: ${date}.`,
+    beforeDate: "That's on time for your date.",
+    afterDate: "That's after your date.",
+    keptIn: (account: string) => `Kept in ${account}`,
+    noMoves: 'No money is planned to move into it yet.',
+    addMove: (name: string) => `Add a payment into ${name}`,
+    change: (name: string) => `Change ${name}`,
+    close: (name: string) => `Close ${name}`,
+    closedHeading: 'Closed goals',
+    closedLine: 'Closed.',
+  },
+
+  /** Add or change a savings goal (brief 4.7, D153). */
+  goalSheet: {
+    addTitle: 'Add a savings goal',
+    addIntro: "Save towards something, and see the date you'll get there.",
+    changeTitle: 'Change this goal',
+    changeIntro: 'Change what you are saving for, the target or the date.',
+    save: 'Add goal',
+    saveChanges: 'Save',
+    nothingChanged: 'Change something first, then save.',
+    added: (name: string) => `${name} added.`,
+    changed: (name: string) => `${name} changed.`,
+    close: 'Close this goal',
+  },
+
+  /** Accounts (brief 4.2, D151, D158, D181). */
+  accounts: {
+    heading: 'Accounts',
+    back: 'Back to More',
+    purpose: 'Each account PrePenny plans for, with what the bank showed and when.',
+    loading: 'Working out your accounts.',
+    add: 'Add an account',
+    kinds: { current: 'Current account', savings: 'Savings', joint: 'Joint account' },
+    checkedToday: (amount: string) => `${amount}, checked today`,
+    checked: (amount: string, date: string) => `${amount}, checked ${date}`,
+    noOverdraft: 'No overdraft',
+    overdraft: (amount: string) => `Overdraft limit ${amount}`,
+    warning: (amount: string) => `Tight under ${amount}`,
+    change: (name: string) => `Change ${name}`,
+    closedHeading: 'Closed accounts',
+    closedLine: 'Closed. Kept for its history.',
+    holidays: 'Bank holidays',
+    holidaysLine: (nation: string) => `Payments that move on bank holidays follow ${nation}.`,
+    changeNation: 'Change where you live',
+  },
+
+  /** Add or change an account, and close it (brief 4.2, D151, D158, D181). */
+  accountSheet: {
+    addTitle: 'Add an account',
+    addIntro: 'Add an account with what its bank shows today, so PrePenny can plan for it.',
+    changeTitle: 'Change this account',
+    changeIntro: 'Change its name, overdraft limit or the amount it warns you under.',
+    save: 'Add account',
+    saveChanges: 'Save',
+    nothingChanged: 'Change something first, then save.',
+    added: (name: string) => `${name} added.`,
+    changed: (name: string) => `${name} changed.`,
+    closeHeading: 'Close this account',
+    closeIntro: 'Closing it keeps its history, and nothing new can use it.',
+    close: 'Close this account',
+    closed: (name: string) => `${name} closed.`,
+    moneyLeft: (amount: string) =>
+      `It has ${amount} in it at the end of today, so that has to move first.`,
+    overdrawn: (amount: string) =>
+      `It's ${amount} overdrawn at the end of today, so that has to be paid in first.`,
+    moveTo: 'Move it to',
+    moveFrom: 'Move it from',
+    moveOut: (amount: string) => `Move ${amount} to another account first`,
+    moveIn: (amount: string) => `Move ${amount} into it from another account first`,
+    moveHint: 'This adds a move today, marked as done. Make the same move in your bank.',
+    moveName: (from: string, to: string) => `From ${from} to ${to}`,
+    moved: (amount: string, from: string, to: string) => `${amount} moved from ${from} to ${to}.`,
+    noOther: "There's no other account to move it to. Add one first.",
+    inUse:
+      'Payments, a budget or a savings goal still use this account. Remove them, or move them to another account, first.',
+  },
+
+  /** Where you live, for bank holidays (brief 4.3, 5.7, D155). */
+  nation: {
+    title: 'Where you live',
+    intro:
+      'Banks move payments that fall on a bank holiday. Choose your part of the UK, so PrePenny uses the right ones.',
+    save: 'Save',
+    saved: (nation: string) => `Bank holidays now follow ${nation}.`,
   },
 
   more: {
     heading: 'More',
-    purpose: 'Settings for PrePenny on this phone.',
+    purpose: 'Your accounts, budgets and savings goals, and settings for PrePenny on this phone.',
     stillBeingBuilt: 'Help and your account are still being built.',
+    yourPlan: 'Your plan',
+    accounts: 'Accounts',
+    accountsLine: 'Balances, overdrafts and bank holidays',
+    budgets: 'Budgets',
+    budgetsLine: "Spending money, with what's spent and left",
+    goals: 'Savings goals',
+    goalsLine: "What you're saving for, and when you'll get there",
     colours: 'Colours',
     coloursHint: 'Dark colours are easier on the eyes at night.',
     matchPhone: 'Match this phone',

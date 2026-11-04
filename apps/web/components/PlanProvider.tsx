@@ -47,7 +47,12 @@ import { setupDone } from '../lib/setup-progress.ts';
 import { testSetting } from '../lib/test-setting.ts';
 import { todayFor } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
-import { EngineError, editInBackground, workOutHomeInBackground } from '../worker/client.ts';
+import {
+  EngineError,
+  editInBackground,
+  editsInBackground,
+  workOutHomeInBackground,
+} from '../worker/client.ts';
 
 export type PlanState =
   | { readonly status: 'loading'; readonly plan: StoredPlan | null }
@@ -97,6 +102,12 @@ export interface PlanActions {
   readonly lastChange: LastChange | null;
   /** Makes one change and, when it works, shows `message` in the undo bar. */
   makeChange(command: EditCommand, message: string): Promise<ChangeOutcome>;
+  /**
+   * Makes several commands one after another as one change, so one Undo
+   * takes all of them back (D87), such as "Make it £20.99 and stop after it"
+   * (D63).
+   */
+  makeChanges(commands: readonly EditCommand[], message: string): Promise<ChangeOutcome>;
   /** Undoes the change the bar showed, and refuses when a newer one has been made since. */
   undoLastChange(id: number): Promise<ChangeOutcome>;
   dismissLastChange(): void;
@@ -125,6 +136,7 @@ const ActionsContext = createContext<PlanActions>({
   ownPlan: 'none',
   lastChange: null,
   makeChange: noPlan,
+  makeChanges: noPlan,
   undoLastChange: noPlan,
   dismissLastChange: () => {},
   startAgainWithExample: noPlan,
@@ -300,7 +312,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
   /** Makes one edit, saves it on the phone and works the plan out again. */
   const apply = useCallback(
     async (
-      command: EditCommand,
+      command: EditCommand | readonly EditCommand[],
     ): Promise<
       { ok: true; edit: Edit; kept: boolean; version: number } | { ok: false; code: string }
     > => {
@@ -308,7 +320,9 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       if (now === null) return { ok: false, code: 'not-ready' };
       let result: Awaited<ReturnType<typeof editInBackground>>;
       try {
-        result = await editInBackground(now.records, now.today, command);
+        result = Array.isArray(command)
+          ? await editsInBackground(now.records, now.today, command)
+          : await editInBackground(now.records, now.today, command as EditCommand);
       } catch (error) {
         return { ok: false, code: codeOf(error) };
       }
@@ -339,6 +353,17 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     (command: EditCommand, message: string) =>
       inTurn(async (): Promise<ChangeOutcome> => {
         const outcome = await apply(command);
+        if (!outcome.ok) return outcome;
+        showChange(outcome.kept ? message : `${message} ${strings.undo.notKept}`, outcome.edit);
+        return { ok: true, version: outcome.version };
+      }),
+    [apply, inTurn, showChange],
+  );
+
+  const makeChanges = useCallback(
+    (commands: readonly EditCommand[], message: string) =>
+      inTurn(async (): Promise<ChangeOutcome> => {
+        const outcome = await apply(commands);
         if (!outcome.ok) return outcome;
         showChange(outcome.kept ? message : `${message} ${strings.undo.notKept}`, outcome.edit);
         return { ok: true, version: outcome.version };
@@ -417,6 +442,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       ownPlan,
       lastChange,
       makeChange,
+      makeChanges,
       undoLastChange,
       dismissLastChange,
       startAgainWithExample,
@@ -428,6 +454,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       ownPlan,
       lastChange,
       makeChange,
+      makeChanges,
       undoLastChange,
       dismissLastChange,
       startAgainWithExample,
