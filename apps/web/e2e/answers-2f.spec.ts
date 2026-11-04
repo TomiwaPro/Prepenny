@@ -58,7 +58,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const spent = sheet.getByLabel('Already spent this week');
       await expect(spent).toBeVisible();
       await expect(sheet).toContainText(
-        "What you've spent from it so far, which your balance already shows.",
+        "What you've spent from it so far. Your bank balance already shows it.",
       );
       // A budget that starts later has no week under way yet, so it isn't asked.
       await sheet.getByLabel('Starts').fill('2026-10-30');
