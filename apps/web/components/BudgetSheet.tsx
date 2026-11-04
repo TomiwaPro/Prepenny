@@ -70,6 +70,9 @@ export function BudgetSheet({
   readonly onClose: (added: boolean) => void;
 }) {
   const opened = useOpenCount(open);
+  // The boxes start from the plan, so they wait for it: a tap before it has
+  // loaded would start them with no date or account (step 2g).
+  const ready = usePlanActions().loaded !== null;
   return (
     <Sheet
       open={open}
@@ -77,7 +80,7 @@ export function BudgetSheet({
       intro={budget === null ? t.addIntro : t.changeIntro}
       onClose={() => onClose(false)}
     >
-      {opened === 0 ? null : (
+      {opened === 0 || !ready ? null : (
         <BudgetForm key={opened} budget={budget} onDone={(added) => onClose(added)} />
       )}
     </Sheet>
