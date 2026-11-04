@@ -981,6 +981,8 @@ export const strings = {
     rate: 'Pay an hour',
     removeLine: 'Remove this line',
     addLine: 'Add another kind of hours',
+    extraLegend: (number: number) => `Fixed amount ${number}`,
+    deductionLegend: (number: number) => `Deduction ${number}`,
     extraName: "What it's for",
     extraAmount: 'Amount',
     removeExtra: 'Remove this amount',
@@ -1147,6 +1149,8 @@ export const strings = {
         ? 'Your practice change is now in your plan.'
         : `Your ${count} practice changes are now in your plan.`,
     thrownAway: 'Practice changes thrown away. Your real plan is exactly as it was.',
+    nothingToKeep:
+      'Your practice changes cancel each other out, so there was nothing to keep. Your real plan is exactly as it was.',
     cantMakeAgain:
       "Your plan has changed since, so your practice changes couldn't be made again. They're thrown away.",
     sideBySide: 'Your real plan and practice, side by side',

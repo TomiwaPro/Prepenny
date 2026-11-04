@@ -222,9 +222,27 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(check, 'Tax').fill('105.20');
       await check.getByRole('button', { name: 'Check these figures' }).click();
       await expect(outcome).toHaveText('Every figure you typed is what PrePenny worked out.');
+      // A change to the pay lines clears the check, so it never shows for other boxes.
+      await page.getByTestId('pay-line').first().getByLabel('Hours', { exact: true }).fill('40');
+      await expect(outcome).toHaveText('');
     });
   });
 }
+
+test("a new payday keeps the payslip's week when its figures are in (found by the outside review)", async ({
+  page,
+}) => {
+  await openCalculator(page);
+  // Sam's week 29 payslip is filled in from his plan.
+  await expect(page.getByLabel('The tax week on it')).toHaveValue('29');
+  await page.getByLabel('Payday').fill('2026-11-06');
+  await expect(page.getByLabel('The tax week on it')).toHaveValue('29');
+  const result = await workOut(page);
+  await expect(result.getByTestId('take-home')).toHaveText('£452.17');
+  await expect(result.getByTestId('pay-estimate')).toHaveText(
+    'Your last payslip is from tax week 29, so week 30 is counted as the same pay as this one. That makes it an estimate.',
+  );
+});
 
 test('Save as a pay week keeps the lines, to start from again', async ({ page }) => {
   await openCalculator(page);

@@ -234,6 +234,49 @@ test('the practice changes stay while PrePenny is open, and take back one at a t
   );
 });
 
+test('changes that cancel each other out leave nothing to keep (found by the outside review)', async ({
+  page,
+}) => {
+  await openWhatIfFromComingUp(page);
+  // The driving lesson on Mon 26 Oct at £90.00, then back to £100.00.
+  for (const amount of ['90', '100']) {
+    await page
+      .locator('[data-testid="period"][data-start="2026-10-25"]')
+      .getByRole('button', { name: named('Driving lesson') })
+      .click();
+    const sheet = page.getByRole('dialog', { name: 'Driving lesson' });
+    await sheet.getByLabel('Amount').fill(amount);
+    await sheet.getByRole('button', { name: 'Save' }).click();
+    await expect(sheet).toBeHidden();
+  }
+  await expect(page.getByTestId('practice-list').locator('li')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Keep these changes' }).click();
+  await expect(page.getByTestId('what-if-note')).toHaveText(
+    'Your practice changes cancel each other out, so there was nothing to keep. Your real plan is exactly as it was.',
+  );
+  await expect(undoBar(page)).toHaveCount(0);
+});
+
+test('after Keep, a practice change that removes a row never puts focus on the real Undo (found by the outside review)', async ({
+  page,
+}) => {
+  await openWhatIfFromComingUp(page);
+  await lowerFridayPay(page);
+  await page.getByRole('button', { name: 'Keep these changes' }).click();
+  await expect(undoBar(page)).toContainText('Your practice change is now in your plan.');
+  const lesson = page
+    .locator('[data-testid="period"][data-start="2026-10-25"]')
+    .getByRole('button', { name: named('Driving lesson') });
+  await lesson.click();
+  const sheet = page.getByRole('dialog', { name: 'Driving lesson' });
+  await sheet.getByRole('button', { name: 'Skip this one' }).click();
+  await expect(sheet).toBeHidden();
+  await expect(
+    page.getByRole('heading', { name: 'Your practice changes', exact: true }),
+  ).toBeFocused();
+  await expect(page.getByTestId('practice-list')).toContainText('Driving lesson skipped.');
+});
+
 test('stays readable with text at 200%, and every tap target is big enough', async ({ page }) => {
   await openWhatIfFromComingUp(page);
   await lowerFridayPay(page);

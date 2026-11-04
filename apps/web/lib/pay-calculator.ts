@@ -416,9 +416,15 @@ export function calculatorFromPlan(
   payDate: string,
   profile: PayProfile | null,
   week: SavedWeek | null,
+  /** How often the pay comes, for when no tax settings are saved. */
+  often: PayFrequency | null = null,
 ): CalculatorForm {
   const blank = blankCalculator(payDate);
-  if (profile === null) return week === null ? blank : { ...blank, ...linesFromWeek(week) };
+  if (profile === null) {
+    const frequency = often ?? 'weekly';
+    const start = { ...blank, frequency, soFarPeriod: periodBefore(payDate, frequency) };
+    return week === null ? start : { ...start, ...linesFromWeek(week) };
+  }
   const frequency = profile.frequency;
   const loans = profile.studentLoans ?? [];
   const plan = loans.find(

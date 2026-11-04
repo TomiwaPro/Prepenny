@@ -240,7 +240,12 @@ export function PayScreen() {
     if (startedFrom === null) return null;
     const next = startedFrom.paydays[0] ?? null;
     const week = startedFrom.weeks.find((one) => one.id === next?.weekId) ?? null;
-    return calculatorFromPlan(next?.date ?? startedFrom.today, startedFrom.profile, week);
+    return calculatorFromPlan(
+      next?.date ?? startedFrom.today,
+      startedFrom.profile,
+      week,
+      startedFrom.frequency,
+    );
   }, [startedFrom]);
 
   return (

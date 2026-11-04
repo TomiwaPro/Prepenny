@@ -174,6 +174,30 @@ describe("test 4: added to Sam's plan as the Fri 30 Oct estimate", () => {
     });
   });
 
+  it('on monthly pay with no tax settings, starts on every month (found by the outside review)', () => {
+    const monthly = {
+      ...examplePlan,
+      payProfiles: [],
+      payWeeks: [],
+      series: examplePlan.series.map(({ payProfileId: _profile, cyclePayWeeks: _weeks, ...one }) =>
+        one.id === 'pay'
+          ? {
+              ...one,
+              schedule: {
+                kind: 'monthly' as const,
+                every: 1,
+                on: { kind: 'day' as const, day: 30 },
+              },
+            }
+          : one,
+      ),
+    };
+    const view = workOutPayView(monthly, SUNDAY);
+    expect(view.frequency).toBe('monthly');
+    const form = calculatorFromPlan('2026-10-30', view.profile, null, view.frequency);
+    expect([form.frequency, form.soFarPeriod]).toEqual(['monthly', '6']);
+  });
+
   it('on pay with no tax settings, saves them too and links the week to every payday', () => {
     const plain = {
       ...examplePlan,

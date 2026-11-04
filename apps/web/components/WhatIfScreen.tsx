@@ -136,8 +136,10 @@ function Shortfall({
               : t.couldMoveTo(formatDay(shortfall.moveTo, today))}
           </p>
           <ul id={listId} className={styles.list} data-testid="could-move">
-            {shown.map((one) => (
-              <li key={`${one.name} ${one.date}`} className={whatIfStyles.moveRow}>
+            {shown.map((one, index) => (
+              // Two payments can share a name and a day, so the place in the list is part of the key.
+              // biome-ignore lint/suspicious/noArrayIndexKey: the list is worked out afresh each time
+              <li key={`${index} ${one.name} ${one.date}`} className={whatIfStyles.moveRow}>
                 <span className={whatIfStyles.moveName}>
                   <span>{one.name}</span>
                   <span className={styles.second}>{formatDay(one.date, today)}</span>
@@ -456,6 +458,12 @@ export function WhatIfScreen() {
 
   const keep = async () => {
     if (busy || changes.length === 0) return;
+    // Changes that cancel each other out leave nothing to keep, and no Undo to offer.
+    if (shown !== null && shown.changes === changes && !shown.view.changed) {
+      keepChanges([]);
+      say(t.nothingToKeep);
+      return;
+    }
     setBusy(true);
     setProblem(null);
     const message = t.kept(changes.length);
@@ -523,7 +531,10 @@ export function WhatIfScreen() {
             <button
               type="button"
               className={formStyles.quiet}
+              aria-disabled={busy}
               onClick={() => {
+                // While Keep is saving, the list stays as it was sent.
+                if (busy) return;
                 keepChanges(changes.slice(0, -1));
                 say(t.takenBack);
               }}

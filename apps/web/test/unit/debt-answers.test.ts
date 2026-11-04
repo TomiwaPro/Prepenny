@@ -96,6 +96,33 @@ describe('Closing a debt offers "Also remove its 3 planned payments?" (answer 4)
     expect(undone.debts).toEqual(examplePlan.debts);
   });
 
+  it('a payment paid early keeps its place, so Yes still works (found by the outside review)', () => {
+    // The Family loan's Fri 4 Dec payment, ticked today: it comes off the
+    // debt today, but it's still the fourth payment, after Fri 20 Nov's.
+    const paidEarly = runEdits(examplePlan, SUNDAY, [
+      {
+        kind: 'tick',
+        seriesId: 'family-loan',
+        originalDate: '2026-12-04',
+        tickedAt: '2026-10-25T09:00:00Z',
+      },
+    ]).records;
+    const debt = debtNamed(paidEarly, 'Family loan');
+    // Five still to come: Mon 26 Oct, Fri 6 Nov, Fri 20 Nov, Fri 18 Dec and Fri 1 Jan 2027.
+    expect(debt.planned?.removing).toEqual({ count: 5, continues: false });
+    const closed = runEdits(paidEarly, SUNDAY, [
+      ...(debt.planned?.commands ?? []),
+      { kind: 'close-debt', debtId: debt.id },
+    ]);
+    expect(closed.records.debts?.find((one) => one.id === 'family-loan')?.closed).toBe(true);
+    // Only the payment ticked early is left, with its tick.
+    const left = (
+      workOutDebtsView(closed.records, SUNDAY).closed.find((one) => one.id === 'family-loan')
+        ?.rows ?? []
+    ).filter((row): row is DebtPaymentView => row.kind === 'payment');
+    expect(left.map((row) => [row.originalDate, row.ticked])).toEqual([['2026-12-04', true]]);
+  });
+
   it('a debt with nothing still to come asks nothing more', () => {
     // The Pay-later card is paid in full on Thu 29 Oct: once that's ticked,
     // nothing is planned for it.

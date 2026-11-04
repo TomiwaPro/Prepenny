@@ -619,7 +619,7 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
     }
   }, [shown]);
 
-  const sheet = useEditSheet(shown?.version ?? null);
+  const sheet = useEditSheet(shown?.version ?? null, practice);
 
   const view = shown?.view ?? null;
   const today = view?.today ?? loaded?.today ?? '';
@@ -838,7 +838,8 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
         filters={filters}
         onGrouping={(value) => {
           setGrouping(value);
-          saveGrouping(value);
+          // What if's practice list doesn't change how the real page groups payments.
+          if (!practice) saveGrouping(value);
           setOpened([]);
         }}
         onFilters={setFilters}

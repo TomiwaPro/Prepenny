@@ -162,9 +162,12 @@ function NamedAmounts({
   nameLabel,
   amountLabel,
   removeLabel,
+  legend,
   onChange,
   onRemove,
 }: {
+  /** "Fixed amount 1": each row is a group, so its Remove button can be told apart. */
+  readonly legend: (number: number) => string;
   readonly rows: readonly NamedAmountForm[];
   readonly base: string;
   readonly kind: 'extra' | 'deduction';
@@ -179,13 +182,14 @@ function NamedAmounts({
 }) {
   return (
     <>
-      {rows.map((row) => {
+      {rows.map((row, index) => {
         const nameField = `${kind}Name-${row.key}` as CalculatorField;
         const amountField = `${kind}-${row.key}` as CalculatorField;
         const nameError = mistakeWords(errors[nameField], form, today);
         const amountError = mistakeWords(errors[amountField], form, today);
         return (
-          <div key={row.key} className={styles.row} data-testid={kind}>
+          <fieldset key={row.key} className={styles.line} data-testid={kind}>
+            <legend className={styles.lineLegend}>{legend(index + 1)}</legend>
             <Field id={`${base}-${nameField}`} label={nameLabel} error={nameError}>
               <input
                 id={`${base}-${nameField}`}
@@ -210,7 +214,7 @@ function NamedAmounts({
             <button type="button" className={formStyles.quiet} onClick={() => onRemove(row.key)}>
               {removeLabel}
             </button>
-          </div>
+          </fieldset>
         );
       })}
     </>
@@ -219,10 +223,13 @@ function NamedAmounts({
 
 function PayslipCheck({
   form,
+  edits,
   base,
   onBoxesWrong,
 }: {
   readonly form: CalculatorForm;
+  /** Goes up with every change to the calculator's boxes, so an old check isn't left showing. */
+  readonly edits: number;
   readonly base: string;
   /** The calculator's own boxes need a change before a payslip can be checked. */
   readonly onBoxesWrong: (errors: CalculatorErrors) => void;
@@ -231,6 +238,13 @@ function PayslipCheck({
   const [slip, setSlip] = useState<PayslipForm>(blankPayslip);
   const [bad, setBad] = useState<readonly PayslipBox[]>([]);
   const [outcome, setOutcome] = useState<ReactNode>(null);
+  const [checkedAt, setCheckedAt] = useState(edits);
+  // A check of boxes that have changed since is cleared, as the result is (D254).
+  if (checkedAt !== edits) {
+    setCheckedAt(edits);
+    setOutcome(null);
+    setBad([]);
+  }
   const outcomeRef = useRef<HTMLDivElement>(null);
   const regionId = useId();
   const shown = PAYSLIP_BOXES.filter((box) => {
@@ -366,11 +380,13 @@ export function PayCalculator({
   const [stale, setStale] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [used, setUsed] = useState<string | null>(null);
+  const [edits, setEdits] = useState(0);
   const resultRef = useRef<HTMLHeadingElement>(null);
 
   /** Any change clears the result, so a figure on screen always matches the boxes. */
   const change = (next: (now: CalculatorForm) => CalculatorForm) => {
     setForm(next);
+    setEdits((now) => now + 1);
     if (worked !== null) {
       setWorked(null);
       setStale(true);
@@ -379,12 +395,17 @@ export function PayCalculator({
   };
   const set = (part: Partial<CalculatorForm>) => change((now) => ({ ...now, ...part }));
 
-  /** A new payday or frequency moves the payslip's week on, unless it was typed. */
+  /**
+   * A new payday or frequency moves the payslip's week on, while it's still
+   * the week before the payday and no payslip figures are in: figures typed
+   * or filled in belong to their own week, so it stays (D124).
+   */
   const setWhen = (part: Partial<Pick<CalculatorForm, 'payDate' | 'frequency'>>) =>
     change((now) => {
       const next = { ...now, ...part };
       const wasDefault = now.soFarPeriod === periodBefore(now.payDate, now.frequency);
-      return wasDefault
+      const noFigures = now.grossSoFar.trim() === '' && now.taxSoFar.trim() === '';
+      return wasDefault && noFigures
         ? { ...next, soFarPeriod: periodBefore(next.payDate, next.frequency) }
         : next;
     });
@@ -565,6 +586,7 @@ export function PayCalculator({
             nameLabel={t.extraName}
             amountLabel={t.extraAmount}
             removeLabel={t.removeExtra}
+            legend={t.extraLegend}
             onChange={setRow('extras')}
             onRemove={removeRow('extras')}
           />
@@ -748,6 +770,7 @@ export function PayCalculator({
             nameLabel={t.deductionName}
             amountLabel={t.deductionAmount}
             removeLabel={t.removeDeduction}
+            legend={t.deductionLegend}
             onChange={setRow('deductions')}
             onRemove={removeRow('deductions')}
           />
@@ -854,7 +877,7 @@ export function PayCalculator({
         </section>
       )}
 
-      <PayslipCheck form={form} base={id} onBoxesWrong={showErrors} />
+      <PayslipCheck form={form} edits={edits} base={id} onBoxesWrong={showErrors} />
     </div>
   );
 }

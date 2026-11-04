@@ -272,9 +272,10 @@ function continuesAfter(
 type PaymentRowOf = Extract<DebtPlan['rows'][number], { kind: 'payment' }>;
 
 /**
- * Closing a debt can also remove its payments still to come (step 2g):
- * "Remove this and later" from each linked series' first payment from
- * today that isn't ticked, with nothing ticked after it (D92).
+ * Closing a debt can also remove its payments still to come (step 2g, D250):
+ * every linked payment from today on that isn't ticked. "Remove this and
+ * later" from each linked series' first one after its last ticked payment,
+ * and any before that ticked one on their own (D92).
  */
 function plannedOf(
   records: PlanRecords,
@@ -294,22 +295,38 @@ function plannedOf(
   const commands: EditCommand[] = [];
   let count = 0;
   let continues = false;
-  for (const [familyId, rows] of byFamily) {
-    let from = -1;
-    for (let i = rows.length - 1; i >= 0; i -= 1) {
-      const row = rows[i];
-      if (row === undefined || row.ticked) break;
-      if (row.payment.date >= today) from = i;
+  for (const [familyId, inDateOrder] of byFamily) {
+    // In payment order, not by the day each comes off: a payment paid early,
+    // or moved, keeps its place among the others.
+    const rows = [...inDateOrder].sort((a, b) => a.payment.number - b.payment.number);
+    let lastTicked = -1;
+    rows.forEach((row, i) => {
+      if (row.ticked) lastTicked = i;
+    });
+    // After the last ticked one: "Remove this and later" from the first one
+    // from today (D92). Before it, each one from today on its own, because
+    // "Remove this and later" can't go past a payment that's ticked.
+    const from = rows.findIndex((row, i) => i > lastTicked && row.payment.date >= today);
+    for (const row of rows.slice(0, Math.max(lastTicked, 0))) {
+      if (row.ticked || row.payment.date < today) continue;
+      commands.push({
+        kind: 'remove-this-one',
+        seriesId: row.payment.seriesId,
+        originalDate: row.payment.originalDate,
+      });
+      count += 1;
     }
     const first = rows[from];
-    if (first === undefined) continue;
-    commands.push({
-      kind: 'remove-this-and-later',
-      seriesId: first.payment.seriesId,
-      originalDate: first.payment.originalDate,
-    });
-    count += rows.length - from;
-    continues ||= continuesAfter(records, familyId, to, holidays);
+    if (first !== undefined) {
+      commands.push({
+        kind: 'remove-this-and-later',
+        seriesId: first.payment.seriesId,
+        originalDate: first.payment.originalDate,
+      });
+      count += rows.length - from;
+    }
+    // Only a family that still has payments planned after the last day looked at carries on.
+    if (first !== undefined) continues ||= continuesAfter(records, familyId, to, holidays);
   }
   return commands.length === 0 ? null : { removing: { count, continues }, commands };
 }

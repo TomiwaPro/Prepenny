@@ -4,7 +4,7 @@
 // pay's tax settings; and the saved pay weeks, to start from. Worked out in
 // the background worker from the engine's own plan, 12 months ahead (D178).
 
-import type { PayProfile, Pence, PlanRecords } from '@prepenny/engine';
+import type { PayFrequency, PayProfile, Pence, PlanRecords, Schedule } from '@prepenny/engine';
 import type { MainPayLinks, SavedWeek } from './pay-calculator.ts';
 import { HOME_MONTHS_AHEAD, planLookAhead, settingsOf, workOutPlanTo } from './plan-input.ts';
 
@@ -31,6 +31,23 @@ export interface PayView {
   readonly profile: PayProfile | null;
   /** Every saved pay week, the main pay's first. */
   readonly weeks: readonly SavedWeek[];
+  /**
+   * How often the main pay comes, as the calculator's pay periods, to start
+   * from when no tax settings are saved; null when it doesn't fit one.
+   */
+  readonly frequency: PayFrequency | null;
+}
+
+/** The calculator's pay period for a schedule: every 1, 2 or 4 weeks, or every month. */
+function frequencyOf(schedule: Schedule | undefined): PayFrequency | null {
+  if (schedule?.kind === 'weekly') {
+    if (schedule.every === 1) return 'weekly';
+    if (schedule.every === 2) return 'two-weekly';
+    if (schedule.every === 4) return 'four-weekly';
+    return null;
+  }
+  if (schedule?.kind === 'monthly' && schedule.every === 1) return 'monthly';
+  return null;
 }
 
 const mod = (value: number, length: number) => ((value % length) + length) % length;
@@ -101,5 +118,6 @@ export function workOutPayView(records: PlanRecords, today: string): PayView {
       ...all.filter((one) => ownWeeks.has(one.id)),
       ...all.filter((one) => !ownWeeks.has(one.id)),
     ],
+    frequency: frequencyOf(latest?.schedule),
   };
 }
