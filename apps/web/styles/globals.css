@@ -79,6 +79,12 @@ a {
   outline-offset: 2px;
 }
 
+/* A date box's calendar button, drawn by the browser, gets the same outline (step 2h). */
+input[type="date"]::-webkit-calendar-picker-indicator:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
 /* Words for screen readers only. */
 .visually-hidden {
   position: absolute;
