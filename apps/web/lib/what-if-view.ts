@@ -98,6 +98,8 @@ export interface WhatIfView {
    * clutter.
    */
   readonly accounts: readonly AccountSides[];
+  /** Open accounts not shown, because the practice doesn't change them: "Your other accounts don't change." */
+  readonly otherAccounts: number;
   readonly debts: readonly DebtSides[];
   readonly goals: readonly GoalSides[];
   /** Keeping would change the real plan: the practice isn't the same as it. */
@@ -159,6 +161,10 @@ export function workOutWhatIfView(
     )
     .filter((one) => one.id === home || !sameSide(one.real, one.practice))
     .sort((a, b) => (a.id === home ? -1 : b.id === home ? 1 : 0));
+  const shown = new Set(accounts.map((one) => one.id));
+  const otherAccounts = records.accounts.filter(
+    (one) => one.closed !== true && !shown.has(one.id),
+  ).length;
   const debtNames = new Map((records.debts ?? []).map((one) => [one.id, one]));
   const goals = new Map((records.goals ?? []).map((one) => [one.id, one]));
   return {
@@ -167,6 +173,7 @@ export function workOutWhatIfView(
     debtsTo,
     records: result.practice.records,
     accounts,
+    otherAccounts,
     // Closed debts and goals aren't counted any more (D99, D153), so they aren't shown.
     debts: result.debts
       .filter((one) => debtNames.get(one.debtId)?.closed !== true)

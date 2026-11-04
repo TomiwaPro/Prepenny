@@ -42,6 +42,7 @@ import {
   examplePlan,
   fingerprint,
 } from '../data/example-plan.ts';
+import { forgetPractice } from '../data/practice.ts';
 import type { HomeView } from '../lib/home.ts';
 import { setupDone } from '../lib/setup-progress.ts';
 import { testSetting } from '../lib/test-setting.ts';
@@ -394,6 +395,8 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       inTurn(async (): Promise<ChangeOutcome> => {
         const plan = freshExample();
         const { records } = theExample();
+        // Practice changes made on the old example aren't the new one's (step 2h).
+        await forgetPractice(plan.id);
         try {
           const db = openDb();
           try {

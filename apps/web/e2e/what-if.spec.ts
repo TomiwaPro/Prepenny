@@ -61,6 +61,21 @@ async function lowerFridayPay(page: Page) {
   await expect(page.getByTestId('practice-list')).toContainText('Pay changed for just this one.');
 }
 
+/** "Throw them away" asks first (step 2h); "Keep practising" keeps them, then it's asked again. */
+async function throwAway(page: Page, question: string) {
+  await page.getByRole('button', { name: 'Throw them away' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Throw them away' });
+  await expect(sheet).toContainText(question);
+  await expect(sheet).toContainText('Your real plan stays exactly as it was.');
+  await noAxeProblems(page);
+  await sheet.getByRole('button', { name: 'Keep practising' }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByTestId('practice-list')).toBeVisible();
+  await page.getByRole('button', { name: 'Throw them away' }).click();
+  await sheet.getByRole('button', { name: 'Throw them away' }).click();
+  await expect(sheet).toBeHidden();
+}
+
 const DEBTS = [
   ['Pay-later card', 'Thu 29 Oct'],
   ['Pay in 3', 'Sun 6 Dec'],
@@ -93,6 +108,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       await lowerFridayPay(page);
       const current = accountSides(page, 'Current account');
+      // Savings doesn't change, so it isn't shown, and the screen says so (step 2h).
+      await expect(page.getByTestId('what-if-account')).toHaveCount(1);
+      await expect(page.getByTestId('other-accounts')).toHaveText(
+        "Your other accounts don't change.",
+      );
       await expect(current.getByTestId('real')).toContainText('£4.53');
       await expect(current.getByTestId('real')).toContainText('Sun 1 Nov, after Rent');
       await expect(current.getByTestId('real')).toContainText('Tight');
@@ -123,8 +143,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noAxeProblems(page);
       await noSidewaysScroll(page);
 
-      // Throw them away: the real plan is exactly as before.
-      await page.getByRole('button', { name: 'Throw them away' }).click();
+      // Throw them away, after one question: the real plan is exactly as before.
+      await throwAway(page, 'Throw away 1 practice change?');
       await expect(page.getByTestId('what-if-note')).toHaveText(
         'Practice changes thrown away. Your real plan is exactly as it was.',
       );
@@ -202,7 +222,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noSidewaysScroll(page);
 
       // Throwing it away leaves the real plan exactly as before.
-      await page.getByRole('button', { name: 'Throw them away' }).click();
+      await throwAway(page, 'Throw away 3 practice changes?');
       await expect(current.getByTestId('practice')).toContainText('£156.00');
       await page
         .getByRole('navigation', { name: 'Main' })
@@ -214,7 +234,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
   });
 }
 
-test('the practice changes stay while PrePenny is open, and take back one at a time', async ({
+test('the practice changes stay after PrePenny is closed and opened again, and take back one at a time (step 2h)', async ({
   page,
 }) => {
   await openWhatIfFromComingUp(page);
@@ -222,9 +242,15 @@ test('the practice changes stay while PrePenny is open, and take back one at a t
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'More' }).click();
   await page.getByRole('link', { name: /^What if/ }).click();
   await expect(page.getByTestId('practice-list')).toContainText('Pay changed for just this one.');
+  // Closing PrePenny and opening it again keeps them, until they're kept or thrown away.
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1, name: 'What if' })).toBeVisible();
+  await expect(page.getByTestId('practice-list')).toContainText('Pay changed for just this one.');
   await expect(accountSides(page, 'Current account').getByTestId('practice')).toContainText(
     `${MINUS}£95.47`,
   );
+  // Nothing was saved to the real plan.
+  await expect(accountSides(page, 'Current account').getByTestId('real')).toContainText('£4.53');
   await page.getByRole('button', { name: 'Take back the last change' }).click();
   await expect(page.getByTestId('what-if-note')).toHaveText(
     'The last practice change is taken back.',
@@ -232,6 +258,26 @@ test('the practice changes stay while PrePenny is open, and take back one at a t
   await expect(accountSides(page, 'Current account').getByTestId('practice')).toContainText(
     '£4.53',
   );
+  // Taken back is kept too.
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1, name: 'What if' })).toBeVisible();
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  await expect(page.getByTestId('practice-list')).toHaveCount(0);
+});
+
+test('two practice changes ask "Throw away 2 practice changes?" (step 2h)', async ({ page }) => {
+  await openWhatIfFromComingUp(page);
+  await lowerFridayPay(page);
+  const row = await practiceRow(page, '2026-10-30', 'Spending money');
+  await row.click();
+  const sheet = page.getByRole('dialog', { name: 'Spending money' });
+  await sheet.getByRole('button', { name: 'Skip this one' }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByTestId('practice-list').getByRole('listitem')).toHaveCount(2);
+  await throwAway(page, 'Throw away 2 practice changes?');
+  await page.reload();
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  await expect(page.getByTestId('practice-list')).toHaveCount(0);
 });
 
 test('changes that cancel each other out leave nothing to keep (found by the outside review)', async ({

@@ -12,14 +12,22 @@
 // makes every practice change on the real plan as one change, which one
 // Undo takes back; "Throw them away" leaves the real plan exactly as it was.
 //
-// Practice changes stay on this phone, in memory, while PrePenny is open
-// (ARCHITECTURE.md 3.8), so going to another screen and back keeps them.
-// They're made again on the real plan each time it changes, as a sync clash
-// runs a command again (D135).
+// Practice changes stay on this phone until they're kept or thrown away,
+// even after PrePenny is closed (ARCHITECTURE.md 3.8, step 2h), so going to
+// another screen and back, or closing PrePenny, keeps them. "Throw them
+// away" asks first: "Throw away 3 practice changes?". They're made again on
+// the real plan each time it changes, as a sync clash runs a command again
+// (D135).
 
 import type { EditCommand } from '@prepenny/engine';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  keepPractice,
+  loadPractice,
+  type PracticeChange,
+  practiceInMemory,
+} from '../data/practice.ts';
 import { formatDay } from '../lib/dates.ts';
 import { formatIn, formatMoney } from '../lib/money.ts';
 import { refusalMessage } from '../lib/refusals.ts';
@@ -35,6 +43,7 @@ import { strings } from '../strings/en-GB.ts';
 import { askInBackground, EngineError } from '../worker/client.ts';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
 import { ComingUpScreen } from './ComingUpScreen.tsx';
+import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
 import { focusUndoBar } from './focusUndo.ts';
@@ -53,15 +62,6 @@ import { UpdateBalanceSheet } from './UpdateBalanceSheet.tsx';
 import whatIfStyles from './WhatIf.module.css';
 
 const t = strings.whatIf;
-
-/** One practice change: the commands one sheet made, and the words it would show in the undo bar. */
-interface PracticeChange {
-  readonly commands: readonly EditCommand[];
-  readonly message: string;
-}
-
-/** The practice changes, kept while PrePenny is open, for the plan they were made on. */
-let memory: { readonly planId: string; readonly changes: readonly PracticeChange[] } | null = null;
 
 const codeOf = (error: unknown) => (error instanceof EngineError ? error.code : 'unexpected');
 
@@ -278,6 +278,11 @@ function SideBySide({ view }: { readonly view: WhatIfView }) {
           </div>
         );
       })}
+      {view.otherAccounts === 0 ? null : (
+        <p className={styles.second} data-testid="other-accounts">
+          {t.otherAccounts}
+        </p>
+      )}
       {view.debts.length === 0 ? null : (
         <div className={whatIfStyles.account}>
           <h3 className={whatIfStyles.subheading}>{t.paidOffOn}</h3>
@@ -323,7 +328,14 @@ export function WhatIfScreen() {
   const real = usePlanActions();
   const loaded = real.loaded;
   const fromComingUp = useSearchParams()?.get('from') === 'coming-up';
-  const [changes, setChanges] = useState<readonly PracticeChange[]>(() => memory?.changes ?? []);
+  const [changes, setChanges] = useState<readonly PracticeChange[]>(
+    () => (loaded === null ? null : practiceInMemory(loaded.plan.id)) ?? [],
+  );
+  // The plan the practice changes on screen were read for, once they've been read from the phone.
+  const [readFor, setReadFor] = useState<string | null>(() =>
+    loaded !== null && practiceInMemory(loaded.plan.id) !== null ? loaded.plan.id : null,
+  );
+  const [throwing, setThrowing] = useState(false);
   const [shown, setShown] = useState<Shown | null>(null);
   const [failed, setFailed] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -342,23 +354,30 @@ export function WhatIfScreen() {
     setChanges(next);
   }, []);
 
-  // Practice changes made on another plan, such as the example, aren't this plan's.
+  // Each plan has its own practice changes, kept on this phone until they're
+  // kept or thrown away, even after PrePenny is closed (step 2h).
+  const planId = loaded?.plan.id ?? null;
   useEffect(() => {
-    if (loaded === null) return;
-    if (memory !== null && memory.planId !== loaded.plan.id) {
-      memory = null;
-      keepChanges([]);
-    }
-  }, [loaded, keepChanges]);
+    if (planId === null || readFor === planId) return;
+    let current = true;
+    loadPractice(planId).then((found) => {
+      if (!current) return;
+      keepChanges(found);
+      setReadFor(planId);
+    });
+    return () => {
+      current = false;
+    };
+  }, [planId, readFor, keepChanges]);
 
   useEffect(() => {
-    if (loaded === null) return;
-    memory = changes.length === 0 ? null : { planId: loaded.plan.id, changes };
-  }, [loaded, changes]);
+    if (planId === null || readFor !== planId) return;
+    void keepPractice(planId, changes);
+  }, [planId, readFor, changes]);
 
   // Worked out again whenever the real plan or the list of changes is new.
   useEffect(() => {
-    if (loaded === null) return;
+    if (loaded === null || readFor !== loaded.plan.id) return;
     if (shown !== null && shown.realVersion === loaded.version && shown.changes === changes) {
       return;
     }
@@ -389,7 +408,7 @@ export function WhatIfScreen() {
     return () => {
       current = false;
     };
-  }, [loaded, changes, shown, keepChanges]);
+  }, [loaded, readFor, changes, shown, keepChanges]);
 
   /** A practice change from a sheet: worked out on top of the ones before it, never saved. */
   const practiceChange = useCallback(
@@ -560,10 +579,10 @@ export function WhatIfScreen() {
                 type="button"
                 className={formStyles.outlined}
                 aria-describedby="throw-hint"
+                aria-haspopup="dialog"
                 onClick={() => {
                   if (busy) return;
-                  keepChanges([]);
-                  say(t.thrownAway);
+                  setThrowing(true);
                 }}
               >
                 {t.throwAway}
@@ -628,6 +647,20 @@ export function WhatIfScreen() {
         <OvertimeSheet open={open === 'overtime'} onClose={closeIf('overtime')} />
         <UpdateBalanceSheet open={open === 'update-balance'} onClose={closeIf('update-balance')} />
       </PlanActionsOverride>
+      <ConfirmSheet
+        open={throwing}
+        title={t.throwAway}
+        intro={t.throwAwayCheck(changes.length)}
+        confirm={t.throwAway}
+        keep={t.keepPractising}
+        onConfirm={async () => ({ ok: true, version: version.current })}
+        onClose={(changed) => {
+          setThrowing(false);
+          if (!changed) return;
+          keepChanges([]);
+          say(t.thrownAway);
+        }}
+      />
     </>
   );
 }
