@@ -63,6 +63,13 @@ async function expectEveryFigure(page: Page) {
     'This is an example plan. Nothing here is yours.',
   );
 
+  // What Home is for, in one plain sentence (D213).
+  await expect(
+    page.getByText("How much you have, how much you can spend, and what's due next.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+
   // Current account £267.54, "Checked today, Sun 25 Oct".
   await expect(page.getByRole('heading', { name: 'Current account' })).toBeVisible();
   await expect(page.getByTestId('balance')).toHaveText('£267.54');
@@ -94,6 +101,10 @@ async function expectEveryFigure(page: Page) {
   // The next three due, with what's left after each.
   const due = page.getByTestId('next-due');
   await expect(due.getByRole('heading')).toHaveText('Next due');
+  await expect(due.getByRole('link', { name: 'See everything coming up' })).toHaveAttribute(
+    'href',
+    '/app/coming-up/',
+  );
   const rows = due.getByRole('listitem');
   await expect(rows).toHaveCount(3);
   const expected = [
@@ -125,7 +136,14 @@ test.describe('Home, with Sam’s example plan', () => {
   });
 
   test('has no sideways scrolling, on Home or any other page', async ({ page }) => {
-    for (const path of ['/', '/app/', '/app/plan/', '/app/debts/', '/app/more/', '/app/parts/']) {
+    for (const path of [
+      '/',
+      '/app/',
+      '/app/coming-up/',
+      '/app/debts/',
+      '/app/more/',
+      '/app/parts/',
+    ]) {
       await page.goto(path);
       await page.waitForLoadState('networkidle');
       const { scrollWidth, width } = await sidewaysScroll(page);
@@ -276,7 +294,7 @@ test.describe('Accessibility: WCAG 2.2 AA with axe', () => {
 
     test(`every other page has no problems in ${colorScheme} mode`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
-      for (const path of ['/', '/app/plan/', '/app/debts/', '/app/more/', '/app/parts/']) {
+      for (const path of ['/', '/app/coming-up/', '/app/debts/', '/app/more/', '/app/parts/']) {
         await page.goto(path);
         await page.waitForLoadState('networkidle');
         const results = await new AxeBuilder({ page }).withTags(tags).analyze();
