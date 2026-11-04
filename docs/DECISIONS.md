@@ -2510,7 +2510,7 @@ Why: the owner confirmed it.
 
 ## Made during step 2f
 
-D234 to D245 were decided on 4 Nov 2026 while building step 2f, the Debts, Budgets, Savings goals and Accounts screens. Questions for the owner are in `PLAN.md`.
+D234 to D246 were decided on 4 Nov 2026 while building step 2f, the Debts, Budgets, Savings goals and Accounts screens; D246 came from the outside review. Questions for the owner are in `PLAN.md`.
 
 ### D234. Closing an account at £0.00, and the move before it
 
@@ -2635,4 +2635,18 @@ Decided 4 Nov 2026 in step 2f.
 - The setup tests compare a spend's budget like any other id, now that setup saves spends.
 
 Why: each follows the owner's instructions or an earlier decision where they didn't say exactly.
+
+### D246. Fixes from the outside review of step 2f
+
+Decided 4 Nov 2026 in step 2f, from an outside review of the step. Adds to D230, D234, D238, D240, D244 and D245.
+
+- **A debt's currency stays as it is.** Changing a debt's kind used to switch it to pounds, so the Family loan's €1,400.57 became £1,400.57 and Owed now went from £3,214.86 to £3,409.29. Its balance is kept in its own currency, so the change sheet no longer offers the currency: it says "It's in euros. That stays as it is, so what's owed doesn't change.", and the rate can still be changed.
+- **How often starts from the payment's own date.** For a payment moved off a weekend or bank holiday, such as rent due on Sun 1 Nov and paid on Mon 2 Nov, the new schedule is worked out from Sun 1 Nov, its date before the move, so it repeats on the 1st. Before, the engine refused it. The hint now also says "If it ends on a date, it now ends after the same number of payments." (D91).
+- **A budget offers only the changes that can work.** A pay-later bill is monthly and starts afresh (D107, D161), so a weekly budget, or one with spending recorded, isn't offered "As one pay-later bill each month", and the sheet says "To move it to a pay-later card, end it and add a new monthly budget...". A pay-later budget says it stays on the card.
+- **"Already spent" in setup only where it can be inside the balance.** A pay-later card isn't asked, because its spending never leaves the bank. When the account's balance was typed on an earlier day, as when setup is finished another day (D221), PrePenny can't tell how much of the spending that balance shows, so the spend is recorded now and the whole amount still leaves today, the safe choice (D230).
+- **The move before closing can't be made twice.** A quick second tap, before the figures are worked out again, does nothing. The line under the button names the other account: "This adds a move to Current account today, marked as done. Make the same move in your bank."
+- **Focus and headings.** When "Make it £20.99 and stop after it", or closing a debt or a goal, takes away the button that was tapped, focus goes to Undo. The confirm sheet starts afresh each time it opens. Closed accounts and goals are a heading level below "Closed accounts" and "Closed goals", and with only closed goals the screen no longer says "No savings goals yet".
+- **The progress bar in dark mode** is filled with Navy as text, cream on the dark track, so it shows; in light mode it's the same navy as before.
+
+Why: the review found each with a case that misled about money, refused something valid or made the screen harder to use.
 

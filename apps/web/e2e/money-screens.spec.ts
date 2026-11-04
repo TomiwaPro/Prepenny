@@ -304,6 +304,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(undoBar(page)).toContainText(
         'Credit card made £20.99, and later payments to it removed.',
       );
+      // The fix has gone, so focus goes to Undo rather than being lost.
+      await expect(undoBar(page).getByRole('button', { name: 'Undo' })).toBeFocused();
       await expect(rows).toHaveCount(17);
       await expect(march).toContainText(`${MINUS}£20.99`);
       await expect(march).toContainText('Paid off');
@@ -376,6 +378,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: 'Change Travel' }).click();
       const sheet = page.getByRole('dialog', { name: 'Change this budget' });
       await expect(sheet.getByLabel('Amount')).toHaveValue('25.00');
+      // A weekly budget can't become a monthly card bill, so it isn't offered, and the sheet says why.
+      await expect(
+        sheet.getByRole('radio', { name: 'As one pay-later bill each month' }),
+      ).toHaveCount(0);
+      await expect(sheet.getByText(/^To move it to a pay-later card, end it/)).toBeVisible();
       await sheet.getByLabel('Amount').fill('30');
       await noAxeProblems(page);
       await sheet.getByRole('button', { name: 'Save' }).click();
@@ -469,7 +476,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
         .getByRole('button', { name: 'Close this goal' })
         .click();
       await expect(undoBar(page)).toContainText('Holiday closed.');
-      await expect(page.getByTestId('no-goals')).toBeVisible();
+      // Its buttons have gone, so focus goes to Undo; it's listed under Closed goals.
+      await expect(undoBar(page).getByRole('button', { name: 'Undo' })).toBeFocused();
+      await expect(page.getByRole('heading', { level: 2, name: 'Closed goals' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 3, name: 'Holiday' })).toBeVisible();
+      await expect(goal).toContainText('Closed.');
+      await expect(page.getByTestId('no-goals')).toHaveCount(0);
+      await noAxeProblems(page);
     });
 
     test('test 7: closing an account with £3.12 left offers the move first, and closes it once it is at £0.00', async ({
@@ -499,6 +512,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
           name: 'Current account',
         }),
       ).toBeChecked();
+      await expect(closing).toContainText(
+        'This adds a move to Current account today, marked as done. Make the same move in your bank.',
+      );
       await noAxeProblems(page);
       await closing.getByRole('button', { name: 'Move £3.12 to another account first' }).click();
       await expect(undoBar(page)).toContainText('£3.12 moved from Old account to Current account.');
@@ -551,6 +567,56 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await undo(page);
       await expect(rentIn('2027-01-01')).toContainText('Fri 1 Jan 2027');
       await expect(rentIn('2027-02-01')).toContainText('Mon 1 Feb 2027');
+    });
+
+    test('changing a debt’s kind keeps its currency, so what’s owed stays the same (D246)', async ({
+      page,
+    }) => {
+      await openDebt(page, 'Family loan');
+      await page.getByRole('button', { name: 'Change its details' }).click();
+      const sheet = page.getByRole('dialog', { name: 'Change this debt' });
+      await expect(
+        sheet.getByText("It's in euros. That stays as it is, so what's owed doesn't change."),
+      ).toBeVisible();
+      await expect(sheet.getByRole('group', { name: 'Currency' })).toHaveCount(0);
+      await sheet.getByRole('radio', { name: 'Loan', exact: true }).check();
+      await expect(sheet.getByLabel('How many EUR to £1')).toHaveValue('1.1612');
+      await noAxeProblems(page);
+      await sheet.getByRole('button', { name: 'Save' }).click();
+      await expect(undoBar(page)).toContainText('Family loan changed.');
+      await expect(page.getByTestId('left-now')).toContainText('€1,400.57');
+      await expect(page.getByTestId('left-now')).toContainText('Paid off on Fri 1 Jan 2027');
+      await expect(page.getByText('Loan, in euros')).toBeVisible();
+      await nav(page, 'Debts').click();
+      await expect(page.getByTestId('owed-now')).toContainText('£3,214.86');
+    });
+
+    test('changing how often works for rent moved off a Sunday: it repeats on the 1st (D96)', async ({
+      page,
+    }) => {
+      const moved: PlanRecords = {
+        ...examplePlan,
+        series: examplePlan.series.map((one) =>
+          one.id === 'rent' ? { ...one, holidayRule: 'working-day-after' } : one,
+        ),
+      };
+      await useSetting(page, { plan: moved });
+      await openComingUp(page);
+      await openPeriod(page, '2026-10-30');
+      await rowIn(page, '2026-10-30', 'Rent').click();
+      const sheet = page.getByRole('dialog', { name: 'Rent' });
+      await expect(sheet.getByText('Mon 2 Nov, Current account')).toBeVisible();
+      await sheet.getByText('This and all later ones', { exact: true }).click();
+      await sheet.getByRole('checkbox', { name: 'Change how often it repeats' }).check();
+      await expect(sheet.getByRole('radio', { name: 'The 1st of the month' })).toBeChecked();
+      // Nothing changed yet.
+      await sheet.getByRole('button', { name: 'Save' }).click();
+      await expect(sheet.getByText('Change something first, then save.')).toBeVisible();
+      await sheet.getByLabel('How many months apart').fill('2');
+      await sheet.getByRole('button', { name: 'Save' }).click();
+      await expect(sheet).toBeHidden();
+      await expect(undoBar(page)).toContainText('Rent changed for this and all later ones.');
+      await undo(page);
     });
   });
 }
