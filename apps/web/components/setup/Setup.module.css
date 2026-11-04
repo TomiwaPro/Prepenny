@@ -77,13 +77,13 @@
   gap: var(--space-4);
 }
 
-/* A form or a group of choices, on a card. */
+/* A form or a group of choices, on a card. Cards stand apart from the paper
+   by colour alone (DESIGN.md). */
 .card {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-4);
-  border: 1px solid var(--card-edge);
   border-radius: var(--radius-card);
   background: var(--card);
   min-width: 0;
@@ -100,7 +100,6 @@
   flex-direction: column;
   margin: 0;
   padding: 0 var(--space-4);
-  border: 1px solid var(--card-edge);
   border-radius: var(--radius-card);
   background: var(--card);
   list-style: none;
@@ -203,4 +202,26 @@
   display: flex;
   flex-direction: column;
   gap: var(--card-gap);
+}
+
+/* "First debt paid off" and "First savings goal reached": a figure card's
+   label, then the name and date. */
+.reached {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+.reachedLabel {
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.reachedLine {
+  font-size: var(--size-name);
+  font-weight: 600;
 }

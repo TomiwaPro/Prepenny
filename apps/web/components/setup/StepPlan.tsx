@@ -58,9 +58,9 @@ function Summary({ summary, today }: { readonly summary: SetupSummary; readonly 
         />
       )}
       {summary.firstDebt === null ? null : (
-        <section className={styles.card} data-testid="setup-first-debt">
-          <h2 className={styles.cardHeading}>{t.firstDebt}</h2>
-          <p>
+        <section className={styles.reached} data-testid="setup-first-debt">
+          <h2 className={styles.reachedLabel}>{t.firstDebt}</h2>
+          <p className={styles.reachedLine}>
             {(summary.firstDebt.isEstimate ? t.onDateEstimate : t.onDate)(
               summary.firstDebt.name,
               day(summary.firstDebt.date),
@@ -69,9 +69,9 @@ function Summary({ summary, today }: { readonly summary: SetupSummary; readonly 
         </section>
       )}
       {summary.firstGoal === null ? null : (
-        <section className={styles.card} data-testid="setup-first-goal">
-          <h2 className={styles.cardHeading}>{t.firstGoal}</h2>
-          <p>
+        <section className={styles.reached} data-testid="setup-first-goal">
+          <h2 className={styles.reachedLabel}>{t.firstGoal}</h2>
+          <p className={styles.reachedLine}>
             {(summary.firstGoal.isEstimate ? t.onDateEstimate : t.onDate)(
               summary.firstGoal.name,
               day(summary.firstGoal.date),
