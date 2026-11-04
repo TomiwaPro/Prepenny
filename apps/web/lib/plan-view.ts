@@ -1,20 +1,23 @@
-// Everything the Plan screen shows (brief 4.8, the Plan sketch in
-// ARCHITECTURE.md 4.6), worked out by the engine in the background worker.
-// Each account's plan grouped by pay period or calendar month, each period
-// with "Came in", its rows with "Left after this" and "Left at the end"; the
-// lowest point ahead; and "Not ticked yet" (D11, D14, D84).
+// Everything the Coming up page shows (brief 4.8, D208 to D211), worked out
+// by the engine in the background worker. Each account's balance, its plan
+// grouped by pay period or calendar month, each period with the pay that
+// comes in, its lowest point, its rows with "Left after this" and "Left at
+// the end"; the lowest point ahead; and "Not ticked yet" (D11, D14, D84).
 //
-// Filters only hide rows on screen, so they're not here: every figure is
+// What's shown only hides rows on screen, so it's not here: every figure is
 // worked out from the whole plan (D184).
 
 import {
+  type AccountPlan,
   addDays,
   addMonths,
+  type BalanceStatus,
   formatDate,
   groupIntoPeriods,
   lastDayOfMonth,
   type Pence,
   type Plan,
+  type PlanPeriod,
   type PlanRecords,
   parseDate,
   partsOfDay,
@@ -25,6 +28,7 @@ import {
   PLAN_MONTHS_AHEAD,
   PLAN_MONTHS_MOST,
   planLookAhead,
+  settingsOf,
   workOutPlanTo,
 } from './plan-input.ts';
 import { keyOfRow, type RowView, rowMaker } from './rows.ts';
@@ -46,12 +50,31 @@ export const DEFAULT_PLAN_OPTIONS: PlanViewOptions = {
 export interface PeriodView {
   /** The period's first day: unique in the list. */
   readonly start: string;
-  /** The period's last day. The Plan screen always shows whole periods (D183). */
+  /** The period's last day. The Coming up page always shows whole periods (D183). */
   readonly end: string;
   /** The period with today in it: its rows start today (D84). */
   readonly first: boolean;
+  /**
+   * A calendar month: grouped by month, or a month after the main pay has
+   * stopped (D144). It's named "November" rather than by its first day.
+   */
+  readonly byMonth: boolean;
   /** "Came in": everything arriving in the account in it, from today on (D84). */
   readonly cameIn: Pence;
+  /**
+   * The main pay arriving in this account in the period, from today on: "Pay
+   * £603.06 in" (D211). Null when none of it arrives in this account then.
+   */
+  readonly pay: Pence | null;
+  /**
+   * The lowest end-of-day balance in the period, from today on, with Tight or
+   * Short (D85, D211): "Lowest £4.53". The first such day if there's a tie.
+   */
+  readonly lowest: {
+    readonly balance: Pence;
+    readonly status: BalanceStatus;
+    readonly date: string;
+  };
   /** "Left at the end". */
   readonly leftAtEnd: Pence;
   readonly rows: readonly RowView[];
@@ -60,6 +83,9 @@ export interface PeriodView {
 export interface AccountView {
   readonly id: string;
   readonly name: string;
+  /** The balance typed in, and the day it was checked: "£267.54, checked today" (D209). */
+  readonly balance: Pence;
+  readonly checkedOn: string;
   readonly warningLevel: Pence;
   /** Looks as far as Home does, or as far as the plan is shown when that's further (D183). */
   readonly lowest: LowestView;
@@ -72,6 +98,14 @@ export interface PlanView {
   readonly today: string;
   /** How the periods are grouped: pay periods need a main pay, otherwise it's months (D84). */
   readonly grouping: Grouping;
+  /** There's a main pay, so payments can be grouped by payday (D84). */
+  readonly canGroupByPay: boolean;
+  /**
+   * For pay every week or every few weeks: a whole pay period's first and
+   * last day, for "By payday, Fri to Thu" in the View sheet (D210). Null for
+   * other pay, where the days change from month to month.
+   */
+  readonly payWeek: { readonly start: string; readonly end: string } | null;
   readonly months: number;
   /** The last day shown: the end of the last whole period (D183). */
   readonly to: string;
@@ -113,7 +147,7 @@ export function monthsShown(months: number): number {
 }
 
 /**
- * The last day the Plan screen shows (D183). In calendar months: the end of
+ * The last day the Coming up page shows (D183). In calendar months: the end of
  * the month some months after today's, counting today's. In pay periods: the
  * end of the pay period with the date that many months ahead in it, and at
  * least one more period for each month added, so "Show another month"
@@ -147,7 +181,61 @@ function lastDayShown(records: PlanRecords, today: string, options: PlanViewOpti
   return { grouping: 'pay' as const, to, plan };
 }
 
-/** Everything the Plan screen shows, from the stored records and today. */
+/** The lowest end-of-day balance from `from` to `to`, the first such day if there's a tie (D85). */
+function lowestBetween(account: AccountPlan, from: string, to: string): PeriodView['lowest'] {
+  let lowest: PeriodView['lowest'] | null = null;
+  for (const day of account.days) {
+    if (day.date < from || day.date > to) continue;
+    if (lowest === null || day.balance < lowest.balance) {
+      lowest = { balance: day.balance, status: day.status, date: day.date };
+    }
+  }
+  // Every day in a period has an end-of-day balance; this is only a safe fallback.
+  return lowest ?? { balance: account.lowestPoint.balance, status: 'ok', date: from };
+}
+
+/** True when a period is one whole calendar month. */
+function wholeMonth(start: string, end: string): boolean {
+  const first = partsOfDay(parseDate(start));
+  return first.day === 1 && end === formatDate(lastDayOfMonth(first.year, first.month));
+}
+
+/** The main pay in a period's rows, or null when none of it is in this account then (D211). */
+function payIn(period: PlanPeriod, mainPaySeries: ReadonlySet<string>): Pence | null {
+  let pay: Pence | null = null;
+  for (const row of period.rows) {
+    if (row.kind === 'payment' && row.change > 0 && mainPaySeries.has(row.payment.seriesId)) {
+      pay = (pay ?? 0) + row.change;
+    }
+  }
+  return pay;
+}
+
+/**
+ * A whole pay period's first and last day, when the main pay comes every
+ * week or every few weeks (or is irregular, with Monday to Sunday weeks, D14).
+ */
+function payWeekOf(
+  records: PlanRecords,
+  plan: Plan,
+  grouped: ReturnType<typeof groupIntoPeriods>,
+): PlanView['payWeek'] {
+  const family = settingsOf(records).mainPayFamilyId;
+  if (family === null || plan.mainPay === 'none') return null;
+  const weekly = records.series
+    .filter((one) => one.familyId === family)
+    .every((one) => one.schedule.kind === 'weekly' || one.schedule.kind === 'irregular');
+  if (!weekly) return null;
+  const byPay = grouped.by === 'pay' ? grouped : groupIntoPeriods(plan, 'pay');
+  const periods = byPay.accounts[0]?.periods ?? [];
+  // The second period is the first whole one: the first starts today.
+  const whole = periods[1];
+  return whole === undefined || whole.to !== whole.end
+    ? null
+    : { start: whole.start, end: whole.end };
+}
+
+/** Everything the Coming up page shows, from the stored records and today. */
 export function workOutPlanView(
   records: PlanRecords,
   today: string,
@@ -166,6 +254,10 @@ export function workOutPlanView(
   const closed = new Set(
     records.accounts.filter((one) => one.closed === true).map((one) => one.id),
   );
+  const mainPayFamily = settingsOf(records).mainPayFamilyId;
+  const mainPaySeries = new Set(
+    records.series.filter((one) => one.familyId === mainPayFamily).map((one) => one.id),
+  );
 
   const accounts = plan.accounts.flatMap((account, index): AccountView[] => {
     if (closed.has(account.account.id) && closed.size < records.accounts.length) return [];
@@ -176,17 +268,26 @@ export function workOutPlanView(
       {
         id: account.account.id,
         name: account.account.name ?? '',
+        balance: account.start.balance,
+        checkedOn: account.start.checkedOn,
         warningLevel: account.account.warningLevel,
         lowest: lowestOf(account),
         notTickedYet: account.notTickedYet.map((row) => makeRow(row, lowestKey)),
-        periods: periods.map((period, i) => ({
-          start: period.start,
-          end: period.end,
-          first: i === 0,
-          cameIn: period.cameIn,
-          leftAtEnd: period.leftAtEnd,
-          rows: period.rows.map((row) => makeRow(row, lowestKey)),
-        })),
+        periods: periods.map((period, i) => {
+          const pay = payIn(period, mainPaySeries);
+          return {
+            start: period.start,
+            end: period.end,
+            first: i === 0,
+            byMonth:
+              grouped.by === 'months' || (pay === null && wholeMonth(period.start, period.end)),
+            cameIn: period.cameIn,
+            pay,
+            lowest: lowestBetween(account, period.from, period.to),
+            leftAtEnd: period.leftAtEnd,
+            rows: period.rows.map((row) => makeRow(row, lowestKey)),
+          };
+        }),
       },
     ];
   });
@@ -194,6 +295,8 @@ export function workOutPlanView(
   return {
     today,
     grouping: grouped.by,
+    canGroupByPay: plan.mainPay !== 'none',
+    payWeek: payWeekOf(records, plan, grouped),
     months,
     to: shown.to,
     canShowMore: months < PLAN_MONTHS_MOST,

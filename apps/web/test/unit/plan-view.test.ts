@@ -235,29 +235,31 @@ describe('A ticked payment', () => {
   });
 });
 
-describe('Filters only hide rows (D184)', () => {
+describe('What’s shown only hides rows (D184, D210)', () => {
   const view = workOutPlanView(examplePlan, TODAY);
   const first = current(view).periods[0]?.rows ?? [];
   const names = (filters: Parameters<typeof rowMatches>[1]) =>
     first.filter((row) => rowMatches(row, filters)).map((row) => row.name);
 
-  it('shows everything with no filters', () => {
-    expect(filtersOn(NO_FILTERS)).toBe(0);
+  it('shows everything at first', () => {
+    expect(filtersOn(NO_FILTERS)).toBe(false);
     expect(names(NO_FILTERS)).toHaveLength(5);
   });
 
-  it('shows what’s still to pay, money in, debt payments or one type', () => {
-    expect(names({ show: 'still-to-pay', type: 'all' })).toEqual([
+  it('shows what’s still to pay, money coming in, debt payments or one type', () => {
+    expect(names({ show: 'still-to-pay', type: 'bills' })).toEqual([
       'Spending money until payday',
       'Family loan',
       'Driving lesson',
       'Pay-later card',
     ]);
-    expect(names({ show: 'money-in', type: 'all' })).toEqual(['From savings']);
-    expect(names({ show: 'debts', type: 'all' })).toEqual(['Family loan', 'Pay-later card']);
-    expect(names({ show: 'everything', type: 'other' })).toEqual(['Driving lesson']);
-    expect(filtersOn({ show: 'debts', type: 'other' })).toBe(2);
-    expect(names({ show: 'debts', type: 'other' })).toEqual([]);
+    expect(names({ show: 'money-in', type: 'bills' })).toEqual(['From savings']);
+    expect(names({ show: 'debts', type: 'bills' })).toEqual(['Family loan', 'Pay-later card']);
+    expect(names({ show: 'type', type: 'other' })).toEqual(['Driving lesson']);
+    expect(filtersOn({ show: 'type', type: 'other' })).toBe(true);
+    // The type counts only when "One type" is picked.
+    expect(names({ show: 'everything', type: 'other' })).toHaveLength(5);
+    expect(names({ show: 'type', type: 'bills' })).toEqual([]);
   });
 });
 
@@ -276,5 +278,77 @@ describe('Show another month always shows more, even with monthly pay (D183)', (
     for (let i = 1; i < ends.length; i += 1) {
       expect((ends[i] ?? '') > (ends[i - 1] ?? ''), `${i + 1} months`).toBe(true);
     }
+  });
+});
+
+describe('The Coming up page’s lines (D209, D211)', () => {
+  it('gives the account its balance and the day it was checked', () => {
+    const account = current(workOutPlanView(examplePlan, TODAY));
+    expect([account.name, account.balance, account.checkedOn]).toEqual([
+      'Current account',
+      26754,
+      '2026-10-25',
+    ]);
+  });
+
+  it('gives each later payday its pay and its lowest point (owner test 2)', () => {
+    const view = workOutPlanView(examplePlan, TODAY, { grouping: 'pay', months: 3 });
+    expect(
+      current(view)
+        .periods.slice(1, 5)
+        .map((period) => [
+          period.start,
+          period.pay,
+          period.lowest.balance,
+          period.lowest.status,
+          period.byMonth,
+        ]),
+    ).toEqual([
+      ['2026-10-30', 60306, 453, 'tight', false],
+      ['2026-11-06', 61846, 15569, 'ok', false],
+      ['2026-11-13', 46906, 29575, 'ok', false],
+      ['2026-11-20', 59217, 38474, 'ok', false],
+    ]);
+    // Sam is paid every Friday, so a pay runs Friday to Thursday.
+    expect(view.payWeek).toEqual({ start: '2026-10-30', end: '2026-11-05' });
+    expect(view.canGroupByPay).toBe(true);
+  });
+
+  it('opens Fri 6 Nov with every payment and what’s left after it (owner test 3)', () => {
+    const view = workOutPlanView(examplePlan, TODAY, { grouping: 'pay', months: 3 });
+    // Family loan before Spending money, by when each was set up (D12, D215).
+    expect(rowsOf(view, '2026-11-06').map(([name, change, left]) => [name, change, left])).toEqual([
+      ['Pay', 61846, 62299],
+      ['Family loan', -12500, 49799],
+      ['Spending money', -5400, 44399],
+      ['Pay in 3 (£165.20 order)', -4130, 40269],
+      ['Pay in 3 (£79.99 order)', -2000, 38269],
+      ['Laptop loan', -15000, 23269],
+      ['Sofa finance', -7700, 15569],
+    ]);
+  });
+
+  it('names calendar months, with the pay in each (owner test 5)', () => {
+    const view = workOutPlanView(examplePlan, TODAY, { grouping: 'months', months: 3 });
+    const [october, november] = current(view).periods;
+    expect([october?.start, october?.leftAtEnd, october?.byMonth]).toEqual([
+      '2026-10-01',
+      60453,
+      true,
+    ]);
+    expect([november?.start, november?.leftAtEnd, november?.byMonth]).toEqual([
+      '2026-11-01',
+      73291,
+      true,
+    ]);
+    // Paid on Fridays 6, 13, 20 and 27 Nov.
+    expect(november?.pay).toBe(61846 + 46906 + 59217 + 45217);
+  });
+
+  it('has no pay in the savings account, so it says what else comes in', () => {
+    const view = workOutPlanView(examplePlan, TODAY, { grouping: 'pay', months: 3 });
+    const savings = view.accounts.find((one) => one.id === 'savings');
+    const fri13 = savings?.periods.find((period) => period.start === '2026-11-13');
+    expect([fri13?.pay, fri13?.cameIn]).toEqual([null, 15000]);
   });
 });
