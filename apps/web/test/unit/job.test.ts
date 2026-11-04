@@ -51,7 +51,7 @@ describe("Your job on Sam's example", () => {
       steps: 4,
       shiftsAhead: 0,
     });
-    expect(taxCodeWords(job.profile)).toBe('1257L, the usual way');
+    expect(taxCodeWords(job.profile)).toBe('1257L, worked out the usual way');
     expect(pensionWords(job.profile)).toBe(
       '4% of your pay from £120.00 to £967.00 a week, before tax',
     );

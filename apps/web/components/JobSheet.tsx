@@ -142,7 +142,7 @@ function JobDetailsForm({
     >
       <TaxBoxes id={id} form={form} errors={errors} today={today} set={set} />
       <h3 className={formStyles.subheading}>{strings.pay.soFarHeading}</h3>
-      <p className={screenStyles.second}>{strings.pay.soFarIntro}</p>
+      <p className={screenStyles.second}>{t.soFarIntro}</p>
       <SoFarBoxes id={id} form={form} errors={errors} today={today} set={set} />
       <Field
         id={`${id}-overtimeRate`}

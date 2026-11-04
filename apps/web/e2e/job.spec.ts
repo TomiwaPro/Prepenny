@@ -92,10 +92,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
         page.getByText('The details from your payslip that PrePenny uses'),
       ).toBeVisible();
       await expect(job.getByRole('heading', { name: 'Warehouse job' })).toBeVisible();
-      await expect(job).toContainText('For Pay.');
+      await expect(job).toContainText('In your plan as Pay.');
       const expected = [
         ['Paid', 'Every week'],
-        ['Tax code', '1257L, the usual way'],
+        ['Tax code', '1257L, worked out the usual way'],
         ['Workplace pension', '4% of your pay from £120.00 to £967.00 a week, before tax'],
         ['Student loan', 'None'],
         ['Other deductions', 'None'],
@@ -105,7 +105,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         ],
         ['Overtime rate', '£19.07 an hour'],
         [
-          'Work each payday pays for',
+          'Which days of work each payday pays for',
           `${day('Fri 30 Oct')} pays for work up to ${day('Sun 25 Oct')}`,
         ],
       ] as const;
@@ -136,7 +136,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await addOvertime(page);
       const job = await openJob(page);
       await expect(page.getByTestId('shifts-ahead')).toHaveText(
-        '1 overtime or missed shift is saved for a payday still to come. Changing these details works it out again.',
+        'Overtime or a missed shift is saved for a payday still to come. Changing these details works out that pay again.',
       );
       const sheet = await openSheet(page);
       await expect(sheet).toContainText(
@@ -190,9 +190,9 @@ test('each mistake is explained beside its box, and saving with nothing changed 
   await sheet.getByRole('button', { name: 'Save these details' }).click();
   await expect(sheet).toBeHidden();
   await expect(undoBar(page)).toHaveText(/^Your job details changed\./);
-  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText('1263L, the usual way');
+  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText('1263L, worked out the usual way');
   await undo(page);
-  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText('1257L, the usual way');
+  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText('1257L, worked out the usual way');
 });
 
 test('a new last day covered that would move a saved shift to another payday is refused in words (D154)', async ({

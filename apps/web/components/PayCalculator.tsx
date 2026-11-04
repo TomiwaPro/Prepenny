@@ -491,6 +491,7 @@ export function TaxBoxes({ id, form, errors, today, set }: BoxesProps) {
       <CheckOption checked={form.postgraduate} onChange={(postgraduate) => set({ postgraduate })}>
         {t.postgraduate}
       </CheckOption>
+      <p className={formStyles.hint}>{t.loanHint}</p>
       <NamedAmounts
         rows={form.deductions}
         base={id}
@@ -548,6 +549,9 @@ export function SoFarBoxes({ id, form, errors, today, set }: BoxesProps) {
           onChange={(event) => set({ soFarPeriod: event.target.value })}
         />
       </Field>
+      <p id={`${id}-soFar-hint`} className={formStyles.hint}>
+        {t.soFarFiguresHint}
+      </p>
       <Field id={`${id}-grossSoFar`} label={t.grossSoFar} error={error('grossSoFar')}>
         <MoneyInput
           id={`${id}-grossSoFar`}

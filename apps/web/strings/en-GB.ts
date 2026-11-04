@@ -625,7 +625,7 @@ export const strings = {
     overtime: 'I worked extra hours',
     missed: 'I missed a shift',
     noPay:
-      'PrePenny needs your pay details to work this out. They come with the pay calculator, which is still being built.',
+      'PrePenny needs your job details to work this out. Save your usual week with Save as a pay week in the Pay calculator, under More.',
     whichPay: 'Which pay',
     dayOvertime: 'Day of the overtime',
     dayMissed: 'Day of the shift',
@@ -711,15 +711,18 @@ export const strings = {
     'payday-not-estimate': 'That payday already has its real pay typed in, so it stays as it is.',
     'no-payday': "There's no payday in the plan that pays for work on that day.",
     'no-pay-week':
-      "PrePenny doesn't know your usual week for that payday yet, so it can't work this out.",
-    'no-pay-profile': 'PrePenny needs your pay details to work this out.',
-    'no-covered-to': 'PrePenny needs to know which days of work each payday pays for.',
+      "PrePenny doesn't know your usual week for that payday yet. Save one with Save as a pay week in the Pay calculator, under More.",
+    'no-pay-profile':
+      'PrePenny needs your job details to work this out. Save your usual week with Save as a pay week in the Pay calculator, under More.',
+    'no-covered-to':
+      'PrePenny needs to know which days of work each payday pays for. Add it in Your job, under More.',
     'shifts-saved':
-      'A shift saved for a payday still to come would then go on another payday. Remove that shift, change this, then add the shift again.',
-    'covered-to-not-for-frequency': 'Choose the last day of work this payday pays for.',
+      'Overtime or a missed shift you added for a payday still to come would move to another payday. Remove it, save this change, then add it again.',
+    'covered-to-not-for-frequency':
+      "That last day doesn't fit how often this job is paid. Choose it again.",
     'bad-tax-code': 'Type the tax code as it is on your payslip, for example 1257L.',
     'bad-year-so-far':
-      "The figures from your last payslip don't fit your next payday. Check the tax week on it.",
+      "The figures from your last payslip don't fit your next payday. Check the tax week you typed from that payslip.",
     'no-rate': 'Type the rate for these hours, for example 19.07.',
     'no-extras': 'That payday has no extras, such as a shift premium, to change.',
     'too-much-extras': "That's more than the extras on that payday. Type a smaller amount.",
@@ -876,7 +879,7 @@ export const strings = {
     goToBudgets: 'Go to Budgets',
     changeOften: 'Change how often it repeats',
     changeOftenHint:
-      'From this payment on. The date above is the first one. If it ends on a date, it now ends after the same number of payments.',
+      'This changes it from this payment on, starting on the date above. If it was set to end on a date, it now ends after the same number of payments instead.',
     amountError: 'Type an amount, for example 25.',
     dateError: 'Choose a date.',
     nameError: 'Type a name, for example Rent.',
@@ -917,7 +920,7 @@ export const strings = {
       `Includes ${amount} of interest added since your last update, an estimate.`,
     interestNotIncluded: 'Interest not included',
     paidOfStarted: (paid: string, started: string) => `${paid} paid of ${started}`,
-    card: 'Interest and minimum',
+    card: 'Interest and minimum payment',
     rateAYear: (rate: string) => `${rate}% a year`,
     noRate: 'No interest rate. Add one with Change its details.',
     zeroUntil: (date: string) => `0% until ${date}`,
@@ -1016,7 +1019,8 @@ export const strings = {
     pensionPercent: 'Percentage that comes off',
     pensionLower: (period: string) => `Worked on earnings from, each ${period}`,
     pensionUpper: (period: string) => `Up to, each ${period}`,
-    pensionBandHint: 'Leave these empty if it comes off all your pay.',
+    pensionBandHint:
+      'Some pensions come off only part of your pay. Leave the next two boxes empty if it comes off all of it.',
     pensionWhen: 'When it comes off',
     beforeTax: 'Before tax',
     afterTax: 'After tax',
@@ -1030,6 +1034,8 @@ export const strings = {
     noLoan: 'None',
     plans: { 'plan-1': 'Plan 1', 'plan-2': 'Plan 2', 'plan-4': 'Plan 4', 'plan-5': 'Plan 5' },
     postgraduate: 'And a Postgraduate loan',
+    loanHint:
+      "Your payslip shows which plan, if any. A Postgraduate loan is for a master's or doctoral degree.",
     deductionName: "What it's for",
     deductionAmount: 'Amount',
     removeDeduction: 'Remove this deduction',
@@ -1039,7 +1045,10 @@ export const strings = {
       'For exact tax, type these from your last payslip. Leave them empty and the result is an estimate.',
     soFarWeek: 'The tax week on it',
     soFarMonth: 'The tax month on it',
-    soFarWeekHint: "It's on your payslip, often as Tax week or Period.",
+    soFarWeekHint:
+      'The tax year starts on 6 April, and its weeks are numbered from then. Your payslip shows the number, often as Tax week or Period.',
+    soFarFiguresHint:
+      'Your payslip may call them Gross for tax TD and Tax TD, or Taxable pay to date and Tax to date.',
     grossSoFar: 'From your last payslip: gross for tax so far',
     taxSoFar: 'From your last payslip: tax paid so far',
     workOut: 'Work out take-home pay',
@@ -1102,7 +1111,7 @@ export const strings = {
     noPay: 'There are no paydays in your plan to add it to yet.',
     saveWeek: 'Save as a pay week',
     saveWeekIntro:
-      'Keep these pay lines as one of your usual weeks, so you can start from them again, and so I did overtime works out your pay from them.',
+      'Save these hours and rates as a usual week. You can start from it again here, and "I did overtime" uses it to work out your pay.',
     saveWeekName: 'Name this week',
     saveWeekDefault: 'Usual week',
     saveWeekNameError: 'Type a name, for example 3-shift week.',
@@ -1111,7 +1120,7 @@ export const strings = {
     /** Which paydays a saved week is for (D5, step 2h). */
     saveWeekFor: 'Which paydays is it for?',
     saveWeekEvery: 'Every payday',
-    saveWeekEveryHint: 'Overtime and missed shifts on every payday are worked out from it.',
+    saveWeekEveryHint: 'Every payday uses it from now on, in place of the weeks they use now.',
     saveWeekOne: 'One week of the pattern',
     saveWeekOneHint: 'Only the paydays on that week of your pay pattern use it.',
     saveWeekOnlyEvery: "It's for every payday.",
@@ -1120,7 +1129,7 @@ export const strings = {
     saveWeekWhich: 'Which week of the pattern?',
     saveWeekStep: (step: number, of: number, date: string) =>
       `Week ${step} of ${of}, next on ${date}`,
-    saveWeekStepNow: (name: string) => `Uses ${name} now.`,
+    saveWeekStepNow: (name: string) => `Uses ${name} now. Saving replaces it.`,
     saveWeekStepNone: 'Has no pay week yet.',
     savedWeekEvery: (name: string) => `${name} saved as the pay week for every payday.`,
     savedWeekStep: (name: string, step: number) =>
@@ -1161,13 +1170,13 @@ export const strings = {
     back: 'Back to More',
     loading: 'Working out your job details.',
     noJob:
-      'No job details are saved yet. Setup saves them when you say you work extra hours or miss shifts, and so does Save as a pay week in the Pay calculator.',
+      'No job details yet. Setup saves them when you say you work extra hours or miss shifts. Or work out your pay in the Pay calculator and tap Save as a pay week.',
     toCalculator: 'Go to the Pay calculator',
-    forPay: (names: string) => `For ${names}.`,
+    forPay: (names: string) => `In your plan as ${names}.`,
     often: 'Paid',
     taxCode: 'Tax code',
     taxCodeLine: (code: string, weekOne: boolean) =>
-      weekOne ? `${code}, on week 1 or month 1` : `${code}, the usual way`,
+      weekOne ? `${code}, each payday taxed on its own` : `${code}, worked out the usual way`,
     pension: 'Workplace pension',
     pensionLine: (percent: string, band: string | null, beforeTax: boolean) =>
       `${percent}% of ${band === null ? 'all your pay' : band}, ${beforeTax ? 'before tax' : 'after tax'}`,
@@ -1190,7 +1199,7 @@ export const strings = {
     overtimeRate: 'Overtime rate',
     overtimeRateLine: (rate: string) => `${rate} an hour`,
     notSet: 'Not set',
-    covered: 'Work each payday pays for',
+    covered: 'Which days of work each payday pays for',
     coveredLine: (payday: string, upTo: string) => `${payday} pays for work up to ${upTo}`,
     weeks: 'Usual weeks',
     weeksIntro: 'Overtime and missed shifts are worked out from these.',
@@ -1201,11 +1210,13 @@ export const strings = {
     weeksNone: 'No usual week is saved yet. Save one from the Pay calculator.',
     shiftsAhead: (count: number) =>
       count === 1
-        ? '1 overtime or missed shift is saved for a payday still to come. Changing these details works it out again.'
-        : `${count} overtimes or missed shifts are saved for paydays still to come. Changing these details works them out again.`,
+        ? 'Overtime or a missed shift is saved for a payday still to come. Changing these details works out that pay again.'
+        : `${count} changes for overtime or missed shifts are saved for paydays still to come. Changing these details works out that pay again.`,
     change: 'Change these details',
     sheetTitle: 'Your job details',
     sheetIntro: "Change anything that's different on your latest payslip.",
+    soFarIntro:
+      "For exact tax on overtime, type these from your last payslip. Leave them empty and it's an estimate.",
     reworkHint:
       'Overtime and missed shifts saved for paydays still to come are worked out again with these details.',
     overtimeHint: 'From your payslip, for example 19.07. Leave it empty if you never do overtime.',
@@ -1331,7 +1342,7 @@ export const strings = {
   statement: {
     title: 'Update from statement',
     intro:
-      "Type what the statement shows now, so the date it's paid off starts from the right amount.",
+      'Type what your latest statement says you owe, so the date it is paid off is worked out from the right amount.',
     amount: 'What the statement shows now',
     amountError: 'Type what the statement shows, for example 420.99.',
     tickHeading: 'Tick any payment to it that has already gone',
@@ -1547,7 +1558,8 @@ export const strings = {
 
   more: {
     heading: 'More',
-    purpose: 'Your accounts, budgets and savings goals, and settings for PrePenny on this phone.',
+    purpose:
+      'Your accounts, budgets, savings goals and pay, and settings for PrePenny on this phone.',
     stillBeingBuilt: 'Help and your account are still being built.',
     yourPlan: 'Your plan',
     accounts: 'Accounts',
@@ -1559,7 +1571,7 @@ export const strings = {
     whatIf: 'What if',
     whatIfLine: 'Try changes in practice before you make them',
     payCalculator: 'Pay calculator',
-    payCalculatorLine: 'Take-home pay from your hours, and Check my payslip',
+    payCalculatorLine: 'Work out take-home pay from your hours, or check a payslip',
     job: 'Your job',
     jobLine: 'Tax code, pension and overtime rate, from your payslip',
     colours: 'Colours',
