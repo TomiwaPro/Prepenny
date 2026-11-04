@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { strings } from '../../strings/en-GB.ts';
 import { Problem } from '../Fields.tsx';
+import { UpdateNote } from '../UpdateNote.tsx';
 import styles from './Setup.module.css';
 import { SetupProvider, useSetup } from './SetupProvider.tsx';
 import { StepAccounts } from './StepAccounts.tsx';
@@ -61,8 +62,12 @@ function Steps() {
   })();
   return (
     <>
+      {/* "PrePenny has been updated. Tap to reload." (D202), here too. */}
+      <div className={`${styles.notice} ${styles.update}`}>
+        <UpdateNote />
+      </div>
       {notSaved ? (
-        <div className={styles.page}>
+        <div className={styles.notice}>
           <Problem text={strings.setup.notSaved} />
         </div>
       ) : null}

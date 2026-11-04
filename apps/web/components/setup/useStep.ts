@@ -24,8 +24,8 @@ export interface StepBasics {
   /** Items this step added, oldest first. */
   readonly items: (kind?: SetupItem['kind']) => readonly SetupItem[];
   readonly go: (step: SetupStep) => Promise<void>;
-  /** Removes an item, saying why when it can't be removed. */
-  readonly removeItem: (id: string) => Promise<void>;
+  /** Removes an item, saying why when it can't be removed. True when it's gone. */
+  readonly removeItem: (id: string) => Promise<boolean>;
   /** Why the last Remove of an item didn't work, by item. */
   readonly removeProblem: (id: string) => string | null;
   readonly busy: boolean;
@@ -71,6 +71,7 @@ export function useStep(step: SetupStep): StepBasics {
               : refusalMessage(outcome.code),
         };
       });
+      return outcome.ok;
     },
     removeProblem: (id) => removeProblems[id] ?? null,
     busy,

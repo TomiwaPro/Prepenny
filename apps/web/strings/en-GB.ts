@@ -265,7 +265,7 @@ export const strings = {
       starts: 'Starts',
       startsWeek: 'The start of your next week. Before then, it plans nothing.',
       startsMonth: 'The start of your next month. Before then, it plans nothing.',
-      addAnother: 'Add another',
+      addAnother: 'Add another budget',
       anotherHeading: 'Another budget',
       removeBudget: 'Remove this budget',
       card: (amount: string, every: string) => `${amount} ${every}`,

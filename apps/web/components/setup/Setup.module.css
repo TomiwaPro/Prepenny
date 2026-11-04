@@ -12,6 +12,18 @@
   padding: var(--space-4) var(--gutter) var(--space-6);
 }
 
+/* "This phone couldn't save your plan", above the step. */
+.notice {
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) 0;
+}
+
+/* The update note takes no room until there's a note. */
+.update:not(:has(button)) {
+  padding: 0;
+}
+
 .top {
   display: flex;
   flex-wrap: wrap;

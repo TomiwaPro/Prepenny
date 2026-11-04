@@ -298,7 +298,13 @@ export function StepPay() {
             line: t.card(formatMoney(series.amount), seriesWords(series, step.today)),
             label:
               series.familyId === mainPayFamily && savedSeries.length > 1 ? t.mainPayLabel : null,
-            onRemove: () => step.removeItem(series.id),
+            onRemove: async () => {
+              const removed = await step.removeItem(series.id);
+              // Removing the main pay leaves no main pay until another is chosen (D14).
+              if (removed && series.familyId === mainPayFamily) {
+                await step.save({ commands: [{ kind: 'choose-main-pay', familyId: null }] });
+              }
+            },
             problem: step.removeProblem(series.id),
           })),
           ...savedDetails.flatMap((item) => {
