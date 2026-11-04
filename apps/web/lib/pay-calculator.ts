@@ -509,6 +509,12 @@ export interface MainPayLinks {
   readonly hasPayWeeks: boolean;
   /** The pay week of each step of the pattern now, or null with none (D5). */
   readonly weeks: readonly string[] | null;
+  /**
+   * Each length of pattern the paydays still to come follow, with a series of
+   * that length, so "Every payday" reaches them all (step 2h). Left out, the
+   * latest series' alone.
+   */
+  readonly patterns?: readonly { readonly seriesId: string; readonly steps: number }[];
 }
 
 /** Which paydays a saved week is for (D5, step 2h): every payday, or one week of the pattern, from 1. */
@@ -555,16 +561,28 @@ export function saveWeekCommands(
     ...(input.fixed === undefined ? {} : { fixed: input.fixed }),
   };
   commands.push({ kind: 'add-pay-week', week });
-  const steps = Math.max(1, main.steps);
-  const cyclePayWeeks =
-    weekFor !== 'every' && canChooseOneWeek(main) && main.weeks !== null
-      ? main.weeks.map((one, index) => (index === weekFor - 1 ? ids.weekId : one))
-      : Array.from({ length: steps }, () => ids.weekId);
-  commands.push({
-    kind: 'link-pay',
-    seriesId: main.seriesId,
-    payProfileId: profileId,
-    cyclePayWeeks,
-  });
+  if (weekFor !== 'every' && canChooseOneWeek(main) && main.weeks !== null) {
+    commands.push({
+      kind: 'link-pay',
+      seriesId: main.seriesId,
+      payProfileId: profileId,
+      cyclePayWeeks: main.weeks.map((one, index) => (index === weekFor - 1 ? ids.weekId : one)),
+    });
+    return commands;
+  }
+  // Every payday: one link for each length of pattern the paydays to come follow,
+  // because the engine fits a list of weeks only to series with that many steps.
+  const patterns =
+    main.patterns === undefined || main.patterns.length === 0
+      ? [{ seriesId: main.seriesId, steps: main.steps }]
+      : main.patterns;
+  for (const pattern of patterns) {
+    commands.push({
+      kind: 'link-pay',
+      seriesId: pattern.seriesId,
+      payProfileId: profileId,
+      cyclePayWeeks: Array.from({ length: Math.max(1, pattern.steps) }, () => ids.weekId),
+    });
+  }
   return commands;
 }

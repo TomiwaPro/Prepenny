@@ -62,6 +62,7 @@ export function soFarWords(profile: PayProfile): string {
   return t.soFarLine(
     profile.frequency === 'monthly' ? 'month' : 'week',
     soFar.period,
+    pay.taxYearWords(soFar.taxYear),
     formatMoney(soFar.grossForTax),
     formatMoney(soFar.taxPaid),
   );
@@ -78,9 +79,14 @@ export function coveredWords(job: JobCard, today: string): string {
   return t.coveredLine(formatDay(job.next.date, today), formatDay(job.coveredUpTo, today));
 }
 
-/** Which paydays a saved week is for: every payday, some weeks of the pattern, or none. */
-export function weekForWords(steps: readonly number[], of: number): string {
-  if (steps.length === 0) return t.weekKept;
+/** Which paydays a saved week is for: every payday, some weeks of the pattern, earlier paydays, or none. */
+export function weekForWords(
+  steps: readonly number[],
+  of: number,
+  until: string | null = null,
+  today = '',
+): string {
+  if (steps.length === 0) return until === null ? t.weekKept : t.weekUntil(formatDay(until, today));
   if (steps.length === of) return t.weekEvery;
   const list =
     steps.length === 1

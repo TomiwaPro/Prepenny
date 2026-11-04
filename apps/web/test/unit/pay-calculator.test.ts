@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { examplePlan } from '../../data/example-plan.ts';
 import { runEdit, runEdits } from '../../lib/edit.ts';
 import { workOutHome } from '../../lib/home.ts';
+import { workOutJobView } from '../../lib/job-view.ts';
 import {
   blankCalculator,
   blankPayslip,
@@ -210,6 +211,38 @@ describe("test 4: added to Sam's plan as the Fri 30 Oct estimate", () => {
       'short-week',
       'short-week',
     ]);
+  });
+
+  it('Every payday reaches the paydays an earlier part of a split pay still pays (found by the step 2h review)', () => {
+    // £500.00 for this and all later ones from Fri 4 Dec: Fri 30 Oct to Fri 27 Nov stay on the 4-week rota.
+    const split = runEdit(examplePlan, SUNDAY, {
+      kind: 'this-and-later',
+      seriesId: 'pay',
+      originalDate: '2026-12-04',
+      edits: { amount: 50000 },
+      newSeriesId: 'pay-from-dec',
+    }).records;
+    // Your job says the rota weeks are still used by the paydays before the change.
+    const job = workOutJobView(split, SUNDAY).jobs[0];
+    expect(job?.weeks.map((one) => [one.id, one.steps, one.until])).toEqual([
+      ['week-26', [], '2026-11-27'],
+      ['week-27', [], '2026-11-06'],
+      ['week-28', [], '2026-11-13'],
+      ['week-29', [], '2026-11-20'],
+    ]);
+    const view = workOutPayView(split, SUNDAY);
+    const worked = workOutCalculator(week26('2026-10-30'), name);
+    if (!worked.ok || view.main === null) throw new Error('It should work out.');
+    const commands = saveWeekCommands(worked.input, view.main, 'Short week', {
+      weekId: 'short-week',
+      profileId: 'unused',
+    });
+    expect(commands.filter((one) => one.kind === 'link-pay')).toHaveLength(2);
+    const saved = runEdits(split, SUNDAY, commands).records;
+    const after = workOutPayView(saved, SUNDAY);
+    for (const date of ['2026-10-30', '2026-11-06', '2026-11-27', '2026-12-04', '2027-01-01']) {
+      expect(after.paydays.find((one) => one.date === date)?.weekId, date).toBe('short-week');
+    }
   });
 
   it('on monthly pay with no tax settings, starts on every month (found by the outside review)', () => {

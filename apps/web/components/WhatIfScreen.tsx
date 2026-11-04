@@ -343,6 +343,8 @@ export function WhatIfScreen() {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<Open>(null);
   const changesRef = useRef(changes);
+  const readForRef = useRef(readFor);
+  readForRef.current = readFor;
   const loadedRef = useRef<LoadedPlan | null>(loaded);
   const version = useRef(0);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -415,7 +417,9 @@ export function WhatIfScreen() {
     (commands: readonly EditCommand[], message: string): Promise<ChangeOutcome> => {
       const task = async (): Promise<ChangeOutcome> => {
         const now = loadedRef.current;
-        if (now === null) return { ok: false, code: 'not-ready' };
+        // Until this plan's own practice changes are read, nothing is added to them.
+        if (now === null || readForRef.current !== now.plan.id)
+          return { ok: false, code: 'not-ready' };
         const next = [...changesRef.current, { commands, message }];
         let view: WhatIfView;
         try {
@@ -475,8 +479,11 @@ export function WhatIfScreen() {
     setTimeout(() => noteRef.current?.focus(), 0);
   };
 
+  // The practice changes on screen are this plan's: read from the phone for it (step 2h).
+  const ready = loaded !== null && readFor === loaded.plan.id;
+
   const keep = async () => {
-    if (busy || changes.length === 0) return;
+    if (busy || changes.length === 0 || !ready) return;
     // Changes that cancel each other out leave nothing to keep, and no Undo to offer.
     if (shown !== null && shown.changes === changes && !shown.view.changed) {
       keepChanges([]);
@@ -531,7 +538,7 @@ export function WhatIfScreen() {
               {note}
             </p>
           )}
-          {changes.length === 0 ? (
+          {!ready ? null : changes.length === 0 ? (
             note === null ? (
               <p className={styles.second}>{t.noChanges}</p>
             ) : null
@@ -545,7 +552,7 @@ export function WhatIfScreen() {
             </ol>
           )}
         </div>
-        {changes.length === 0 ? null : (
+        {changes.length === 0 || !ready ? null : (
           <>
             <button
               type="button"
@@ -596,7 +603,7 @@ export function WhatIfScreen() {
         )}
       </section>
 
-      {view === null ? (
+      {view === null || !ready ? (
         <p className={styles.card} role={failed ? 'alert' : undefined}>
           {failed ? strings.errors.plan : t.loading}
         </p>

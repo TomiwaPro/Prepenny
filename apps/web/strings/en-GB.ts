@@ -1169,8 +1169,9 @@ export const strings = {
       'The details from your payslip that PrePenny uses to work out your pay when you do overtime or miss a shift.',
     back: 'Back to More',
     loading: 'Working out your job details.',
+    noJobTitle: 'No job details yet',
     noJob:
-      'No job details yet. Setup saves them when you say you work extra hours or miss shifts. Or work out your pay in the Pay calculator and tap Save as a pay week.',
+      'Setup saves them when you say you work extra hours or miss shifts. Or work out your pay in the Pay calculator and tap Save as a pay week.',
     toCalculator: 'Go to the Pay calculator',
     forPay: (names: string) => `In your plan as ${names}.`,
     often: 'Paid',
@@ -1193,8 +1194,13 @@ export const strings = {
     deduction: (name: string, amount: string) => `${name} ${amount}`,
     none: 'None',
     soFar: 'From your last payslip',
-    soFarLine: (table: 'week' | 'month', period: number, gross: string, tax: string) =>
-      `Tax ${table} ${period}: gross for tax so far ${gross}, tax paid so far ${tax}`,
+    soFarLine: (
+      table: 'week' | 'month',
+      period: number,
+      year: string,
+      gross: string,
+      tax: string,
+    ) => `Tax ${table} ${period} of ${year}: gross for tax so far ${gross}, tax paid so far ${tax}`,
     soFarNone: 'Not typed in, so the tax on overtime is an estimate',
     overtimeRate: 'Overtime rate',
     overtimeRateLine: (rate: string) => `${rate} an hour`,
@@ -1207,6 +1213,9 @@ export const strings = {
     weekSteps: (steps: string, many: boolean, of: number) =>
       `${many ? 'Weeks' : 'Week'} ${steps} of ${of} in your pay pattern`,
     weekKept: 'Kept to start from in the Pay calculator',
+    weekUntil: (date: string) => `Used by your paydays up to ${date}, before a change you made`,
+    noTaxYear:
+      "PrePenny doesn't have the tax figures for your next payday yet, so these details can't be checked. They're added before each new tax year.",
     weeksNone: 'No usual week is saved yet. Save one from the Pay calculator.',
     shiftsAhead: (count: number) =>
       count === 1
@@ -1214,6 +1223,7 @@ export const strings = {
         : `${count} changes for overtime or missed shifts are saved for paydays still to come. Changing these details works out that pay again.`,
     change: 'Change these details',
     sheetTitle: 'Your job details',
+    overtimeHeading: 'Overtime and missed shifts',
     sheetIntro: "Change anything that's different on your latest payslip.",
     soFarIntro:
       "For exact tax on overtime, type these from your last payslip. Leave them empty and it's an estimate.",

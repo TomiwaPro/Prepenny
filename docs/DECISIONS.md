@@ -2958,3 +2958,59 @@ Test: Sam's Fri 30 Oct pay at £503.06 shows only Current account, with "Your ot
 
 Why: the owner's answer. The person knows nothing is hidden that moves.
 
+## Made during step 2h
+
+D268 to D274 were decided on 4 Nov 2026 while building step 2h, the end of Phase 2; D274 came from the outside review.
+
+### D268. Each of the six people's journeys, end to end
+
+Decided 4 Nov 2026 in step 2h. Builds brief Part 10's end-to-end test for each person, with D37 and D137.
+
+- Each of Sam, Priya, Dee, Kofi, Jess and Tom, and Ali sets PrePenny up on a phone with nothing on it, through the eight setup steps, at 320px and 360px wide in light and dark, then updates their balance, adds a payment, changes "this and all later ones", moves a payment to the next payday, records "I spent", and practises in What if, throwing it away. Jess and Tom are one plan with their three accounts; sharing comes in Phase 3.
+- After setup and after every task, the plan saved on the phone is read back and every day's end balance, for every account, a year ahead (Sam to the end of February 2027), is checked against the person's fixture from `packages/engine/test/fixtures`, the engine-tested plan, with the same change made by plain arithmetic: a new payment lowers each day from its date by its amount, a move raises the days it's no longer in, and so on. Update balance and "this and all later ones" are made on the fixture by the engine's own commands. So the screens are checked against the fixtures, never against what they show themselves.
+- What setup can't express is added the way a person would: Sam's rent and food bill, and Dee's kids clubs and Ali's bus pass, keep their dates, so they're added with Add a payment, which asks (D231); Sam's first pay, spending money and rent are changed for just this one.
+- Each journey also checks on screen what brief Part 2 says that person needs most: Sam's brief 8.3 figures and every debt's paid-off date; Priya's yearly car insurance, her month view and her goal's date; Dee's Universal Credit on Thu 24 Dec, "Under £50" before she's overdrawn, and correcting an estimate; Kofi's 25% to his Tax account and "no work next week"; Jess's £600 on her payday on both accounts; Ali's −£300.00 as Tight, not Short, and Left to spend £350.00 until Mon 11 Jan 2027.
+
+Test: Sam's plan typed in through the screens gives every figure in brief 8.3: £4.53 on Sun 1 Nov, the month ends £604.53, £732.91, £1,024.60, £2,235.89 and £3,304.87, and every paid-off date.
+
+Why: brief Part 10 asks for each person's main tasks on a phone-sized screen, and checking every day against the engine-tested fixture means a wrong figure anywhere fails the test.
+
+### D269. Every check, across the whole app
+
+Decided 4 Nov 2026 in step 2h. Adds to brief Part 6 and 7.2, D37, D175 and D213.
+
+- Every screen and every sheet, on Sam's example, at 320px and 360px in light and dark, is checked by axe against WCAG 2.2 AA; says what it's for in a sentence screen readers hear; stays readable at 200% text with every tap target 44px or more; and can be used by keyboard alone: Tab goes all the way round, each stop shows its 3px outline, and focus stays in a sheet and goes back when Escape closes it.
+- Nothing leaves the phone but PrePenny's own files: every request is a GET, or a HEAD when Next.js checks that a page it links to exists, to PrePenny's own address, with nothing in it; no amount, name or note reaches the console, which gets no warning or error at all; nothing is blocked by the security policy; and every page is sent with its security rules. Setup is watched too.
+- With reduced motion on, nothing moves.
+- Two things the checks allow, because the browser does them: a date box's own calendar button draws its own focus (it now has PrePenny's outline too), and a long name inside a text box scrolls inside it at 200%.
+- Every property test file was run 10 times in a row: all 80 runs passed.
+
+Why: the owner asked for every check across the whole app, and a check written once runs on every change from now on.
+
+### D270. A screen for one record opens with no signal from a saved link
+
+Decided 4 Nov 2026 in step 2h, from the offline check. Adds to D170.
+
+The offline helper ignores `?id=` and `?from=` when it finds a screen's file, so a debt's page, or What if opened from Coming up, opens with no signal straight from a saved link or a refresh. Before, it only opened offline when PrePenny was already open. Every screen is now checked offline after one visit, and a change made with no signal is kept.
+
+Why: the offline check found it: the brief asks for every screen to work with no signal (Part 6).
+
+### D271. Speed on a slowed-down phone
+
+Decided 4 Nov 2026 in step 2h. Adds to brief Part 3 principle 9, Part 6 and ARCHITECTURE.md 2.8.
+
+With the processor 4 times slower (Chrome's setting for a mid-range phone), on the test machine: Home's real figures show 2.3 seconds after the very first visit starts, 0.9 seconds when it's opened again (the middle of 5), and a change shows in 0.6 seconds (the middle of 5, counting the taps). A skeleton shows while the engine works, never a spinner. The test fails over 6, 3 and 2 seconds, which leaves room for GitHub's slower machines. Phase 4 checks a real mid-range Android phone (ARCHITECTURE.md 2.8).
+
+Why: the owner asked for the times, and a bound in the test stops a slow change from slipping in.
+
+### D272. Smaller choices in step 2h
+
+Decided 4 Nov 2026 in step 2h.
+
+- "Start again with the example" says what it does as the sheet's first line, so screen readers hear it with the title (D213). The not-found page says "The address may be mistyped, or the page has moved. Your plan is safe on this phone."
+- GitHub runs the end-to-end tests in three parts side by side, because with the six journeys and the checks they would take longer than the 20 minutes a part is allowed.
+- The test browser is in British English, so date boxes read 25/10/2026 in screenshots, as on a UK phone.
+- Each person's setup is shared by their journey and their screenshot (`e2e/people.ts`), and the step 2h screenshots are each person's Home at 360px in light, and Your job.
+
+Why: each follows the owner's instructions or an earlier decision where they didn't say exactly.
+

@@ -84,6 +84,8 @@ function JobDetailsForm({
         const read = readJob(form, initial, job);
         if (!read.ok) {
           setErrors(read.errors);
+          // The next payday has no tax year file, so there's no box to point at (D128).
+          if (read.errors.payDate !== undefined) setProblem(t.noTaxYear);
           focusFirst(
             [
               'taxCode',
@@ -140,38 +142,44 @@ function JobDetailsForm({
         else setProblem(refusalMessage(outcome.code));
       }}
     >
+      <h3 className={formStyles.subheading}>{strings.pay.taxHeading}</h3>
       <TaxBoxes id={id} form={form} errors={errors} today={today} set={set} />
-      <h3 className={formStyles.subheading}>{strings.pay.soFarHeading}</h3>
-      <p className={screenStyles.second}>{t.soFarIntro}</p>
-      <SoFarBoxes id={id} form={form} errors={errors} today={today} set={set} />
-      <Field
-        id={`${id}-overtimeRate`}
-        label={strings.setup.pay.overtimeRate}
-        error={mistake('overtimeRate')}
-        hint={t.overtimeHint}
-      >
-        <MoneyInput
+      <div className={formStyles.group}>
+        <h3 className={formStyles.subheading}>{strings.pay.soFarHeading}</h3>
+        <p className={screenStyles.second}>{t.soFarIntro}</p>
+        <SoFarBoxes id={id} form={form} errors={errors} today={today} set={set} />
+      </div>
+      <div className={formStyles.group}>
+        <h3 className={formStyles.subheading}>{t.overtimeHeading}</h3>
+        <Field
           id={`${id}-overtimeRate`}
-          value={form.overtimeRate}
-          onChange={(overtimeRate) => set({ overtimeRate })}
-          invalid={mistake('overtimeRate') !== undefined}
-          describedBy={describedBy(`${id}-overtimeRate`, mistake('overtimeRate'), [
-            `${id}-overtimeRate-hint`,
-          ])}
-        />
-      </Field>
-      {job.next === null ? null : (
-        <DateField
-          id={`${id}-coveredTo`}
-          label={strings.setup.pay.coveredTo(formatDay(job.next.date, today))}
-          value={form.coveredTo}
-          today={today}
-          max={job.next.date}
-          onChange={(coveredTo) => set({ coveredTo })}
-          error={mistake('coveredTo')}
-          extraHint={{ id: `${id}-coveredTo-hint`, text: t.coveredHint }}
-        />
-      )}
+          label={strings.setup.pay.overtimeRate}
+          error={mistake('overtimeRate')}
+          hint={t.overtimeHint}
+        >
+          <MoneyInput
+            id={`${id}-overtimeRate`}
+            value={form.overtimeRate}
+            onChange={(overtimeRate) => set({ overtimeRate })}
+            invalid={mistake('overtimeRate') !== undefined}
+            describedBy={describedBy(`${id}-overtimeRate`, mistake('overtimeRate'), [
+              `${id}-overtimeRate-hint`,
+            ])}
+          />
+        </Field>
+        {job.next === null ? null : (
+          <DateField
+            id={`${id}-coveredTo`}
+            label={strings.setup.pay.coveredTo(formatDay(job.next.date, today))}
+            value={form.coveredTo}
+            today={today}
+            max={job.next.date}
+            onChange={(coveredTo) => set({ coveredTo })}
+            error={mistake('coveredTo')}
+            extraHint={{ id: `${id}-coveredTo-hint`, text: t.coveredHint }}
+          />
+        )}
+      </div>
       {job.shiftsAhead === 0 ? null : <p className={formStyles.hint}>{t.reworkHint}</p>}
       <button type="submit" className={formStyles.main} aria-disabled={busy}>
         {t.save}

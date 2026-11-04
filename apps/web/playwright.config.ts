@@ -29,7 +29,11 @@ export default defineConfig({
     locale: 'en-GB',
     timezoneId: 'Europe/London',
     trace: 'retain-on-failure',
-    ...(executablePath === undefined ? {} : { launchOptions: { executablePath } }),
+    // British English for the browser itself too, so a date box reads 25/10/2026, as on a UK phone.
+    launchOptions: {
+      args: ['--lang=en-GB'],
+      ...(executablePath === undefined ? {} : { executablePath }),
+    },
   },
   projects: [
     { name: 'phone-320', use: phone(320, 640) },

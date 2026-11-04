@@ -26,6 +26,11 @@ export interface JobWeek {
   readonly name: string;
   /** The steps of the pay pattern it's linked to, counting from 1; empty when it's only kept to start from. */
   readonly steps: readonly number[];
+  /**
+   * When the latest pay doesn't use it but earlier paydays still to come do,
+   * after a change for this and all later ones: the last of those paydays.
+   */
+  readonly until: string | null;
 }
 
 export interface JobCard {
@@ -109,15 +114,25 @@ export function workOutJobView(records: PlanRecords, today: string): JobView {
     const latest = latestOf(linked);
     const steps = latest?.amountCycle?.length ?? 1;
     const linkedWeeks = latest?.cyclePayWeeks ?? [];
+    const byId = new Map(linked.map((one) => [one.id, one]));
     const weeks = (records.payWeeks ?? [])
       .filter((one) => one.payProfileId === profile.id)
-      .map(
-        (week): JobWeek => ({
+      .map((week): JobWeek => {
+        const steps = linkedWeeks.flatMap((id, index) => (id === week.id ? [index + 1] : []));
+        // Paydays to come that use it through an earlier series of the pay.
+        const earlier = rows.filter((row) => {
+          const own = byId.get(row.seriesId);
+          if (own === undefined || own.id === latest?.id) return false;
+          const list = own.cyclePayWeeks ?? [];
+          return list.length > 0 && list[stepOf(own, row.number) - 1] === week.id;
+        });
+        return {
           id: week.id,
           name: week.name ?? '',
-          steps: linkedWeeks.flatMap((id, index) => (id === week.id ? [index + 1] : [])),
-        }),
-      );
+          steps,
+          until: steps.length > 0 ? null : (earlier.at(-1)?.date ?? null),
+        };
+      });
     const families = new Set(linked.map((one) => one.familyId));
     const ahead = new Set(
       rows.filter((row) => row.isEstimate).map((row) => `${row.familyId}|${row.number}`),

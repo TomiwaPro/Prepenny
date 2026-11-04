@@ -23,27 +23,54 @@ async function noAxeProblems(page: Page, where?: string) {
   ).toEqual([]);
 }
 
-/** Words from Sam's example that must never reach a log or a request (CLAUDE.md, brief 7.2). */
+/**
+ * Amounts, names and notes from Sam's example, and what the tests type, that
+ * must never reach a log or a request (CLAUDE.md, brief 7.2): amounts as
+ * people read them and as whole pence, as they're stored.
+ */
 const PRIVATE = [
   '267.54',
+  '26754',
   '£4.53',
   '603.06',
+  '60306',
+  '54.85',
+  '5485',
+  '452.17',
+  '45217',
+  '503.06',
   'Family loan',
   'Driving lesson',
   'Rent',
   'Pay-later card',
+  'Car MOT',
+  'Warehouse job',
 ];
 
-/** Watches what the page sends and writes while a test runs. */
+/** Notes any load the security policy blocks, from the page's very first moment. */
+const WATCH_POLICY = () => {
+  const blocked: string[] = [];
+  Reflect.set(window, '__blocked', blocked);
+  document.addEventListener('securitypolicyviolation', (event) => {
+    blocked.push(`${event.violatedDirective} ${event.blockedURI}`);
+  });
+};
+
+/**
+ * Watches everything the browser sends and writes while a test runs: every
+ * page and the offline helper too (the context, not one page), and every
+ * console message, page error and blocked load.
+ */
 function watch(page: Page) {
   const requests: Request[] = [];
   const console: string[] = [];
-  page.on('request', (request) => requests.push(request));
-  page.on('console', (message) => console.push(message.text()));
-  page.on('pageerror', (error) => console.push(error.message));
+  page.context().on('request', (request) => requests.push(request));
+  page.on('console', (message) => console.push(`${message.type()}: ${message.text()}`));
+  page.on('pageerror', (error) => console.push(`pageerror: ${error.message}`));
+  void page.addInitScript(WATCH_POLICY);
   return {
-    /** Every request is a GET of PrePenny's own files, with nothing in its address or body. */
-    expectNothingSent() {
+    /** Every request is a GET or HEAD of PrePenny's own files, with nothing private in it. */
+    async expectNothingSent({ notFound = false } = {}) {
       for (const request of requests) {
         const url = new URL(request.url());
         expect(url.origin, request.url()).toBe('http://127.0.0.1:4173');
@@ -54,9 +81,17 @@ function watch(page: Page) {
           expect(decodeURIComponent(request.url()), request.url()).not.toContain(word);
         }
       }
+      // PrePenny writes nothing to the console: no warning, no error, and so no amount or name.
+      // The not-found page is answered "404, not found", which the browser notes itself.
+      const own = (line: string) =>
+        !line.startsWith('log: ') &&
+        !line.startsWith('debug: ') &&
+        !(notFound && line.includes('status of 404'));
+      expect(console.filter(own)).toEqual([]);
       for (const line of console) {
         for (const word of PRIVATE) expect(line).not.toContain(word);
       }
+      expect(await page.evaluate(() => Reflect.get(window, '__blocked') ?? [])).toEqual([]);
     },
   };
 }
@@ -169,7 +204,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await keyboardGoesRound(page);
         await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
         expect(await layoutProblems(page)).toEqual([]);
-        watching.expectNothingSent();
+        await watching.expectNothingSent({ notFound: screen.path === '/app/no-such-page/' });
       });
     }
   });
@@ -314,7 +349,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await expect
           .poll(() => page.evaluate(() => document.activeElement !== document.body))
           .toBe(true);
-        watching.expectNothingSent();
+        await watching.expectNothingSent();
       });
     }
   });
@@ -365,4 +400,128 @@ test('making changes sends nothing anywhere', async ({ page }) => {
   // Pages the app opens next are its own files (Next.js fetches each screen's part as a file).
   for (const line of sent) expect(line).toMatch(/^GET http:\/\/127\.0\.0\.1:4173\//);
   expect(sent).toEqual([]);
+});
+
+test("every page is sent with its security rules: only PrePenny's own files, and no referrer", async ({
+  request,
+}) => {
+  for (const path of ['/', '/setup/', '/app/', '/app/debt/?id=family-loan', '/pay-calculator/']) {
+    const response = await request.get(path);
+    const headers = response.headers();
+    expect(headers['content-security-policy'], path).toContain("default-src 'self'");
+    expect(headers['content-security-policy'], path).toContain("connect-src 'self'");
+    expect(headers['content-security-policy'], path).toContain("font-src 'self'");
+    expect(headers['referrer-policy'], path).toBe('no-referrer');
+    expect(headers['x-content-type-options'], path).toBe('nosniff');
+    expect(headers['permissions-policy'], path).toContain('camera=()');
+  }
+});
+
+/** The keys in the browser's two small stores, and the phone database's device settings. */
+async function keptOnPhone(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const keys = [
+      ...Object.keys(localStorage).map((key) => `local: ${key}`),
+      ...Object.keys(sessionStorage).map((key) => `session: ${key}`),
+    ];
+    const device = await new Promise<string[]>((resolve) => {
+      const open = indexedDB.open('prepenny');
+      open.onerror = () => resolve([]);
+      open.onsuccess = () => {
+        const db = open.result;
+        if (!db.objectStoreNames.contains('device')) {
+          db.close();
+          resolve([]);
+          return;
+        }
+        const all = db.transaction('device').objectStore('device').getAllKeys();
+        all.onsuccess = () => {
+          db.close();
+          resolve((all.result as string[]).map((key) => `device: ${key}`));
+        };
+      };
+    });
+    return [...keys, ...device];
+  });
+}
+
+test.describe("what's kept on the phone", () => {
+  test("the public calculator's pay is forgotten once setup has it, or when the example is chosen instead", async ({
+    browser,
+  }) => {
+    for (const next of ['setup', 'example'] as const) {
+      // A phone with nothing on it, not the example.
+      const context = await browser.newContext({ viewport: { width: 360, height: 780 } });
+      const page = await context.newPage();
+      const watching = watch(page);
+      await page.goto('/pay-calculator/');
+      await page.getByLabel('Hours', { exact: true }).fill('34.5');
+      await page.getByLabel('Pay an hour', { exact: true }).fill('12.71');
+      await page.getByRole('button', { name: 'Work out take-home pay' }).click();
+      await page.getByRole('button', { name: 'Start a free plan with this pay' }).click();
+      await expect(page.getByRole('button', { name: 'Make my plan' })).toBeVisible();
+      // Kept for this tab only, never in the web address.
+      expect(await keptOnPhone(page)).toContain('session: prepenny-pay-draft');
+      expect(page.url()).not.toContain('438');
+      if (next === 'setup') {
+        await page.getByRole('button', { name: 'Make my plan' }).click();
+        await page.getByLabel('Type what your bank shows today').fill('100');
+        await page.getByRole('button', { name: 'Next', exact: true }).click();
+        await expect(
+          page.getByText('Your take-home pay from the calculator is filled in below'),
+        ).toBeVisible();
+      } else {
+        await page.getByRole('button', { name: 'Look at an example plan' }).click();
+        await expect(page.getByTestId('balance')).toBeVisible();
+      }
+      const kept = await keptOnPhone(page);
+      expect(kept.filter((key) => key.includes('pay-draft'))).toEqual([]);
+      await watching.expectNothingSent();
+      await context.close();
+    }
+  });
+
+  test("practice changes are forgotten once they're kept, thrown away, or the example starts again", async ({
+    page,
+  }) => {
+    const practiseOnce = async () => {
+      await page.goto('/app/what-if/');
+      await expect(page.getByTestId('side-by-side')).toBeVisible();
+      await openPeriod(page, '2026-10-30');
+      await period(page, '2026-10-30')
+        .getByRole('button', { name: /^Pay Fri/ })
+        .click();
+      const sheet = page.getByRole('dialog', { name: 'Pay' });
+      await sheet.getByLabel('Amount').fill('503.06');
+      await sheet.getByRole('button', { name: 'Save' }).click();
+      await expect(page.getByTestId('practice-list')).toBeVisible();
+      await expect.poll(() => keptOnPhone(page)).toContain('device: what-if|example');
+    };
+    const gone = async () =>
+      expect
+        .poll(async () => (await keptOnPhone(page)).filter((key) => key.includes('what-if')))
+        .toEqual([]);
+
+    await practiseOnce();
+    await page.getByRole('button', { name: 'Throw them away' }).click();
+    await page
+      .getByRole('dialog', { name: 'Throw them away' })
+      .getByRole('button', { name: 'Throw them away' })
+      .click();
+    await gone();
+
+    await practiseOnce();
+    await page.getByRole('button', { name: 'Keep these changes' }).click();
+    await expect(page.getByTestId('undo-bar')).toBeVisible();
+    await gone();
+
+    await practiseOnce();
+    await page.goto('/app/more/');
+    await page.getByRole('button', { name: 'Start again with the example' }).click();
+    await page
+      .getByRole('dialog', { name: 'Start again with the example' })
+      .getByRole('button', { name: 'Start again', exact: true })
+      .click();
+    await gone();
+  });
 });

@@ -46,5 +46,12 @@
 }
 
 .weekName {
+  font-size: var(--size-name);
   font-weight: 600;
+}
+
+/* The usual weeks are their own part of the card, under a 1px line. */
+.weeksHeading {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--divider);
 }

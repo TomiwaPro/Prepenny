@@ -70,7 +70,7 @@ function Job({
         <Detail label={t.overtimeRate}>{overtimeWords(profile)}</Detail>
         <Detail label={t.covered}>{coveredWords(job, today)}</Detail>
       </dl>
-      <h3 className={screenStyles.label}>{t.weeks}</h3>
+      <h3 className={`${screenStyles.label} ${styles.weeksHeading}`}>{t.weeks}</h3>
       {job.weeks.length === 0 ? (
         <p className={screenStyles.second}>{t.weeksNone}</p>
       ) : (
@@ -80,7 +80,9 @@ function Job({
             {job.weeks.map((week) => (
               <li key={week.id}>
                 <span className={styles.weekName}>{week.name}</span>
-                <span className={screenStyles.second}>{weekForWords(week.steps, job.steps)}</span>
+                <span className={screenStyles.second}>
+                  {weekForWords(week.steps, job.steps, week.until, today)}
+                </span>
               </li>
             ))}
           </ul>
@@ -95,6 +97,7 @@ function Job({
         type="button"
         className={formStyles.outlined}
         aria-haspopup="dialog"
+        aria-describedby={headingId}
         onClick={onChange}
       >
         {t.change}
@@ -119,7 +122,10 @@ export function JobScreen() {
           {failed ? strings.errors.plan : t.loading}
         </p>
       ) : view.jobs.length === 0 ? (
-        <section className={screenStyles.card} aria-label={t.heading}>
+        <section className={screenStyles.card} aria-labelledby="no-job">
+          <h2 id="no-job" className={screenStyles.cardTitle}>
+            {t.noJobTitle}
+          </h2>
           <p className={screenStyles.line}>{t.noJob}</p>
           <Link className={formStyles.outlined} href="/app/pay/">
             {t.toCalculator}

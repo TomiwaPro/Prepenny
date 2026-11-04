@@ -101,7 +101,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         ['Other deductions', 'None'],
         [
           'From your last payslip',
-          'Tax week 29: gross for tax so far £10,732.73, tax paid so far £743.40',
+          'Tax week 29 of 2026 to 2027: gross for tax so far £10,732.73, tax paid so far £743.40',
         ],
         ['Overtime rate', '£19.07 an hour'],
         [
@@ -190,9 +190,13 @@ test('each mistake is explained beside its box, and saving with nothing changed 
   await sheet.getByRole('button', { name: 'Save these details' }).click();
   await expect(sheet).toBeHidden();
   await expect(undoBar(page)).toHaveText(/^Your job details changed\./);
-  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText('1263L, worked out the usual way');
+  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText(
+    '1263L, worked out the usual way',
+  );
   await undo(page);
-  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText('1257L, worked out the usual way');
+  await expect(detail(page.getByTestId('job'), 'Tax code')).toHaveText(
+    '1257L, worked out the usual way',
+  );
 });
 
 test('a new last day covered that would move a saved shift to another payday is refused in words (D154)', async ({

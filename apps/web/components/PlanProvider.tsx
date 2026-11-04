@@ -209,6 +209,8 @@ async function planOnPhone(): Promise<OnPhone> {
     if (plan === undefined || exampleNeedsReplacing(plan, example.version)) {
       plan = freshExample();
       await savePlan(db, plan, example.records);
+      // Practice changes made on the old example aren't the new one's (step 2h).
+      await forgetPractice(plan.id);
     }
     if ((await db.device.get(ASKED_TO_KEEP)) === undefined) {
       await db.device.put({ key: ASKED_TO_KEEP, value: await askToKeepData() });

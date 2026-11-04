@@ -277,6 +277,7 @@ function SaveWeekForm({
               { value: 'one', label: t.saveWeekOne, hint: t.saveWeekOneHint },
             ]}
             onChange={setWeekFor}
+            hintsUnder
           />
           {weekFor === 'one' ? (
             <ChoiceList<string>
@@ -285,6 +286,7 @@ function SaveWeekForm({
               value={step}
               options={stepChoices(view)}
               onChange={setStep}
+              hintsUnder
             />
           ) : null}
         </>

@@ -98,8 +98,9 @@ export function StepPay() {
   const [fromCalculator, setFromCalculator] = useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: read once, when the step first opens
   useEffect(() => {
-    if (savedIncomes.length > 0) return;
+    // Read once, and forgotten even when there's already an income to keep it out of.
     const draft = takePayDraft();
+    if (savedIncomes.length > 0) return;
     if (draft === null) return;
     setDrafts((now) => {
       const only = now[0];

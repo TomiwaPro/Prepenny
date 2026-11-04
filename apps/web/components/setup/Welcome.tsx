@@ -6,6 +6,7 @@
 // plan goes to it.
 
 import { useRouter } from 'next/navigation';
+import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
 import formStyles from '../Form.module.css';
 import styles from './Setup.module.css';
@@ -52,7 +53,9 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
         aria-disabled={!ready}
         onClick={async () => {
           if (!ready) return;
-          // Looking at the example never touches the person's own plan.
+          // Looking at the example never touches the person's own plan, and
+          // pay kept from the public calculator isn't wanted any more (step 2h).
+          forgetPayDraft();
           await show('example');
           router.push('/app/');
         }}
