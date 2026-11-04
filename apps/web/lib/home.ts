@@ -10,8 +10,10 @@ import {
   type Pence,
   type Plan,
   type PlanRecords,
+  workOutPayments,
 } from '@prepenny/engine';
-import { HOME_MONTHS_AHEAD, planLookAhead, workOutPlanTo } from './plan-input.ts';
+import { holidaysFor } from './holidays.ts';
+import { HOME_MONTHS_AHEAD, planLookAhead, settingsOf, workOutPlanTo } from './plan-input.ts';
 import { type RowView, rowMaker } from './rows.ts';
 
 export type LeftToSpendLine =
@@ -43,9 +45,18 @@ export interface HomeView {
   /** "This pay has to cover": this pay period's money out and in (D84). Null without pay periods. */
   readonly cover: {
     readonly goingOut: Pence;
+    /**
+     * Money coming in during the period. On payday, today's pay isn't in it:
+     * it's in `payToday` instead (D206).
+     */
     readonly comingIn: Pence;
     /** The period's last day: "Going out by Thu 29 Oct". */
     readonly by: string;
+    /**
+     * On payday, the pay landing in this account today: "Pay £603.06, came in
+     * today" once it's ticked, or "coming in today" before (D206). Otherwise null.
+     */
+    readonly payToday: { readonly amount: Pence; readonly ticked: boolean } | null;
   } | null;
   /** The next three rows from today on that aren't ticked (D168, D179). */
   readonly nextDue: readonly RowView[];
@@ -121,17 +132,73 @@ function leftToSpendOf(account: AccountPlan): HomeView['leftToSpend'] {
   };
 }
 
-function coverOf(plan: Plan, accountId: string): HomeView['cover'] {
+/**
+ * On payday, the main pay landing in this account today, whether it's ticked
+ * or not: a ticked one is already inside the balance, so it isn't a row (D206).
+ */
+function payToday(
+  records: PlanRecords,
+  plan: Plan,
+  accountId: string,
+): NonNullable<HomeView['cover']>['payToday'] {
+  const family = settingsOf(records).mainPayFamilyId;
+  if (family === null || !plan.mainPaydays.includes(plan.today)) return null;
+  const payments = workOutPayments({
+    series: records.series.filter((one) => one.familyId === family),
+    changes: records.changes ?? [],
+    payAdjustments: records.payAdjustments ?? [],
+    holidays: holidaysFor(settingsOf(records).nation),
+    from: plan.today,
+    to: plan.today,
+  }).filter(
+    (one) =>
+      !one.skipped &&
+      one.date === plan.today &&
+      one.accountId === accountId &&
+      one.direction === 'in',
+  );
+  if (payments.length === 0) return null;
+  const ticks = records.ticks ?? [];
+  return {
+    amount: payments.reduce((sum, one) => sum + one.amount, 0),
+    ticked: payments.every((one) =>
+      ticks.some(
+        (tick) =>
+          tick.seriesId === one.seriesId &&
+          tick.originalDate === one.originalDate &&
+          tick.setAside !== true,
+      ),
+    ),
+  };
+}
+
+function coverOf(records: PlanRecords, plan: Plan, accountId: string): HomeView['cover'] {
   if (plan.mainPay === 'none' || plan.mainPayEnded) return null;
   const periods = groupIntoPeriods(plan, 'pay');
   if (periods.by !== 'pay') return null;
   const first = periods.accounts.find((one) => one.accountId === accountId)?.periods[0];
   if (first === undefined) return null;
+  const pay = payToday(records, plan, accountId);
+  const family = settingsOf(records).mainPayFamilyId;
+  const mainPaySeries = new Set(
+    records.series.filter((one) => one.familyId === family).map((one) => one.id),
+  );
   let goingOut = 0;
+  let comingIn = first.cameIn;
   for (const row of first.rows) {
     if (row.change < 0) goingOut -= row.change;
+    // Today's pay is shown on its own line on payday, so it isn't counted twice.
+    if (
+      pay !== null &&
+      row.kind === 'payment' &&
+      row.change > 0 &&
+      row.date === plan.today &&
+      mainPaySeries.has(row.payment.seriesId)
+    ) {
+      comingIn -= row.change;
+    }
   }
-  return { goingOut, comingIn: first.cameIn, by: first.to };
+  return { goingOut, comingIn, by: first.to, payToday: pay };
 }
 
 /** Everything Home shows, from the stored records and today. */
@@ -155,7 +222,7 @@ export function workOutHome(records: PlanRecords, today: string): HomeView {
     leftToSpend: leftToSpendOf(account),
     mainPayEnded: plan.mainPayEnded,
     lowest: lowestOf(account),
-    cover: coverOf(plan, accountId),
+    cover: coverOf(records, plan, accountId),
     nextDue: account.rows
       .filter((row) => !row.atStart && !row.ticked && row.date >= today)
       .slice(0, 3)

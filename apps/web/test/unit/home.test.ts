@@ -4,6 +4,8 @@
 import type { PlanRecords } from '@prepenny/engine';
 import { describe, expect, it } from 'vitest';
 import { examplePlan } from '../../data/example-plan.ts';
+import { workOutActionsView } from '../../lib/actions-view.ts';
+import { runEdit } from '../../lib/edit.ts';
 import { homeAccountId, workOutHome, workOutHomePlan } from '../../lib/home.ts';
 import { planLookAhead, workOutPlanTo } from '../../lib/plan-input.ts';
 
@@ -42,7 +44,12 @@ describe('Home for Sam’s example plan', () => {
   });
 
   it('shows this pay has to cover £721.07 going out by Thu 29 Oct, and £500.00 coming in', () => {
-    expect(home.cover).toEqual({ goingOut: 72107, comingIn: 50000, by: '2026-10-29' });
+    expect(home.cover).toEqual({
+      goingOut: 72107,
+      comingIn: 50000,
+      by: '2026-10-29',
+      payToday: null,
+    });
   });
 
   it('lists the next three due, with what’s left after each', () => {
@@ -161,5 +168,52 @@ describe('Home looks 12 months ahead, so a yearly bill is never missed (D178)', 
     // Looking only 3 months ahead, it wouldn't show.
     const threeMonths = workOutPlanTo(yearly, '2026-10-25', planLookAhead('2026-10-25', 3));
     expect(threeMonths.accounts[0]?.lowestPoint.balance).toBe(453);
+  });
+});
+
+describe('This pay has to cover, on payday (D206)', () => {
+  const FRIDAY = '2026-10-30';
+
+  it('shows the pay coming in today, and no "Coming in £0.00"', () => {
+    // Fri 30 Oct to Thu 5 Nov: Spending money £45.00 and Rent £600.00 go out.
+    expect(workOutHome(examplePlan, FRIDAY).cover).toEqual({
+      goingOut: 64500,
+      comingIn: 0,
+      by: '2026-11-05',
+      payToday: { amount: 60306, ticked: false },
+    });
+  });
+
+  it('shows the pay that came in today once Update balance has ticked it', () => {
+    const toTick =
+      workOutActionsView(examplePlan, FRIDAY).accounts.find((one) => one.id === 'current')
+        ?.toTick ?? [];
+    const made = runEdit(examplePlan, FRIDAY, {
+      kind: 'update-balance',
+      update: {
+        id: 'update-30-oct',
+        accountId: 'current',
+        balance: 60000,
+        checkedOn: FRIDAY,
+        checkedAt: '2026-10-30T09:14:00Z',
+      },
+      ticks: toTick.map((row) => ({
+        seriesId: row.seriesId,
+        originalDate: row.originalDate,
+        tickedAt: '2026-10-30T09:14:00Z',
+      })),
+    });
+    // The pay is inside the balance now, so it isn't a row: it's on its own line.
+    // Today's £45.00 spending money was ticked too, so only Rent is still to go out.
+    expect(workOutHome(made.records, FRIDAY).cover).toEqual({
+      goingOut: 60000,
+      comingIn: 0,
+      by: '2026-11-05',
+      payToday: { amount: 60306, ticked: true },
+    });
+  });
+
+  it('isn’t shown on a day that isn’t payday', () => {
+    expect(workOutHome(examplePlan, '2026-10-31').cover?.payToday).toBeNull();
   });
 });
