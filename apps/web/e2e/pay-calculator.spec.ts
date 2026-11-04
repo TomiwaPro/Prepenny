@@ -244,16 +244,23 @@ test("a new payday keeps the payslip's week when its figures are in (found by th
   );
 });
 
-test('Save as a pay week keeps the lines, to start from again', async ({ page }) => {
+test('Save as a pay week for every payday keeps the lines, to start from again', async ({
+  page,
+}) => {
   await openCalculator(page);
   await fillIn(page, { ...week26, hours: '30' });
   const result = await workOut(page);
   await result.getByRole('button', { name: 'Save as a pay week' }).click();
   const sheet = page.getByRole('dialog', { name: 'Save as a pay week' });
   await sheet.getByLabel('Name this week').fill('Short week');
+  await expect(
+    sheet.getByRole('group', { name: 'Which paydays is it for?' }).getByRole('radio', {
+      name: 'Every payday',
+    }),
+  ).toBeChecked();
   await sheet.getByRole('button', { name: 'Save pay week' }).click();
   await expect(sheet).toBeHidden();
-  await expect(undoBar(page)).toContainText('Short week saved as a pay week.');
+  await expect(undoBar(page)).toContainText('Short week saved as the pay week for every payday.');
   await expect(page.getByRole('button', { name: 'Use Short week' })).toBeVisible();
   await page.getByRole('button', { name: 'Use Rota week 2, 4 shifts' }).click();
   await expect(

@@ -7,6 +7,7 @@ import type { ActionsView } from '../lib/actions-view.ts';
 import type { CompareAsk as CompareRequest, DebtsView } from '../lib/debts-view.ts';
 import type { EditResult } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
+import type { JobPreview, JobView } from '../lib/job-view.ts';
 import type { AccountsView, BudgetsView, GoalsView } from '../lib/money-views.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PayView } from '../lib/pay-view.ts';
@@ -68,7 +69,7 @@ export interface SetupAsk {
 }
 
 /** The screens under Debts and More that the worker works out (step 2f). */
-export type ScreenKind = 'debts' | 'budgets' | 'goals' | 'accounts';
+export type ScreenKind = 'debts' | 'budgets' | 'goals' | 'accounts' | 'job';
 
 /** What one of the screens under Debts or More shows (step 2f). */
 export type ScreenAsk = {
@@ -103,8 +104,18 @@ export interface WhatIfAsk {
   readonly practice: readonly EditCommand[];
 }
 
+/** What a change to a job's details would do to paydays still to come (D154, step 2h). */
+export interface JobPreviewAsk {
+  readonly kind: 'job-preview';
+  readonly records: PlanRecords;
+  readonly today: string;
+  readonly profileId: string;
+  readonly commands: readonly EditCommand[];
+}
+
 export type Ask =
   | HomeAsk
+  | JobPreviewAsk
   | WhatIfAsk
   | PayAsk
   | PlanAsk
@@ -132,6 +143,8 @@ export interface Answers {
   readonly compare: CardComparison;
   readonly 'what-if': WhatIfView;
   readonly pay: PayView;
+  readonly job: JobView;
+  readonly 'job-preview': JobPreview;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

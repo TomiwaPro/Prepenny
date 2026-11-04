@@ -12,6 +12,7 @@ import {
   blankPayslip,
   type CalculatorForm,
   calculatorFromPlan,
+  canChooseOneWeek,
   checkPayslipForm,
   periodOf,
   saveWeekCommands,
@@ -156,15 +157,19 @@ describe("test 4: added to Sam's plan as the Fri 30 Oct estimate", () => {
     ]);
   });
 
-  it("Save as a pay week adds it to the warehouse job, leaving the pattern's weeks as they are", () => {
+  it('Save as a pay week for one week of the pattern links only that step (step 2h, D5)', () => {
     const view = workOutPayView(examplePlan, SUNDAY);
     const worked = workOutCalculator(week26('2026-10-30'), name);
     if (!worked.ok || view.main === null) throw new Error('It should work out.');
-    const commands = saveWeekCommands(worked.input, view.main, 'Short week', {
-      weekId: 'short-week',
-      profileId: 'unused',
-    });
-    expect(commands.map((one) => one.kind)).toEqual(['add-pay-week']);
+    expect(canChooseOneWeek(view.main)).toBe(true);
+    const commands = saveWeekCommands(
+      worked.input,
+      view.main,
+      'Short week',
+      { weekId: 'short-week', profileId: 'unused' },
+      2,
+    );
+    expect(commands.map((one) => one.kind)).toEqual(['add-pay-week', 'link-pay']);
     const saved = runEdits(examplePlan, SUNDAY, commands).records;
     expect(saved.payWeeks?.find((one) => one.id === 'short-week')).toMatchObject({
       name: 'Short week',
@@ -172,6 +177,39 @@ describe("test 4: added to Sam's plan as the Fri 30 Oct estimate", () => {
       lines: [{ name: 'Basic', kind: 'basic', hours: '34.5', rate: '12.71' }],
       fixed: [{ name: 'Shift premium', amount: 11469 }],
     });
+    expect(saved.series.find((one) => one.id === 'pay')?.cyclePayWeeks).toEqual([
+      'week-26',
+      'short-week',
+      'week-28',
+      'week-29',
+    ]);
+    // The paydays on that week now use it: Fri 6 Nov is week 2 of the pattern.
+    const after = workOutPayView(saved, SUNDAY);
+    expect(after.paydays.find((one) => one.date === '2026-11-06')).toMatchObject({
+      step: 2,
+      weekId: 'short-week',
+    });
+    expect(after.paydays.find((one) => one.date === '2026-10-30')).toMatchObject({
+      step: 1,
+      weekId: 'week-26',
+    });
+  });
+
+  it('Save as a pay week for every payday links it to every step of the pattern (step 2h)', () => {
+    const view = workOutPayView(examplePlan, SUNDAY);
+    const worked = workOutCalculator(week26('2026-10-30'), name);
+    if (!worked.ok || view.main === null) throw new Error('It should work out.');
+    const commands = saveWeekCommands(worked.input, view.main, 'Short week', {
+      weekId: 'short-week',
+      profileId: 'unused',
+    });
+    const saved = runEdits(examplePlan, SUNDAY, commands).records;
+    expect(saved.series.find((one) => one.id === 'pay')?.cyclePayWeeks).toEqual([
+      'short-week',
+      'short-week',
+      'short-week',
+      'short-week',
+    ]);
   });
 
   it('on monthly pay with no tax settings, starts on every month (found by the outside review)', () => {
