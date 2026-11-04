@@ -400,3 +400,11 @@
 .plain > legend {
   padding: 0 0 var(--space-1);
 }
+
+/* A link that looks like an outlined button, such as "Go to Budgets". */
+a.outlined {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}

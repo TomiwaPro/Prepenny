@@ -295,6 +295,53 @@ export function buildWhen(
   return { start: date, schedule, end, lastAmount };
 }
 
+/** Whether two schedules are the same, whatever order their fields were written in. */
+export function sameSchedule(a: Schedule, b: Schedule): boolean {
+  const sorted = (value: unknown): unknown =>
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+      ? Object.fromEntries(
+          Object.entries(value)
+            .sort(([x], [y]) => (x < y ? -1 : 1))
+            .map(([key, one]) => [key, sorted(one)]),
+        )
+      : value;
+  return JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
+}
+
+/**
+ * A new "how often" for a payment that repeats (D96, step 2f): every so
+ * many weeks from the date's weekday, or every so many months on the day
+ * the date gives, with any months left out. Mistakes are added to `errors`;
+ * the result is null when there are any. The date itself is checked by
+ * the edit sheet.
+ */
+export function repeatSchedule(
+  form: WhenForm,
+  holidays: BankHolidayLookup,
+  errors: PaymentErrors,
+): Schedule | null {
+  const date = readDate(form.date);
+  if (form.howOften === 'weekly') {
+    const every = wholeNumber(form.weeks, 1, 52);
+    if (every === null) errors.weeks = 'weeksError';
+    return every === null ? null : { kind: 'weekly', every };
+  }
+  if (form.howOften !== 'monthly') return null;
+  const every = wholeNumber(form.months, 1, 12);
+  if (every === null) errors.months = 'monthsError';
+  const leaveOut = form.leaveOut ? [...new Set(form.leftOut)].sort((a, b) => a - b) : [];
+  if (leaveOut.length >= 12) errors.leaveOut = 'leaveOutError';
+  else if (date !== null && leaveOut.includes(monthOf(date))) errors.leaveOut = 'leaveOutNext';
+  if (every === null || date === null || errors.leaveOut !== undefined) return null;
+  const on = monthlyChoices(date, holidays).includes(form.monthlyOn) ? form.monthlyOn : 'day';
+  return {
+    kind: 'monthly',
+    every,
+    on: monthlyDay(on, date),
+    ...(leaveOut.length === 0 ? {} : { leaveOut }),
+  };
+}
+
 /**
  * The weekend and bank holiday rule to store. Pay on the last working day
  * always lands on the month's last working day (D145), which is the working
