@@ -65,6 +65,7 @@ export function MoneyInput({
   invalid,
   describedBy: described,
   inputRef,
+  symbol = strings.form.pound,
 }: {
   readonly id: string;
   readonly value: string;
@@ -72,11 +73,13 @@ export function MoneyInput({
   readonly invalid: boolean;
   readonly describedBy?: string | undefined;
   readonly inputRef?: Ref<HTMLInputElement> | undefined;
+  /** The currency's sign in front: "£" unless it's another currency (step 2e). */
+  readonly symbol?: string;
 }) {
   return (
     <div className={styles.money}>
       <span className={styles.pound} aria-hidden="true">
-        {strings.form.pound}
+        {symbol}
       </span>
       <input
         ref={inputRef}

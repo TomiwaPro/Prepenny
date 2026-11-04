@@ -15,42 +15,38 @@ import {
   type PaymentType,
 } from '@prepenny/engine';
 import { type RefObject, useId, useMemo, useRef, useState } from 'react';
-import { formatDay, weekdayName } from '../lib/dates.ts';
 import { holidaysFor } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import {
   blankPayment,
   buildPayment,
-  type Ends,
   FIELD_ORDER,
-  type HowOften,
-  type MonthlyOn,
-  monthlyChoices,
-  monthOf,
   type PaymentErrors,
   type PaymentField,
   type PaymentForm,
-  positionInMonth,
   typeFor,
+  type WhenForm,
 } from '../lib/new-payment.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
-import { CheckOption, DateField, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
+import { CheckOption, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
 import styles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';
 import { Sheet } from './Sheet.tsx';
 import { type ShownActions, useActionsView } from './useActionsView.ts';
 import { useOpenCount } from './useOpenCount.ts';
+import {
+  focusField,
+  monthlyOnFor,
+  paymentMistakes,
+  useWhenRefs,
+  WhenFields,
+} from './WhenFields.tsx';
 
 const t = strings.addPayment;
 
-/** The words for each mistake (lib/new-payment.ts). */
-const mistakes = {
-  ...t,
-  amountError: strings.form.amountError,
-  dateError: strings.form.dateError,
-};
+const mistakes = paymentMistakes;
 
 export function AddPaymentSheet({
   open,
@@ -98,8 +94,6 @@ function PaymentFields({
     blankPayment(today, first?.id ?? '', other?.id ?? ''),
   );
   const [errors, setErrors] = useState<PaymentErrors>({});
-  // A key for each later date's box, so removing one keeps the others' boxes as they are.
-  const [dateKeys, setDateKeys] = useState<readonly number[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const holidays = useMemo(
@@ -107,52 +101,30 @@ function PaymentFields({
     [loaded?.records.settings?.nation],
   );
   // Each box, or for a group of choices the group, so focus can go to the first mistake.
+  const when = useWhenRefs();
   const inputs = {
     name: useRef<HTMLInputElement>(null),
     amount: useRef<HTMLInputElement>(null),
-    date: useRef<HTMLInputElement>(null),
-    weeks: useRef<HTMLInputElement>(null),
-    months: useRef<HTMLInputElement>(null),
-    count: useRef<HTMLInputElement>(null),
-    endDate: useRef<HTMLInputElement>(null),
-    lastAmount: useRef<HTMLInputElement>(null),
   };
   const groups = {
     toAccount: useRef<HTMLDivElement>(null),
-    leaveOut: useRef<HTMLFieldSetElement>(null),
-    dates: useRef<HTMLFieldSetElement>(null),
   };
-  const refs: Record<PaymentField, RefObject<HTMLElement | null>> = { ...inputs, ...groups };
-  const addDate = useRef<HTMLButtonElement>(null);
+  const refs: Record<PaymentField, RefObject<HTMLElement | null>> = {
+    ...when,
+    ...inputs,
+    ...groups,
+  };
 
   const set = <K extends keyof PaymentForm>(key: K, value: PaymentForm[K]) =>
+    setForm((now) => ({ ...now, [key]: value }));
+  const setWhen = <K extends keyof WhenForm>(key: K, value: WhenForm[K]) =>
     setForm((now) => ({ ...now, [key]: value }));
   const error = (field: PaymentField) => {
     const mistake = errors[field];
     return mistake === undefined ? undefined : mistakes[mistake];
   };
-  const day = (date: string) => formatDay(date, today);
-  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(form.date) && form.date >= '1900-01-01';
-  const choices = validDate ? monthlyChoices(form.date, holidays) : (['day'] as MonthlyOn[]);
-  const monthlyOn = choices.includes(form.monthlyOn) ? form.monthlyOn : 'day';
+  const monthlyOn = monthlyOnFor(form, holidays);
   const canMove = view.accounts.length > 1;
-  const repeats = form.howOften === 'weekly' || form.howOften === 'monthly';
-
-  const monthlyLabel = (on: MonthlyOn): string => {
-    const weekday = weekdayName(form.date);
-    switch (on) {
-      case 'day':
-        return t.onDay(strings.dates.ordinal(Number(form.date.slice(8, 10))));
-      case 'weekday':
-        return t.onWeekday(t.positions[positionInMonth(form.date) - 1] ?? '', weekday);
-      case 'last-weekday':
-        return t.onWeekday(t.last, weekday);
-      case 'last-day':
-        return t.onLastDay;
-      case 'last-working-day':
-        return t.onLastWorkingDay;
-    }
-  };
 
   // A payment can be linked to a debt only when it's going out (D98), and to
   // a savings goal when it moves money into or out of the goal's account (D114).
@@ -172,22 +144,7 @@ function PaymentFields({
   function focusFirst(found: PaymentErrors) {
     const field = FIELD_ORDER.find((one) => found[one] !== undefined);
     if (field === undefined) return;
-    const element = refs[field].current;
-    if (element instanceof HTMLInputElement) {
-      element.focus();
-      return;
-    }
-    // In a group: the next payment's month when that's the mistake, or the
-    // choice that's picked, or the first box.
-    const month =
-      found.leaveOut === 'leaveOutNext' && validDate
-        ? element?.querySelector<HTMLInputElement>(`input[data-month="${monthOf(form.date)}"]`)
-        : null;
-    (
-      month ??
-      element?.querySelector<HTMLInputElement>('input:checked') ??
-      element?.querySelector<HTMLInputElement>('input')
-    )?.focus();
+    focusField(refs[field].current, found, form);
   }
 
   async function save() {
@@ -305,254 +262,15 @@ function PaymentFields({
         </div>
       ) : null}
 
-      <DateField
-        id={`${id}-date`}
-        label={t.nextPayment}
-        value={form.date}
+      <WhenFields
+        id={id}
+        form={form}
+        set={setWhen}
+        errors={errors}
+        refs={when}
         today={today}
-        min={today}
-        onChange={(value) => set('date', value)}
-        error={error('date')}
-        inputRef={inputs.date}
+        holidays={holidays}
       />
-
-      <ChoiceList<HowOften>
-        legend={t.howOften}
-        name={`${id}-often`}
-        value={form.howOften}
-        options={[
-          { value: 'once', label: t.once },
-          { value: 'weekly', label: t.weekly },
-          { value: 'monthly', label: t.monthly },
-          { value: 'dates', label: t.dates },
-        ]}
-        onChange={(value) => set('howOften', value)}
-      />
-
-      {form.howOften === 'weekly' ? (
-        <Field
-          id={`${id}-weeks`}
-          label={t.weeksApart}
-          error={error('weeks')}
-          hint={
-            validDate && /^\d+$/.test(form.weeks) && Number(form.weeks) >= 1
-              ? `${t.weeksApartHint} ${t.everyWeeks(Number(form.weeks), weekdayName(form.date))}`
-              : t.weeksApartHint
-          }
-        >
-          <input
-            ref={inputs.weeks}
-            id={`${id}-weeks`}
-            className={`${styles.input} num`}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={form.weeks}
-            aria-invalid={errors.weeks !== undefined}
-            aria-describedby={describedBy(`${id}-weeks`, error('weeks'), [`${id}-weeks-hint`])}
-            onChange={(event) => set('weeks', event.target.value)}
-          />
-        </Field>
-      ) : null}
-
-      {form.howOften === 'monthly' ? (
-        <>
-          <Field
-            id={`${id}-months`}
-            label={t.monthsApart}
-            error={error('months')}
-            hint={t.monthsApartHint}
-          >
-            <input
-              ref={inputs.months}
-              id={`${id}-months`}
-              className={`${styles.input} num`}
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              value={form.months}
-              aria-invalid={errors.months !== undefined}
-              aria-describedby={describedBy(`${id}-months`, error('months'), [`${id}-months-hint`])}
-              onChange={(event) => set('months', event.target.value)}
-            />
-          </Field>
-          {validDate ? (
-            <ChoiceList<MonthlyOn>
-              legend={t.onWhichDay}
-              name={`${id}-on`}
-              value={monthlyOn}
-              options={choices.map((value) => ({ value, label: monthlyLabel(value) }))}
-              onChange={(value) => set('monthlyOn', value)}
-            />
-          ) : null}
-          <CheckOption
-            checked={form.leaveOut}
-            onChange={(value) => set('leaveOut', value)}
-            describedBy={errors.leaveOut === undefined ? undefined : `${id}-leave-out-error`}
-          >
-            {t.leaveOut}
-          </CheckOption>
-          {form.leaveOut ? (
-            <fieldset
-              className={styles.months}
-              ref={groups.leaveOut}
-              aria-describedby={errors.leaveOut === undefined ? undefined : `${id}-leave-out-error`}
-            >
-              <legend>{t.leaveOutLegend}</legend>
-              {strings.dates.monthsLong.map((name, index) => {
-                const month = index + 1;
-                return (
-                  <label key={name} className={styles.option}>
-                    <input
-                      type="checkbox"
-                      data-month={month}
-                      checked={form.leftOut.includes(month)}
-                      onChange={(event) =>
-                        set(
-                          'leftOut',
-                          event.target.checked
-                            ? [...form.leftOut, month]
-                            : form.leftOut.filter((one) => one !== month),
-                        )
-                      }
-                    />
-                    <span>{name}</span>
-                  </label>
-                );
-              })}
-            </fieldset>
-          ) : null}
-          {errors.leaveOut === undefined ? null : (
-            <p id={`${id}-leave-out-error`} className={styles.error}>
-              {error('leaveOut')}
-            </p>
-          )}
-        </>
-      ) : null}
-
-      {form.howOften === 'dates' ? (
-        <fieldset
-          className={`${styles.stack} ${styles.plain}`}
-          ref={groups.dates}
-          aria-describedby={errors.dates === undefined ? undefined : `${id}-dates-error`}
-        >
-          <legend className={styles.label}>{t.chosenDates}</legend>
-          {form.laterDates.map((date, index) => (
-            <div className={styles.dateRow} key={dateKeys[index] ?? `extra-${date}`}>
-              <DateField
-                id={`${id}-date-${index}`}
-                label={t.laterDate(index + 2)}
-                value={date}
-                today={today}
-                min={form.date}
-                onChange={(value) =>
-                  set(
-                    'laterDates',
-                    form.laterDates.map((one, at) => (at === index ? value : one)),
-                  )
-                }
-              />
-              <button
-                type="button"
-                className={styles.quiet}
-                onClick={() => {
-                  set(
-                    'laterDates',
-                    form.laterDates.filter((_, at) => at !== index),
-                  );
-                  setDateKeys(dateKeys.filter((_, at) => at !== index));
-                  // The box and its button go: focus moves to "Add a date".
-                  addDate.current?.focus();
-                }}
-              >
-                {t.removeDate(date === '' ? t.laterDate(index + 2) : day(date))}
-              </button>
-            </div>
-          ))}
-          <button
-            ref={addDate}
-            type="button"
-            className={styles.outlined}
-            onClick={() => {
-              set('laterDates', [...form.laterDates, '']);
-              setDateKeys([...dateKeys, (dateKeys.at(-1) ?? 0) + 1]);
-            }}
-          >
-            {t.addDate}
-          </button>
-          {errors.dates === undefined ? null : (
-            <p id={`${id}-dates-error`} className={styles.error}>
-              {error('dates')}
-            </p>
-          )}
-        </fieldset>
-      ) : null}
-
-      {repeats ? (
-        <>
-          <ChoiceList<Ends>
-            legend={t.ends}
-            name={`${id}-ends`}
-            value={form.ends}
-            options={[
-              { value: 'never', label: t.never },
-              { value: 'after', label: t.after },
-              { value: 'on', label: t.onDate },
-            ]}
-            onChange={(value) => set('ends', value)}
-          />
-          {form.ends === 'after' ? (
-            <Field id={`${id}-count`} label={t.howMany} error={error('count')}>
-              <input
-                ref={inputs.count}
-                id={`${id}-count`}
-                className={`${styles.input} num`}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={form.count}
-                aria-invalid={errors.count !== undefined}
-                aria-describedby={describedBy(`${id}-count`, error('count'))}
-                onChange={(event) => set('count', event.target.value)}
-              />
-            </Field>
-          ) : null}
-          {form.ends === 'on' ? (
-            <DateField
-              id={`${id}-end`}
-              label={t.lastDate}
-              value={form.endDate}
-              today={today}
-              min={form.date}
-              onChange={(value) => set('endDate', value)}
-              error={error('endDate')}
-              inputRef={inputs.endDate}
-            />
-          ) : null}
-          {form.ends === 'never' ? null : (
-            <>
-              <CheckOption
-                checked={form.differentLast}
-                onChange={(value) => set('differentLast', value)}
-              >
-                {t.differentLast}
-              </CheckOption>
-              {form.differentLast ? (
-                <Field id={`${id}-last`} label={t.lastAmount} error={error('lastAmount')}>
-                  <MoneyInput
-                    id={`${id}-last`}
-                    inputRef={inputs.lastAmount}
-                    value={form.lastAmount}
-                    onChange={(value) => set('lastAmount', value)}
-                    invalid={errors.lastAmount !== undefined}
-                    describedBy={describedBy(`${id}-last`, error('lastAmount'))}
-                  />
-                </Field>
-              ) : null}
-            </>
-          )}
-        </>
-      ) : null}
 
       {form.howOften === 'monthly' && monthlyOn === 'last-working-day' ? null : (
         <ChoiceList<HolidayRule>

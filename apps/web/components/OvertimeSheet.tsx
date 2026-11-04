@@ -14,7 +14,7 @@ import type { PayView } from '../lib/actions-view.ts';
 import { parseAmount } from '../lib/amount.ts';
 import { formatDay } from '../lib/dates.ts';
 import { newId } from '../lib/ids.ts';
-import { formatMoney } from '../lib/money.ts';
+import { formatMoney, rateWords } from '../lib/money.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -97,12 +97,6 @@ function previewSentence(
     return (up ? t.addsNoDay : t.takesOffNoDay)(amount);
   }
   return (up ? t.adds : t.takesOff)(amount, day(result.payday), formatMoney(result.payAfter));
-}
-
-/** "£19.07" for a rate the engine used. */
-function rateWords(rate: string): string {
-  const pence = parseAmount(rate);
-  return pence === null ? `${strings.form.pound}${rate}` : formatMoney(pence);
 }
 
 function OvertimeForm({

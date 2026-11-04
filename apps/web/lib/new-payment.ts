@@ -138,7 +138,7 @@ export function typeFor(direction: Direction): PaymentType {
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function readDate(text: string): string | null {
+export function readDate(text: string): string | null {
   if (!DATE.test(text)) return null;
   try {
     return formatDate(parseDate(text));
@@ -147,7 +147,7 @@ function readDate(text: string): string | null {
   }
 }
 
-function wholeNumber(text: string, least: number, most: number): number | null {
+export function wholeNumber(text: string, least: number, most: number): number | null {
   if (!/^\d{1,3}$/.test(text.trim())) return null;
   const value = Number(text.trim());
   return value >= least && value <= most ? value : null;
@@ -173,7 +173,7 @@ export function positionInMonth(date: string): number {
   return Math.ceil(partsOfDay(parseDate(date)).day / 7);
 }
 
-function monthlyDay(on: MonthlyOn, date: string): MonthlyDay {
+export function monthlyDay(on: MonthlyOn, date: string): MonthlyDay {
   const day = parseDate(date);
   const parts = partsOfDay(day);
   switch (on) {
@@ -199,25 +199,44 @@ export function monthOf(date: string): number {
   return partsOfDay(parseDate(date)).month;
 }
 
-/** Checks the form and turns it into the engine's new payment, or says which boxes need changing. */
-export function buildPayment(
-  form: PaymentForm,
+/** The boxes that say when a payment happens: its next date, how often and when it ends. */
+export type WhenForm = Pick<
+  PaymentForm,
+  | 'date'
+  | 'howOften'
+  | 'weeks'
+  | 'months'
+  | 'monthlyOn'
+  | 'leaveOut'
+  | 'leftOut'
+  | 'laterDates'
+  | 'ends'
+  | 'count'
+  | 'endDate'
+  | 'differentLast'
+  | 'lastAmount'
+>;
+
+/** When a payment happens, as the engine wants it. */
+export interface When {
+  readonly start: string;
+  readonly schedule: Schedule;
+  readonly end: NewSeries['end'];
+  readonly lastAmount: number | null;
+}
+
+/**
+ * Checks when a payment happens: the next date (today or later, D150), how
+ * often and when it ends. Mistakes are added to `errors`; the result is null
+ * when there are any.
+ */
+export function buildWhen(
+  form: WhenForm,
   today: string,
   holidays: BankHolidayLookup,
-):
-  | { readonly ok: true; readonly series: Omit<NewSeries, 'id'> }
-  | {
-      readonly ok: false;
-      readonly errors: PaymentErrors;
-    } {
-  const errors: PaymentErrors = {};
-  const name = form.name.trim();
-  if (name === '') errors.name = 'nameError';
-  const amount = parseAmount(form.amount);
-  if (amount === null) errors.amount = 'amountError';
-  if (form.direction === 'transfer' && form.accountId === form.toAccountId) {
-    errors.toAccount = 'sameAccount';
-  }
+  errors: PaymentErrors,
+): When | null {
+  const before = Object.keys(errors).length;
   const date = readDate(form.date);
   if (date === null) errors.date = 'dateError';
   else if (date < today) errors.date = 'beforeToday';
@@ -272,17 +291,48 @@ export function buildPayment(
     lastAmount = parseAmount(form.lastAmount);
     if (lastAmount === null) errors.lastAmount = 'amountError';
   }
+  if (Object.keys(errors).length > before || date === null) return null;
+  return { start: date, schedule, end, lastAmount };
+}
 
-  if (Object.keys(errors).length > 0 || amount === null || date === null) {
+/**
+ * The weekend and bank holiday rule to store. Pay on the last working day
+ * always lands on the month's last working day (D145), which is the working
+ * day before, so that's the rule it's stored with (brief 8.5, step 2e).
+ */
+export function holidayRuleFor(schedule: Schedule, chosen: HolidayRule): HolidayRule {
+  return schedule.kind === 'monthly' && schedule.on.kind === 'last-working-day'
+    ? 'working-day-before'
+    : chosen;
+}
+
+/** Checks the form and turns it into the engine's new payment, or says which boxes need changing. */
+export function buildPayment(
+  form: PaymentForm,
+  today: string,
+  holidays: BankHolidayLookup,
+):
+  | { readonly ok: true; readonly series: Omit<NewSeries, 'id'> }
+  | {
+      readonly ok: false;
+      readonly errors: PaymentErrors;
+    } {
+  const errors: PaymentErrors = {};
+  const name = form.name.trim();
+  if (name === '') errors.name = 'nameError';
+  const amount = parseAmount(form.amount);
+  if (amount === null) errors.amount = 'amountError';
+  if (form.direction === 'transfer' && form.accountId === form.toAccountId) {
+    errors.toAccount = 'sameAccount';
+  }
+  const when = buildWhen(form, today, holidays, errors);
+
+  if (Object.keys(errors).length > 0 || amount === null || when === null) {
     return { ok: false, errors };
   }
 
   const [linkKind, linkId] = form.link.split(':');
   const note = form.note.trim();
-  const holidayRule =
-    schedule.kind === 'monthly' && schedule.on.kind === 'last-working-day'
-      ? 'keep'
-      : form.holidayRule;
   return {
     ok: true,
     series: {
@@ -291,11 +341,11 @@ export function buildPayment(
       name,
       direction: form.direction,
       amount,
-      start: date,
-      schedule,
-      end,
-      ...(lastAmount === null ? {} : { lastAmount }),
-      holidayRule,
+      start: when.start,
+      schedule: when.schedule,
+      end: when.end,
+      ...(when.lastAmount === null ? {} : { lastAmount: when.lastAmount }),
+      holidayRule: holidayRuleFor(when.schedule, form.holidayRule),
       type: form.type,
       ...(linkKind === 'debt' && linkId !== undefined && form.direction === 'out'
         ? { debtId: linkId }
