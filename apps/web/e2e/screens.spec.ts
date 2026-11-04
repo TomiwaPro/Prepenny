@@ -3,10 +3,12 @@
 // Step 2c: the Plan screen at 360px in light and dark, and the edit sheet
 // open on Rent at 360px in light. Step 2d: each of the four sheets on Home
 // at 360px in light, filled in as in the owner's tests, with the window as
-// tall as the sheet so all of it shows. Each page is as tall as the whole
-// page, with the bottom navigation at the bottom. Run only when asked:
+// tall as the sheet so all of it shows. Step 2d-2: the Coming up page at
+// 360px in light, on the first visit with "How to read this", and with Fri
+// 6 Nov opened. Each page is as tall as the whole page, with the bottom
+// navigation at the bottom. Run only when asked, one step at a time:
 //
-//   SCREENS=1 pnpm e2e --project phone-360 screens
+//   SCREENS=1 pnpm e2e --project phone-360 screens -g "Step 2d-2"
 
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -66,16 +68,15 @@ for (const shot of planShots) {
       locale: 'en-GB',
     });
     const page = await context.newPage();
-    await page.goto('/app/plan/');
+    await page.goto('/app/coming-up/');
     await expect(page.getByTestId('period').first()).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const step = join(screens, '2c');
     mkdirSync(step, { recursive: true });
     if (shot.sheet) {
-      await page
-        .locator('[data-testid="period"][data-start="2026-10-30"]')
-        .getByRole('button', { name: /^Rent / })
-        .click();
+      const fri30 = page.locator('[data-testid="period"][data-start="2026-10-30"]');
+      await fri30.locator(':scope > h3 > button').click();
+      await fri30.getByRole('button', { name: /^Rent / }).click();
       await expect(page.getByRole('dialog', { name: 'Rent' })).toBeVisible();
       await page.screenshot({ path: join(step, shot.file) });
     } else {
@@ -163,7 +164,7 @@ const sheetShots: readonly {
     fill: async (page) => {
       const sheet = page.getByRole('dialog');
       await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
-      await sheet.getByLabel('Hours').fill('11.5');
+      await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
       await expect(sheet.getByTestId('shift-preview')).toContainText('£155.12');
     },
   },
@@ -202,6 +203,45 @@ for (const shot of sheetShots) {
     await page.setViewportSize({ width: 360, height: Math.max(800, Math.ceil(tall / 0.9) + 8) });
     await page.waitForTimeout(200);
     const step = join(screens, '2d');
+    mkdirSync(step, { recursive: true });
+    await page.screenshot({ path: join(step, shot.file) });
+    await context.close();
+  });
+}
+
+const comingUpShots = [
+  { file: 'coming-up-first-visit-360-light.png', open: null },
+  { file: 'coming-up-fri-6-nov-open-360-light.png', open: '2026-11-06' },
+] as const;
+
+for (const shot of comingUpShots) {
+  test(`Step 2d-2: ${shot.file}`, async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width: 360, height: 800 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: 'light',
+      reducedMotion: 'reduce',
+      locale: 'en-GB',
+      timezoneId: 'Europe/London',
+    });
+    const page = await context.newPage();
+    await page.goto('/app/coming-up/');
+    await expect(page.getByTestId('period').first()).toBeVisible();
+    await expect(page.getByTestId('how-to-read')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    if (shot.open !== null) {
+      await page.getByRole('button', { name: 'Got it' }).click();
+      const payday = page.locator(`[data-testid="period"][data-start="${shot.open}"]`);
+      await payday.locator(':scope > h3 > button').click();
+      await expect(payday).toHaveAttribute('data-open', 'true');
+      // Nothing is focused, so the picture shows the page as it looks.
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    }
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({ width: 360, height });
+    const step = join(screens, '2d-2');
     mkdirSync(step, { recursive: true });
     await page.screenshot({ path: join(step, shot.file) });
     await context.close();

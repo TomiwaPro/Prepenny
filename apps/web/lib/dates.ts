@@ -45,6 +45,13 @@ export function formatMonth(date: string, today: string): string {
   return parts.year === partsOf(today).year ? name : `${name}${KEEP_TOGETHER}${parts.year}`;
 }
 
+/** "Fri": a date's weekday, short. */
+export function weekdayShort(date: string): string {
+  const name = strings.dates.weekdays[partsOf(date).weekday - 1];
+  if (name === undefined) throw new RangeError(`No weekday for ${date}.`);
+  return name;
+}
+
 /** "Friday": a date's weekday in full. */
 export function weekdayName(date: string): string {
   const name = strings.dates.weekdaysLong[partsOf(date).weekday - 1];

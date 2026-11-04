@@ -1,10 +1,19 @@
 .header {
   display: flex;
-  align-items: center;
-  min-height: var(--tap);
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* What Home is for, in one plain sentence (D213). */
+.purpose {
+  font-size: var(--size-body);
+  color: var(--ink-muted);
 }
 
 .wordmark {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
   font-size: var(--size-wordmark);
   font-weight: 700;
   color: var(--accent-text);

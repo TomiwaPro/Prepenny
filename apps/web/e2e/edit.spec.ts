@@ -1,36 +1,31 @@
 // Editing a payment with Sam's example plan on Sun 25 Oct 2026 (brief 4.4
 // and 5.4, the edit sketch in ARCHITECTURE.md 4.6), at 320px and 360px wide,
-// in light and dark: the owner's step 2c tests 3 to 7. Every change is saved
-// on the phone, the plan updates, and one tap of Undo puts it all back.
+// in light and dark: the owner's step 2c tests 4 to 7, on the Coming up page
+// (D208). Test 3, Rent £560.00 from Fri 1 Jan 2027, is step 2d-2's test 6 in
+// coming-up.spec.ts. Every change is saved on the phone, the plan updates,
+// and one tap of Undo puts it all back.
 
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
+import {
+  goToComingUp,
+  leftAtEnd,
+  MINUS,
+  openComingUp,
+  openPeriod,
+  rowIn,
+  AXE_TAGS as tags,
+} from './coming-up.ts';
 
-const MINUS = '−';
-const tags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
-async function openPlan(page: Page) {
-  await page.goto('/app/plan/');
-  await expect(page.getByTestId('period').first()).toBeVisible();
-}
-
-const period = (page: Page, start: string) =>
-  page.locator(`[data-testid="period"][data-start="${start}"]`);
-
-/** The row button for a payment, by its name, in a period. */
-const rowIn = (page: Page, start: string, name: string) =>
-  period(page, start).getByRole('button', {
-    name: new RegExp(`^${name.replace(/[()]/g, '\\$&')} (Mon|Tue|Wed|Thu|Fri|Sat|Sun) `),
-  });
+const openPlan = openComingUp;
 
 async function openRow(page: Page, start: string, name: string) {
+  if (start !== '2026-10-25') await openPeriod(page, start);
   await rowIn(page, start, name).click();
   const sheet = page.getByRole('dialog', { name });
   await expect(sheet).toBeVisible();
   return sheet;
 }
-
-const leftAtEnd = (page: Page, start: string) => period(page, start).getByRole('definition').last();
 
 const undoBar = (page: Page) => page.getByTestId('undo-bar');
 
@@ -45,46 +40,6 @@ for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Editing a payment, in ${colorScheme} mode`, () => {
     test.beforeEach(async ({ page }) => {
       await page.emulateMedia({ colorScheme });
-    });
-
-    test('test 3: Rent £560.00 from Fri 1 Jan 2027 for this and all later ones, then Undo', async ({
-      page,
-    }) => {
-      await openPlan(page);
-      await page.getByTestId('plan-by').getByText('Months', { exact: true }).click();
-      await page.getByRole('button', { name: 'Show another month' }).click();
-      await page.getByRole('button', { name: 'Show another month' }).click();
-      await expect(page.getByTestId('period')).toHaveCount(5);
-
-      const rentIn = (start: string) => rowIn(page, start, 'Rent');
-      const rents = async () => [
-        await rentIn('2026-11-01').textContent(),
-        await rentIn('2026-12-01').textContent(),
-        await rentIn('2027-01-01').textContent(),
-        await rentIn('2027-02-01').textContent(),
-      ];
-      const before = await rents();
-
-      const sheet = await openRow(page, '2027-01-01', 'Rent');
-      await expect(sheet.getByText('Fri 1 Jan 2027, Current account')).toBeVisible();
-      await sheet.getByLabel('Amount').fill('560');
-      await sheet.getByText('This and all later ones', { exact: true }).click();
-      await sheet.getByRole('button', { name: 'Save' }).click();
-      await expect(sheet).toBeHidden();
-      await expect(undoBar(page)).toContainText('Rent changed for this and all later ones.');
-
-      await expect(rentIn('2026-11-01')).toContainText(`${MINUS}£600.00`);
-      await expect(rentIn('2026-12-01')).toContainText(`${MINUS}£550.00`);
-      await expect(rentIn('2027-01-01')).toContainText(`${MINUS}£560.00`);
-      await expect(rentIn('2027-02-01')).toContainText(`${MINUS}£560.00`);
-      // February's end goes down by £10.00 for January and £10.00 for February.
-      await expect(leftAtEnd(page, '2027-02-01')).toHaveText('£3,284.87');
-
-      await undo(page);
-      await expect(rentIn('2027-01-01')).toContainText(`${MINUS}£550.00`);
-      await expect(rentIn('2027-02-01')).toContainText(`${MINUS}£550.00`);
-      await expect(leftAtEnd(page, '2027-02-01')).toHaveText('£3,304.87');
-      expect(await rents()).toEqual(before);
     });
 
     test('test 4: the real pay on Fri 6 Nov, £640.00, just this one', async ({ page }) => {
@@ -107,6 +62,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(pay).toContainText('+£640.00');
       await expect(leftAtEnd(page, '2026-11-06')).toHaveText('£177.23');
       // Only that payday: the next one is still an estimate.
+      await openPeriod(page, '2026-11-13');
       await expect(rowIn(page, '2026-11-13', 'Pay')).toContainText('Fri 13 Nov, estimate');
 
       // The real amount can be the same as the estimate: untick the box and save (D185).
@@ -127,6 +83,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet).toBeHidden();
       await expect(undoBar(page)).toContainText('Driving lesson moved to Fri 30 Oct.');
       await expect(rowIn(page, '2026-10-25', 'Driving lesson')).toHaveCount(0);
+      await openPeriod(page, '2026-10-30');
       await expect(rowIn(page, '2026-10-30', 'Driving lesson')).toContainText('Fri 30 Oct');
 
       await page
@@ -218,6 +175,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openPlan(page);
+      await openPeriod(page, '2026-10-30');
       const row = rowIn(page, '2026-10-30', 'Rent');
       await row.focus();
       await page.keyboard.press('Enter');
@@ -251,6 +209,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       ]) {
         await expect(sheet.getByRole('button', { name, exact: true })).toBeVisible();
       }
+      await expect(sheet.getByText('Change this payment, move it or skip it.')).toBeVisible();
       await expect(sheet.getByText('Sun 1 Nov, Current account')).toBeVisible();
       await expect(sheet.getByText(`${MINUS}£600.00`, { exact: true })).toBeVisible();
       await expect(sheet.getByText('£4.53 left', { exact: true })).toBeVisible();
@@ -294,14 +253,14 @@ test('the undo bar goes when the screen changes, and the example can start again
   await expect(ask.getByText('Your changes to the example will go')).toBeVisible();
   await ask.getByRole('button', { name: 'Keep my changes' }).click();
   await expect(ask).toBeHidden();
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Plan' }).click();
+  await goToComingUp(page);
   await expect(rowIn(page, '2026-10-25', 'Driving lesson')).toHaveCount(0);
 
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'More' }).click();
   await page.getByRole('button', { name: 'Start again with the example' }).click();
   await ask.getByRole('button', { name: 'Start again', exact: true }).click();
   await expect(page.getByText('The example is back to how it started.')).toBeVisible();
-  await page.goto('/app/plan/');
+  await openComingUp(page);
   await expect(rowIn(page, '2026-10-25', 'Driving lesson')).toHaveCount(1);
   await expect(leftAtEnd(page, '2026-10-25')).toHaveText('£46.47');
 });

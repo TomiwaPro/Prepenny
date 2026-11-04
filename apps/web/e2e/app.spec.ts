@@ -9,12 +9,12 @@ async function openHome(page: Page) {
   await expect(page.getByTestId('balance')).toBeVisible();
 }
 
-test('the bottom navigation goes to Home, Plan, Debts and More', async ({ page }) => {
+test('the bottom navigation goes to Home, Coming up, Debts and More', async ({ page }) => {
   await openHome(page);
   const nav = page.getByRole('navigation', { name: 'Main' });
-  await expect(nav.getByRole('link')).toHaveText(['Home', 'Plan', 'Debts', 'More']);
+  await expect(nav.getByRole('link')).toHaveText(['Home', 'Coming up', 'Debts', 'More']);
   await expect(nav.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
-  for (const name of ['Plan', 'Debts', 'More']) {
+  for (const name of ['Coming up', 'Debts', 'More']) {
     await nav.getByRole('link', { name }).click();
     await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
     await expect(nav.getByRole('link', { name })).toHaveAttribute('aria-current', 'page');
@@ -49,7 +49,7 @@ test('every tap target is at least 44 by 44 pixels, on every screen and in a she
   await page.getByRole('button', { name: 'I spent' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   expect(await smallTargets(page)).toEqual([]);
-  for (const path of ['/', '/app/plan/', '/app/debts/', '/app/more/', '/app/parts/']) {
+  for (const path of ['/', '/app/coming-up/', '/app/debts/', '/app/more/', '/app/parts/']) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     expect(await smallTargets(page), path).toEqual([]);

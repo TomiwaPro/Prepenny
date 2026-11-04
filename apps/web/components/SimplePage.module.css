@@ -1,3 +1,9 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .heading {
   display: flex;
   align-items: center;
@@ -11,4 +17,9 @@
   border-radius: var(--radius-card);
   padding: 14px 16px;
   font-size: var(--size-body);
+}
+
+.purpose {
+  font-size: var(--size-body);
+  color: var(--ink-muted);
 }

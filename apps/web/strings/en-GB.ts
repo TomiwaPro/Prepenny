@@ -75,7 +75,7 @@ export const strings = {
   nav: {
     label: 'Main',
     home: 'Home',
-    plan: 'Plan',
+    comingUp: 'Coming up',
     debts: 'Debts',
     more: 'More',
   },
@@ -104,6 +104,8 @@ export const strings = {
 
   home: {
     heading: 'Home',
+    /** What Home is for, in one plain sentence (D213). */
+    purpose: "How much you have, how much you can spend, and what's due next.",
     checkedToday: (date: string) => `Checked today, ${date}`,
     checked: (date: string) => `Checked ${date}`,
     leftToSpendUntil: (date: string) => `Left to spend until ${date}`,
@@ -120,10 +122,14 @@ export const strings = {
     underWarningFrom: (warning: string, date: string) => `Under ${warning} from ${date}.`,
     shortOn: (amount: string, date: string) => `${amount} short on ${date}.`,
     thisPayHasToCover: 'This pay has to cover',
+    /** On payday, once the pay is ticked (D206). */
+    payCameInToday: (amount: string) => `Pay ${amount}, came in today`,
+    /** On payday, before the pay is ticked (D206). */
+    payComingInToday: (amount: string) => `Pay ${amount}, coming in today`,
     goingOutBy: (date: string) => `Going out by ${date}`,
     comingIn: 'Coming in',
     nextDue: 'Next due',
-    seeThePlan: 'See the plan',
+    seeComingUp: 'See everything coming up',
     nothingDue: (date: string) => `Nothing is due up to ${date}.`,
   },
 
@@ -157,6 +163,8 @@ export const strings = {
   /** Update balance (brief 4.2, D33, D46, D87, D197). */
   updateBalance: {
     title: 'Update balance',
+    intro:
+      'Tell PrePenny what your bank shows now, so everything ahead starts from the right amount.',
     whichAccount: 'Which account',
     typeWhatBankShows: 'Type what your bank shows now',
     overdrawn: "It's overdrawn, below £0.00",
@@ -177,11 +185,15 @@ export const strings = {
     ticked: (count: number) =>
       count === 1 ? '1 payment ticked as paid.' : `${count} payments ticked as paid.`,
     lowestPointAhead: 'Lowest point ahead',
+    lowestOnAfter: (amount: string, date: string, name: string) =>
+      `${amount} on ${date}, after ${name}`,
+    lowestOn: (amount: string, date: string) => `${amount} on ${date}`,
   },
 
   /** I spent (brief 4.5, D2, D115, D119, D198). */
   spent: {
     title: 'I spent',
+    intro: "Write down what you've spent from a budget, to see what's left in it.",
     noBudgets:
       "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, come with the Budgets screen, which is still being built.",
     whichBudget: 'Which budget',
@@ -200,6 +212,7 @@ export const strings = {
   /** Add a payment (brief 4.3, 4.4, D86, D150, D160, D199). */
   addPayment: {
     title: 'Add a payment',
+    intro: "Add a payment that's coming up, once or every so often.",
     kind: 'What kind',
     out: 'Going out',
     in: 'Coming in',
@@ -270,9 +283,11 @@ export const strings = {
   overtime: {
     titleOvertime: 'I did overtime',
     titleMissed: 'I missed a shift',
-    what: 'What happened',
-    overtime: 'Overtime',
-    missed: 'Missed a shift',
+    intro: 'Tell PrePenny about extra hours or a missed shift, and it works out your new pay.',
+    /** A choice with two clear answers, not a switch (D213). */
+    what: 'What happened?',
+    overtime: 'I worked extra hours',
+    missed: 'I missed a shift',
     noPay:
       'PrePenny needs your pay details to work this out. They come with the pay calculator, which is still being built.',
     whichPay: 'Which pay',
@@ -370,46 +385,91 @@ export const strings = {
     other: "That change couldn't be made, so nothing was changed. Try again.",
   },
 
-  plan: {
-    heading: 'Plan',
-    showBy: 'Show the plan by',
-    payPeriods: 'Pay periods',
-    months: 'Months',
-    account: 'Account',
-    filters: 'Filters',
-    filtersOn: (count: number) => `Filters: ${count} on`,
-    filteredBy: (what: string) => `Showing only: ${what}.`,
-    clearFilters: 'Clear filters',
-    lowestPointAhead: 'Lowest point ahead',
-    lowestOnAfter: (amount: string, date: string, name: string) =>
-      `${amount} on ${date}, after ${name}`,
-    lowestOn: (amount: string, date: string) => `${amount} on ${date}`,
-    showUpTo: (date: string) => `Show the plan up to ${date}`,
-    notTickedYet: 'Not ticked yet',
-    notTickedYetIntro: 'These were due before today. Tap each one to mark it as paid or change it.',
-    fromToday: (end: string) => `Today to ${end}`,
-    period: (start: string, end: string) => `${start} to ${end}`,
-    cameIn: 'Came in',
-    leftAtEnd: 'Left at the end',
-    nothingPlanned: 'Nothing planned.',
-    nothingMatches: 'Nothing here matches the filters.',
-    showAnotherMonth: 'Show another month',
-    showingMost: 'This is as far ahead as the plan goes: 24 months.',
-    loading: 'Working out your plan.',
-    filtersSheet: {
-      title: 'Filters',
+  /** The Coming up page (brief 4.8, D208 to D212). */
+  comingUp: {
+    heading: 'Coming up',
+    /** What the page is for, in one plain sentence (D209, D213). */
+    purpose:
+      "Your bank shows money that's gone. This shows money that's going to go, and what you'll have left each time.",
+    howToRead: 'How to read this',
+    /** The "?" beside the heading: what it says to a screen reader (D212). */
+    howToReadButton: 'How to read this',
+    howToReadPay: [
+      'This pay shows every payment from today until the day before your next payday.',
+      'Each line under Next paydays is one later pay. Tap it to see its payments.',
+    ],
+    howToReadMonths: [
+      'This month shows every payment from today until the end of the month.',
+      'Each line under Next months is one later month. Tap it to see its payments.',
+    ],
+    howToReadAll: [
+      'A minus (−£30.00) is money going out. A plus (+£500.00) is money coming in.',
+      '"Left" is what will be in your account after that payment.',
+      '"Tight" means under the amount you want to keep. "Short" means you\'d run out of money.',
+      'Tap any payment to change it, move it or skip it.',
+    ],
+    gotIt: 'Got it',
+    checkedToday: (amount: string) => `${amount}, checked today`,
+    checked: (amount: string, date: string) => `${amount}, checked ${date}`,
+    switchAccount: 'Switch account',
+    switchIntro: 'Choose which account to see.',
+    showingNow: 'Showing now',
+    view: 'View',
+    /** "By payday, showing everything". */
+    showing: (group: string, what: string) => `${group}, ${what}`,
+    byPayday: 'By payday',
+    byMonth: 'By calendar month',
+    showingEverything: 'showing everything',
+    showingStillToPay: "showing only what's still to pay",
+    showingMoneyIn: 'showing only money coming in',
+    showingDebts: 'showing only debt payments',
+    showingType: (type: string) => `showing only ${type}`,
+    viewSheet: {
+      title: 'View',
+      intro: 'Choose how payments are grouped, and which ones to show.',
+      group: 'Group payments',
+      /** "Fri to Thu", beside By payday. */
+      payWeek: (from: string, to: string) => `${from} to ${to}`,
+      needsMainPay: 'By payday needs a main pay, so payments are grouped by calendar month.',
       show: 'Show',
       everything: 'Everything',
       stillToPay: 'Still to pay',
-      moneyIn: 'Money in',
+      moneyIn: 'Money coming in',
       debts: 'Debt payments',
-      type: 'Type',
-      allTypes: 'All types',
-      done: 'Show the plan',
+      oneType: 'One type, such as Bills',
+      whichType: 'Which type',
     },
+    lowestOnAfter: (amount: string, date: string, name: string) =>
+      `Lowest point: ${amount} on ${date}, after ${name}`,
+    lowestOn: (amount: string, date: string) => `Lowest point: ${amount} on ${date}`,
+    /** What tapping the lowest point does (D209, D213). */
+    openBelow: (when: string) => `Open ${when} below`,
+    seeInThisPay: 'See it below, in this pay',
+    seeInThisMonth: 'See it below, in this month',
+    showUpTo: (date: string) => `Show everything up to ${date}`,
+    notTickedYet: 'Not ticked yet',
+    notTickedYetIntro: 'These were due before today. Tap each one to mark it as paid or change it.',
+    thisPay: (end: string) => `This pay, until ${end}`,
+    thisMonth: (end: string) => `This month, until ${end}`,
+    nextPaydays: 'Next paydays',
+    nextMonths: 'Next months',
+    tapOne: 'Tap one to see every payment in it.',
+    payIn: (amount: string) => `Pay ${amount} in`,
+    moneyIn: (amount: string) => `${amount} coming in`,
+    nothingIn: 'Nothing coming in',
+    lowest: (amount: string) => `Lowest ${amount}`,
+    leftAtEnd: 'Left at the end',
+    nothingPlanned: 'Nothing planned.',
+    nothingMatches: 'Nothing here matches what you chose to show.',
+    showAnotherMonth: 'Show another month',
+    showingMost: 'This is as far ahead as the plan goes: 24 months.',
+    loading: 'Working out your plan.',
   },
 
   edit: {
+    /** What the sheet is for, in one plain sentence (D213). */
+    intro: 'Change this payment, move it or skip it.',
+    introSetAside: 'Mark this as paid once the money has moved.',
     where: (date: string, account: string) => `${date}, ${account}`,
     whereTransfer: (date: string, from: string, to: string) => `${date}, ${from} to ${to}`,
     markAsPaid: 'Mark as paid',
@@ -451,12 +511,14 @@ export const strings = {
 
   debts: {
     heading: 'Debts',
-    stillBeingBuilt: 'Your debts, with the date each is paid off, are still being built.',
+    purpose: 'What you owe, and the date each debt will be paid off.',
+    stillBeingBuilt: 'This page is still being built.',
   },
 
   more: {
     heading: 'More',
-    stillBeingBuilt: 'Settings, help and your account are still being built.',
+    purpose: 'Settings for PrePenny on this phone.',
+    stillBeingBuilt: 'Help and your account are still being built.',
     colours: 'Colours',
     coloursHint: 'Dark colours are easier on the eyes at night.',
     matchPhone: 'Match this phone',

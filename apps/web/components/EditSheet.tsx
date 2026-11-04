@@ -28,6 +28,15 @@ import { StatusPill } from './StatusPill.tsx';
 
 const t = strings.edit;
 
+/**
+ * What the sheet is for, in one plain sentence (D213). A budget's own rows
+ * have their note instead, which says where they're changed.
+ */
+function introFor(row: RowView | null): string | null {
+  if (row === null || row.editing === 'none') return null;
+  return row.editing === 'set-aside' ? t.introSetAside : t.intro;
+}
+
 export interface EditSheetProps {
   /** The row to edit, or null when the sheet is closed. */
   readonly row: RowView | null;
@@ -49,7 +58,12 @@ export function EditSheet({ row, today, onClose }: EditSheetProps) {
   openNow.current = row === null ? null : (shown?.opened ?? null);
   const current = row ?? shown?.row ?? null;
   return (
-    <Sheet open={row !== null} title={current?.name ?? ''} onClose={() => onClose(null)}>
+    <Sheet
+      open={row !== null}
+      title={current?.name ?? ''}
+      intro={introFor(current)}
+      onClose={() => onClose(null)}
+    >
       {shown === null ? null : (
         <EditForm
           key={shown.opened}

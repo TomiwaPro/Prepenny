@@ -1,0 +1,448 @@
+/* The Coming up page (DESIGN.md, the "Coming up" board, D208 to D212). */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.titleLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--tap);
+}
+
+.heading {
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+}
+
+/* The "?" beside the heading: brings "How to read this" back (D212). */
+.helpButton {
+  flex: 0 0 auto;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--accent-text);
+  font-size: var(--size-heading);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.helpButton[aria-expanded="true"] {
+  border: 2px solid var(--field-border);
+}
+
+.purpose {
+  font-size: var(--size-body);
+  color: var(--ink-muted);
+}
+
+.main,
+.outlined {
+  min-height: var(--button-height);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-inner);
+  font-size: var(--size-name);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.main {
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+.outlined {
+  border: 1px solid var(--button-border);
+  background: var(--card);
+  color: var(--accent-text);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: 4px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* "Not ticked yet", the alert and the note when the main pay has stopped. */
+p.card,
+section.card {
+  padding: 14px 16px;
+  gap: var(--space-1);
+}
+
+.second {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.sectionHeading {
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+.card .rows {
+  margin-top: var(--space-2);
+}
+
+/* How to read this: on the first visit, with a thin brass edge like the sample. */
+.help {
+  background: var(--card);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.points {
+  padding-left: 1.25rem;
+  list-style: disc;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--size-body);
+}
+
+.gotIt {
+  align-self: flex-start;
+  min-width: 7rem;
+}
+
+/* The account and its balance, with Switch account when there's more than one. */
+.account {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.accountWords {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.accountName {
+  font-size: var(--size-name);
+  font-weight: 700;
+}
+
+/* As in the sample: a smaller outlined button, so it fits beside the account at 360px. */
+.account .outlined {
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--size-second);
+}
+
+/* "By payday, showing everything", and View. */
+.viewLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.viewWords {
+  flex: 1 1 10rem;
+  font-size: var(--size-body);
+  color: var(--ink-muted);
+}
+
+/* The lowest point ahead, one line, with Tight or Short in words. */
+.lowest {
+  background: var(--card);
+  border-radius: var(--radius-card);
+}
+
+.lowestInside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+}
+
+.lowestButton {
+  min-height: var(--tap);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.lowestTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.lowestLine {
+  font-size: var(--size-name);
+  font-weight: 700;
+}
+
+.lowestAction {
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.period {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.periodHeading {
+  padding: var(--space-2) var(--space-1) 0;
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+.periodHeading:focus {
+  outline: none;
+}
+
+.periodHeading:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.tapOne {
+  margin-top: calc(-1 * var(--space-1));
+  padding: 0 var(--space-1);
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+/* Later paydays: one line each in one card, opening in place (D211). */
+.laterCard {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  padding: 2px 16px;
+}
+
+.later + .later {
+  border-top: 1px solid var(--divider);
+}
+
+.laterHeading {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.laterButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
+  border: 0;
+  border-radius: var(--radius-inner);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.laterWords {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.laterLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.laterName {
+  font-size: var(--size-name);
+  font-weight: 700;
+}
+
+.laterRight {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  text-align: right;
+}
+
+.laterLowest {
+  font-size: var(--size-body);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .laterButton:hover .laterName {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+/* The arrow points right when closed, and down when open. No movement, just the turn. */
+.chevron,
+.chevronOpen {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--ink-muted);
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.laterRows {
+  padding-bottom: var(--space-1);
+}
+
+.totals {
+  margin: 0;
+}
+
+.total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  column-gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--divider);
+  font-size: var(--size-body);
+  font-weight: 600;
+}
+
+.total dd {
+  margin: 0 0 0 auto;
+  font-size: var(--size-name);
+}
+
+.empty {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--divider);
+  color: var(--ink-muted);
+}
+
+/* The View sheet (D210). */
+.viewSheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.viewGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.legend {
+  font-size: var(--size-second);
+  font-weight: 600;
+}
+
+/* Switch account: one button for each account. */
+.accounts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.accountChoice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--button-height);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+}
+
+/* The account shown now has the 3:1 border and says so in words. */
+.accountChoice[aria-current="true"] {
+  border: 2px solid var(--field-border);
+}
+
+.showingNow {
+  font-size: var(--size-small);
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.furthest {
+  padding: var(--space-2) var(--space-1);
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+.block {
+  min-height: 6rem;
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .block {
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    50% {
+      opacity: 0.6;
+    }
+  }
+}

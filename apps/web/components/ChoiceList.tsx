@@ -1,5 +1,6 @@
 // A list of choices with a legend, one of which is picked (radio buttons):
-// each row is at least 44px tall and the whole row can be tapped.
+// each row is at least 44px tall and the whole row can be tapped. A choice
+// can have a short hint after its words, such as "Fri to Thu".
 
 import styles from './ChoiceList.module.css';
 
@@ -7,7 +8,11 @@ export interface ChoiceListProps<T extends string> {
   readonly legend: string;
   readonly name: string;
   readonly value: T;
-  readonly options: readonly { readonly value: T; readonly label: string }[];
+  readonly options: readonly {
+    readonly value: T;
+    readonly label: string;
+    readonly hint?: string | null;
+  }[];
   readonly onChange: (value: T) => void;
   /** The id of a line that explains a mistake in the choice, read with it. */
   readonly describedBy?: string | undefined;
@@ -34,6 +39,9 @@ export function ChoiceList<T extends string>({
             onChange={() => onChange(option.value)}
           />
           <span>{option.label}</span>
+          {option.hint === undefined || option.hint === null ? null : (
+            <span className={styles.hint}>{option.hint}</span>
+          )}
         </label>
       ))}
     </fieldset>

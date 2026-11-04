@@ -8,7 +8,11 @@ export const metadata: Metadata = { title: strings.more.heading };
 
 export default function MorePage() {
   return (
-    <SimplePage heading={strings.more.heading} line={strings.more.stillBeingBuilt}>
+    <SimplePage
+      heading={strings.more.heading}
+      purpose={strings.more.purpose}
+      line={strings.more.stillBeingBuilt}
+    >
       <ColourChoice />
       <StartAgain />
     </SimplePage>

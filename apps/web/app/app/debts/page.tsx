@@ -5,5 +5,11 @@ import { strings } from '../../../strings/en-GB.ts';
 export const metadata: Metadata = { title: strings.debts.heading };
 
 export default function DebtsPage() {
-  return <SimplePage heading={strings.debts.heading} line={strings.debts.stillBeingBuilt} />;
+  return (
+    <SimplePage
+      heading={strings.debts.heading}
+      purpose={strings.debts.purpose}
+      line={strings.debts.stillBeingBuilt}
+    />
+  );
 }

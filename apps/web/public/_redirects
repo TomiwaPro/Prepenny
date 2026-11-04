@@ -1,0 +1,4 @@
+# The Plan page is called Coming up (D208). An old link or bookmark to it
+# goes to the new address.
+/app/plan /app/coming-up/ 301
+/app/plan/ /app/coming-up/ 301

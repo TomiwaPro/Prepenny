@@ -12,6 +12,11 @@
   padding-bottom: var(--space-2);
 }
 
+.lead {
+  padding-bottom: var(--space-2);
+  font-size: var(--size-body);
+}
+
 .list {
   margin: 0;
 }

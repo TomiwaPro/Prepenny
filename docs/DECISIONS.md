@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 onwards were decided while building step 2d, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 onwards were decided while building step 2d-2, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -1755,6 +1755,8 @@ Why: the brief doesn't say how far ahead Home's lowest point looks. For Sam it's
 
 ### D168. Home's account, "This pay has to cover" and "Next due"
 
+On payday, D206 adds the pay that came in today to "This pay has to cover".
+
 The third point is confirmed by D179.
 
 Decided 3 Nov 2026 in step 2b. Adds to brief 4.9.
@@ -1901,6 +1903,8 @@ D183 to D189 were decided on 3 Nov 2026 while building step 2c. Questions for th
 
 ### D183. The Plan screen shows whole periods, and its lowest point looks as far as Home's
 
+How the periods are shown is replaced by D211, and the lowest point card and the account switch by D209 and D210, on the Coming up page (D208). Whole periods, and how far the lowest point looks, stay.
+
 Decided 3 Nov 2026 in step 2c. Adds to brief 4.8, D84 and D178.
 
 - Three months at first, and "Show another month" adds one, up to 24 (brief 4.8).
@@ -1914,6 +1918,8 @@ Decided 3 Nov 2026 in step 2c. Adds to brief 4.8, D84 and D178.
 Why: brief 4.8 asks for three months and up to 24, but a period cut off part of the way through would show a "Left at the end" that isn't the end. The owner's test 2 lists October, November and December, then January and February after two taps.
 
 ### D184. Filters only hide rows
+
+The Filters button, "Showing only" and "Clear filters" are replaced by the View sheet (D210). What's shown still only hides rows.
 
 Decided 3 Nov 2026 in step 2c. Adds to brief 4.8.
 
@@ -2007,6 +2013,8 @@ D190 to D195 were agreed by the owner on 3 Nov 2026, answering the six questions
 
 ### D190. The Plan screen's lowest point looks 12 months ahead, and tapping it shows those months
 
+The button's words are replaced by D209: "Show everything up to Thu 1 Jul 2027". Tapping it now also opens the payday it's in.
+
 Agreed 3 Nov 2026, from the owner's review of step 2c. Confirms D183's lowest point and adds to it. Built in step 2d.
 
 - The Plan screen's lowest point looks 12 months ahead, the same as Home's (D178), or further when more months are shown (D183).
@@ -2087,6 +2095,8 @@ Why: these follow the brief and the sketch where they didn't say exactly. Tickin
 
 ### D198. I spent
 
+With no budgets, D207 adds "Add a budget" once the Budgets screen exists (step 2f).
+
 Decided 3 Nov 2026 in step 2d. Adds to brief 4.5, D2, D115 and D119.
 
 - Pick the budget (when there's more than one), type how much, and it's saved for today. The date can be changed to an earlier day, never a later one (D119).
@@ -2112,6 +2122,8 @@ Decided 3 Nov 2026 in step 2d. Adds to brief 4.3 and 4.4, D86, D150 and D160.
 Why: these are the choices brief 4.3 and 4.4 list, in the order a person thinks of them, with the monthly choices tied to the date so the "Next payment" is never a different day from the one typed.
 
 ### D200. I did overtime and I missed a shift
+
+The "Overtime" or "Missed a shift" switch is replaced by D213's question: "What happened?" with "I worked extra hours" and "I missed a shift".
 
 Decided 3 Nov 2026 in step 2d. Adds to brief 4.3, D5, D44, D124, D130, D131 and D140.
 
@@ -2158,3 +2170,153 @@ Decided 3 Nov 2026 in step 2d.
 - Months to leave out are in two columns, so "September" fits at 320px.
 
 Why: the same look everywhere (DESIGN.md), and every screen works at 320px (D37).
+
+## From the owner's review of step 2d
+
+D204 to D207 were agreed by the owner on 4 Nov 2026, answering the four questions left at the end of step 2d. D206 was built in step 2d-2; D207 is built in step 2f.
+
+### D204. Update balance's tick boxes start unticked: confirmed
+
+Agreed 4 Nov 2026, from the owner's review of step 2d. Confirms the third point of D197.
+
+In Update balance's third step, every payment starts unticked, and "Tick all" ticks them all at once.
+
+Why: the owner confirmed it. A tick says the money really went, so it needs the person's own tap.
+
+### D205. Update balance records today's balance only, for now
+
+Agreed 4 Nov 2026, from the owner's review of step 2d. Answers the question in the second point of D197.
+
+Update balance records the balance for today. A balance from an earlier day, such as last night's, isn't offered for now. It can come later if people ask for it; the engine already works one out correctly (D138).
+
+Why: the owner's answer.
+
+### D206. On payday, "This pay has to cover" shows the pay that came in today
+
+Agreed 4 Nov 2026, from the owner's review of step 2d. Answers the question about D168 and adds to it. Built in step 2d-2. The points marked "decided in step 2d-2" weren't in the owner's answer.
+
+- On payday, "This pay has to cover" shows the pay that came in today, such as "Pay £603.06, came in today", and what it has to cover until the day before the next payday: "Going out by Thu 5 Nov". It never says "Coming in £0.00" on payday.
+- Decided in step 2d-2: before the pay is ticked, the line says "Pay £603.06, coming in today", because the bank may not show it yet. Once it's ticked, in Update balance or on the edit sheet, it says "came in today".
+- Decided in step 2d-2: the pay is the main pay landing in Home's account today (D81, D168), after any weekend rule or move, with any overtime while it's an estimate. "Coming in" still shows when other money comes in during that pay, such as money moved from savings, and today's pay isn't counted in it again.
+
+Test: on Fri 30 Oct, after brief 8.4 test 5 (£600.00 and Tick all), Home says "Pay £603.06, came in today" and "Going out by Thu 5 Nov £600.00", with no "Coming in". After Undo it says "Pay £603.06, coming in today".
+
+Why: the owner's answer. On payday the pay is what everything until the next one is paid from, and "Coming in £0.00" read as if no pay had come.
+
+### D207. "I spent" with no budgets offers "Add a budget", once budgets can be added
+
+Agreed 4 Nov 2026, from the owner's review of step 2d. Answers the question about D198. Built in step 2f.
+
+Once the Budgets screen exists (step 2f), "I spent" with no budgets offers "Add a budget", which opens the budget form straight away. Until then the sheet says what D198 says.
+
+Why: the owner's answer. Someone who wants to record a spend shouldn't have to go looking for where budgets are made.
+
+## The owner's instructions for step 2d-2
+
+D208 to D214 are the owner's instructions for step 2d-2, given on 4 Nov 2026 after finding the Plan page hard to understand: its two switches looked like four unlabelled buttons, and the page didn't say what it's for. The design is the "Coming up" board, with the View sheet on the "Option 2: what View opens" board, at https://claude.ai/artifact/WHH7uQgMVdBkAMBCBJ2qek. The points marked "decided in step 2d-2" weren't in the owner's instructions.
+
+### D208. The Plan page is called "Coming up"
+
+The owner's instruction for step 2d-2, 4 Nov 2026. Replaces the brief's name for this tab (brief Part 6, ARCHITECTURE.md 4.3) and the bottom navigation in DESIGN.md.
+
+- The tab and the page are called "Coming up", everywhere the app says "Plan". The bottom navigation is Home, Coming up, Debts, More, with the list icon from the board.
+- Decided in step 2d-2: the page's address is `/app/coming-up/`, and an old link to `/app/plan/` goes there (`public/_redirects`, which Cloudflare reads). "Plan" meaning the whole money plan stays, as in "the example plan" or "Your plan couldn't be worked out". Home's link under Next due says "See everything coming up".
+
+Why: the owner's instruction. "Coming up" says what the page shows.
+
+### D209. The top of the Coming up page
+
+The owner's instruction for step 2d-2, 4 Nov 2026. Replaces the lowest point card of D183, and the button words of D190, on this page.
+
+- The heading "Coming up", and under it: "Your bank shows money that's gone. This shows money that's going to go, and what you'll have left each time."
+- An account card with the account's name and balance: "Current account", "£267.54, checked today". A "Switch account" button only when there's more than one account.
+- One line saying what's showing, such as "By payday, showing everything", with a "View" button (D210).
+- One line for the lowest point ahead, looking 12 months ahead (D178, D190), such as "Lowest point: £4.53 on Sun 1 Nov, after Rent", marked Tight or Short. Tapping it opens the payday it's in.
+- "Not ticked yet", when there is anything in it (D11).
+- The example banner stays as it is: "This is an example plan. Nothing here is yours."
+- Decided in step 2d-2: the first warning stays under the lowest point, "Under £20 from Mon 26 Oct." or "£95.47 short on Sun 1 Nov.", because brief 4.8 asks for the first day under the warning level and principle 7 for a shortfall's amount and date. Then words say what a tap does (D213): "Open Fri 30 Oct below", "See it below, in this pay", or, when it's after the months shown, "Show everything up to Thu 1 Jul 2027" (D190). Focus then goes to the row it's after. When the lowest point is today's balance before any payment, there's nothing to open, so it isn't a button.
+- Decided in step 2d-2: "Switch account" opens a sheet with one button for each account, with its balance, and "Showing now" on the one shown. Choosing one closes the sheet and focus goes back to "Switch account". The account's name is a heading, for screen readers.
+
+Why: the owner's instruction. The page says what it's for, which account it shows and what's showing, in words.
+
+### D210. The View sheet
+
+The owner's instruction for step 2d-2, 4 Nov 2026. Replaces the Pay periods or Months switch and the account switch (D183), and the Filters sheet with "Clear filters" (D184).
+
+- "View" opens a sheet with "Group payments" (By payday, By calendar month) and "Show" (Everything, Still to pay, Money coming in, Debt payments, One type).
+- Decided in step 2d-2: "One type, such as Bills" shows "Which type", with the eight types (D79), starting on Bills. Show is one choice of the five: a type no longer combines with another choice. Every choice applies at once, so the sheet's button says "Done". Its sentence (D213): "Choose how payments are grouped, and which ones to show."
+- Decided in step 2d-2: beside "By payday" are the days a pay runs, "Fri to Thu", for pay every week or every few weeks ("Mon to Sun" for irregular pay, D14). Monthly pay has none, because its days change from month to month. With no main pay it says "By payday needs a main pay, so payments are grouped by calendar month." (D84).
+- What's shown still only hides rows; every figure is worked out from the whole plan (D184). The line at the top says "showing everything", "showing only what's still to pay", "showing only money coming in", "showing only debt payments" or "showing only Bills". By payday or by calendar month is kept on the phone, and what's shown while PrePenny is open (D187, D194).
+
+Why: the owner's instruction. The old switches looked like four unlabelled buttons.
+
+### D211. This pay open, and each later payday as one line
+
+The owner's instruction for step 2d-2, 4 Nov 2026. Replaces how D183 shows the periods.
+
+- "This pay, until Thu 29 Oct" is open, with every payment and what's left after it, then "Left at the end".
+- Under "Next paydays", with "Tap one to see every payment in it.", each later payday is one line: its date, the pay coming in ("Pay £603.06 in"), and the lowest it gets in that pay ("Lowest £4.53"), marked Tight or Short when it is. Tapping a line opens it in place to show every payment and "Left at the end"; tapping again closes it.
+- Grouped by calendar month it works the same way: "This month, until Sat 31 Oct" open, and later months one line each under "Next months": "November", "January 2027".
+- "Show another month" still adds more, up to 24 months (D183).
+- Decided in step 2d-2: "Pay £603.06 in" is the main pay arriving in that account in that pay or month, with any overtime while it's an estimate. When none arrives there, as in Savings, the line says what else comes in, "£150.00 coming in", or "Nothing coming in". A separate "Came in" total (D84) isn't shown any more: the pay is on the line, and any other money coming in is a row with a plus.
+- Decided in step 2d-2: "Lowest" is the lowest end-of-day balance in that pay from today on, the same way the lowest point ahead is worked out (D85).
+- Decided in step 2d-2: each line is a button inside a heading, and tells screen readers whether it's open; the payments it opens are a part of the page named after it. An arrow beside it points right when it's closed and down when it's open. The paydays opened are kept while PrePenny is open, like the months shown (D187); choosing another grouping or another account closes them. After the main pay stops (D144), later lines are named by month.
+
+Why: the owner's instruction. One open pay and a short line for each later one shows months ahead on one screen.
+
+### D212. How to read this
+
+The owner's instruction for step 2d-2, 4 Nov 2026.
+
+- On the first visit, a card titled "How to read this" with these points and a "Got it" button. After "Got it" it doesn't come back by itself, but a "?" beside the heading opens it again.
+  - This pay shows every payment from today until the day before your next payday.
+  - Each line under Next paydays is one later pay. Tap it to see its payments.
+  - A minus (−£30.00) is money going out. A plus (+£500.00) is money coming in.
+  - "Left" is what will be in your account after that payment.
+  - "Tight" means under the amount you want to keep. "Short" means you'd run out of money.
+  - Tap any payment to change it, move it or skip it.
+- Decided in step 2d-2: grouped by calendar month, the first two points say "This month shows every payment from today until the end of the month." and "Each line under Next months is one later month. Tap it to see its payments.", so the card always matches the page.
+- Decided in step 2d-2: "Got it" is remembered on this phone only, like Light or Dark (D173). In a private window that keeps nothing, the card shows again the next time. The "?" says "How to read this" to screen readers, and whether the card is open; tapping it while the card is open closes it too. After "Got it", focus goes to the "?". The card has a thin brass edge, as in the sample (DESIGN.md: brass for lines and borders only).
+
+Why: the owner's instruction. Someone new sees how to read the page once, and can always find it again.
+
+### D213. Each screen says what it's for, and every control says what it does
+
+The owner's instruction for step 2d-2, 4 Nov 2026. A rule for every screen from now on, added to `docs/DESIGN.md` and `docs/VOICE.md`.
+
+- Each screen starts with one plain sentence saying what it's for, so a 16-year-old understands it straight away. Every control says in words what it does. No switch whose options look like separate buttons.
+- Checked and fixed in step 2d-2, as the owner asked:
+  - Home: "How much you have, how much you can spend, and what's due next."
+  - Debts: "What you owe, and the date each debt will be paid off.", then "This page is still being built."
+  - More: "Settings for PrePenny on this phone.", then "Help and your account are still being built."
+  - The four sheets from step 2d, each under its title. Update balance: "Tell PrePenny what your bank shows now, so everything ahead starts from the right amount." I spent: "Write down what you've spent from a budget, to see what's left in it." Add a payment: "Add a payment that's coming up, once or every so often." I did overtime: "Tell PrePenny about extra hours or a missed shift, and it works out your new pay."
+  - The overtime sheet's "Overtime | Missed a shift" switch is now a question with two clear choices: "What happened?" with "I worked extra hours" and "I missed a shift". VOICE.md bans questions as headlines; this is a choice to answer, not a headline, and the owner asked for it.
+- Decided in step 2d-2: the other sheets follow the rule too. The edit sheet: "Change this payment, move it or skip it.", or "Mark this as paid once the money has moved." for money set aside; a budget's own row already has its note saying where it's changed. View and Switch account have theirs (D209, D210).
+- Decided in step 2d-2: the switch part that drew options as side-by-side buttons is gone from the app. Every choice is now a list with a round button beside each word.
+- Decided in step 2d-2: the one control without a word is the "?" the owner asked for beside Coming up's heading (D212). Screen readers hear "How to read this", and brief 4.16 asks for a small "?" beside anything that might confuse people.
+
+Why: the owner's instruction. Nobody should have to guess what a screen is for or what a button does.
+
+### D214. "PrePenny has been updated. Tap to reload."
+
+The owner's instruction for step 2d-2, 4 Nov 2026. Confirms D202, built in step 2d.
+
+When a new version of PrePenny is ready, a small note at the bottom says "PrePenny has been updated. Tap to reload.", and tapping it loads the new version straight away. Checked again in step 2d-2: its end-to-end test passes at 320px and 360px, with axe.
+
+Why: the owner's instruction. Without it, someone could keep using an old screen for days after an update.
+
+## Made during step 2d-2
+
+D215 was decided on 4 Nov 2026 while building step 2d-2.
+
+### D215. Smaller choices in step 2d-2
+
+Decided 4 Nov 2026 in step 2d-2.
+
+- The same-day order on Fri 6 Nov: the owner's test 3 listed Spending money before Family loan. D12 puts payments going out on the same day in the order they were first set up, and Family loan was set up first (brief 8.2's table order), so PrePenny shows Family loan −£125.00 (£497.99 left), then Spending money −£54.00 (£443.99 left). The day ends at £443.99 either way. The owner was asked on 4 Nov 2026 and chose to keep D12; every other figure in the test is the owner's.
+- "Switch account" is a little smaller than other outlined buttons (14px words, 44px tall), as in the sample, so it fits beside the account at 360px.
+- A choice in the View sheet follows the tap at once, before the plan is worked out again. Before, it could jump back for a moment, which the tests found.
+- Home's "This pay has to cover" card takes an optional line under its heading, for the payday line (D206).
+
+Why: each follows the owner's design or an earlier decision where the instructions didn't say exactly.
+

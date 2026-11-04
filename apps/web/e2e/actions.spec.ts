@@ -12,9 +12,16 @@ import { expect, type Locator, type Page, test } from '@playwright/test';
 import { type Budget, type PlanRecords, parsePounds, type Spend } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
-
-const MINUS = '−';
-const tags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+import {
+  goToComingUp,
+  leftAtEnd,
+  MINUS,
+  named,
+  openPeriod,
+  period,
+  rowIn,
+  AXE_TAGS as tags,
+} from './coming-up.ts';
 
 /** Sam's example with Travel at £25 a week from Friday, all at the start, and £4.00 spent on Sat 24 Oct before the update. */
 const travel: Budget = {
@@ -70,22 +77,13 @@ async function noAxeProblems(page: Page) {
   expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
 }
 
-async function openPlan(page: Page) {
-  await page.getByRole('link', { name: 'Plan', exact: true }).click();
-  await expect(page.getByTestId('period').first()).toBeVisible();
+/** Goes to the Coming up page and opens the paydays given (D211). */
+async function openPlan(page: Page, ...paydays: readonly string[]) {
+  await goToComingUp(page);
+  for (const start of paydays) await openPeriod(page, start);
 }
 
-const period = (page: Page, start: string) =>
-  page.locator(`[data-testid="period"][data-start="${start}"]`);
-
 const rowsIn = (page: Page, start: string) => period(page, start).locator('[data-row-key]');
-
-/** A row's button, by the payment's name: its name for screen readers starts with it. */
-const named = (name: string) =>
-  new RegExp(`^${name.replace(/[()]/g, '\\$&')} (Mon|Tue|Wed|Thu|Fri|Sat|Sun)`);
-
-const rowIn = (page: Page, start: string, name: string) =>
-  period(page, start).getByRole('button', { name: named(name) });
 
 /** The names of a period's rows, in order: each row's words without its date tile. */
 const namesIn = (page: Page, start: string) =>
@@ -96,8 +94,6 @@ const namesIn = (page: Page, start: string) =>
         .join(''),
     ),
   );
-
-const leftAtEnd = (page: Page, start: string) => period(page, start).getByRole('definition').last();
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`The four actions, in ${colorScheme} mode`, () => {
@@ -192,6 +188,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('balance')).toHaveText('£600.00');
       await expect(page.getByText('Checked today, Fri\u00a030\u00a0Oct')).toBeVisible();
       await expect(page.getByTestId('lowest-point')).toContainText('£0.00');
+      // On payday, the pay that came in today, never "Coming in £0.00" (D206).
+      const cover = page.getByTestId('this-pay');
+      await expect(cover.getByText('Pay £603.06, came in today', { exact: true })).toBeVisible();
+      await expect(cover.getByRole('term')).toHaveText(['Going out by Thu\u00a05\u00a0Nov']);
+      await expect(cover.getByRole('definition')).toHaveText(['£600.00']);
       await expect(undoBar(page)).toContainText(
         'Current account balance updated, and 7 payments ticked.',
       );
@@ -201,6 +202,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('balance')).toHaveText('£267.54');
       await expect(page.getByText('Checked Sun\u00a025\u00a0Oct')).toBeVisible();
       await expect(page.getByTestId('lowest-point')).toContainText('£4.53');
+      // Before it's ticked, the pay is still coming in today.
+      await expect(
+        page.getByTestId('this-pay').getByText('Pay £603.06, coming in today', { exact: true }),
+      ).toBeVisible();
       await openPlan(page);
       await expect(page.getByTestId('not-ticked-yet').locator('[data-row-key]')).toHaveCount(5);
     });
@@ -248,7 +253,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
     test('test 4: Add a payment, Car MOT, £54.85 once on Fri 13 Nov', async ({ page }) => {
       await openHome(page);
-      await openPlan(page);
+      await openPlan(page, '2026-11-13');
       await expect(rowIn(page, '2026-11-13', 'Spending money')).toContainText('£420.75 left');
       await page.getByRole('link', { name: 'Home', exact: true }).click();
 
@@ -264,6 +269,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet).toBeHidden();
       await expect(undoBar(page)).toContainText('Car MOT added.');
 
+      // The paydays opened are kept while PrePenny is open (D211).
       await openPlan(page);
       await expect(rowIn(page, '2026-11-13', 'Car MOT')).toBeVisible();
       // Fri 13 Nov: Pay, To savings, Spending money, then Car MOT, the newest (D12).
@@ -281,7 +287,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openHome(page);
       const sheet = await openAction(page, 'I did overtime');
       await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
-      await sheet.getByLabel('Hours').fill('11.5');
+      await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
       await expect(sheet.getByText('At £19.07 an hour.')).toBeVisible();
       await expect(sheet.getByTestId('shift-preview')).toHaveText(
         'This adds £155.12 to your pay on Fri\u00a06\u00a0Nov, making it £773.58.',
@@ -297,11 +303,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // Opened again, it remembers the hours and the rate (D200).
       const again = await openAction(page, 'I did overtime');
-      await expect(again.getByLabel('Hours')).toHaveValue('11.5');
+      await expect(again.getByLabel('Hours', { exact: true })).toHaveValue('11.5');
       await expect(again.getByText('At £19.07 an hour.')).toBeVisible();
       await again.getByRole('button', { name: 'Close', exact: true }).click();
 
-      await openPlan(page);
+      await openPlan(page, '2026-11-06');
       await expect(rowIn(page, '2026-11-06', 'Pay')).toContainText('+£773.58');
       await expect(leftAtEnd(page, '2026-11-06')).toHaveText('£310.81');
     });
@@ -311,11 +317,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }) => {
       await openHome(page);
       let sheet = await openAction(page, 'I did overtime');
-      await sheet.getByText('Missed a shift', { exact: true }).click();
+      await sheet.getByRole('radio', { name: 'I missed a shift' }).check();
       sheet = page.getByRole('dialog', { name: 'I missed a shift' });
       await expect(sheet).toBeVisible();
       await sheet.getByLabel('Day of the shift').fill('2026-11-03');
-      await sheet.getByLabel('Hours').fill('11.5');
+      await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
       await expect(sheet.getByText('At £12.71 an hour.')).toBeVisible();
       await expect(sheet.getByTestId('shift-preview')).toHaveText(
         'This takes £100.43 off your pay on Fri\u00a013\u00a0Nov, making it £368.63.',
@@ -326,7 +332,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(undoBar(page)).toContainText(
         'Missed shift added. Your pay on Fri\u00a013\u00a0Nov goes down by £100.43.',
       );
-      await openPlan(page);
+      await openPlan(page, '2026-11-06', '2026-11-13');
       await expect(rowIn(page, '2026-11-13', 'Pay')).toContainText('+£368.63');
       await expect(rowIn(page, '2026-11-06', 'Pay')).toContainText('+£618.46');
     });
@@ -432,12 +438,21 @@ for (const colorScheme of ['light', 'dark'] as const) {
       for (const label of ['Day of the overtime', 'Hours']) {
         await expect(sheet.getByLabel(label, { exact: true })).toBeVisible();
       }
-      for (const name of ['Overtime', 'Missed a shift']) {
-        await expect(sheet.getByRole('radio', { name })).toBeVisible();
+      // A question with two clear choices, not a switch (D213).
+      const what = sheet.getByRole('group', { name: 'What happened?' });
+      await expect(what).toBeVisible();
+      for (const name of ['I worked extra hours', 'I missed a shift']) {
+        await expect(what.getByRole('radio', { name })).toBeVisible();
       }
+      await expect(what.getByRole('radio', { name: 'I worked extra hours' })).toBeChecked();
+      await expect(
+        sheet.getByText(
+          'Tell PrePenny about extra hours or a missed shift, and it works out your new pay.',
+        ),
+      ).toBeVisible();
       await sheet.getByRole('button', { name: 'Save' }).click();
       await expect(sheet.getByText('Type the hours, for example 11.5.')).toBeVisible();
-      await expect(sheet.getByLabel('Hours')).toBeFocused();
+      await expect(sheet.getByLabel('Hours', { exact: true })).toBeFocused();
       await sheet.getByRole('button', { name: 'Change the rate' }).click();
       await expect(sheet.getByLabel('Rate an hour')).toHaveValue('19.07');
       await noAxeProblems(page);
@@ -451,7 +466,7 @@ test('the overtime sheet keeps the extras box while typing, and each kind its ow
   await openHome(page);
   const sheet = await openAction(page, 'I did overtime');
   await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
-  await sheet.getByLabel('Hours').fill('11.5');
+  await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
   const extras = sheet.getByLabel('Extras it adds, such as shift premium, if any');
   await expect(extras).toBeVisible();
   await extras.pressSequentially('10');
@@ -460,18 +475,18 @@ test('the overtime sheet keeps the extras box while typing, and each kind its ow
   await expect(sheet.getByTestId('shift-preview')).toContainText('Fri\u00a06\u00a0Nov');
 
   // A missed shift has its own rate: the pay week's basic rate.
-  await sheet.getByText('Missed a shift', { exact: true }).click();
+  await sheet.getByRole('radio', { name: 'I missed a shift' }).check();
   const missed = page.getByRole('dialog', { name: 'I missed a shift' });
   await missed.getByLabel('Day of the shift').fill('2026-11-03');
-  await missed.getByLabel('Hours').fill('11.5');
+  await missed.getByLabel('Hours', { exact: true }).fill('11.5');
   await expect(missed.getByText('At £12.71 an hour.')).toBeVisible();
   await missed.getByRole('button', { name: 'Change the rate' }).click();
   await expect(missed.getByLabel('Rate an hour')).toBeFocused();
   await expect(missed.getByLabel('Rate an hour')).toHaveValue('12.71');
-  await missed.getByText('Overtime', { exact: true }).click();
+  await missed.getByRole('radio', { name: 'I worked extra hours' }).check();
   const overtime = page.getByRole('dialog', { name: 'I did overtime' });
   await expect(overtime.getByText('At £19.07 an hour.')).toBeVisible();
-  await expect(overtime.getByLabel('Hours')).toHaveValue('11.5');
+  await expect(overtime.getByLabel('Hours', { exact: true })).toHaveValue('11.5');
 
   // A cleared date says what to do.
   await overtime.getByLabel('Day of the overtime').fill('');
@@ -508,14 +523,15 @@ test('Add a payment: money coming in, every 2 weeks, ending after 3, with a diff
   await sheet.getByLabel('Last amount').fill('10');
   await sheet.getByRole('button', { name: 'Add payment' }).click();
   await expect(sheet).toBeHidden();
-  await openPlan(page);
+  // Tue 27 Oct, Tue 10 Nov and Tue 24 Nov.
+  await openPlan(page, '2026-11-06', '2026-11-20');
   const refunds = page.getByRole('button', { name: named('Refund') });
   await expect(refunds).toHaveCount(3);
   await expect(refunds).toContainText(['+£20.00', '+£20.00', '+£10.00']);
   await expect(refunds.nth(1)).toContainText('Tue\u00a010\u00a0Nov');
 });
 
-test('the Plan screen shows the months up to a lowest point that comes later (D190)', async ({
+test('the Coming up page shows the months up to a lowest point that comes later (D190, D209)', async ({
   page,
 }) => {
   // A big payment in July 2027 makes the lowest point fall after the 3 months shown.
@@ -535,13 +551,15 @@ test('the Plan screen shows the months up to a lowest point that comes later (D1
   await openHome(page);
   await openPlan(page);
   const lowest = page.getByTestId('plan-lowest');
-  const show = lowest.getByRole('button', { name: /Show the plan up to Thu\s1\sJul\s2027/ });
+  const show = lowest.getByRole('button', { name: /Show everything up to Thu\s1\sJul\s2027/ });
   await expect(show).toBeVisible();
   await show.click();
+  // The payday it's in opens, and focus goes to its row.
   const bill = page.getByRole('button', { name: named('Big bill') });
   await expect(bill).toBeFocused();
   await expect(bill).toContainText('Lowest point ahead');
-  await expect(lowest.getByRole('button')).toHaveCount(0);
+  await expect(period(page, '2027-06-25')).toHaveAttribute('data-open', 'true');
+  await expect(lowest.getByRole('button')).toContainText(/Open Fri\s25\sJun\s2027 below/);
 });
 
 test('when a new version arrives, a note says so, and tapping it loads it (D202)', async ({

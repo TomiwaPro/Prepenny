@@ -1,6 +1,7 @@
 'use client';
 
-// Home (brief 4.9, the Home sketch in ARCHITECTURE.md 4.6): the balance and
+// Home (brief 4.9, the Home sketch in ARCHITECTURE.md 4.6): what it's for in
+// one plain sentence (D213), the balance and
 // when it was checked, Left to spend, the lowest point ahead, what this pay
 // has to cover, the next three due and the four actions. Every figure comes
 // from the engine, worked out in the background; every word from the strings file.
@@ -94,16 +95,27 @@ function Figures({
         <TotalsCard
           testId="this-pay"
           heading={t.thisPayHasToCover}
+          lead={
+            cover.payToday === null
+              ? null
+              : (cover.payToday.ticked ? t.payCameInToday : t.payComingInToday)(
+                  formatMoney(cover.payToday.amount),
+                )
+          }
           rows={[
             { label: t.goingOutBy(day(cover.by)), amount: formatMoney(cover.goingOut) },
-            { label: t.comingIn, amount: formatMoney(cover.comingIn) },
+            // On payday the pay has its own line, so "Coming in" shows only
+            // when something else comes in too: never "Coming in £0.00" (D206).
+            ...(cover.payToday !== null && cover.comingIn === 0
+              ? []
+              : [{ label: t.comingIn, amount: formatMoney(cover.comingIn) }]),
           ]}
         />
       )}
       <PaymentList
         testId="next-due"
         heading={t.nextDue}
-        link={{ label: t.seeThePlan, href: '/app/plan/' }}
+        link={{ label: t.seeComingUp, href: '/app/coming-up/' }}
         empty={t.nothingDue(day(home.lookAheadTo))}
       >
         {home.nextDue.map((row) => (
@@ -122,6 +134,7 @@ export function HomeScreen() {
       <header className={styles.header}>
         <p className={styles.wordmark}>{strings.app.name}</p>
         <h1 className="visually-hidden">{t.heading}</h1>
+        <p className={styles.purpose}>{t.purpose}</p>
       </header>
       <div className={styles.figures} aria-busy={state.status === 'loading'}>
         {state.status === 'ready' ? (

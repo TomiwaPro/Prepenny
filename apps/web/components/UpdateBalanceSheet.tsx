@@ -43,7 +43,7 @@ export function UpdateBalanceSheet({
   const opened = useOpenCount(open);
   const shown = useActionsView(open);
   return (
-    <Sheet open={open} title={t.title} onClose={onClose}>
+    <Sheet open={open} title={t.title} intro={t.intro} onClose={onClose}>
       {opened === 0 ? null : <UpdateBalanceForm key={opened} shown={shown} onClose={onClose} />}
     </Sheet>
   );
@@ -366,12 +366,8 @@ function UpdateBalanceForm({
           {lowest === undefined
             ? strings.sheet.working
             : lowest.after === null
-              ? strings.plan.lowestOn(formatMoney(lowest.balance), day(lowest.date))
-              : strings.plan.lowestOnAfter(
-                  formatMoney(lowest.balance),
-                  day(lowest.date),
-                  lowest.after,
-                )}
+              ? t.lowestOn(formatMoney(lowest.balance), day(lowest.date))
+              : t.lowestOnAfter(formatMoney(lowest.balance), day(lowest.date), lowest.after)}
         </p>
       </section>
       <button type="button" className={styles.main} onClick={onClose}>
