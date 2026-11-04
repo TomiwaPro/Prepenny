@@ -11,6 +11,7 @@ import type { AccountsView, BudgetsView, GoalsView } from '../lib/money-views.ts
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 import type { SetupView } from '../lib/setup-view.ts';
+import type { WhatIfView } from '../lib/what-if-view.ts';
 
 /** Everything Home shows. */
 export interface HomeAsk {
@@ -85,8 +86,18 @@ export interface CompareAsk {
   readonly compare: CompareRequest;
 }
 
+/** The real plan and the practice plan side by side, for What if (brief 4.10, D135). */
+export interface WhatIfAsk {
+  readonly kind: 'what-if';
+  readonly records: PlanRecords;
+  readonly today: string;
+  /** The practice changes, made in turn on a copy of the plan. */
+  readonly practice: readonly EditCommand[];
+}
+
 export type Ask =
   | HomeAsk
+  | WhatIfAsk
   | PlanAsk
   | EditAsk
   | ActionsAsk
@@ -110,6 +121,7 @@ export interface Answers {
   readonly goals: GoalsView;
   readonly accounts: AccountsView;
   readonly compare: CardComparison;
+  readonly 'what-if': WhatIfView;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

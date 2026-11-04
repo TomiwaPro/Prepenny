@@ -11,7 +11,9 @@
 // Savings goals on the example with the owner's test 5 Travel budget and
 // test 6 Holiday goal added, because the example has none (D180). Each
 // page is as tall as the whole page, with the bottom navigation at the
-// bottom. Run only when asked, one step at a time:
+// bottom. Step 2g: What if with the owner's test 1 change made, before
+// keeping it; the pay calculator's result for test 3; and Check my payslip
+// for test 5, at 360px in light. Run only when asked, one step at a time:
 //
 //   SCREENS=1 pnpm e2e --project phone-360 screens -g "Step 2d-2"
 
@@ -409,3 +411,46 @@ for (const shot of moneyShots) {
     await context.close();
   });
 }
+
+/** A context for a step 2g screenshot: 360px wide, light, on the example. */
+async function step2gPage(browser: import('@playwright/test').Browser) {
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 800 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    colorScheme: 'light',
+    reducedMotion: 'reduce',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+  });
+  await openOnExample(context);
+  return { context, page: await context.newPage() };
+}
+
+/** The whole page, as tall as it is, into docs/screens/2g. */
+async function shoot2g(page: Page, file: string) {
+  await page.evaluate(() => document.fonts.ready);
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width: 360, height });
+  const step = join(screens, '2g');
+  mkdirSync(step, { recursive: true });
+  await page.screenshot({ path: join(step, file) });
+}
+
+test('Step 2g: what-if-360-light.png', async ({ browser }) => {
+  const { context, page } = await step2gPage(browser);
+  await page.goto('/app/what-if/?from=coming-up');
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
+  await friday.locator(':scope > h3 > button').click();
+  await friday.getByRole('button', { name: /^Pay Fri/ }).click();
+  const sheet = page.getByRole('dialog', { name: 'Pay' });
+  await sheet.getByLabel('Amount').fill('503.06');
+  await sheet.getByRole('button', { name: 'Save' }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByTestId('practice-short')).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shoot2g(page, 'what-if-360-light.png');
+  await context.close();
+});

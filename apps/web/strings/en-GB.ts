@@ -820,6 +820,9 @@ export const strings = {
     nothingMatches: 'Nothing here matches what you chose to show.',
     showAnotherMonth: 'Show another month',
     showingMost: 'This is as far ahead as the plan goes: 24 months.',
+    /** The way into What if (brief 4.10, step 2g). */
+    whatIfLine: 'Try changes in practice, then keep them or throw them away.',
+    whatIf: 'What if',
     loading: 'Working out your plan.',
   },
 
@@ -942,6 +945,51 @@ export const strings = {
     changeDetails: 'Change its details',
     close: 'Close this debt',
     closedNote: 'This debt is closed, so it is not counted in Owed now.',
+  },
+
+  /** What if (brief 4.10, D135, step 2g): practice changes beside the real plan. */
+  whatIf: {
+    heading: 'What if',
+    purpose: "Practice mode. Try changes here. Your real plan doesn't change unless you keep them.",
+    backToMore: 'Back to More',
+    backToComingUp: 'Back to Coming up',
+    loading: 'Working out your practice plan.',
+    yourChanges: 'Your practice changes',
+    noChanges: 'No practice changes yet. Make one below.',
+    takeBack: 'Take back the last change',
+    takenBack: 'The last practice change is taken back.',
+    keep: 'Keep these changes',
+    keepHint: 'They go into your real plan as one change, and one Undo takes them all back.',
+    throwAway: 'Throw them away',
+    throwAwayHint: 'Your real plan stays exactly as it was.',
+    kept: (count: number) =>
+      count === 1
+        ? 'Your practice change is now in your plan.'
+        : `Your ${count} practice changes are now in your plan.`,
+    thrownAway: 'Practice changes thrown away. Your real plan is exactly as it was.',
+    cantMakeAgain:
+      "Your plan has changed since, so your practice changes couldn't be made again. They're thrown away.",
+    sideBySide: 'Your real plan and practice, side by side',
+    real: 'Your real plan',
+    practice: 'Practice',
+    lowestPoint: 'Lowest point ahead',
+    onAfter: (date: string, name: string) => `${date}, after ${name}`,
+    practiceShort: (amount: string, date: string) =>
+      `In practice, you'd be ${amount} short on ${date}.`,
+    realShort: (amount: string, date: string) => `Your real plan is ${amount} short on ${date}.`,
+    couldMoveTo: (date: string) => `Moving one of these payments to ${date} would fix it.`,
+    couldMove: 'Moving one of these payments would fix it.',
+    noneFixes: "Moving one payment to the next payday wouldn't fix it on its own.",
+    showAll: (count: number) => `Show all ${count}`,
+    paidOffOn: 'Paid off on',
+    paidOffIntro: 'Each debt, looking 24 months ahead.',
+    leftOn: (amount: string, date: string) => `${amount} left on ${date}`,
+    estimate: (words: string) => `${words}, an estimate`,
+    goalsReached: 'Savings goals reached on',
+    notReached: (amount: string, date: string) => `Not reached: ${amount} saved by ${date}`,
+    makeChange: 'Make a practice change',
+    makeChangeIntro: 'Tap a payment below to change it, move it or skip it, or use one of these.',
+    payments: 'Payments, with your practice changes',
   },
 
   /** Compare ways to pay a credit card (brief 4.6, D102). Numbers only (brief Part 3, principle 10). */
@@ -1224,6 +1272,10 @@ export const strings = {
     budgetsLine: "Spending money, with what's spent and left",
     goals: 'Savings goals',
     goalsLine: "What you're saving for, and when you'll get there",
+    whatIf: 'What if',
+    whatIfLine: 'Try changes in practice before you make them',
+    payCalculator: 'Pay calculator',
+    payCalculatorLine: 'Take-home pay from your hours, and Check my payslip',
     colours: 'Colours',
     coloursHint: 'Dark colours are easier on the eyes at night.',
     matchPhone: 'Match this phone',

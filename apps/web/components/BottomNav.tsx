@@ -24,7 +24,7 @@ const places: readonly {
     href: '/app/more/',
     icon: 'more',
     label: strings.nav.more,
-    under: ['/app/accounts/', '/app/budgets/', '/app/goals/'],
+    under: ['/app/accounts/', '/app/budgets/', '/app/goals/', '/app/pay/', '/app/what-if/'],
   },
 ];
 

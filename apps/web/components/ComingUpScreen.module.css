@@ -88,6 +88,14 @@
   flex-direction: column;
 }
 
+/* A link drawn as an outlined button, such as "What if" (step 2g). */
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .plan {
   display: flex;
   flex-direction: column;

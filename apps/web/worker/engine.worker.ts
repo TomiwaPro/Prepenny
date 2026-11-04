@@ -10,6 +10,7 @@ import { workOutAccountsView, workOutBudgetsView, workOutGoalsView } from '../li
 import { previewPayChange } from '../lib/pay-preview.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
 import { workOutSetupView } from '../lib/setup-view.ts';
+import { workOutWhatIfView } from '../lib/what-if-view.ts';
 import type { Answers, Ask, WorkRequest, WorkResponse } from './messages.ts';
 
 interface WorkerScope {
@@ -45,6 +46,8 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return workOutAccountsView(ask.records, ask.today);
     case 'compare':
       return compareWaysToPay(ask.records, ask.today, ask.compare);
+    case 'what-if':
+      return workOutWhatIfView(ask.records, ask.today, ask.practice);
     default:
       throw new EngineInputError('bad-request', 'The worker was asked something it does not know.');
   }

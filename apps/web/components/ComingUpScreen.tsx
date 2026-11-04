@@ -11,8 +11,13 @@
 // place. Grouped by calendar month it works the same way. What's shown only
 // hides rows, never changes a figure (D184). Three months at first, and
 // "Show another month" up to 24. Tapping a payment opens the edit sheet.
+//
+// What if (step 2g) shows the same list for its practice plan: `practice`
+// leaves out the page's heading and "How to read this", and keeps its own
+// months and opened paydays, apart from the real page's.
 
 import { PAYMENT_TYPES, type PaymentType } from '@prepenny/engine';
+import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import { formatDay, formatMonth, weekdayShort } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
@@ -553,13 +558,16 @@ function focusLowest(account: AccountView, start: string) {
     ?.focus();
 }
 
-export function ComingUpScreen() {
+const FRESH = { filters: NO_FILTERS, months: PLAN_MONTHS_AHEAD, accountId: null, opened: [] };
+
+export function ComingUpScreen({ practice = false }: { readonly practice?: boolean } = {}) {
   const { loaded } = usePlanActions();
+  const start = practice ? FRESH : remembered;
   const [grouping, setGrouping] = useState<Grouping>('pay');
-  const [months, setMonths] = useState(remembered.months);
-  const [filters, setFilters] = useState<Filters>(remembered.filters);
-  const [chosenAccount, setChosenAccount] = useState<string | null>(remembered.accountId);
-  const [opened, setOpened] = useState<readonly string[]>(remembered.opened);
+  const [months, setMonths] = useState(start.months);
+  const [filters, setFilters] = useState<Filters>(start.filters);
+  const [chosenAccount, setChosenAccount] = useState<string | null>(start.accountId);
+  const [opened, setOpened] = useState<readonly string[]>(start.opened);
   const [shown, setShown] = useState<{ view: PlanView; version: number } | null>(null);
   const [failed, setFailed] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
@@ -578,12 +586,12 @@ export function ComingUpScreen() {
 
   useEffect(() => {
     setGrouping(storedGrouping());
-    setHelp(!helpSeen());
-  }, []);
+    if (!practice) setHelp(!helpSeen());
+  }, [practice]);
 
   useEffect(() => {
-    remembered = { filters, months, accountId: chosenAccount, opened };
-  }, [filters, months, chosenAccount, opened]);
+    if (!practice) remembered = { filters, months, accountId: chosenAccount, opened };
+  }, [practice, filters, months, chosenAccount, opened]);
 
   useEffect(() => {
     if (loaded === null) return;
@@ -674,29 +682,31 @@ export function ComingUpScreen() {
 
   return (
     <>
-      <header className={styles.header}>
-        <div className={styles.titleLine}>
-          <h1 className={styles.heading}>{t.heading}</h1>
-          <button
-            ref={helpButton}
-            type="button"
-            className={styles.helpButton}
-            aria-expanded={help === true}
-            aria-controls={helpId}
-            onClick={() => {
-              if (help === true) closeHelp();
-              else setHelp(true);
-            }}
-          >
-            {/* The "?" mark, then what the button does in words (D213, D216). */}
-            <span className={styles.helpMark} aria-hidden="true">
-              {t.helpMark}
-            </span>
-            <span>{t.howToReadButton}</span>
-          </button>
-        </div>
-        <p className={styles.purpose}>{t.purpose}</p>
-      </header>
+      {practice ? null : (
+        <header className={styles.header}>
+          <div className={styles.titleLine}>
+            <h1 className={styles.heading}>{t.heading}</h1>
+            <button
+              ref={helpButton}
+              type="button"
+              className={styles.helpButton}
+              aria-expanded={help === true}
+              aria-controls={helpId}
+              onClick={() => {
+                if (help === true) closeHelp();
+                else setHelp(true);
+              }}
+            >
+              {/* The "?" mark, then what the button does in words (D213, D216). */}
+              <span className={styles.helpMark} aria-hidden="true">
+                {t.helpMark}
+              </span>
+              <span>{t.howToReadButton}</span>
+            </button>
+          </div>
+          <p className={styles.purpose}>{t.purpose}</p>
+        </header>
+      )}
 
       {help === true ? (
         <HowToRead
@@ -741,6 +751,17 @@ export function ComingUpScreen() {
               </button>
             </div>
             <LowestLine account={account} view={view} onTap={tapLowest} />
+            {practice ? null : (
+              <div className={styles.viewLine} data-testid="what-if-line">
+                <p className={styles.viewWords}>{t.whatIfLine}</p>
+                <Link
+                  className={`${styles.outlined} ${styles.linkButton}`}
+                  href="/app/what-if/?from=coming-up"
+                >
+                  {t.whatIf}
+                </Link>
+              </div>
+            )}
             {failed ? (
               // The figures below are from before the last change: say so plainly.
               <p className={styles.card} role="alert">

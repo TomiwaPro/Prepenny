@@ -2,8 +2,9 @@
 
 // Opening the edit sheet from a row, and putting focus back afterwards: on
 // the same row when it's still there, or on the undo bar when it has gone,
-// such as after Skip this one. Closing without a change leaves focus where
-// the browser puts it back, on the row (WCAG 2.4.3).
+// such as after Skip this one. What if has no undo bar, so there it goes to
+// the list of practice changes (step 2g). Closing without a change leaves
+// focus where the browser puts it back, on the row (WCAG 2.4.3).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RowView } from '../lib/rows.ts';
@@ -26,7 +27,10 @@ export function useEditSheet(shownVersion: number | null) {
       if (document.activeElement !== row) row.focus();
       return;
     }
-    document.querySelector<HTMLElement>('[data-testid="undo-bar"] button')?.focus();
+    (
+      document.querySelector<HTMLElement>('[data-testid="undo-bar"] button') ??
+      document.querySelector<HTMLElement>('[data-focus-after-change]')
+    )?.focus();
   }, [shownVersion]);
 
   const open = useCallback((row: RowView) => {
