@@ -6,7 +6,7 @@
 // and one tap of Undo puts it all back.
 
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import {
   goToComingUp,
   leftAtEnd,
@@ -16,6 +16,7 @@ import {
   rowIn,
   AXE_TAGS as tags,
 } from './coming-up.ts';
+import { expect, test } from './fixtures.ts';
 
 const openPlan = openComingUp;
 

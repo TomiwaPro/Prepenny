@@ -8,6 +8,7 @@
 
 .titleLine {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -19,23 +20,40 @@
   font-weight: 700;
 }
 
-/* The "?" beside the heading: brings "How to read this" back (D212). */
+/* "? How to read this" beside the heading: brings the card back (D212, D216). */
 .helpButton {
   flex: 0 0 auto;
-  width: var(--tap);
-  height: var(--tap);
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
   border: 1px solid var(--button-border);
   border-radius: var(--radius-pill);
   background: var(--card);
   color: var(--accent-text);
-  font-size: var(--size-heading);
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--size-second);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
 }
 
 .helpButton[aria-expanded="true"] {
   border: 2px solid var(--field-border);
+}
+
+/* The "?" mark inside the button, in a small round tile. */
+.helpMark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  font-size: var(--size-name);
+  font-weight: 700;
 }
 
 .purpose {

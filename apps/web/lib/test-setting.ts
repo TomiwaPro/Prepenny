@@ -13,6 +13,11 @@ export interface TestSetting {
   readonly today?: string;
   /** A plan to use in place of the example, such as the example with a budget added. */
   readonly plan?: PlanRecords;
+  /**
+   * Opens on the example when this phone hasn't chosen a plan yet, as the
+   * tests from before setup expect (step 2e). A test plan does the same.
+   */
+  readonly example?: true;
 }
 
 /** Where the tests put the setting, with Playwright's `addInitScript`. */
@@ -26,9 +31,14 @@ export function testSetting(): TestSetting | null {
   if (navigator.webdriver !== true) return null;
   const value: unknown = Reflect.get(window, TEST_SETTING_KEY);
   if (value === null || typeof value !== 'object') return null;
-  const { today, plan } = value as { readonly today?: unknown; readonly plan?: unknown };
+  const { today, plan, example } = value as {
+    readonly today?: unknown;
+    readonly plan?: unknown;
+    readonly example?: unknown;
+  };
   return {
     ...(typeof today === 'string' && DATE.test(today) ? { today } : {}),
     ...(plan !== null && typeof plan === 'object' ? { plan: plan as PlanRecords } : {}),
+    ...(example === true ? { example } : {}),
   };
 }

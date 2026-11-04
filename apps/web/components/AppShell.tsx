@@ -4,7 +4,7 @@
 // the top, the screen in a centred column, the undo bar after a change, and
 // the bottom navigation.
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { refusalMessage } from '../lib/refusals.ts';
 import styles from './AppShell.module.css';
@@ -16,12 +16,33 @@ import { UpdateNote, useUpdated } from './UpdateNote.tsx';
 
 function Notes() {
   const state = usePlan();
+  const { ownPlan, showPlan } = usePlanActions();
+  const router = useRouter();
   return (
     <div className={styles.notes}>
-      {state.plan?.isExample === true ? <ExampleBanner /> : null}
+      {state.plan?.isExample === true ? (
+        <ExampleBanner
+          ownPlan={ownPlan}
+          onLeave={async () => {
+            await showPlan('own');
+            // A plan still being set up carries on in setup (step 2e).
+            if (ownPlan !== 'ready') router.push('/setup/');
+          }}
+        />
+      ) : null}
       <OfflineNote />
     </div>
   );
+}
+
+/** Goes to setup when the person's own plan isn't set up yet (brief 4.1, step 2e). */
+function ToSetup() {
+  const { needsSetup } = usePlanActions();
+  const router = useRouter();
+  useEffect(() => {
+    if (needsSetup) router.replace('/setup/');
+  }, [needsSetup, router]);
+  return null;
 }
 
 /**
@@ -100,6 +121,7 @@ function Column({ children }: { readonly children: ReactNode }) {
 export function AppShell({ children }: { readonly children: ReactNode }) {
   return (
     <PlanProvider>
+      <ToSetup />
       <Column>{children}</Column>
       {/* Above the navigation: the update note, then the undo bar (D186, D202). */}
       <div className={styles.bottom} data-bottom-notes>

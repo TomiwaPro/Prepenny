@@ -8,6 +8,7 @@
 
 import type { PlanRecords, PlanSettings, RecordWrite } from '@prepenny/engine';
 import { Dexie, type EntityTable } from 'dexie';
+import type { SetupProgress } from '../lib/setup-progress.ts';
 
 /** One plan on this phone. */
 export interface StoredPlan {
@@ -22,7 +23,15 @@ export interface StoredPlan {
    * with the example".
    */
   readonly edited?: boolean;
+  /**
+   * The person's own plan only: how far first-time setup has got (step 2e).
+   * Leaving part-way keeps it, and PrePenny carries on from there.
+   */
+  readonly setup?: SetupProgress;
 }
+
+/** Which plan the app shows: the person's own, or the example (step 2e). */
+export type Showing = 'own' | 'example';
 
 /** The kinds of record, as the engine's edits name them (D87). */
 export type RecordKind = RecordWrite['kind'];
@@ -222,4 +231,26 @@ export async function saveChange(
 export function exampleNeedsReplacing(stored: StoredPlan | undefined, version: string): boolean {
   if (stored === undefined) return true;
   return stored.exampleVersion !== version && stored.edited !== true;
+}
+
+/** Where this phone keeps which plan the app shows. */
+const SHOWING = 'showing';
+
+/** Which plan this phone shows, or undefined when nothing has been chosen yet. */
+export async function showingOnPhone(db: PrePennyDb): Promise<Showing | undefined> {
+  const value = (await db.device.get(SHOWING))?.value;
+  return value === 'own' || value === 'example' ? value : undefined;
+}
+
+export async function setShowing(db: PrePennyDb, showing: Showing): Promise<void> {
+  await db.device.put({ key: SHOWING, value: showing });
+}
+
+/**
+ * The person's own plan on this phone, or undefined before they start one.
+ * There's one for now; shared plans come in Phase 3.
+ */
+export async function ownPlanOnPhone(db: PrePennyDb): Promise<StoredPlan | undefined> {
+  const plans = await db.plans.toArray();
+  return plans.find((plan) => !plan.isExample);
 }

@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 onwards were decided while building step 2d-2, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 onwards were decided while building step 2e, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -2319,4 +2319,145 @@ Decided 4 Nov 2026 in step 2d-2.
 - Home's "This pay has to cover" card takes an optional line under its heading, for the payday line (D206).
 
 Why: each follows the owner's design or an earlier decision where the instructions didn't say exactly.
+
+## From the owner's review of step 2d-2
+
+D216 to D219 were agreed by the owner on 4 Nov 2026, answering the four questions left at the end of step 2d-2. D216 was built in step 2e.
+
+### D216. "? How to read this", in words
+
+Agreed 4 Nov 2026, from the owner's review of step 2d-2. Replaces the last point of D213 and the "?" of D212.
+
+- The button beside Coming up's heading shows a small "?" mark followed by "How to read this", following the rule that every control says what it does (D213). Screen readers hear "How to read this"; the mark is skipped.
+- Checked in step 2e: there's no other "?" in the app. Home's "?" from the approved sample waits for the help sheets in Phase 4 (D175), and will say what it opens in words too.
+
+Why: the owner's answer. Every control says in words what it does.
+
+### D217. "Pay £603.06, coming in today", then "came in today": confirmed
+
+Agreed 4 Nov 2026, from the owner's review of step 2d-2. Confirms the second point of D206.
+
+Why: the owner confirmed it.
+
+### D218. No "Came in" total in an opened payday: confirmed
+
+Agreed 4 Nov 2026, from the owner's review of step 2d-2. Confirms the fourth point of D211.
+
+Why: the owner confirmed it. The pay is on the payday's line, and any other money coming in is a row with a plus.
+
+### D219. "Under £20 from Mon 26 Oct." stays under the lowest point: confirmed
+
+Agreed 4 Nov 2026, from the owner's review of step 2d-2. Confirms the first point of D209 that was decided in step 2d-2.
+
+Why: the owner confirmed it. Brief 4.8 asks for the first day under the warning level.
+
+## Made during step 2e
+
+D220 to D229 were decided on 4 Nov 2026 while building step 2e, first-time setup. Questions for the owner are in `PLAN.md`.
+
+### D220. The person's own plan and the example are kept apart
+
+Decided 4 Nov 2026 in step 2e. Adds to D15, D133, D163, D182 and ARCHITECTURE.md 3.8.
+
+- The phone keeps the person's own plan and Sam's example as two plans. It also keeps which one PrePenny shows: the person's own, unless they chose to look at the example.
+- Opening PrePenny with no plan of its own, or one part-way through setup, goes to setup: the welcome, or the step the person got to.
+- "Look at an example plan", on the welcome, shows the example. Its banner keeps "This is an example plan. Nothing here is yours." and adds a button back: "Go back to my plan" once the person's plan is set up, "Go back to making my plan" part-way through, or "Make my plan" before they've started.
+- Looking at the example, or changing it, never touches the person's own plan. The example keeps its own today, Sun 25 Oct 2026 (D133); the person's own plan uses the phone's date.
+- More has "Look at the example plan" while the person's own plan is showing, and "Start again with the example" while the example is showing (D182).
+
+Why: the owner's instruction that the example plan stays separate, and the rule that every plan starts from a balance (D163).
+
+### D221. How setup saves
+
+Decided 4 Nov 2026 in step 2e. Adds to brief 4.1, D87 and D149.
+
+- The welcome is PrePenny's first page (`/`) and the start of setup (`/setup/`): the name, the tagline, one sentence, "Make my plan" and "Look at an example plan". Part-way through setup, the first button says "Carry on making my plan".
+- Each step is one screen: "Step 2 of 8", "Skip this step" (not on step 1, D163, and not on step 8, which has nothing to skip), its title with one plain sentence, the step, then Next and Back. Back on step 1 goes to the welcome. The title takes focus when a step opens.
+- Next saves what the step's boxes say through the engine's commands, straight away, on the phone, with the step to show next. So leaving part-way keeps what's done, and opening PrePenny again carries on at that step. An empty form is left out, except on step 1, which needs an account.
+- Each thing added, such as an account, an income, a bill or a debt with its payments, is one change, however many commands it takes, made the same way as What if's Keep (D135). Setup lists what each step has added, with "Remove", which takes it back as one undo (D87). Something used by a later thing can't be removed: "Something added after this uses it. Remove that first."
+- Setup can't change what it has added: Remove it and add it again, or change it later from the plan.
+
+Why: the owner asked that leaving part-way keeps what's done and that everything goes through the step 2a commands. Undo already refuses to take away something saved since depends on (D149), so Remove can never break the plan.
+
+### D222. Step 1: your account
+
+Decided 4 Nov 2026 in step 2e. Adds to brief 4.1 and 4.2, D47 and D163.
+
+- Each account asks its name ("Current account" filled in for the first), what kind it is (current, savings or joint, current for the first and savings for the others), what the bank shows today, with "It's overdrawn, below £0.00" as in Update balance (D197), an overdraft limit that can be left empty, and "Warn me when it goes under" at £20.00 (D47).
+- "Which part of the UK do you live in?" starts on England and Wales, the most people.
+
+Why: brief 4.2 lists each account's name, balance, overdraft limit and warning level, and the kind decides which account Home shows (D168).
+
+### D223. Step 2: how you're paid
+
+Decided 4 Nov 2026 in step 2e. Adds to brief 4.1 and 4.3, D5, D14, D64, D86, D131, D142, D145 and D199.
+
+- Each income asks its name ("Pay" for the first), what kind of money it is (pay from work, benefits, or something else such as a student loan, D79), how often (every choice in brief 4.1), "Next payday", the amount after tax, "My pay changes in a pattern" with up to 8 amounts, each labelled with its payday ("Payday 2, Fri 6 Nov"), the weekend and bank holiday rule, which account it arrives in, "This is an estimate", and "Put part of it aside, such as for tax" with a percentage and an account (D64) when there's more than one account.
+- The weekend and bank holiday rule starts on "Move to the working day before", because most pay arrives early. Pay on the last working day doesn't ask: it always lands on the month's last working day (D145), so it's stored as moving to the working day before, as brief 8.5 says. Add a payment now stores it the same way. Its next payday must be a month's last working day.
+- "It changes: plan with a weekly estimate" is always an estimate, every week on the next payday's weekday (D14).
+- With more than one income, "Which is your main pay?" must be answered. With one, it is the main pay. Removing the main pay in setup leaves no main pay until another is chosen (D14).
+- "Do you ever work extra hours or miss shifts?" is asked only when there's pay from work every week, 2 weeks, 4 weeks or month. If yes: which pay, when there's more than one; the overtime rate; the tax code, starting at 1257L; "Fri 30 Oct pays for work up to", worked out as D131 and D142 say; and the usual week (D5): one rate, and the hours and any extras for each payday of the pattern, each saved as a pay week linked to its step, or one for pay with no pattern. "Do this later" saves the rate and the days covered, without a usual week. Pension, student loan and the year so far come with the pay calculator (step 2g), so until then "I did overtime" works its figures out without them.
+
+Why: these are the brief's choices, with the details setup needs to make "I did overtime" work (D5).
+
+### D224. Steps 3 to 5: rent, bills and debts
+
+Decided 4 Nov 2026 in step 2e. Adds to brief 4.1, 4.4 and 4.6, D98 and D153. The weekend rule is a question for the owner in `PLAN.md`.
+
+- Payments going out that setup adds keep their date on a weekend or bank holiday. Setup doesn't ask, to stay under 5 minutes; Add a payment does.
+- Rent or mortgage: which one, the amount, the next payment, how often (every month, every week or few weeks, or on chosen dates, for rent paid each term) and from which account. Or "I don't pay rent".
+- Bills: the checklist in the brief's order. Each one ticked asks its name, filled in from the list so Insurance can be "Car insurance", the amount, the next payment, how often (every month starts picked, every week, once, or on chosen dates), from which account and "This is an estimate". Council tax's "10 payments, April to January" starts ticked, and leaves out February and March.
+- Debts: its name, kind (brief 4.6), what's owed now, what it started at if known (for the progress bar, D99), and its payments, with when they end and a different last amount, or "I don't have payments planned for it yet". Money owed to a person can be in pounds, euros or US dollars, at the rate the person types (brief 4.6). A credit card asks its interest rate and statement day (D13); its minimum rule comes with the Debts screen (step 2f). Each payment is named after its debt, of the type Debt, and linked to it.
+
+Why: these are brief 4.1's boxes for each step, with what the engine needs.
+
+### D225. Step 6: each budget starts with its next week or month
+
+Decided 4 Nov 2026 in step 2e. Adds to brief 4.5, D29, D107, D108 and D152. A question for the owner in `PLAN.md`.
+
+- Food (monthly) and Travel (weekly) are ready to fill in, and "Add another" adds more. One left without an amount isn't added.
+- A budget starts on the first day of its next week or month, on or after today, worked out as D29 and D108 say: for Priya, Mon 26 Oct for Travel and Fri 30 Oct, her payday, for Food. The date shows under "Starts" with "The start of your next week. Before then, it plans nothing.", and can be changed to another day, today or later.
+- A pay-later bill is monthly (D107) and asks the day the bill is paid. Roll-over is off (D30) until the Budgets screen (step 2f).
+
+Why: a budget that started today would take the whole of this week's or month's money out today, although some of it is already spent and inside the bank balance. Starting with the next one plans nothing already gone. The people's test plans start their budgets the same way (D137).
+
+### D226. Step 7: savings
+
+Decided 4 Nov 2026 in step 2e. Adds to brief 4.7, D114 and D153.
+
+- A goal asks what it's for, the target, "By, if you have a date", the account it's kept in (a savings account if there is one), or "A new savings account" with its name and what it has in it today, what's already saved, and how much moves into it.
+- The money moves "Each payday", following the main pay's own schedule from its next payday (pay on the last working day from the day it lands), or another way, from the person's other account. It's named "Saving for Holiday".
+
+Why: brief 4.7 asks for the target, an optional date and the planned transfers, and most people save on payday.
+
+### D227. Step 8: here's your plan
+
+Decided 4 Nov 2026 in step 2e. Adds to brief 4.1 and the sketch in ARCHITECTURE.md 4.6.
+
+- The lowest point ahead in Home's account, looking 12 months ahead (D178), with its first warning; Left to spend, when there's a main pay; the first debt paid off and the first savings goal reached, looking 24 months ahead (D43, D114). Then "Go to my plan", which opens Home.
+- The first savings goal reached is added to the sketch's cards, so someone with no debts, like Priya, sees their goal's date: "Holiday, Fri 28 May 2027".
+- The 60-second tour in the sketch comes with the help centre in Phase 4 (brief 4.16).
+
+Why: the owner's list for step 8, and Priya's test asks for her holiday fund's date.
+
+### D228. A date before today in setup
+
+Decided 4 Nov 2026 in step 2e. Adds to D150 and D199.
+
+- A payment's date before today says the step 2d words: "Pick today or a later date. If it's already gone, update your balance instead." That's every next payday and next payment, and the money moved into a savings goal.
+- A budget's start before today says "Pick today or a later date.", because nothing of a budget is already gone. A goal's date says "Pick today or a later date, or leave it empty."
+- Every mistake is explained beside its box, and focus goes to the first one (D203).
+
+Why: the owner's test 6. The second sentence of the step 2d words is about money already gone, which only a payment can be.
+
+### D229. Smaller choices in step 2e
+
+Decided 4 Nov 2026 in step 2e.
+
+- Tests: the end-to-end tests from before setup open on the example, with a test-only "open on the example" setting (D201). The setup tests start from a phone with nothing on it. The test-only today is also the person's own plan's today.
+- Records made one after another in setup are given times a moment apart, so the same-day order (D12) keeps the order they were made in.
+- When the phone can't save at all, as in some private windows, setup says "This phone couldn't save your plan, so it will go when PrePenny closes."
+- Add a payment and setup share the same boxes for when a payment happens, so they always ask the same way. An amount box can show another currency's sign, for a debt in euros or dollars.
+
+Why: each follows an earlier decision where the instructions didn't say exactly.
 

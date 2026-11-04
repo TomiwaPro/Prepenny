@@ -1,8 +1,11 @@
 'use client';
 
 // Loads the plan from the phone's database and works it out in the
-// background worker. On first open it puts Sam's example plan on the phone
-// (D15) and asks the browser to keep the data (ARCHITECTURE.md 3.8, 7).
+// background worker: the person's own plan, or Sam's example when they've
+// chosen to look at it (step 2e). Sam's example is put on the phone the
+// first time it's looked at (D15), and the browser is asked to keep the data
+// (ARCHITECTURE.md 3.8, 7). When the person's own plan isn't set up yet, the
+// app goes to setup instead (brief 4.1).
 //
 // Every change goes through here (brief Part 3, principle 4): the engine
 // makes it in the background, it's saved on the phone straight away, the
@@ -25,9 +28,13 @@ import {
   exampleNeedsReplacing,
   loadRecords,
   openDb,
+  ownPlanOnPhone,
+  type Showing,
   type StoredPlan,
   saveChange,
   savePlan,
+  setShowing,
+  showingOnPhone,
 } from '../data/db.ts';
 import {
   EXAMPLE_PLAN_ID,
@@ -36,6 +43,7 @@ import {
   fingerprint,
 } from '../data/example-plan.ts';
 import type { HomeView } from '../lib/home.ts';
+import { setupDone } from '../lib/setup-progress.ts';
 import { testSetting } from '../lib/test-setting.ts';
 import { todayFor } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -79,6 +87,13 @@ export type ChangeOutcome =
 
 export interface PlanActions {
   readonly loaded: LoadedPlan | null;
+  /**
+   * The person's own plan isn't set up yet, and they haven't chosen to look
+   * at the example: the app goes to setup (step 2e).
+   */
+  readonly needsSetup: boolean;
+  /** How far the person's own plan is: none yet, part-way through setup, or ready. */
+  readonly ownPlan: OwnPlan;
   readonly lastChange: LastChange | null;
   /** Makes one change and, when it works, shows `message` in the undo bar. */
   makeChange(command: EditCommand, message: string): Promise<ChangeOutcome>;
@@ -87,7 +102,15 @@ export interface PlanActions {
   dismissLastChange(): void;
   /** Puts Sam's example back exactly as it is in the app (D182). */
   startAgainWithExample(): Promise<ChangeOutcome>;
+  /**
+   * Shows the person's own plan or the example from now on, on this phone.
+   * Looking at the example never changes the person's own plan (step 2e).
+   */
+  showPlan(showing: Showing): Promise<void>;
 }
+
+/** The person's own plan on this phone (step 2e). */
+export type OwnPlan = 'none' | 'setting-up' | 'ready';
 
 const PlanContext = createContext<PlanState>({ status: 'loading', plan: null });
 
@@ -98,11 +121,14 @@ const noPlan = async (..._: unknown[]): Promise<ChangeOutcome> => ({
 
 const ActionsContext = createContext<PlanActions>({
   loaded: null,
+  needsSetup: false,
+  ownPlan: 'none',
   lastChange: null,
   makeChange: noPlan,
   undoLastChange: noPlan,
   dismissLastChange: () => {},
   startAgainWithExample: noPlan,
+  showPlan: async () => {},
 });
 
 /**
@@ -129,14 +155,43 @@ const freshExample = (): StoredPlan => ({
 
 const ASKED_TO_KEEP = 'asked-to-keep-data';
 
+/** How far an own plan has got. */
+function ownPlanOf(plan: StoredPlan | undefined): OwnPlan {
+  if (plan === undefined) return 'none';
+  return setupDone(plan.setup) ? 'ready' : 'setting-up';
+}
+
 /**
- * The plan on this phone, putting the example there first if it isn't, or
- * when the app's example has changed and the person hasn't changed theirs (D182).
+ * Which plan to show when this phone hasn't chosen one: the person's own.
+ * The end-to-end tests from before setup start on the example (D201).
  */
-async function planOnPhone(): Promise<{ plan: StoredPlan; records: PlanRecords }> {
+function firstShowing(): Showing {
+  const setting = testSetting();
+  return setting?.example === true || setting?.plan !== undefined ? 'example' : 'own';
+}
+
+type OnPhone =
+  | { readonly plan: StoredPlan; readonly records: PlanRecords; readonly own: OwnPlan }
+  | { readonly needsSetup: true; readonly own: OwnPlan };
+
+/**
+ * The plan to show from this phone: the person's own once it's set up, or
+ * the example when they've chosen it. The example is put there first if it
+ * isn't, or when the app's example has changed and the person hasn't
+ * changed theirs (D182).
+ */
+async function planOnPhone(): Promise<OnPhone> {
   const db = openDb();
   const example = theExample();
   try {
+    const showing = (await showingOnPhone(db)) ?? firstShowing();
+    const own = await ownPlanOnPhone(db);
+    if (showing === 'own') {
+      if (own === undefined || !setupDone(own.setup)) {
+        return { needsSetup: true, own: ownPlanOf(own) };
+      }
+      return { plan: own, records: await loadRecords(db, own.id), own: 'ready' };
+    }
     let plan = await db.plans.get(EXAMPLE_PLAN_ID);
     if (plan === undefined || exampleNeedsReplacing(plan, example.version)) {
       plan = freshExample();
@@ -145,7 +200,7 @@ async function planOnPhone(): Promise<{ plan: StoredPlan; records: PlanRecords }
     if ((await db.device.get(ASKED_TO_KEEP)) === undefined) {
       await db.device.put({ key: ASKED_TO_KEEP, value: await askToKeepData() });
     }
-    return { plan, records: await loadRecords(db, EXAMPLE_PLAN_ID) };
+    return { plan, records: await loadRecords(db, EXAMPLE_PLAN_ID), own: ownPlanOf(own) };
   } finally {
     db.close();
   }
@@ -157,6 +212,10 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
   const [state, setState] = useState<PlanState>({ status: 'loading', plan: null });
   const [loaded, setLoaded] = useState<LoadedPlan | null>(null);
   const [lastChange, setLastChange] = useState<LastChange | null>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [ownPlan, setOwnPlan] = useState<OwnPlan>('none');
+  // Goes up to load the plan again, after choosing another one to show.
+  const [loadCount, setLoadCount] = useState(0);
   const loadedRef = useRef<LoadedPlan | null>(null);
   const lastChangeRef = useRef<LastChange | null>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -178,26 +237,39 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     setLastChange(change);
   }, []);
 
+  // `loadCount` goes up to load the plan again after choosing another one to show.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadCount is the reason to run again
   useEffect(() => {
     let current = true;
     (async () => {
-      let found: { plan: StoredPlan; records: PlanRecords };
+      let found: OnPhone;
       try {
         found = await planOnPhone();
       } catch {
         // No database on this phone, for example in some private windows:
         // the example still works, it just isn't saved.
         canSave.current = false;
-        found = { plan: freshExample(), records: theExample().records };
+        found = { plan: freshExample(), records: theExample().records, own: 'none' };
       }
       if (!current) return;
+      setOwnPlan(found.own);
+      if ('needsSetup' in found) {
+        setNeedsSetup(true);
+        return;
+      }
+      setNeedsSetup(false);
       setState({ status: 'loading', plan: found.plan });
-      keepLoaded({ ...found, today: todayOf(found.plan), version: 1 });
+      keepLoaded({
+        plan: found.plan,
+        records: found.records,
+        today: todayOf(found.plan),
+        version: (loadedRef.current?.version ?? 0) + 1,
+      });
     })();
     return () => {
       current = false;
     };
-  }, [keepLoaded]);
+  }, [keepLoaded, loadCount]);
 
   // Home is worked out again after every change. The old figures stay on
   // screen until the new ones are ready, so nothing flashes.
@@ -318,16 +390,49 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     [inTurn, showChange, keepLoaded],
   );
 
+  const showPlan = useCallback(
+    (showing: Showing) =>
+      inTurn(async () => {
+        try {
+          const db = openDb();
+          try {
+            await setShowing(db, showing);
+          } finally {
+            db.close();
+          }
+        } catch {
+          // Without a database there's only the example to show anyway.
+        }
+        showChange('', null);
+        setState({ status: 'loading', plan: null });
+        setLoadCount((count) => count + 1);
+      }),
+    [inTurn, showChange],
+  );
+
   const actions = useMemo<PlanActions>(
     () => ({
       loaded,
+      needsSetup,
+      ownPlan,
       lastChange,
       makeChange,
       undoLastChange,
       dismissLastChange,
       startAgainWithExample,
+      showPlan,
     }),
-    [loaded, lastChange, makeChange, undoLastChange, dismissLastChange, startAgainWithExample],
+    [
+      loaded,
+      needsSetup,
+      ownPlan,
+      lastChange,
+      makeChange,
+      undoLastChange,
+      dismissLastChange,
+      startAgainWithExample,
+      showPlan,
+    ],
   );
 
   return (

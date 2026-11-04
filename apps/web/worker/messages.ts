@@ -8,6 +8,7 @@ import type { EditResult } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
+import type { SetupView } from '../lib/setup-view.ts';
 
 /** Everything Home shows. */
 export interface HomeAsk {
@@ -47,7 +48,22 @@ export interface PayPreviewAsk {
   readonly command: PayCommand;
 }
 
-export type Ask = HomeAsk | PlanAsk | EditAsk | ActionsAsk | PayPreviewAsk;
+/** Several changes made in turn, as one edit, for setup (step 2e). */
+export interface EditsAsk {
+  readonly kind: 'edits';
+  readonly records: PlanRecords;
+  readonly today: string;
+  readonly commands: readonly EditCommand[];
+}
+
+/** What setup shows that only the engine can work out (step 2e). */
+export interface SetupAsk {
+  readonly kind: 'setup';
+  readonly records: PlanRecords;
+  readonly today: string;
+}
+
+export type Ask = HomeAsk | PlanAsk | EditAsk | ActionsAsk | PayPreviewAsk | EditsAsk | SetupAsk;
 
 /** What each kind of question is answered with. */
 export interface Answers {
@@ -56,6 +72,8 @@ export interface Answers {
   readonly edit: EditResult;
   readonly actions: ActionsView;
   readonly 'pay-preview': PayPreview;
+  readonly edits: EditResult;
+  readonly setup: SetupView;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

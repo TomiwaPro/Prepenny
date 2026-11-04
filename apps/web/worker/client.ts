@@ -7,6 +7,7 @@ import type { EditResult } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
+import type { SetupView } from '../lib/setup-view.ts';
 import type { Answers, Ask, WorkResponse } from './messages.ts';
 
 /** The worker's file, named by scripts/build-worker.ts after its contents (D170). */
@@ -127,4 +128,18 @@ export function previewPayInBackground(
   command: PayCommand,
 ): Promise<PayPreview> {
   return ask({ kind: 'pay-preview', records, today, command });
+}
+
+/** Several changes made in turn by the engine, as one edit (step 2e). */
+export function editsInBackground(
+  records: PlanRecords,
+  today: string,
+  commands: readonly EditCommand[],
+): Promise<EditResult> {
+  return ask({ kind: 'edits', records, today, commands });
+}
+
+/** What setup shows that only the engine can work out, in the background (step 2e). */
+export function workOutSetupInBackground(records: PlanRecords, today: string): Promise<SetupView> {
+  return ask({ kind: 'setup', records, today });
 }

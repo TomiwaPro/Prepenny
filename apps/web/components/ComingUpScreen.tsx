@@ -681,7 +681,6 @@ export function ComingUpScreen() {
             ref={helpButton}
             type="button"
             className={styles.helpButton}
-            aria-label={t.howToReadButton}
             aria-expanded={help === true}
             aria-controls={helpId}
             onClick={() => {
@@ -689,7 +688,11 @@ export function ComingUpScreen() {
               else setHelp(true);
             }}
           >
-            <span aria-hidden="true">?</span>
+            {/* The "?" mark, then what the button does in words (D213, D216). */}
+            <span className={styles.helpMark} aria-hidden="true">
+              {t.helpMark}
+            </span>
+            <span>{t.howToReadButton}</span>
           </button>
         </div>
         <p className={styles.purpose}>{t.purpose}</p>

@@ -3,10 +3,11 @@
 
 import { EngineInputError } from '@prepenny/engine';
 import { workOutActionsView } from '../lib/actions-view.ts';
-import { runEdit } from '../lib/edit.ts';
+import { runEdit, runEdits } from '../lib/edit.ts';
 import { workOutHome } from '../lib/home.ts';
 import { previewPayChange } from '../lib/pay-preview.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
+import { workOutSetupView } from '../lib/setup-view.ts';
 import type { Answers, Ask, WorkRequest, WorkResponse } from './messages.ts';
 
 interface WorkerScope {
@@ -28,6 +29,10 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return workOutActionsView(ask.records, ask.today);
     case 'pay-preview':
       return previewPayChange(ask.records, ask.today, ask.command);
+    case 'edits':
+      return runEdits(ask.records, ask.today, ask.commands);
+    case 'setup':
+      return workOutSetupView(ask.records, ask.today);
     default:
       throw new EngineInputError('bad-request', 'The worker was asked something it does not know.');
   }

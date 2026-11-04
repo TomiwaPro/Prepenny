@@ -3,6 +3,7 @@
 // from the engine; nothing here uses floating point for money.
 
 import type { Pence } from '@prepenny/engine';
+import { parseAmount } from './amount.ts';
 
 /** The proper minus sign, never a hyphen (VOICE.md). */
 export const MINUS = '−';
@@ -36,4 +37,10 @@ export function formatMoney(pence: Pence, options: MoneyOptions = {}): string {
   if (pence < 0) return `${MINUS}${amount}`;
   if (pence > 0 && options.sign === 'always') return `+${amount}`;
   return amount;
+}
+
+/** "£19.07" for a rate an hour kept as text, such as "19.07"; with more pence, as it was typed. */
+export function rateWords(rate: string): string {
+  const pence = parseAmount(rate);
+  return pence === null ? `£${rate}` : formatMoney(pence);
 }

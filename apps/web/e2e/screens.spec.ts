@@ -5,8 +5,10 @@
 // at 360px in light, filled in as in the owner's tests, with the window as
 // tall as the sheet so all of it shows. Step 2d-2: the Coming up page at
 // 360px in light, on the first visit with "How to read this", and with Fri
-// 6 Nov opened. Each page is as tall as the whole page, with the bottom
-// navigation at the bottom. Run only when asked, one step at a time:
+// 6 Nov opened. Step 2e: setup's welcome and steps 1, 2 and 8 at 360px in
+// light, filled in with Priya's answers. Each page is as tall as the whole
+// page, with the bottom navigation at the bottom. Run only when asked, one
+// step at a time:
 //
 //   SCREENS=1 pnpm e2e --project phone-360 screens -g "Step 2d-2"
 
@@ -16,6 +18,8 @@ import { expect, type Page, test } from '@playwright/test';
 import { parsePounds } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
+import { openOnExample, settingScript } from './fixtures.ts';
+import { setUpPriya } from './setup.ts';
 
 const screens = join(import.meta.dirname, '..', '..', '..', 'docs', 'screens');
 const folder = join(screens, '2b');
@@ -38,6 +42,7 @@ for (const shot of shots) {
       colorScheme: shot.colorScheme,
       locale: 'en-GB',
     });
+    await openOnExample(context);
     const page = await context.newPage();
     await page.goto('/app/');
     await expect(page.getByTestId('balance')).toBeVisible();
@@ -67,6 +72,7 @@ for (const shot of planShots) {
       reducedMotion: 'reduce',
       locale: 'en-GB',
     });
+    await openOnExample(context);
     const page = await context.newPage();
     await page.goto('/app/coming-up/');
     await expect(page.getByTestId('period').first()).toBeVisible();
@@ -182,14 +188,10 @@ for (const shot of sheetShots) {
       locale: 'en-GB',
       timezoneId: 'Europe/London',
     });
+    await openOnExample(context);
     const page = await context.newPage();
     if (shot.setting !== null) {
-      await page.addInitScript(
-        ([key, value]) => {
-          Reflect.set(window, key, value);
-        },
-        [TEST_SETTING_KEY, shot.setting] as const,
-      );
+      await page.addInitScript(settingScript, [TEST_SETTING_KEY, shot.setting] as const);
     }
     await page.goto('/app/');
     await expect(page.getByTestId('balance')).toBeVisible();
@@ -226,6 +228,7 @@ for (const shot of comingUpShots) {
       locale: 'en-GB',
       timezoneId: 'Europe/London',
     });
+    await openOnExample(context);
     const page = await context.newPage();
     await page.goto('/app/coming-up/');
     await expect(page.getByTestId('period').first()).toBeVisible();
@@ -247,3 +250,37 @@ for (const shot of comingUpShots) {
     await context.close();
   });
 }
+
+test('Step 2e: setup, with Priya’s answers', async ({ browser }) => {
+  test.setTimeout(120_000);
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 780 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    colorScheme: 'light',
+    reducedMotion: 'reduce',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+  });
+  const page = await context.newPage();
+  const folder2e = join(screens, '2e');
+  mkdirSync(folder2e, { recursive: true });
+  const names: Record<number, string> = {
+    0: 'welcome-360-light.png',
+    1: 'step-1-your-account-360-light.png',
+    2: 'step-2-how-you-are-paid-360-light.png',
+    8: 'step-8-your-plan-360-light.png',
+  };
+  await setUpPriya(page, async (step) => {
+    const file = names[step];
+    if (file === undefined) return;
+    await page.evaluate(() => document.fonts.ready);
+    // The step's title has focus, which shows no outline; the page is drawn as it is.
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({ width: 360, height: Math.max(height, 780) });
+    await page.screenshot({ path: join(folder2e, file) });
+    await page.setViewportSize({ width: 360, height: 780 });
+  });
+  await context.close();
+});

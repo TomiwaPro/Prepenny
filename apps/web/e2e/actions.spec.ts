@@ -8,7 +8,7 @@
 // driven by test software can reach.
 
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { type Budget, type PlanRecords, parsePounds, type Spend } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
@@ -22,6 +22,7 @@ import {
   rowIn,
   AXE_TAGS as tags,
 } from './coming-up.ts';
+import { expect, settingScript, test } from './fixtures.ts';
 
 /** Sam's example with Travel at £25 a week from Friday, all at the start, and £4.00 spent on Sat 24 Oct before the update. */
 const travel: Budget = {
@@ -46,12 +47,7 @@ const withTravel: PlanRecords = { ...examplePlan, budgets: [travel], spends: [bu
 
 /** Puts the test-only setting on the page before PrePenny starts (D201). */
 async function useSetting(page: Page, setting: TestSetting) {
-  await page.addInitScript(
-    ([key, value]) => {
-      Reflect.set(window, key, value);
-    },
-    [TEST_SETTING_KEY, setting] as const,
-  );
+  await page.addInitScript(settingScript, [TEST_SETTING_KEY, setting] as const);
 }
 
 async function openHome(page: Page) {

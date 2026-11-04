@@ -4,7 +4,7 @@
 // old address, no sideways scrolling, text at 200% and tap targets.
 
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import {
   AXE_TAGS,
   chooseView,
@@ -17,6 +17,7 @@ import {
   period,
   rowIn,
 } from './coming-up.ts';
+import { expect, test } from './fixtures.ts';
 
 async function noAxeProblems(page: Page) {
   expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
@@ -57,7 +58,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
           { exact: true },
         ),
       ).toBeVisible();
-      await expect(page.getByTestId('example-banner')).toHaveText(
+      await expect(page.getByTestId('example-banner').locator('p')).toHaveText(
         'This is an example plan. Nothing here is yours.',
       );
       const account = page.getByTestId('plan-account');
@@ -243,6 +244,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const help = page.getByTestId('how-to-read');
       const question = page.getByRole('button', { name: 'How to read this' });
       await expect(help).toBeVisible();
+      // The button says what it does in words, after its "?" (D216).
+      await expect(question).toHaveText('?How to read this');
       await expect(question).toHaveAttribute('aria-expanded', 'true');
       await expect(help.getByRole('heading')).toHaveText('How to read this');
       await expect(help.getByRole('listitem')).toHaveText([

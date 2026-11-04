@@ -29,4 +29,15 @@ describe('The test-only setting (D201)', () => {
     vi.stubGlobal('window', {});
     expect(testSetting()).toBeNull();
   });
+
+  it('keeps "open on the example" only when it is exactly true (step 2e)', () => {
+    vi.stubGlobal('navigator', { webdriver: true });
+    vi.stubGlobal('window', { [TEST_SETTING_KEY]: { example: true } });
+    expect(testSetting()).toEqual({ example: true });
+    vi.stubGlobal('window', { [TEST_SETTING_KEY]: { example: 'yes' } });
+    expect(testSetting()).toEqual({});
+    vi.stubGlobal('navigator', { webdriver: false });
+    vi.stubGlobal('window', { [TEST_SETTING_KEY]: { example: true } });
+    expect(testSetting()).toBeNull();
+  });
 });
