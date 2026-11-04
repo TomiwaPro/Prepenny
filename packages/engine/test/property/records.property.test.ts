@@ -6,6 +6,10 @@
 // Also: no such command is ever refused because it would leave records the
 // plan can't use (edit-breaks-plan), the plan still works out after every
 // one, and making the same command again on the same records gives the same edit.
+//
+// Every kind of command is covered by construction, never left to chance: a
+// fixed command of every kind is made and checked the same way before the
+// random ones.
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -403,6 +407,138 @@ function commandFor(records: PlanRecords, today: string, w: Wish, n: number): Ed
   }
 }
 
+/**
+ * Makes one made-up command and checks it: refused only for a reason, never
+ * because the plan would break; undone exactly; the same again on the same
+ * records; and the plan still works out. Gives the records after it, and
+ * whether it was made.
+ */
+function tryWish(
+  records: PlanRecords,
+  today: string,
+  w: Wish,
+  n: number,
+): { records: PlanRecords; made: boolean } {
+  const command = commandFor(records, today, w, n);
+  const input = inputFor(records, today);
+  let edit: ReturnType<typeof editPlan>;
+  try {
+    edit = editPlan(input, command);
+  } catch (error) {
+    // Refused for a reason: fine. Never because the plan would break.
+    if (!(error instanceof EngineInputError)) throw error;
+    expect(error.code, `${w.kind}: ${error.message}`).not.toBe('edit-breaks-plan');
+    return { records, made: false };
+  }
+  const after = recordsOf(applyWrites(input, edit.writes));
+  // Undo gives back exactly the records from before.
+  expect(allRecords(undone(after, edit, today))).toEqual(allRecords(records));
+  // The same command on the same records gives the same edit.
+  expect(editPlan(input, command)).toEqual(edit);
+  // The plan still works out.
+  workOutPlan({ ...inputFor(after, today), to: at(today, 120) });
+  return { records: after, made: true };
+}
+
+/** Where a record is in its list, for a wish to pick it. */
+const placeOf = (list: readonly { readonly id: string }[], id: string) =>
+  list.findIndex((one) => one.id === id);
+
+/**
+ * A command of every kind, in an order where each can be made: each picks the
+ * record it's about from the records as they are at that moment, such as the
+ * account added just before.
+ */
+function fixedWish(kind: Kind, records: PlanRecords): Wish {
+  const w = { ...exampleWish, kind };
+  // The last record added in this run, whose id starts with its kind.
+  const added = (list: readonly { readonly id: string }[] | undefined, prefix: string) => {
+    let found = 0;
+    (list ?? []).forEach((one, i) => {
+      if (one.id.startsWith(prefix)) found = i;
+    });
+    return found;
+  };
+  const pay = placeOf(records.series, 'pay');
+  switch (kind) {
+    case 'add-account':
+      return { ...w, text: 'New', amount: 20_000 };
+    case 'change-account':
+      return { ...w, a: 0, amount: 30_000, c: 1 };
+    case 'close-account':
+      return { ...w, flag: true };
+    case 'add-payment':
+      return { ...w, a: 0, b: 1, c: 1, days: 5, text: 'New', amount: 4_000 };
+    case 'delete-payment':
+      return { ...w, a: added(records.series, 'payment-') };
+    case 'add-debt':
+      return { ...w, amount: 50_000, text: '' };
+    case 'change-debt':
+    case 'close-debt':
+      return { ...w, a: added(records.debts, 'debt-'), amount: 60_000, c: 1 };
+    case 'add-budget':
+      return { ...w, a: 0, c: 1, amount: 2_500, text: '' };
+    case 'change-budget':
+      return { ...w, a: added(records.budgets, 'budget-'), flag: true, amount: 3_000, c: 1 };
+    case 'end-budget':
+      return { ...w, a: added(records.budgets, 'budget-'), days: 30 };
+    case 'add-goal':
+      return { ...w, a: 0, amount: 100_000, text: '' };
+    case 'change-goal':
+    case 'close-goal':
+      return { ...w, a: added(records.goals, 'goal-'), amount: 120_000 };
+    case 'add-pay-profile':
+      return { ...w, a: 5, text: '' };
+    case 'change-pay-profile':
+      return { ...w, a: added(records.payProfiles, 'profile-') };
+    case 'add-pay-week':
+      return { ...w, a: added(records.payProfiles, 'profile-'), amount: 35, text: '' };
+    case 'change-pay-week':
+      return { ...w, a: added(records.payWeeks, 'week-'), amount: 5 };
+    case 'link-pay':
+      return {
+        ...w,
+        a: pay,
+        b: added(records.payProfiles, 'profile-'),
+        other: true,
+        c: 1,
+      };
+    case 'choose-main-pay':
+      return { ...w, a: placeOf(records.series, 'christmas-bonus') };
+    case 'set-nation':
+      return { ...w, a: 1 };
+    case 'overtime':
+      return { ...w, a: 0, b: 3, days: 1 };
+  }
+  return w;
+}
+
+/** The fixed commands' order: each one's records are there by then. */
+const FIXED_ORDER: readonly Kind[] = [
+  'add-account',
+  'change-account',
+  'add-payment',
+  'delete-payment',
+  'add-debt',
+  'change-debt',
+  'close-debt',
+  'add-budget',
+  'change-budget',
+  'end-budget',
+  'add-goal',
+  'change-goal',
+  'close-goal',
+  'add-pay-profile',
+  'change-pay-profile',
+  'add-pay-week',
+  'change-pay-week',
+  'link-pay',
+  'overtime',
+  'set-nation',
+  'choose-main-pay',
+  'close-account',
+];
+
 describe('owner test 3: undo after any made-up command on any of the six peopleâ€™s plans', () => {
   const plans = people.map(([name, steps]) => ({
     name,
@@ -412,6 +548,25 @@ describe('owner test 3: undo after any made-up command on any of the six peopleâ
 
   it('gives back exactly the plan from before, and never breaks the plan', () => {
     const made = new Map<Kind, number>();
+    // Fixed first: a command of every kind, on Sam's plan with everything,
+    // each checked to have been made, so every kind is covered by construction.
+    expect([...FIXED_ORDER].sort()).toEqual([...KINDS].sort());
+    const everything = plans.find((one) => one.name === 'Sam with everything');
+    if (everything === undefined) throw new Error('No plan with everything.');
+    let fixed = everything.records;
+    FIXED_ORDER.forEach((kind, n) => {
+      const tried = tryWish(fixed, everything.today, fixedWish(kind, fixed), n);
+      expect(tried.made, `the fixed ${kind}`).toBe(true);
+      made.set(kind, (made.get(kind) ?? 0) + 1);
+      fixed = tried.records;
+    });
+    /** The bars, checked after the fixed ones, which alone meet them, and again after the random ones. */
+    const enough = () => {
+      // Every kind of command was made at least once, not only refused.
+      for (const kind of KINDS) expect(made.get(kind) ?? 0, kind).toBeGreaterThan(0);
+    };
+    enough();
+    // Then random ones.
     fc.assert(
       fc.property(
         fc.nat({ max: plans.length - 1 }),
@@ -420,26 +575,9 @@ describe('owner test 3: undo after any made-up command on any of the six peopleâ
           const { records: start, today } = plans[which] as (typeof plans)[number];
           let records = start;
           wishes.forEach((w, n) => {
-            const command = commandFor(records, today, w, n);
-            const input = inputFor(records, today);
-            let edit: ReturnType<typeof editPlan>;
-            try {
-              edit = editPlan(input, command);
-            } catch (error) {
-              // Refused for a reason: fine. Never because the plan would break.
-              if (!(error instanceof EngineInputError)) throw error;
-              expect(error.code, `${w.kind}: ${error.message}`).not.toBe('edit-breaks-plan');
-              return;
-            }
-            made.set(w.kind, (made.get(w.kind) ?? 0) + 1);
-            const after = recordsOf(applyWrites(input, edit.writes));
-            // Undo gives back exactly the records from before.
-            expect(allRecords(undone(after, edit, today))).toEqual(allRecords(records));
-            // The same command on the same records gives the same edit.
-            expect(editPlan(input, command)).toEqual(edit);
-            // The plan still works out.
-            workOutPlan({ ...inputFor(after, today), to: at(today, 120) });
-            records = after;
+            const tried = tryWish(records, today, w, n);
+            if (tried.made) made.set(w.kind, (made.get(w.kind) ?? 0) + 1);
+            records = tried.records;
           });
         },
       ),
@@ -459,7 +597,6 @@ describe('owner test 3: undo after any made-up command on any of the six peopleâ
         ],
       },
     );
-    // Every kind of command was made at least once, not only refused.
-    for (const kind of KINDS) expect(made.get(kind) ?? 0, kind).toBeGreaterThan(0);
+    enough();
   });
 });

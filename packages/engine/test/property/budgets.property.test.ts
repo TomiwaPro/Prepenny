@@ -15,6 +15,10 @@
 // - "I spent", changing and removing a spend, and ticking, changing, moving
 //   or removing a pay-later bill are each undone exactly (D111, D115), and
 //   "I spent" refuses a day after today (D119).
+//
+// Enough budget rows, roll-overs and pay-later bills are covered by
+// construction, never left to chance: fixed plans with each of them are
+// checked the same way before the random ones.
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -336,49 +340,118 @@ function checkPlan(input: PlanInput, plan: Plan): void {
   }
 }
 
+/** Every check on one made-up plan with budgets, and how many budget rows, roll-overs and bills it had. */
+function checkBudgets(wish: Wishes): { rows: number; rolled: number; bills: number } {
+  const input = build(wish);
+  const plan = workOutPlan(input);
+  checkPlan(input, plan);
+  const seen = {
+    rows: plan.accounts.flatMap((a) => a.rows).filter((r) => r.budgetId !== null).length,
+    rolled: plan.budgets.filter((b) => (b.current?.rolledOver ?? 0) > 0).length,
+    bills: plan.budgets.filter((b) => b.current?.bill != null).length,
+  };
+
+  const reversed = workOutPlan({
+    ...input,
+    series: [...input.series].reverse(),
+    budgets: [...(input.budgets ?? [])].reverse(),
+    spends: [...(input.spends ?? [])].reverse(),
+  });
+  // The pay-later lines come in the order the budgets were given, as the budgets do.
+  const sameOrder = (accounts: Plan['accounts']) =>
+    accounts.map((a) => ({
+      ...a,
+      leftToSpend:
+        a.leftToSpend === null
+          ? null
+          : {
+              ...a.leftToSpend,
+              payLater: [...a.leftToSpend.payLater].sort((x, y) =>
+                x.budgetId < y.budgetId ? -1 : 1,
+              ),
+            },
+    }));
+  expect(sameOrder(reversed.accounts)).toEqual(sameOrder(plan.accounts));
+  expect([...reversed.budgets].reverse()).toEqual(plan.budgets);
+  return seen;
+}
+
+const budgetOf = (part: Partial<Wishes['budgets'][number]>): Wishes['budgets'][number] => ({
+  amount: 2_500,
+  monthly: false,
+  leaves: 'at-start',
+  rollOver: false,
+  rollOverFrom: null,
+  startsOffset: -40,
+  endsAfter: null,
+  billDay: 29,
+  statementDay: null,
+  createdMinute: 0,
+  savings: false,
+  ...part,
+});
+
+const PAYS = ['none', 'weekly', 'fortnightly', 'monthly', 'last-working-day', 'irregular'] as const;
+
+/**
+ * Fixed plans, one for every 11 days from Thu 1 Jan 2026, each kind of main
+ * pay in turn, with nothing spent: a weekly and a monthly budget with
+ * roll-over that started weeks before, so what's left of an ended week or
+ * month rolls over; a budget spread across the days, which has a row each
+ * day; and four pay-later card budgets, each with a bill.
+ */
+const FIXED_BUDGETS: readonly Wishes[] = Array.from({ length: 60 }, (_, i) => ({
+  today: dayFromParts(2026, 1, 1) + 11 * i,
+  balanceDaysAgo: i % 5,
+  updateMinute: 8 * 60,
+  balance: 100_000,
+  pay: PAYS[i % PAYS.length] as (typeof PAYS)[number],
+  payOffset: -10,
+  spending: null,
+  length: 120,
+  budgets: [
+    budgetOf({ rollOver: true, startsOffset: -40, createdMinute: 0 }),
+    budgetOf({ monthly: true, rollOver: true, startsOffset: -75, createdMinute: 1 }),
+    budgetOf({ amount: 3_500, leaves: 'spread', startsOffset: -3, createdMinute: 2 }),
+    ...[1, 10, 20, 29].map((billDay, j) =>
+      budgetOf({ leaves: 'pay-later', amount: 20_000, billDay, createdMinute: 3 + (j % 3) }),
+    ),
+  ],
+  spends: [],
+}));
+
 describe('budgets hold for any budgets, spends, balance updates and main pay', () => {
   it('keeps every row, period, bill and Left to spend consistent, whatever the order of the records', () => {
     let rows = 0;
     let rolled = 0;
     let bills = 0;
+    const count = (seen: { rows: number; rolled: number; bills: number }) => {
+      rows += seen.rows;
+      rolled += seen.rolled;
+      bills += seen.bills;
+    };
+    // The fixed plans first: each has two roll-overs, four bills and a row a day.
+    FIXED_BUDGETS.forEach((wish, i) => {
+      const seen = checkBudgets(wish);
+      expect([seen.rolled, seen.bills, seen.rows > 100], `fixed ${i}`).toEqual([2, 4, true]);
+      count(seen);
+    });
+    /** The bars, checked after the fixed ones, which alone meet them, and again after the random ones. */
+    const enough = () => {
+      // Enough of each for this to mean something.
+      expect(rows).toBeGreaterThan(2000);
+      expect(rolled).toBeGreaterThan(50);
+      expect(bills).toBeGreaterThan(200);
+    };
+    enough();
+    // Then random ones.
     fc.assert(
       fc.property(wishes, (wish) => {
-        const input = build(wish);
-        const plan = workOutPlan(input);
-        checkPlan(input, plan);
-        rows += plan.accounts.flatMap((a) => a.rows).filter((r) => r.budgetId !== null).length;
-        rolled += plan.budgets.filter((b) => (b.current?.rolledOver ?? 0) > 0).length;
-        bills += plan.budgets.filter((b) => b.current?.bill != null).length;
-
-        const reversed = workOutPlan({
-          ...input,
-          series: [...input.series].reverse(),
-          budgets: [...(input.budgets ?? [])].reverse(),
-          spends: [...(input.spends ?? [])].reverse(),
-        });
-        // The pay-later lines come in the order the budgets were given, as the budgets do.
-        const sameOrder = (accounts: Plan['accounts']) =>
-          accounts.map((a) => ({
-            ...a,
-            leftToSpend:
-              a.leftToSpend === null
-                ? null
-                : {
-                    ...a.leftToSpend,
-                    payLater: [...a.leftToSpend.payLater].sort((x, y) =>
-                      x.budgetId < y.budgetId ? -1 : 1,
-                    ),
-                  },
-          }));
-        expect(sameOrder(reversed.accounts)).toEqual(sameOrder(plan.accounts));
-        expect([...reversed.budgets].reverse()).toEqual(plan.budgets);
+        count(checkBudgets(wish));
       }),
       { numRuns: 1000 },
     );
-    // Enough of each for this to mean something.
-    expect(rows).toBeGreaterThan(2000);
-    expect(rolled).toBeGreaterThan(50);
-    expect(bills).toBeGreaterThan(200);
+    enough();
   });
 
   it('undoes "I spent", spends changed and removed, and edits to pay-later bills exactly (D111, D115)', () => {

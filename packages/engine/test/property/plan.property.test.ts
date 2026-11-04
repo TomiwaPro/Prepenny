@@ -4,6 +4,10 @@
 // - Each account's end balance is its start balance plus every payment
 //   applied to it (brief 5.8), checked against a separate, simple count.
 // - A transfer never changes the total across all accounts.
+//
+// Enough shortfalls, and enough that a move fixes, are covered by
+// construction, never left to chance: fixed plans with a shortfall that one
+// move fixes are checked the same way before the random ones.
 // - "Payments that could move" is exactly the list a person would find by
 //   moving each payment themselves and looking at the new plan (D69).
 // - The plan is the same whatever order its records are given in (D12).
@@ -429,65 +433,146 @@ function moved(input: PlanInput, payment: Payment, newDate: string): PlanInput {
   };
 }
 
+/** Checks "Payments that could move" on one plan, and says how many shortfalls and lists it had. */
+function checkCouldMove(wish: PlanWish): { shortfalls: number; lists: number } {
+  let shortfalls = 0;
+  let lists = 0;
+  const input = buildPlan(wish);
+  const plan = workOutPlan(input);
+  const shortBefore = new Set(
+    plan.accounts.flatMap((one) =>
+      one.days
+        .filter((d) => d.date >= plan.today && d.status === 'short')
+        .map((d) => `${one.account.id} ${d.date}`),
+    ),
+  );
+  for (const one of plan.accounts) {
+    for (const shortfall of one.shortfalls) {
+      shortfalls += 1;
+      if (shortfall.couldMove.length > 0) lists += 1;
+      const listed = new Set(shortfall.couldMove);
+      const candidates = one.rows.filter(
+        (row) => row.date >= plan.today && row.date < shortfall.date && !row.ticked,
+      );
+      if (shortfall.moveTo === null) {
+        expect(shortfall.couldMove).toEqual([]);
+        continue;
+      }
+      for (const row of candidates) {
+        const after = workOutPlan(moved(input, row.payment, shortfall.moveTo));
+        const account = after.accounts.find((a) => a.account.id === one.account.id);
+        const fixed = (account?.days ?? []).every(
+          (d) => d.date < shortfall.date || d.date > shortfall.lastDate || d.status !== 'short',
+        );
+        const newShortDay = after.accounts.some((a) =>
+          a.days.some(
+            (d) =>
+              d.date >= plan.today &&
+              d.status === 'short' &&
+              !shortBefore.has(`${a.account.id} ${d.date}`),
+          ),
+        );
+        expect(listed.has(row), `${row.payment.seriesId} ${row.date}`).toBe(fixed && !newShortDay);
+      }
+      // Only those payments, biggest first.
+      expect(shortfall.couldMove.every((row) => candidates.includes(row))).toBe(true);
+      const amounts = shortfall.couldMove.map((row) => -row.change);
+      expect(amounts).toEqual([...amounts].sort((a, b) => b - a));
+    }
+  }
+  return { shortfalls, lists };
+}
+
+/**
+ * Fixed plans, one for every 5 days from Thu 1 Jan 2026, each with a
+ * shortfall that one move fixes: £300.00 today, a bill of £200.00 or a
+ * little more tomorrow and £150.00 on day 3, so it's short on day 3, and
+ * weekly pay of £600.00 from day 5. Moving tomorrow's bill to that payday
+ * fixes it, without a new short day.
+ */
+const FIXED_SHORT: readonly PlanWish[] = Array.from({ length: 120 }, (_, i) => ({
+  today: dayFromParts(2026, 1, 1) + 5 * i,
+  length: 30,
+  accounts: [
+    {
+      kind: 'current',
+      overdraft: 0,
+      warning: 0,
+      updates: [{ daysBeforeToday: 0, minute: 8 * 60, balance: 30_000 }],
+    },
+  ],
+  series: [
+    {
+      account: 0,
+      other: 0,
+      direction: 'in',
+      amount: 60_000,
+      schedule: { kind: 'weekly', every: 1 },
+      startOffset: 5,
+      endAfter: null,
+      family: 0,
+      name: 'Pay',
+      type: 'pay',
+    },
+    {
+      account: 0,
+      other: 0,
+      direction: 'out',
+      amount: 20_000 + 100 * (i % 10),
+      schedule: { kind: 'once' },
+      startOffset: 1,
+      endAfter: null,
+      family: 1,
+      name: 'Bills',
+      type: 'bills',
+    },
+    {
+      account: 0,
+      other: 0,
+      direction: 'out',
+      amount: 15_000,
+      schedule: { kind: 'once' },
+      startOffset: 3,
+      endAfter: null,
+      family: 2,
+      name: 'Rent',
+      type: 'bills',
+    },
+  ],
+  changes: [],
+  ticks: [],
+  mainPay: 0,
+}));
+
 describe('payments that could move (D69)', () => {
   it('lists exactly the payments that, moved on their own, fix the shortfall with no new short day', () => {
     let shortfallsSeen = 0;
     let listsSeen = 0;
+    // The fixed plans first: each has a shortfall that one move fixes.
+    FIXED_SHORT.forEach((wish, i) => {
+      const seen = checkCouldMove(wish);
+      expect(seen, `fixed ${i}`).toEqual({ shortfalls: 1, lists: 1 });
+      shortfallsSeen += seen.shortfalls;
+      listsSeen += seen.lists;
+    });
+    /** The bars, checked after the fixed ones, which alone meet them, and again after the random ones. */
+    const enough = () => {
+      // The made-up plans must really have shortfalls, and some that a move can
+      // fix, for this to mean anything. About 1 in 10 shortfalls has a list.
+      expect(shortfallsSeen).toBeGreaterThan(100);
+      expect(listsSeen).toBeGreaterThan(10);
+    };
+    enough();
+    // Then random ones.
     fc.assert(
       fc.property(fc.oneof(planWish, shapedWish, shapedWish), (wish) => {
-        const input = buildPlan(wish);
-        const plan = workOutPlan(input);
-        const shortBefore = new Set(
-          plan.accounts.flatMap((one) =>
-            one.days
-              .filter((d) => d.date >= plan.today && d.status === 'short')
-              .map((d) => `${one.account.id} ${d.date}`),
-          ),
-        );
-        for (const one of plan.accounts) {
-          for (const shortfall of one.shortfalls) {
-            shortfallsSeen += 1;
-            if (shortfall.couldMove.length > 0) listsSeen += 1;
-            const listed = new Set(shortfall.couldMove);
-            const candidates = one.rows.filter(
-              (row) => row.date >= plan.today && row.date < shortfall.date && !row.ticked,
-            );
-            if (shortfall.moveTo === null) {
-              expect(shortfall.couldMove).toEqual([]);
-              continue;
-            }
-            for (const row of candidates) {
-              const after = workOutPlan(moved(input, row.payment, shortfall.moveTo));
-              const account = after.accounts.find((a) => a.account.id === one.account.id);
-              const fixed = (account?.days ?? []).every(
-                (d) =>
-                  d.date < shortfall.date || d.date > shortfall.lastDate || d.status !== 'short',
-              );
-              const newShortDay = after.accounts.some((a) =>
-                a.days.some(
-                  (d) =>
-                    d.date >= plan.today &&
-                    d.status === 'short' &&
-                    !shortBefore.has(`${a.account.id} ${d.date}`),
-                ),
-              );
-              expect(listed.has(row), `${row.payment.seriesId} ${row.date}`).toBe(
-                fixed && !newShortDay,
-              );
-            }
-            // Only those payments, biggest first.
-            expect(shortfall.couldMove.every((row) => candidates.includes(row))).toBe(true);
-            const amounts = shortfall.couldMove.map((row) => -row.change);
-            expect(amounts).toEqual([...amounts].sort((a, b) => b - a));
-          }
-        }
+        const seen = checkCouldMove(wish);
+        shortfallsSeen += seen.shortfalls;
+        listsSeen += seen.lists;
       }),
       { numRuns: 450 },
     );
-    // The made-up plans must really have shortfalls, and some that a move can
-    // fix, for this to mean anything. About 1 in 10 shortfalls has a list.
-    expect(shortfallsSeen).toBeGreaterThan(100);
-    expect(listsSeen).toBeGreaterThan(10);
+    enough();
   });
 });
 
