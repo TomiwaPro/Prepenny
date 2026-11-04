@@ -103,7 +103,14 @@ export async function layoutProblems(page: Page): Promise<string[]> {
       if (box.left < -1 || box.right > width + 1) found.push(`outside: ${element.tagName}`);
       const style = getComputedStyle(element);
       const hides = style.overflowX !== 'visible' || style.textOverflow === 'ellipsis';
-      if (hides && element.scrollWidth > element.clientWidth + 1 && element.tagName !== 'HTML') {
+      // A text box scrolls a long name inside itself, as every text box does: nothing is lost.
+      const textBox = element.tagName === 'INPUT' || element.tagName === 'TEXTAREA';
+      if (
+        hides &&
+        !textBox &&
+        element.scrollWidth > element.clientWidth + 1 &&
+        element.tagName !== 'HTML'
+      ) {
         found.push(`clipped: ${element.textContent?.trim().slice(0, 30)}`);
       }
     }
