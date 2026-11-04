@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ColourChoice } from '../../../components/ColourChoice.tsx';
+import { MoreLinks } from '../../../components/MoreLinks.tsx';
 import { SimplePage } from '../../../components/SimplePage.tsx';
 import { StartAgain } from '../../../components/StartAgain.tsx';
 import { strings } from '../../../strings/en-GB.ts';
@@ -13,6 +14,7 @@ export default function MorePage() {
       purpose={strings.more.purpose}
       line={strings.more.stillBeingBuilt}
     >
+      <MoreLinks />
       <ColourChoice />
       <StartAgain />
     </SimplePage>

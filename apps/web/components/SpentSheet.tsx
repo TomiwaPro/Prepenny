@@ -4,7 +4,8 @@
 // amount, and it's saved for today, or an earlier day if the date is
 // changed (never a later one, D119). The sheet shows what's spent and left
 // for that budget this week or month, and what it will be with this spend.
-// With no budgets, it says how to add one.
+// With no budgets, it offers "Add a budget", which opens the budget form
+// straight away, then comes back here (D207).
 
 import type { Pence } from '@prepenny/engine';
 import { useId, useRef, useState } from 'react';
@@ -28,15 +29,20 @@ const t = strings.spent;
 export function SpentSheet({
   open,
   onClose,
+  onAddBudget,
 }: {
   readonly open: boolean;
   readonly onClose: () => void;
+  /** With no budgets: opens the budget form straight away (D207). */
+  readonly onAddBudget: () => void;
 }) {
   const opened = useOpenCount(open);
   const shown = useActionsView(open);
   return (
     <Sheet open={open} title={t.title} intro={t.intro} onClose={onClose}>
-      {opened === 0 ? null : <SpentForm key={opened} shown={shown} onDone={onClose} />}
+      {opened === 0 ? null : (
+        <SpentForm key={opened} shown={shown} onDone={onClose} onAddBudget={onAddBudget} />
+      )}
     </Sheet>
   );
 }
@@ -80,9 +86,11 @@ function withThis(budget: BudgetView, amount: Pence, date: string) {
 function SpentForm({
   shown,
   onDone,
+  onAddBudget,
 }: {
   readonly shown: ShownActions;
   readonly onDone: () => void;
+  readonly onAddBudget: () => void;
 }) {
   const { makeChange } = usePlanActions();
   const id = useId();
@@ -102,9 +110,14 @@ function SpentForm({
   const today = view.today;
   if (view.budgets.length === 0) {
     return (
-      <p className={styles.note} data-testid="no-budgets">
-        {t.noBudgets}
-      </p>
+      <div className={styles.form}>
+        <p className={styles.note} data-testid="no-budgets">
+          {t.noBudgets}
+        </p>
+        <button type="button" className={styles.main} aria-haspopup="dialog" onClick={onAddBudget}>
+          {t.addBudget}
+        </button>
+      </div>
     );
   }
   const budget = view.budgets.find((one) => one.id === budgetId) ?? view.budgets[0];
