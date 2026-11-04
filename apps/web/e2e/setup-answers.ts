@@ -2,7 +2,10 @@
 // build them (D149), written out by hand with ids of their own. The setup
 // tests type the same answers into the screens and check the plan saved on
 // the phone is the same as these commands build, and that its balances are
-// the same as each person's test plan (D137, D157).
+// each person's test plan's (D137, D157) with the owner's two step 2f
+// answers made (`withSetupRules`): budgets start this week or month, with
+// what's already spent inside the balance (D230), and rent and bills move
+// to the next working day (D231).
 
 import {
   applyWrites,
@@ -11,6 +14,7 @@ import {
   type PlanRecords,
   parsePounds as pounds,
   type Series,
+  type Spend,
 } from '@prepenny/engine';
 import { calendarFor as holidaysFor } from '../../../packages/engine/test/fixtures/holidays.ts';
 
@@ -52,6 +56,56 @@ function clock(from: string) {
   };
 }
 
+/** A moment before a time, so a spend recorded then is inside that balance (D2, D33, D230). */
+const justBefore = (time: string) => new Date(Date.parse(time) - 1).toISOString();
+
+/**
+ * A test plan with the owner's two step 2f answers for setup made on it:
+ * rent and bills move to the next working day on a weekend or bank holiday
+ * (D231), and budgets start today, with what's already spent saved as a
+ * spend inside the balance (D230). Debt payments keep their date.
+ */
+export function withSetupRules(
+  records: PlanRecords,
+  today: string,
+  alreadySpent: Readonly<Record<string, string>>,
+): PlanRecords {
+  const balanceAt = (accountId: string) =>
+    records.balanceUpdates
+      .filter((one) => one.accountId === accountId)
+      .map((one) => one.checkedAt)
+      .sort()
+      .at(-1) ?? today;
+  const spends: Spend[] = (records.budgets ?? []).flatMap((budget) => {
+    const amount = alreadySpent[budget.name];
+    return amount === undefined
+      ? []
+      : [
+          {
+            id: `${budget.id}-already-spent`,
+            budgetId: budget.id,
+            amount: pounds(amount),
+            spentOn: today,
+            recordedAt: justBefore(balanceAt(budget.accountId)),
+          },
+        ];
+  });
+  return {
+    ...records,
+    series: records.series.map((one) =>
+      one.direction === 'out' && (one.type === 'rent' || one.type === 'bills')
+        ? { ...one, holidayRule: 'working-day-after' }
+        : one,
+    ),
+    budgets: (records.budgets ?? []).map((one) => ({ ...one, startsOn: today })),
+    spends: [...(records.spends ?? []), ...spends],
+  };
+}
+
+/** What Priya and Kofi type in "Already spent this week" or "this month" (D230). */
+export const PRIYA_ALREADY_SPENT = { Food: '230.00', Travel: '20.00' } as const;
+export const KOFI_ALREADY_SPENT = { Fuel: '30.00', Food: '15.00' } as const;
+
 const monthlyOn = (day: number, every = 1) =>
   ({ kind: 'monthly', every, on: { kind: 'day', day } }) as const;
 
@@ -79,13 +133,15 @@ export function priyaCommands(): EditCommand[] {
       start,
       schedule,
       end: { kind: 'never' },
-      holidayRule: 'keep',
+      // Rent and bills move to the next working day (D231).
+      holidayRule: 'working-day-after',
       type,
       isEstimate: false,
       ...extra,
     },
     madeAt: now(),
   });
+  const balanceAt = now();
   return [
     {
       kind: 'add-account',
@@ -100,7 +156,7 @@ export function priyaCommands(): EditCommand[] {
         id: 'current-balance',
         balance: pounds('1240.00'),
         checkedOn: PRIYA_TODAY,
-        checkedAt: now(),
+        checkedAt: balanceAt,
       },
     },
     {
@@ -166,9 +222,19 @@ export function priyaCommands(): EditCommand[] {
         every: 'month',
         leaves: 'at-start',
         rollOver: false,
-        // Her next pay month starts on her next payday (D29, D108).
-        startsOn: '2026-10-30',
+        // It starts this month, her pay month from Wed 30 Sep (D29, D108, D230).
+        startsOn: PRIYA_TODAY,
         createdAt: now(),
+      },
+    },
+    {
+      kind: 'spend',
+      spend: {
+        id: 'food-already-spent',
+        budgetId: 'food',
+        amount: pounds(PRIYA_ALREADY_SPENT.Food),
+        spentOn: PRIYA_TODAY,
+        recordedAt: justBefore(balanceAt),
       },
     },
     {
@@ -181,9 +247,19 @@ export function priyaCommands(): EditCommand[] {
         every: 'week',
         leaves: 'spread',
         rollOver: false,
-        // Her next week starts on Monday, as her pay is monthly (D29).
-        startsOn: '2026-10-26',
+        // It starts this week, from Monday, as her pay is monthly (D29, D230).
+        startsOn: PRIYA_TODAY,
         createdAt: now(),
+      },
+    },
+    {
+      kind: 'spend',
+      spend: {
+        id: 'travel-already-spent',
+        budgetId: 'travel',
+        amount: pounds(PRIYA_ALREADY_SPENT.Travel),
+        spentOn: PRIYA_TODAY,
+        recordedAt: justBefore(balanceAt),
       },
     },
     {
@@ -263,28 +339,43 @@ export function kofiCommands(): EditCommand[] {
       start,
       schedule,
       end: { kind: 'never' },
-      holidayRule: 'keep',
+      // Rent and bills move to the next working day; debt payments keep their date (D231).
+      holidayRule: type === 'debt' ? 'keep' : 'working-day-after',
       type,
       isEstimate: false,
       ...extra,
     },
     madeAt: now(),
   });
-  const weekly = (id: string, name: string, amount: string): EditCommand => ({
-    kind: 'add-budget',
-    budget: {
-      id,
-      accountId: 'current',
-      name,
-      amount: pounds(amount),
-      every: 'week',
-      leaves: 'at-start',
-      rollOver: false,
-      // His weeks run Monday to Sunday (D14, D108).
-      startsOn: '2026-11-02',
-      createdAt: now(),
-    },
-  });
+  const balanceAt = now();
+  const weekly = (id: string, name: keyof typeof KOFI_ALREADY_SPENT, amount: string) =>
+    [
+      {
+        kind: 'add-budget',
+        budget: {
+          id,
+          accountId: 'current',
+          name,
+          amount: pounds(amount),
+          every: 'week',
+          leaves: 'at-start',
+          rollOver: false,
+          // It starts this week, Monday to Sunday (D14, D108, D230).
+          startsOn: KOFI_TODAY,
+          createdAt: now(),
+        },
+      },
+      {
+        kind: 'spend',
+        spend: {
+          id: `${id}-already-spent`,
+          budgetId: id,
+          amount: pounds(KOFI_ALREADY_SPENT[name]),
+          spentOn: KOFI_TODAY,
+          recordedAt: justBefore(balanceAt),
+        },
+      },
+    ] satisfies EditCommand[];
   return [
     {
       kind: 'add-account',
@@ -299,7 +390,7 @@ export function kofiCommands(): EditCommand[] {
         id: 'current-balance',
         balance: pounds('640.00'),
         checkedOn: KOFI_TODAY,
-        checkedAt: now(),
+        checkedAt: balanceAt,
       },
     },
     {
@@ -342,7 +433,7 @@ export function kofiCommands(): EditCommand[] {
       end: { kind: 'after', payments: 24 },
       debtId: 'van-finance',
     }),
-    weekly('fuel', 'Fuel', '70.00'),
-    weekly('food', 'Food', '45.00'),
+    ...weekly('fuel', 'Fuel', '70.00'),
+    ...weekly('food', 'Food', '45.00'),
   ];
 }

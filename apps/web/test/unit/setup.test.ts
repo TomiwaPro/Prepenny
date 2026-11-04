@@ -1,19 +1,30 @@
 // First-time setup's logic (step 2e): each step's boxes checked and turned
 // into the engine's commands (D149, D222 to D226), several commands saved as
-// one change that one undo takes back (D221), and the day a new budget
-// starts (D225).
+// one change that one undo takes back (D221), and, from the owner's answers
+// in step 2f, budgets that start this week or month (D230) and rent and
+// bills that move to the next working day (D231).
 
-import { applyWrites, type PlanRecords, parsePounds } from '@prepenny/engine';
+import {
+  applyWrites,
+  type EditCommand,
+  formatPounds,
+  type PlanRecords,
+  parsePounds,
+} from '@prepenny/engine';
 import { describe, expect, it } from 'vitest';
 import { runEdits } from '../../lib/edit.ts';
 import { holidaysFor } from '../../lib/holidays.ts';
+import { workOutPlanTo } from '../../lib/plan-input.ts';
 import {
   blankAccount,
+  blankBudget,
   blankIncome,
   blankPayDetails,
+  blankWhen,
   buildAccount,
   buildBudget,
   buildIncome,
+  buildOutgoing,
   buildPayDetails,
   eachPaydayOf,
   firstPaydays,
@@ -246,8 +257,8 @@ describe('Several commands as one change (D221)', () => {
   });
 });
 
-describe('Step 6: a budget starts with its next week or month (D225)', () => {
-  it('gives Priya Mon 26 Oct for a weekly budget and Fri 30 Oct, her payday, for a monthly one', () => {
+describe('Step 6: a budget starts this week or month (D230)', () => {
+  it('gives Priya this week from Mon 19 Oct and this pay month from Wed 30 Sep, and saves what she has already spent inside her balance', () => {
     const records = runEdits(EMPTY, SUNDAY, [
       {
         kind: 'add-account',
@@ -284,9 +295,9 @@ describe('Step 6: a budget starts with its next week or month (D225)', () => {
       },
       { kind: 'choose-main-pay', familyId: 'salary' },
     ]).records;
-    expect(workOutSetupView(records, SUNDAY).budgetStarts).toEqual({
-      week: '2026-10-26',
-      month: '2026-10-30',
+    expect(workOutSetupView(records, SUNDAY).budgetPeriods).toEqual({
+      week: { start: '2026-10-19', end: '2026-10-25' },
+      month: { start: '2026-09-30', end: '2026-10-29' },
     });
     // "Each payday" for her savings follows the salary from its next payday (D226).
     expect(eachPaydayOf(records.series, 'salary', SUNDAY, holidays)).toEqual({
@@ -294,23 +305,84 @@ describe('Step 6: a budget starts with its next week or month (D225)', () => {
       schedule: { kind: 'monthly', every: 1, on: { kind: 'last-working-day' } },
       holidayRule: 'working-day-before',
     });
-    // A budget's start before today is refused with plain words (D228).
+    const food = {
+      ...blankBudget('Food', 'month', 'current'),
+      amount: '260',
+      alreadySpent: '230',
+    };
+    const built = buildBudget(food, SUNDAY, { budgetId: 'food', spendId: 'spent' }, NOW, NOW);
+    expect(built).toEqual({
+      ok: true,
+      commands: [
+        {
+          kind: 'add-budget',
+          budget: {
+            id: 'food',
+            accountId: 'current',
+            name: 'Food',
+            amount: parsePounds('260.00'),
+            every: 'month',
+            leaves: 'at-start',
+            rollOver: false,
+            startsOn: SUNDAY,
+            createdAt: NOW,
+          },
+        },
+        {
+          kind: 'spend',
+          spend: {
+            id: 'spent',
+            budgetId: 'food',
+            amount: parsePounds('230.00'),
+            spentOn: SUNDAY,
+            // Just before the balance was typed in, so it's inside it (D2, D33).
+            recordedAt: '2026-11-04T09:59:59.999Z',
+          },
+        },
+      ],
+    });
+    if (!built.ok) throw new Error('The budget should be fine.');
+    const leaves = (commands: readonly EditCommand[]) =>
+      workOutPlanTo(runEdits(records, SUNDAY, commands).records, SUNDAY, '2026-10-25')
+        .accounts[0]?.rows.filter((row) => row.kind === 'budget')
+        .map((row) => [row.date, formatPounds(-row.change)]);
+    // What's left of this month, £30.00, leaves today; the £230.00 isn't a row.
+    expect(leaves(built.commands)).toEqual([['2026-10-25', '30.00']]);
+    // Left empty, the whole £260.00 leaves today, the safe choice.
+    const empty = buildBudget(
+      { ...food, alreadySpent: '' },
+      SUNDAY,
+      { budgetId: 'food', spendId: 'spent' },
+      NOW,
+      NOW,
+    );
+    if (!empty.ok) throw new Error('The budget should be fine.');
+    expect(empty.commands.map((one) => one.kind)).toEqual(['add-budget']);
+    expect(leaves(empty.commands)).toEqual([['2026-10-25', '260.00']]);
+    // Something that isn't an amount is explained in plain words.
     expect(
       buildBudget(
-        {
-          name: 'Food',
-          amount: '260',
-          every: 'month',
-          leaves: 'at-start',
-          billDay: '',
-          accountId: 'current',
-          startsOn: '2026-10-24',
-          startsOnChanged: true,
-        },
+        { ...food, alreadySpent: 'lots' },
         SUNDAY,
-        'food',
+        { budgetId: 'food', spendId: 'spent' },
+        NOW,
         NOW,
       ),
-    ).toEqual({ ok: false, errors: { startsOn: 'startBeforeToday' } });
+    ).toEqual({ ok: false, errors: { alreadySpent: 'alreadySpentError' } });
+  });
+});
+
+describe('Steps 3 to 5: rent and bills move to the next working day, debts keep their date (D231)', () => {
+  const when = { ...blankWhen('monthly'), date: '2026-11-01' };
+  const form = { ...when, name: 'Rent', amount: '850', accountId: 'current', isEstimate: false };
+  it('moves rent and bills, and keeps a debt payment on its date', () => {
+    for (const [type, rule] of [
+      ['rent', 'working-day-after'],
+      ['bills', 'working-day-after'],
+      ['debt', 'keep'],
+    ] as const) {
+      const built = buildOutgoing(form, type, SUNDAY, holidays);
+      expect(built.ok && built.series.holidayRule).toBe(rule);
+    }
   });
 });

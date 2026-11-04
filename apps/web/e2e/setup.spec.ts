@@ -30,10 +30,13 @@ import {
 } from './setup.ts';
 import {
   buildFrom,
+  KOFI_ALREADY_SPENT,
   KOFI_TODAY,
   kofiCommands,
+  PRIYA_ALREADY_SPENT,
   PRIYA_TODAY,
   priyaCommands,
+  withSetupRules,
 } from './setup-answers.ts';
 
 /** Each account's balance at the end of every day, to the same last day. */
@@ -80,9 +83,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await setUpPriya(page);
       const summary = page.getByTestId('setup-summary');
       await expect(page.getByTestId('setup-lowest')).toContainText('Lowest point ahead');
+      // £35.00 lower than before step 2f: what's left of this month's Food
+      // (£30.00) and this week's Travel (£5.00) leaves today (D230).
+      await expect(page.getByTestId('setup-lowest')).toContainText('£1,187.73');
+      await expect(page.getByTestId('setup-lowest')).toContainText('Thu 29 Oct');
       await expect(page.getByTestId('setup-left-to-spend')).toContainText(
         'Left to spend until Fri 30 Oct',
       );
+      await expect(page.getByTestId('setup-left-to-spend')).toContainText('£49.28');
       // The holiday fund is reached with the 8th move of £150 (D137).
       await expect(page.getByTestId('setup-first-goal')).toHaveText(
         'First savings goal reachedHoliday, Fri 28 May 2027',
@@ -93,15 +101,24 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const saved = await ownRecords(page);
       const commands = buildFrom(priyaCommands(), PRIYA_TODAY);
       expect(comparable(saved)).toEqual(comparable(commands));
-      // And every day's balance is her test plan's (D137), a year ahead.
+      // And every day's balance is her test plan's (D137), a year ahead, with
+      // the owner's two answers for setup made on it: her budgets start this
+      // week and month, with what she's already spent inside her balance
+      // (D230), and rent and bills move to the next working day (D231).
       const fixture = priyaPlan();
       expect(dayBalances(saved, PRIYA_TODAY, '2027-10-24')).toEqual(
         dayBalances(
-          { ...fixture, settings: { nation: 'england-and-wales', mainPayFamilyId: 'salary' } },
+          withSetupRules(
+            { ...fixture, settings: { nation: 'england-and-wales', mainPayFamilyId: 'salary' } },
+            PRIYA_TODAY,
+            PRIYA_ALREADY_SPENT,
+          ),
           PRIYA_TODAY,
           '2027-10-24',
         ),
       );
+      // Rent on Sun 1 Nov moves to Mon 2 Nov; on a Tuesday it keeps its date (D231).
+      expect(datesOf(saved, PRIYA_TODAY, 'Rent').slice(0, 2)).toEqual(['2026-11-02', '2026-12-01']);
       // Salary on the last working day, moved to the working day before (brief 8.5).
       expect(datesOf(saved, PRIYA_TODAY, 'Salary').slice(0, 4)).toEqual([
         '2026-10-30',
@@ -226,27 +243,42 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await radio(fuel, 'Week').check();
       await box(food, 'Name').fill('Food');
       await box(food, 'Amount').fill('45');
-      // His weeks run Monday to Sunday, so they start on Mon 2 Nov (D14, D108).
-      await expect(fuel.getByText('Mon 2 Nov', { exact: true })).toBeVisible();
-      await expect(food.getByText('Mon 2 Nov', { exact: true })).toBeVisible();
+      // His weeks run Monday to Sunday, and each starts this week (D14, D108, D230).
+      await expect(fuel.getByText('It starts this week, Mon 26 Oct to Sun 1 Nov.')).toBeVisible();
+      await expect(food.getByText('It starts this week, Mon 26 Oct to Sun 1 Nov.')).toBeVisible();
+      await box(fuel, 'Already spent this week').fill(KOFI_ALREADY_SPENT.Fuel);
+      await box(food, 'Already spent this week').fill(KOFI_ALREADY_SPENT.Food);
+      await noAxeProblems(page);
       await next(page);
 
       await expectStep(page, 7, 'Savings');
       await skip(page);
       await expectStep(page, 8, "Here's your plan");
       await expect(page.getByTestId('setup-first-debt')).toContainText('Van finance');
+      // £70.00 lower than before step 2f: what's left of this week's Fuel
+      // (£40.00) and Food (£30.00) leaves today (D230).
+      await expect(page.getByTestId('setup-lowest')).toContainText('£86.00');
+      await expect(page.getByTestId('setup-lowest')).toContainText('Thu 5 Nov');
+      await expect(page.getByTestId('setup-left-to-spend')).toContainText('£70.00');
       await noAxeProblems(page);
 
       const saved = await ownRecords(page);
       expect(comparable(saved)).toEqual(comparable(buildFrom(kofiCommands(), KOFI_TODAY)));
-      // Every day's balance is his test plan's as he set it up (D137, D157).
+      // Every day's balance is his test plan's as he set it up (D137, D157),
+      // with the owner's two answers for setup made on it (D230, D231).
       const steps = kofiSteps();
       const atSetup = build(
         steps.slice(0, steps.findIndex((one) => one.command.kind === 'choose-main-pay') + 1),
       );
       expect(dayBalances(saved, KOFI_TODAY, '2027-02-28')).toEqual(
-        dayBalances(atSetup.records, KOFI_TODAY, '2027-02-28'),
+        dayBalances(
+          withSetupRules(atSetup.records, KOFI_TODAY, KOFI_ALREADY_SPENT),
+          KOFI_TODAY,
+          '2027-02-28',
+        ),
       );
+      // Rent on Sun 1 Nov moves to Mon 2 Nov; his van finance keeps its date (D231).
+      expect(datesOf(saved, KOFI_TODAY, 'Rent')[0]).toBe('2026-11-02');
 
       await page.getByRole('button', { name: 'Go to my plan' }).click();
       await expect(page.getByTestId('balance')).toContainText('£640.00');
@@ -483,15 +515,18 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await fillWhen(debt, { date: '2026-11-23', payments: '12' });
       await next(page);
 
-      // Step 6: a budget's start. A budget isn't already gone, so only the first sentence.
+      // Step 6: a budget starts this week or month, so there's no date to pick
+      // (D230). What's already spent is an amount, explained in words too.
       await expectStep(page, 6, 'Spending money');
       const food = page.getByTestId('budget-form').first();
       await box(food, 'Amount').fill('200');
-      await box(food, 'Starts').fill('2026-11-01');
+      await box(food, 'Already spent this month').fill('lots');
       await next(page);
-      await expect(food.getByText('Pick today or a later date.', { exact: true })).toBeVisible();
-      await expect(box(food, 'Starts')).toBeFocused();
-      await box(food, 'Starts').fill('2026-11-06');
+      await expect(
+        food.getByText('Type an amount, for example 6, or leave it empty.', { exact: true }),
+      ).toBeVisible();
+      await expect(box(food, 'Already spent this month')).toBeFocused();
+      await box(food, 'Already spent this month').fill('');
       await next(page);
 
       // Step 7: money moved into a savings goal.

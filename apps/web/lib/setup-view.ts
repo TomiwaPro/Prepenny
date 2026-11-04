@@ -1,5 +1,5 @@
 // What first-time setup shows that only the engine can work out (brief 4.1,
-// step 2e): the day a new budget's next week or month starts (D29, D108),
+// step 2e): this week and this month for a new budget (D29, D108, D230),
 // and on "Here's your plan" the lowest point ahead, Left to spend, the first
 // debt paid off and the first savings goal reached. It runs in the
 // background worker, like Home (D170).
@@ -18,11 +18,11 @@ import { planLookAhead, settingsOf, workOutPlanTo } from './plan-input.ts';
 export interface SetupView {
   readonly today: string;
   /**
-   * The first day on or after today that a new budget's week or month
-   * starts (D29, D108): a new budget starts then, so it never takes money
-   * for days already gone. Null before there's an account.
+   * This week and this month for a new budget, the ones with today in them
+   * (D29, D108): a budget in setup starts in them (D230). Null before
+   * there's an account.
    */
-  readonly budgetStarts: { readonly week: string; readonly month: string } | null;
+  readonly budgetPeriods: { readonly week: Period; readonly month: Period } | null;
   /** "Here's your plan" (step 8). Null before there's an account. */
   readonly summary: SetupSummary | null;
 }
@@ -40,6 +40,11 @@ export interface SetupSummary {
   readonly firstGoal: Reached | null;
 }
 
+export interface Period {
+  readonly start: string;
+  readonly end: string;
+}
+
 export interface Reached {
   readonly name: string;
   readonly date: string;
@@ -49,8 +54,8 @@ export interface Reached {
 const PROBE_WEEK = 'setup-probe-week';
 const PROBE_MONTH = 'setup-probe-month';
 
-/** The first day on or after today that a weekly and a monthly budget start. */
-function budgetStartsOf(records: PlanRecords, today: string): SetupView['budgetStarts'] {
+/** This week and this month for a weekly and a monthly budget that start today. */
+function budgetPeriodsOf(records: PlanRecords, today: string): SetupView['budgetPeriods'] {
   const account = records.accounts.find((one) => one.closed !== true);
   if (account === undefined) return null;
   const probe = (id: string, every: Budget['every']): Budget => ({
@@ -72,12 +77,13 @@ function budgetStartsOf(records: PlanRecords, today: string): SetupView['budgetS
     today,
     planLookAhead(today, 3),
   );
-  const startOf = (id: string): string => {
-    const periods = plan.budgets.find((one) => one.budget.id === id)?.periods ?? [];
-    const found = periods.find((period) => period.start >= today);
-    return found?.start ?? today;
+  const periodOf = (id: string): Period => {
+    const current = plan.budgets.find((one) => one.budget.id === id)?.current ?? null;
+    return current === null
+      ? { start: today, end: today }
+      : { start: current.start, end: current.end };
   };
-  return { week: startOf(PROBE_WEEK), month: startOf(PROBE_MONTH) };
+  return { week: periodOf(PROBE_WEEK), month: periodOf(PROBE_MONTH) };
 }
 
 function firstOf(list: readonly (Reached | null)[]): Reached | null {
@@ -127,7 +133,7 @@ function summaryOf(records: PlanRecords, today: string): SetupSummary | null {
 export function workOutSetupView(records: PlanRecords, today: string): SetupView {
   return {
     today,
-    budgetStarts: budgetStartsOf(records, today),
+    budgetPeriods: budgetPeriodsOf(records, today),
     summary: summaryOf(records, today),
   };
 }

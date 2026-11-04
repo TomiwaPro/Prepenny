@@ -154,6 +154,7 @@ const ID_FIELDS = new Set([
   'familyId',
   'debtId',
   'goalId',
+  'budgetId',
   'payProfileId',
   'cyclePayWeeks',
   'splitFrom',
@@ -179,6 +180,9 @@ export function comparable(records: PlanRecords) {
   name(records.goals, 'goal');
   name(records.payProfiles, 'pay profile');
   name(records.payWeeks, 'pay week');
+  for (const spend of records.spends ?? []) {
+    labels.set(spend.id, `spend: ${labels.get(spend.budgetId) ?? ''} on ${spend.spentOn}`);
+  }
   for (const update of records.balanceUpdates) {
     labels.set(update.id, `balance: ${labels.get(update.accountId)} on ${update.checkedOn}`);
   }
@@ -327,12 +331,14 @@ export async function setUpPriya(page: Page, at: (step: number) => Promise<void>
   await expect(box(travel, 'Name')).toHaveValue('Travel');
   await box(food, 'Amount').fill('260');
   await expect(radio(food, 'Month')).toBeChecked();
-  // Each starts with the next week or month: Priya's month runs payday to
+  // Each starts this week or month (D230): Priya's month runs payday to
   // payday, her week from Monday (D29, D108).
-  await expect(food.getByText('Fri 30 Oct', { exact: true })).toBeVisible();
-  await expect(travel.getByText('Mon 26 Oct', { exact: true })).toBeVisible();
+  await expect(food.getByText('It starts this month, Wed 30 Sep to Thu 29 Oct.')).toBeVisible();
+  await box(food, 'Already spent this month').fill('230');
   await box(travel, 'Amount').fill('25');
   await radio(travel, 'Spread across the days').check();
+  await expect(travel.getByText('It starts this week, Mon 19 Oct to Sun 25 Oct.')).toBeVisible();
+  await box(travel, 'Already spent this week').fill('20');
   await next(page);
 
   await expectStep(page, 7, 'Savings');

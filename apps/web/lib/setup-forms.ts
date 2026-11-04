@@ -577,7 +577,12 @@ export function outgoingTyped(form: OutgoingForm): boolean {
   return form.amount.trim() !== '';
 }
 
-/** A payment going out, kept on its date at weekends and bank holidays. */
+/**
+ * A payment going out. Rent and bills move to the next working day on a
+ * weekend or bank holiday, as Direct Debits and standing orders usually do;
+ * debt payments keep their date (D231). Add a payment still lets people
+ * choose (D199).
+ */
 export function buildOutgoing(
   form: OutgoingForm,
   type: PaymentType,
@@ -606,7 +611,7 @@ export function buildOutgoing(
       schedule: when.schedule,
       end: when.end,
       ...(when.lastAmount === null ? {} : { lastAmount: when.lastAmount }),
-      holidayRule: 'keep',
+      holidayRule: holidayRuleFor(when.schedule, type === 'debt' ? 'keep' : 'working-day-after'),
       type,
       isEstimate: form.isEstimate,
     },
@@ -756,27 +761,15 @@ export interface BudgetForm {
   /** A pay-later bill's day of the month (D32). */
   readonly billDay: string;
   readonly accountId: string;
-  /** The day it starts: the start of the next week or month, unless changed (step 2e). */
-  readonly startsOn: string;
-  /** The person changed the start, so it doesn't follow the week or month any more. */
-  readonly startsOnChanged: boolean;
+  /** "Already spent this week" (or "this month"), which can be left empty (D230). */
+  readonly alreadySpent: string;
 }
 
-export type BudgetField = 'name' | 'amount' | 'billDay' | 'startsOn';
-export type BudgetMistake =
-  | 'nameError'
-  | 'amountError'
-  | 'billDayError'
-  | 'dateError'
-  | 'startBeforeToday';
+export type BudgetField = 'name' | 'amount' | 'billDay' | 'alreadySpent';
+export type BudgetMistake = 'nameError' | 'amountError' | 'billDayError' | 'alreadySpentError';
 export type BudgetErrors = Partial<Record<BudgetField, BudgetMistake>>;
 
-export function blankBudget(
-  name: string,
-  every: BudgetEvery,
-  accountId: string,
-  startsOn: string,
-): BudgetForm {
+export function blankBudget(name: string, every: BudgetEvery, accountId: string): BudgetForm {
   return {
     name,
     amount: '',
@@ -784,8 +777,7 @@ export function blankBudget(
     leaves: 'at-start',
     billDay: '',
     accountId,
-    startsOn,
-    startsOnChanged: false,
+    alreadySpent: '',
   };
 }
 
@@ -793,22 +785,51 @@ export function budgetTyped(form: BudgetForm): boolean {
   return form.amount.trim() !== '';
 }
 
+/**
+ * The time a spend is recorded at to count as inside a balance: a moment
+ * before that balance was typed in (D2, D33, D230).
+ */
+export function justBefore(time: string): string {
+  return new Date(Date.parse(time) - 1).toISOString();
+}
+
+/** When an account's latest balance was typed in, or null when it has none. */
+export function latestBalanceAt(
+  updates: readonly { readonly accountId: string; readonly checkedAt: string }[],
+  accountId: string,
+): string | null {
+  let latest: string | null = null;
+  for (const update of updates) {
+    if (update.accountId !== accountId) continue;
+    if (latest === null || Date.parse(update.checkedAt) > Date.parse(latest)) {
+      latest = update.checkedAt;
+    }
+  }
+  return latest;
+}
+
+/**
+ * A budget in setup (D230): it starts today, so its first week or month is
+ * the one with today in it. What's already spent this week or month is
+ * saved as a spend for today, recorded just before the account's balance
+ * was typed in, so it's inside that balance (D2) and only what's left
+ * leaves today. Left empty, the whole amount leaves today.
+ */
 export function buildBudget(
   form: BudgetForm,
   today: string,
-  id: string,
+  ids: { readonly budgetId: string; readonly spendId: string },
   now: string,
+  /** When the account's latest balance was typed in. */
+  balanceAt: string | null,
 ):
-  | { readonly ok: true; readonly command: EditCommand }
+  | { readonly ok: true; readonly commands: EditCommand[] }
   | { readonly ok: false; readonly errors: BudgetErrors } {
   const errors: BudgetErrors = {};
   const name = form.name.trim();
   if (name === '') errors.name = 'nameError';
   const amount = parseAmount(form.amount);
   if (amount === null || amount === 0) errors.amount = 'amountError';
-  const startsOn = readDate(form.startsOn);
-  if (startsOn === null) errors.startsOn = 'dateError';
-  else if (startsOn < today) errors.startsOn = 'startBeforeToday';
   let billDay: number | null = null;
   if (form.leaves === 'pay-later') {
     const day = Number(form.billDay.trim());
@@ -816,15 +837,16 @@ export function buildBudget(
       errors.billDay = 'billDayError';
     else billDay = day;
   }
-  if (Object.keys(errors).length > 0 || amount === null || startsOn === null) {
+  const spent = optionalAmount(form.alreadySpent);
+  if (spent === 'bad') errors.alreadySpent = 'alreadySpentError';
+  if (Object.keys(errors).length > 0 || amount === null || spent === 'bad') {
     return { ok: false, errors };
   }
-  return {
-    ok: true,
-    command: {
+  const commands: EditCommand[] = [
+    {
       kind: 'add-budget',
       budget: {
-        id,
+        id: ids.budgetId,
         accountId: form.accountId,
         name,
         amount,
@@ -832,12 +854,25 @@ export function buildBudget(
         every: form.leaves === 'pay-later' ? 'month' : form.every,
         leaves: form.leaves,
         rollOver: false,
-        startsOn,
+        startsOn: today,
         ...(billDay === null ? {} : { billDay }),
         createdAt: now,
       },
     },
-  };
+  ];
+  if (spent !== null && spent > 0) {
+    commands.push({
+      kind: 'spend',
+      spend: {
+        id: ids.spendId,
+        budgetId: ids.budgetId,
+        amount: spent,
+        spentOn: today,
+        recordedAt: balanceAt === null ? now : justBefore(balanceAt),
+      },
+    });
+  }
+  return { ok: true, commands };
 }
 
 // Step 7: savings

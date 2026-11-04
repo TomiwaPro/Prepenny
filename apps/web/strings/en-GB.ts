@@ -262,9 +262,15 @@ export const strings = {
       billDay: 'Day of the month the bill is paid',
       billDayError: 'Type the bill day, a number from 1 to 31.',
       from: 'From',
-      starts: 'Starts',
-      startsWeek: 'The start of your next week. Before then, it plans nothing.',
-      startsMonth: 'The start of your next month. Before then, it plans nothing.',
+      /** A budget in setup starts this week or month (D230). */
+      startsWeek: (start: string, end: string) => `It starts this week, ${start} to ${end}.`,
+      startsMonth: (start: string, end: string) => `It starts this month, ${start} to ${end}.`,
+      startsPayLater: 'It starts with the card bill for this month.',
+      alreadySpentWeek: 'Already spent this week',
+      alreadySpentMonth: 'Already spent this month',
+      alreadySpentHint:
+        "What you've spent from it so far, which your balance already shows. Leave it empty if you're not sure: then all of it is planned to leave today.",
+      alreadySpentError: 'Type an amount, for example 6, or leave it empty.',
       addAnother: 'Add another budget',
       anotherHeading: 'Another budget',
       removeBudget: 'Remove this budget',
