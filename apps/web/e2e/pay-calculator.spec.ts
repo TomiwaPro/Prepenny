@@ -5,7 +5,7 @@
 
 import AxeBuilder from '@axe-core/playwright';
 import { test as fresh, type Locator, type Page } from '@playwright/test';
-import { AXE_TAGS, MINUS } from './coming-up.ts';
+import { AXE_TAGS, layoutProblems, MINUS } from './coming-up.ts';
 import { expect, test } from './fixtures.ts';
 import { box, expectStep, fillAccount, lastForm, next, radio } from './setup.ts';
 
@@ -320,3 +320,20 @@ for (const colorScheme of ['light', 'dark'] as const) {
     },
   );
 }
+
+test('stays readable with text at 200%, and every tap target is big enough', async ({ page }) => {
+  await openCalculator(page);
+  await fillIn(page, week26);
+  await workOut(page);
+  await page.getByRole('button', { name: 'Check my payslip' }).click();
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect(page.getByTestId('take-home')).toBeVisible();
+  expect(await layoutProblems(page)).toEqual([]);
+});
+
+fresh('the public page stays readable with text at 200%', async ({ page }) => {
+  await page.goto('/pay-calculator/');
+  await expect(page.getByRole('button', { name: 'Work out take-home pay' })).toBeVisible();
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  expect(await layoutProblems(page)).toEqual([]);
+});

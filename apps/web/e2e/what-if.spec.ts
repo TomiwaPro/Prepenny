@@ -9,7 +9,7 @@ import type { Locator, Page } from '@playwright/test';
 import { fixtureRecords } from '../../../packages/engine/test/fixtures/from-empty.ts';
 import { kofiPlan } from '../../../packages/engine/test/fixtures/people.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
-import { AXE_TAGS, MINUS, named, openPeriod, period } from './coming-up.ts';
+import { AXE_TAGS, layoutProblems, MINUS, named, openPeriod, period } from './coming-up.ts';
 import { expect, settingScript, test } from './fixtures.ts';
 
 async function useSetting(page: Page, setting: TestSetting) {
@@ -232,4 +232,12 @@ test('the practice changes stay while PrePenny is open, and take back one at a t
   await expect(accountSides(page, 'Current account').getByTestId('practice')).toContainText(
     '£4.53',
   );
+});
+
+test('stays readable with text at 200%, and every tap target is big enough', async ({ page }) => {
+  await openWhatIfFromComingUp(page);
+  await lowerFridayPay(page);
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect(page.getByTestId('practice-short')).toBeVisible();
+  expect(await layoutProblems(page)).toEqual([]);
 });

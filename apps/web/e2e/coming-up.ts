@@ -86,3 +86,36 @@ export async function chooseView(page: Page, choices: readonly string[]) {
   await sheet.getByRole('button', { name: 'Done' }).click();
   await expect(sheet).toBeHidden();
 }
+
+/**
+ * With text at 200%: anything outside the screen or cut off, and any tap
+ * target under 44 by 44px (brief Part 6, WCAG 1.4.4 and 2.5.8). Empty when
+ * there's nothing wrong.
+ */
+export async function layoutProblems(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const width = document.documentElement.clientWidth;
+    const found: string[] = [];
+    for (const element of document.body.querySelectorAll('*')) {
+      if (element.closest('.visually-hidden, dialog:not([open]), [hidden]')) continue;
+      const box = element.getBoundingClientRect();
+      if (box.width === 0 && box.height === 0) continue;
+      if (box.left < -1 || box.right > width + 1) found.push(`outside: ${element.tagName}`);
+      const style = getComputedStyle(element);
+      const hides = style.overflowX !== 'visible' || style.textOverflow === 'ellipsis';
+      if (hides && element.scrollWidth > element.clientWidth + 1 && element.tagName !== 'HTML') {
+        found.push(`clipped: ${element.textContent?.trim().slice(0, 30)}`);
+      }
+    }
+    // A label above a box, pointing at it with `for`, isn't what's tapped: the box is.
+    for (const element of document.querySelectorAll('a, button, label:not([for]), input, select')) {
+      if (element.closest('.visually-hidden, dialog:not([open]), [hidden]')) continue;
+      if (element instanceof HTMLInputElement && element.closest('label') !== null) continue;
+      const box = element.getBoundingClientRect();
+      if (box.width > 0 && (box.width < 44 || box.height < 44)) {
+        found.push(`small: ${element.textContent?.trim().slice(0, 30) || element.id}`);
+      }
+    }
+    return found;
+  });
+}
