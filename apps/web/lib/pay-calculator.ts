@@ -146,14 +146,35 @@ export function periodBefore(payDate: string, frequency: PayFrequency): string {
 const optional = (text: string): Pence | null | 'bad' =>
   text.trim() === '' ? null : (parseAmount(text) ?? 'bad');
 
-/** Whatever the boxes say, read into the engine's input, or the boxes that need a change. */
-export function readCalculator(
-  form: CalculatorForm,
-  lineName: (kind: PayLineKind) => string,
-):
-  | { readonly ok: true; readonly input: TakeHomeInput }
-  | { readonly ok: false; readonly errors: CalculatorErrors } {
-  const errors: CalculatorErrors = {};
+/** The boxes for tax and deductions, and the last payslip's figures, shared by the calculator and Your job (step 2h). */
+export type TaxBoxesForm = Pick<
+  CalculatorForm,
+  | 'payDate'
+  | 'frequency'
+  | 'taxCode'
+  | 'basis'
+  | 'pension'
+  | 'pensionPercent'
+  | 'pensionLower'
+  | 'pensionUpper'
+  | 'pensionWhen'
+  | 'studentLoan'
+  | 'postgraduate'
+  | 'deductions'
+  | 'soFarPeriod'
+  | 'grossSoFar'
+  | 'taxSoFar'
+>;
+
+/**
+ * The tax and deduction boxes read into the engine's pay settings, with the
+ * year so far from the last payslip (brief 4.15). Each box that needs a
+ * change is added to `errors`.
+ */
+export function readTaxBoxes(
+  form: TaxBoxesForm,
+  errors: CalculatorErrors,
+): { readonly settings: PaySettings; readonly soFar: YearSoFar | undefined } {
   const found = form.payDate === '' ? null : periodOf(form.payDate, form.frequency);
   if (form.payDate === '') errors.payDate = 'dateError';
   else if (found === null) errors.payDate = 'noTaxYear';
@@ -162,25 +183,6 @@ export function readCalculator(
   } catch {
     errors.taxCode = 'taxCodeError';
   }
-
-  const lines: PayLine[] = [];
-  for (const line of form.lines) {
-    const hours = line.hours.trim();
-    const rate = line.rate.trim().replace(/^£\s*/, '');
-    if (hours === '' && rate === '') continue;
-    if (!HOURS.test(hours)) errors[`hours-${line.key}`] = 'hoursError';
-    if (!RATE.test(rate)) errors[`rate-${line.key}`] = 'rateError';
-    lines.push({ name: lineName(line.kind), kind: line.kind, hours, rate });
-  }
-  const fixed: FixedPay[] = [];
-  for (const extra of form.extras) {
-    const amount = optional(extra.amount);
-    if (amount === null && extra.name.trim() === '') continue;
-    if (amount === null || amount === 'bad') errors[`extra-${extra.key}`] = 'amountError';
-    if (extra.name.trim() === '') errors[`extraName-${extra.key}`] = 'nameError';
-    if (typeof amount === 'number') fixed.push({ name: extra.name.trim(), amount });
-  }
-  if (lines.length === 0 && fixed.length === 0) errors.lines = 'linesError';
 
   let pension: Pension | undefined;
   if (form.pension) {
@@ -228,19 +230,50 @@ export function readCalculator(
       soFar = { taxYear: found.taxYear, period: Number(period), grossForTax: gross, taxPaid: tax };
   }
 
-  if (Object.keys(errors).length > 0) return { ok: false, errors };
   const studentLoans: StudentLoanPlan[] = [
     ...(form.studentLoan === 'none' ? [] : [form.studentLoan]),
     ...(form.postgraduate ? (['postgraduate'] as const) : []),
   ];
   const settings: PaySettings = {
     frequency: form.frequency,
-    taxCode: form.taxCode.trim(),
+    taxCode: form.taxCode.trim().toUpperCase(),
     basis: form.basis,
     ...(pension === undefined ? {} : { pension }),
     ...(studentLoans.length === 0 ? {} : { studentLoans }),
     ...(deductions.length === 0 ? {} : { otherDeductions: deductions }),
   };
+  return { settings, soFar };
+}
+
+/** Whatever the boxes say, read into the engine's input, or the boxes that need a change. */
+export function readCalculator(
+  form: CalculatorForm,
+  lineName: (kind: PayLineKind) => string,
+):
+  | { readonly ok: true; readonly input: TakeHomeInput }
+  | { readonly ok: false; readonly errors: CalculatorErrors } {
+  const errors: CalculatorErrors = {};
+  const lines: PayLine[] = [];
+  for (const line of form.lines) {
+    const hours = line.hours.trim();
+    const rate = line.rate.trim().replace(/^£\s*/, '');
+    if (hours === '' && rate === '') continue;
+    if (!HOURS.test(hours)) errors[`hours-${line.key}`] = 'hoursError';
+    if (!RATE.test(rate)) errors[`rate-${line.key}`] = 'rateError';
+    lines.push({ name: lineName(line.kind), kind: line.kind, hours, rate });
+  }
+  const fixed: FixedPay[] = [];
+  for (const extra of form.extras) {
+    const amount = optional(extra.amount);
+    if (amount === null && extra.name.trim() === '') continue;
+    if (amount === null || amount === 'bad') errors[`extra-${extra.key}`] = 'amountError';
+    if (extra.name.trim() === '') errors[`extraName-${extra.key}`] = 'nameError';
+    if (typeof amount === 'number') fixed.push({ name: extra.name.trim(), amount });
+  }
+  if (lines.length === 0 && fixed.length === 0) errors.lines = 'linesError';
+
+  const { settings, soFar } = readTaxBoxes(form, errors);
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
   return {
     ok: true,
     input: {
@@ -472,22 +505,34 @@ export interface MainPayLinks {
   readonly payProfileId: string | null;
   /** How many steps its amount pattern has: 1 with one amount. */
   readonly steps: number;
-  /** It has saved pay weeks linked already, so they're left as they are. */
+  /** It has saved pay weeks linked already. */
   readonly hasPayWeeks: boolean;
+  /** The pay week of each step of the pattern now, or null with none (D5). */
+  readonly weeks: readonly string[] | null;
+}
+
+/** Which paydays a saved week is for (D5, step 2h): every payday, or one week of the pattern, from 1. */
+export type WeekFor = 'every' | number;
+
+/** "One week of the pattern" can be chosen once every step of the pattern has a pay week (step 2h). */
+export function canChooseOneWeek(main: MainPayLinks): boolean {
+  return main.steps > 1 && main.weeks !== null && main.weeks.length === main.steps;
 }
 
 /**
  * "Save as a pay week" (brief 4.15, D5, D154): the lines and extras saved as
  * a pay week on the main pay's tax settings. With no tax settings saved yet,
- * the calculator's are saved for it first. When the main pay has no saved
- * week, this one is linked to every payday, so "I did overtime" can work out
- * its figures (D5). A pay week already linked stays as it is.
+ * the calculator's are saved for it first. Then it's linked to the paydays
+ * the person chose: every payday, or one week of the pattern, whose other
+ * weeks keep their own (step 2h). Overtime and missed shifts saved for
+ * paydays still to come are worked out again by the engine (D154).
  */
 export function saveWeekCommands(
   input: TakeHomeInput,
   main: MainPayLinks,
   name: string,
   ids: { readonly weekId: string; readonly profileId: string },
+  weekFor: WeekFor = 'every',
 ): EditCommand[] {
   const commands: EditCommand[] = [];
   const profileId = main.payProfileId ?? ids.profileId;
@@ -510,13 +555,16 @@ export function saveWeekCommands(
     ...(input.fixed === undefined ? {} : { fixed: input.fixed }),
   };
   commands.push({ kind: 'add-pay-week', week });
-  if (!main.hasPayWeeks) {
-    commands.push({
-      kind: 'link-pay',
-      seriesId: main.seriesId,
-      payProfileId: profileId,
-      cyclePayWeeks: Array.from({ length: Math.max(1, main.steps) }, () => ids.weekId),
-    });
-  }
+  const steps = Math.max(1, main.steps);
+  const cyclePayWeeks =
+    weekFor !== 'every' && canChooseOneWeek(main) && main.weeks !== null
+      ? main.weeks.map((one, index) => (index === weekFor - 1 ? ids.weekId : one))
+      : Array.from({ length: steps }, () => ids.weekId);
+  commands.push({
+    kind: 'link-pay',
+    seriesId: main.seriesId,
+    payProfileId: profileId,
+    cyclePayWeeks,
+  });
   return commands;
 }
