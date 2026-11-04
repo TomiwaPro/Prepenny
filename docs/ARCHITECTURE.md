@@ -806,7 +806,7 @@ Brief Part 10 lists six things to leave out but design for. None of them needs t
 
 **In plain words.** Below is every screen, sheet and public page, which part of the brief asks for it, and which of the six people need it most. Then come rough sketches of the main screens at phone width, filled in with Sam's example plan on Sun 25 Oct 2026, using the parts from `docs/DESIGN.md`. Every number in the sketches comes from Sam's plan in brief Part 8 and was checked against brief 8.3, except where a sketch says its amounts are examples.
 
-The app has four places in the bottom navigation: **Home, Plan, Debts, More** (brief Part 6). Editing always opens in a bottom sheet on phones and a centred dialog on laptops, never a new page. "Everyone" means all six people from brief Part 2.
+The app has four places in the bottom navigation: **Home, Coming up, Debts, More** (brief Part 6; the brief's Plan is called Coming up since step 2d-2, D208). Editing always opens in a bottom sheet on phones and a centred dialog on laptops, never a new page. "Everyone" means all six people from brief Part 2.
 
 ### 4.1 Public pages (no account needed)
 
@@ -849,7 +849,7 @@ Every step can be skipped and changed later (brief 4.1). Sketches are in 4.6.
 | Screen | Brief | Who needs it most |
 | --- | --- | --- |
 | **Home** | 4.9 | Everyone |
-| **Plan**, by pay period or calendar month, with filters and "Show another month" | 4.8 | Everyone |
+| **Coming up** (the brief's Plan, D208), by payday or calendar month, with View and "Show another month" | 4.8 | Everyone |
 | **Debts** | 4.6 | Sam, Kofi, Ali. Others see "No debts" and an "Add a debt" button |
 | **One debt**, with "Update from statement" and, for credit cards, the minimum, fixed and full comparison | 4.6 | Sam, Kofi, Ali |
 | **More** | 4.11 to 4.17 | Everyone |
@@ -960,7 +960,7 @@ Home                              ?
  (Home)    Plan    Debts    More
 ```
 
-**Plan** (brief 4.8), grouped by Sam's pay periods, Friday to Thursday (D14).
+**Plan** (brief 4.8), grouped by Sam's pay periods, Friday to Thursday (D14). Since step 2d-2 this page is **Coming up**, built from the owner's "Coming up" board (D208 to D212): this pay open, and each later payday as one line that opens in place. The sketch below is the step 2c layout.
 
 ```
 Plan                       What if
@@ -1477,7 +1477,7 @@ prepenny/
       app/               Pages, by web address
         (site)/          Public pages: home, pay calculator, payday check,
                          pricing, organisations, help, legal pages
-        app/             The app: Home, Plan, Debts, More and the screens under More
+        app/             The app: Home, Coming up, Debts, More and the screens under More
         setup/           First-time setup steps
         admin/           Support admin and tax year check (staff only; the
                          database decides who can see anything)
@@ -1550,6 +1550,7 @@ In Phase 6, Capacitor adds `apps/web/ios`, `apps/web/android` and `apps/web/capa
 - Server functions in `supabase/functions` import the engine directly (Deno can run it), so reminders and the app always agree.
 - **Built in step 2b** (D164 to D175): `apps/web` as sketched above, with these details. Words are in `strings/en-GB.ts`; money and dates go through `lib/money.ts` and `lib/dates.ts`. Home's figures come from `workOutHome` in `lib/home.ts`, run in the background worker (`worker/`), which `scripts/build-worker.ts` builds into `public/engine-worker-<fingerprint>.js` before `next build`, telling the app its name in `.env.local` (D170). The phone's database is `data/db.ts`: one `records` table keyed by plan, kind and key, so an edit's writes (D87) are saved as they are. Sam's example is `data/example-plan.ts` (D165). Figtree comes from `@fontsource/figtree` through `next/font/local`, not `public/fonts` (D169). The service worker is `service-worker/sw.ts`, built by Serwist's command line into `out/sw.js` after `next build`. Cloudflare's settings are `wrangler.jsonc` and `public/_headers`. Unit tests are in `test/unit` (Vitest), end-to-end tests in `e2e` (Playwright, served by Wrangler as Cloudflare serves it), and `pnpm build` comes before `pnpm e2e`. `scripts/check-voice.ts` at the root checks every string.
 - **Built in step 2d** (D190 to D203): the four actions on Home are `components/UpdateBalanceSheet.tsx`, `SpentSheet.tsx`, `AddPaymentSheet.tsx` and `OvertimeSheet.tsx`, opened by `components/Actions.tsx`, with the boxes shared in `components/Fields.tsx` and `Form.module.css` (the edit sheet's styles). The worker answers two more questions: `actions` (`lib/actions-view.ts`: each account's expected balance, lowest point and payments to tick, each budget's week or month, the debts, goals and pay) and `pay-preview` (`lib/pay-preview.ts`: an overtime or missed shift made on a copy, giving its payday and change). `lib/new-payment.ts` turns the Add a payment form into the engine's new payment. `lib/test-setting.ts` is the test-only today and plan (D201), read in `components/PlanProvider.tsx`. `components/UpdateNote.tsx` is the update note (D202), in the bottom area of `components/AppShell.tsx` with the undo bar.
+- **Built in step 2d-2** (D204 to D215): the Plan page is the Coming up page, `components/ComingUpScreen.tsx` at `app/app/coming-up/`, with `public/_redirects` sending `/app/plan/` there (D208). The worker's `plan` answer (`lib/plan-view.ts`) also gives each account's balance, each period's main pay (`pay`), its lowest end-of-day balance (`lowest`) and whether it's a calendar month (`byMonth`), and the pay week for "Fri to Thu" (`payWeek`). What's shown is one choice in `lib/plan-filters.ts` (D210). `components/Sheet.tsx` takes the one plain sentence under its title (`intro`) and the close button's words (`closeLabel`), and `components/ChoiceList.tsx` a hint beside a choice. `lib/home.ts` gives Home's cover the pay landing today (`payToday`, D206). The end-to-end tests share `e2e/coming-up.ts` to open the page and open a payday. The switch part (`Segmented`) is gone (D213).
 - **Built in step 2c** (D176 to D189): the background worker answers three questions (`worker/messages.ts`): `home` (`lib/home.ts`, 12 months ahead, D178), `plan` (`lib/plan-view.ts`, whole periods and the lowest point, D183) and `edit` (`lib/edit.ts`, the engine's `editPlan` and `applyWrites`). `lib/plan-input.ts` turns the stored records and settings into the engine's input for all three. `lib/rows.ts` is the row both screens show and the edit sheet changes. `components/PlanProvider.tsx` makes every change in turn, saves its writes with `saveChange` in `data/db.ts` (marking a changed example, D182), works the plan out again and keeps the last edit for the undo bar in `components/AppShell.tsx` (D186). `components/EditSheet.tsx` builds the commands (D188), `lib/refusals.ts` turns a refusal code into words (D189), and `components/useEditSheet.ts` puts focus back after a change. Filters are `lib/plan-filters.ts` and only hide rows (D184). New ids come from `lib/ids.ts` (UUID version 7).
 
 ## 6. Tests
