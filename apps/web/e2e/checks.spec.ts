@@ -86,7 +86,11 @@ function watch(page: Page) {
       const own = (line: string) =>
         !line.startsWith('log: ') &&
         !line.startsWith('debug: ') &&
-        !(notFound && line.includes('status of 404'));
+        !(notFound && line.includes('status of 404')) &&
+        // The browser's own note when Next.js preloads a later screen's style sheet: no data in it.
+        !/^warning: The resource \S+\/_next\/static\/\S+\.css was preloaded using link preload but not used/.test(
+          line,
+        );
       expect(console.filter(own)).toEqual([]);
       for (const line of console) {
         for (const word of PRIVATE) expect(line).not.toContain(word);
@@ -484,7 +488,7 @@ test.describe("what's kept on the phone", () => {
   test("practice changes are forgotten once they're kept, thrown away, or the example starts again", async ({
     page,
   }) => {
-    const practiseOnce = async () => {
+    const practiseOnce = async (amount: string) => {
       await page.goto('/app/what-if/');
       await expect(page.getByTestId('side-by-side')).toBeVisible();
       await openPeriod(page, '2026-10-30');
@@ -492,7 +496,7 @@ test.describe("what's kept on the phone", () => {
         .getByRole('button', { name: /^Pay Fri/ })
         .click();
       const sheet = page.getByRole('dialog', { name: 'Pay' });
-      await sheet.getByLabel('Amount').fill('503.06');
+      await sheet.getByLabel('Amount').fill(amount);
       await sheet.getByRole('button', { name: 'Save' }).click();
       await expect(page.getByTestId('practice-list')).toBeVisible();
       await expect.poll(() => keptOnPhone(page)).toContain('device: what-if|example');
@@ -502,7 +506,7 @@ test.describe("what's kept on the phone", () => {
         .poll(async () => (await keptOnPhone(page)).filter((key) => key.includes('what-if')))
         .toEqual([]);
 
-    await practiseOnce();
+    await practiseOnce('503.06');
     await page.getByRole('button', { name: 'Throw them away' }).click();
     await page
       .getByRole('dialog', { name: 'Throw them away' })
@@ -510,12 +514,12 @@ test.describe("what's kept on the phone", () => {
       .click();
     await gone();
 
-    await practiseOnce();
+    await practiseOnce('503.06');
     await page.getByRole('button', { name: 'Keep these changes' }).click();
     await expect(page.getByTestId('undo-bar')).toBeVisible();
     await gone();
 
-    await practiseOnce();
+    await practiseOnce('490');
     await page.goto('/app/more/');
     await page.getByRole('button', { name: 'Start again with the example' }).click();
     await page

@@ -209,7 +209,7 @@ test('a new last day covered that would move a saved shift to another payday is 
   await sheet.getByLabel(`${day('Fri 30 Oct')} pays for work up to`).fill('2026-10-28');
   await sheet.getByRole('button', { name: 'Save these details' }).click();
   await expect(sheet).toContainText(
-    'A shift saved for a payday still to come would then go on another payday. Remove that shift, change this, then add the shift again.',
+    'Overtime or a missed shift you added for a payday still to come would move to another payday. Remove it, save this change, then add it again.',
   );
   await expect(undoBar(page)).toHaveCount(0);
 });
