@@ -22,7 +22,7 @@ import type {
 } from '../../src/index.ts';
 import { parsePounds as pounds } from '../../src/index.ts';
 import { englandAndWales } from './holidays.ts';
-import { samPayProfile, samPayWeeks } from './pay.ts';
+import { SAM_CYCLE_PAY_WEEKS, samPayProfile, samPayWeeks } from './pay.ts';
 
 export const samToday = '2026-10-25';
 export const samViewEnd = '2027-02-28';
@@ -556,7 +556,7 @@ export function samEverything(): WhatIfInput {
         return {
           ...one,
           payProfileId: 'warehouse',
-          cyclePayWeeks: ['week-26', 'week-27', 'week-28', 'week-27'],
+          cyclePayWeeks: SAM_CYCLE_PAY_WEEKS,
         };
       }
       return goalLinked.has(one.id) ? { ...one, goalId: 'savings-pot' } : one;

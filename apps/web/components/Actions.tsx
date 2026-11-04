@@ -1,13 +1,18 @@
 'use client';
 
 // The four actions on Home (brief 4.9, DESIGN.md): a 2 by 2 grid, one navy
-// main button (Update balance) and the others outlined. Until their steps are
-// built, each opens a sheet that says so.
+// main button (Update balance) and the others outlined. Each opens its own
+// bottom sheet (brief 4.2, 4.3, 4.5): every change saves at once, updates
+// the plan and shows the undo bar. Closing a sheet puts focus back on its
+// button.
 
 import { useState } from 'react';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Actions.module.css';
-import { Sheet } from './Sheet.tsx';
+import { AddPaymentSheet } from './AddPaymentSheet.tsx';
+import { OvertimeSheet } from './OvertimeSheet.tsx';
+import { SpentSheet } from './SpentSheet.tsx';
+import { UpdateBalanceSheet } from './UpdateBalanceSheet.tsx';
 
 const actions = [
   { id: 'update-balance', label: strings.actions.updateBalance, main: true },
@@ -20,7 +25,7 @@ type ActionId = (typeof actions)[number]['id'];
 
 export function Actions() {
   const [open, setOpen] = useState<ActionId | null>(null);
-  const action = actions.find((one) => one.id === open);
+  const close = () => setOpen(null);
   return (
     <section className={styles.actions} aria-label={strings.actions.label}>
       <div className={styles.grid}>
@@ -29,15 +34,17 @@ export function Actions() {
             key={one.id}
             type="button"
             className={`${styles.button} ${one.main ? styles.main : styles.outlined}`}
+            aria-haspopup="dialog"
             onClick={() => setOpen(one.id)}
           >
             {one.label}
           </button>
         ))}
       </div>
-      <Sheet open={action !== undefined} title={action?.label ?? ''} onClose={() => setOpen(null)}>
-        <p>{strings.sheet.stillBeingBuilt}</p>
-      </Sheet>
+      <UpdateBalanceSheet open={open === 'update-balance'} onClose={close} />
+      <AddPaymentSheet open={open === 'add-payment'} onClose={close} />
+      <SpentSheet open={open === 'spent'} onClose={close} />
+      <OvertimeSheet open={open === 'overtime'} onClose={close} />
     </section>
   );
 }

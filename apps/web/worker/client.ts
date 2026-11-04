@@ -2,8 +2,10 @@
 // with each question answered by its own promise.
 
 import type { EditCommand, PlanRecords } from '@prepenny/engine';
+import type { ActionsView } from '../lib/actions-view.ts';
 import type { EditResult } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
+import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 import type { Answers, Ask, WorkResponse } from './messages.ts';
 
@@ -108,4 +110,21 @@ export function editInBackground(
   command: EditCommand,
 ): Promise<EditResult> {
   return ask({ kind: 'edit', records, today, command });
+}
+
+/** What the four actions on Home need, worked out in the background. */
+export function workOutActionsInBackground(
+  records: PlanRecords,
+  today: string,
+): Promise<ActionsView> {
+  return ask({ kind: 'actions', records, today });
+}
+
+/** What overtime or a missed shift would do, worked out in the background without saving it. */
+export function previewPayInBackground(
+  records: PlanRecords,
+  today: string,
+  command: PayCommand,
+): Promise<PayPreview> {
+  return ask({ kind: 'pay-preview', records, today, command });
 }

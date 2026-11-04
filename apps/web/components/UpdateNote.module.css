@@ -1,0 +1,15 @@
+/* A small note at the bottom, like the example banner: card colour with a
+   brass edge, so it reads as news, not a warning (DESIGN.md). */
+.note {
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--space-2) 14px;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--size-second);
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+}

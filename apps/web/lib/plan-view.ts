@@ -94,6 +94,18 @@ function endOfMonthsShown(today: string, months: number): string {
   return formatDate(lastDayOfMonth(year, month));
 }
 
+/**
+ * How many months to show so a date is in them: up to the month it's in,
+ * counting today's, at most 24 (D190). It's enough for pay periods too:
+ * they show whole periods up to the same day that many months ahead.
+ */
+export function monthsUpTo(today: string, date: string): number {
+  const from = partsOfDay(parseDate(today, 'today'));
+  const to = partsOfDay(parseDate(date));
+  const months = (to.year - from.year) * 12 + (to.month - from.month) + 1;
+  return Math.min(PLAN_MONTHS_MOST, Math.max(1, months));
+}
+
 /** Keeps a number of months between 1 and 24. */
 export function monthsShown(months: number): number {
   if (!Number.isInteger(months)) return PLAN_MONTHS_AHEAD;

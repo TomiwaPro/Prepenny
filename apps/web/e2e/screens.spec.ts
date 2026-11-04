@@ -1,14 +1,19 @@
 // Screenshots for checking the look, at twice the pixels, as a phone shows
 // them. Step 2b: Home at 360px wide in light and dark, and 320px in light.
 // Step 2c: the Plan screen at 360px in light and dark, and the edit sheet
-// open on Rent at 360px in light. Each page is as tall as the whole page,
-// with the bottom navigation at the bottom. Run only when asked:
+// open on Rent at 360px in light. Step 2d: each of the four sheets on Home
+// at 360px in light, filled in as in the owner's tests, with the window as
+// tall as the sheet so all of it shows. Each page is as tall as the whole
+// page, with the bottom navigation at the bottom. Run only when asked:
 //
 //   SCREENS=1 pnpm e2e --project phone-360 screens
 
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+import { parsePounds } from '@prepenny/engine';
+import { examplePlan } from '../data/example-plan.ts';
+import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
 
 const screens = join(import.meta.dirname, '..', '..', '..', 'docs', 'screens');
 const folder = join(screens, '2b');
@@ -78,6 +83,127 @@ for (const shot of planShots) {
       await page.setViewportSize({ width: 360, height });
       await page.screenshot({ path: join(step, shot.file) });
     }
+    await context.close();
+  });
+}
+
+/** Sam's example with Travel at £25 a week and £4.00 spent on Sat 24 Oct (owner test 3). */
+const withTravel: TestSetting = {
+  plan: {
+    ...examplePlan,
+    budgets: [
+      {
+        id: 'travel',
+        accountId: 'current',
+        name: 'Travel',
+        amount: parsePounds('25.00'),
+        every: 'week',
+        leaves: 'at-start',
+        rollOver: false,
+        startsOn: '2026-10-23',
+        createdAt: '2026-10-23T09:00:00Z',
+      },
+    ],
+    spends: [
+      {
+        id: 'bus-24-oct',
+        budgetId: 'travel',
+        amount: parsePounds('4.00'),
+        spentOn: '2026-10-24',
+        recordedAt: '2026-10-24T17:00:00Z',
+      },
+    ],
+  },
+};
+
+const sheetShots: readonly {
+  readonly file: string;
+  readonly button: string;
+  readonly setting: TestSetting | null;
+  readonly fill: (page: Page) => Promise<void>;
+}[] = [
+  {
+    // Brief 8.4 test 5 on Fri 30 Oct: step 3, with everything ticked.
+    file: 'update-balance-360-light.png',
+    button: 'Update balance',
+    setting: { today: '2026-10-30' },
+    fill: async (page) => {
+      const sheet = page.getByRole('dialog');
+      await sheet.getByLabel('Type what your bank shows now').fill('600');
+      await sheet.getByRole('button', { name: 'Next' }).click();
+      await sheet.getByRole('button', { name: 'Next' }).click();
+      await sheet.getByRole('button', { name: 'Tick all' }).click();
+    },
+  },
+  {
+    file: 'i-spent-360-light.png',
+    button: 'I spent',
+    setting: withTravel,
+    fill: async (page) => {
+      const sheet = page.getByRole('dialog');
+      await sheet.getByLabel('How much').fill('6.00');
+      await expect(sheet.getByText('With this: £10.00 spent, £15.00 left.')).toBeVisible();
+    },
+  },
+  {
+    file: 'add-payment-360-light.png',
+    button: 'Add a payment',
+    setting: null,
+    fill: async (page) => {
+      const sheet = page.getByRole('dialog');
+      await sheet.getByLabel('Name').fill('Car MOT');
+      await sheet.getByLabel('Amount').fill('54.85');
+      await sheet.getByLabel('Next payment').fill('2026-11-13');
+    },
+  },
+  {
+    file: 'overtime-360-light.png',
+    button: 'I did overtime',
+    setting: null,
+    fill: async (page) => {
+      const sheet = page.getByRole('dialog');
+      await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
+      await sheet.getByLabel('Hours').fill('11.5');
+      await expect(sheet.getByTestId('shift-preview')).toContainText('£155.12');
+    },
+  },
+];
+
+for (const shot of sheetShots) {
+  test(`Step 2d: ${shot.file}`, async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width: 360, height: 800 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: 'light',
+      reducedMotion: 'reduce',
+      locale: 'en-GB',
+      timezoneId: 'Europe/London',
+    });
+    const page = await context.newPage();
+    if (shot.setting !== null) {
+      await page.addInitScript(
+        ([key, value]) => {
+          Reflect.set(window, key, value);
+        },
+        [TEST_SETTING_KEY, shot.setting] as const,
+      );
+    }
+    await page.goto('/app/');
+    await expect(page.getByTestId('balance')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.getByRole('button', { name: shot.button, exact: true }).click();
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toBeVisible();
+    await shot.fill(page);
+    // Tall enough for the whole sheet: it takes up to 90% of the window.
+    const tall = await sheet.evaluate((dialog) => dialog.scrollHeight);
+    await page.setViewportSize({ width: 360, height: Math.max(800, Math.ceil(tall / 0.9) + 8) });
+    await page.waitForTimeout(200);
+    const step = join(screens, '2d');
+    mkdirSync(step, { recursive: true });
+    await page.screenshot({ path: join(step, shot.file) });
     await context.close();
   });
 }

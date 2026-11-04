@@ -21,7 +21,7 @@ import { refusalMessage } from '../lib/refusals.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
-import styles from './EditSheet.module.css';
+import styles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';
 import { Sheet } from './Sheet.tsx';
 import { StatusPill } from './StatusPill.tsx';

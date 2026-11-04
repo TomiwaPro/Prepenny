@@ -161,13 +161,14 @@ test.describe('Home, with Sam’s example plan', () => {
     }
   });
 
-  test('each action opens a sheet saying it is still being built, and closes', async ({ page }) => {
+  test('each action opens its own sheet, and closes', async ({ page }) => {
     await openHome(page);
     for (const name of ['Update balance', 'Add a payment', 'I spent', 'I did overtime']) {
       await page.getByRole('button', { name, exact: true }).click();
       const sheet = page.getByRole('dialog', { name });
       await expect(sheet).toBeVisible();
-      await expect(sheet.getByText('This part is still being built.')).toBeVisible();
+      // The sheets themselves are tested in actions.spec.ts (step 2d).
+      await expect(sheet.getByText('This part is still being built.')).toHaveCount(0);
       await sheet.getByRole('button', { name: 'Close' }).click();
       await expect(sheet).toBeHidden();
     }

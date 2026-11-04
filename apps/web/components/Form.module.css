@@ -1,4 +1,4 @@
-/* The edit sheet (DESIGN.md): rows of plain controls on the card colour,
+/* The sheets (DESIGN.md): rows of plain controls on the card colour,
    48px buttons, text boxes with the 3:1 border (D164, D176). */
 
 .form {
@@ -131,6 +131,7 @@
 }
 
 .money .input {
+  min-width: 0;
   border: 0;
   padding-left: var(--space-1);
 }
@@ -216,4 +217,186 @@
 .outlined[aria-disabled="true"],
 .quiet[aria-disabled="true"] {
   cursor: progress;
+}
+
+/* Shared by the action sheets (D197 to D200). */
+
+.step {
+  font-size: var(--size-label);
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-transform: none;
+}
+
+.lede {
+  font-size: var(--size-body);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.big {
+  font-size: var(--size-key-figure);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 14px;
+  border-radius: var(--radius-inner);
+  background: var(--sunk);
+}
+
+.panelHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.panelLabel {
+  font-size: var(--size-second);
+  font-weight: 700;
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--size-body);
+}
+
+.total dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.tickList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tickList > li + li {
+  border-top: 1px solid var(--divider);
+}
+
+.tickRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.tickRow input {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 2px 0 0;
+  accent-color: var(--accent-text);
+}
+
+.tickWords {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tickDate {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.tickLine {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
+  font-size: var(--size-name);
+  font-weight: 600;
+}
+
+.tickAmount {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.months {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0 var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.months legend {
+  padding: 0 0 var(--space-1);
+  font-size: var(--size-second);
+  font-weight: 600;
+}
+
+.select {
+  width: 100%;
+  min-height: var(--button-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--size-name);
+}
+
+.dateRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.dateRow > :first-child {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--divider);
+}
+
+/* A group of boxes with a legend, drawn with no border of its own. */
+.plain {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.plain > legend {
+  padding: 0 0 var(--space-1);
 }

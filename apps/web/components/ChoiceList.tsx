@@ -9,6 +9,8 @@ export interface ChoiceListProps<T extends string> {
   readonly value: T;
   readonly options: readonly { readonly value: T; readonly label: string }[];
   readonly onChange: (value: T) => void;
+  /** The id of a line that explains a mistake in the choice, read with it. */
+  readonly describedBy?: string | undefined;
 }
 
 export function ChoiceList<T extends string>({
@@ -17,9 +19,10 @@ export function ChoiceList<T extends string>({
   value,
   options,
   onChange,
+  describedBy,
 }: ChoiceListProps<T>) {
   return (
-    <fieldset className={styles.choice}>
+    <fieldset className={styles.choice} aria-describedby={describedBy}>
       <legend className={styles.legend}>{legend}</legend>
       {options.map((option) => (
         <label key={option.value} className={styles.option}>

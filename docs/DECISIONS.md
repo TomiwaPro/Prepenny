@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 onwards were decided while building step 2c, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 onwards were decided while building step 2d, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -1724,6 +1724,8 @@ Why: DESIGN.md asks for dark mode values and the two lines in Phase 2, for the o
 
 ### D165. What's in Sam's example plan
 
+The three pay weeks in the first point are replaced by four in D196.
+
 Decided 3 Nov 2026 in step 2b. Adds to D15 and D133.
 
 - The example plan is brief 8.1 and 8.2 with the D15 names, exactly the engine's tested fixture, plus Sam's pay profile and his three pay weeks from brief 8.6, linked to his pay as in step 1f, so "I did overtime" works on it in step 2d. None of these changes a figure.
@@ -1998,3 +2000,161 @@ The edit sheet never shows the engine's code. Each code people could meet has a 
 | anything else | That change couldn't be made, so nothing was changed. Try again. |
 
 Why: CLAUDE.md asks for plain English, and a code means nothing to someone tired at 11pm.
+
+## From the owner's review of step 2c
+
+D190 to D195 were agreed by the owner on 3 Nov 2026, answering the six questions left at the end of step 2c. D190's tap is built in step 2d.
+
+### D190. The Plan screen's lowest point looks 12 months ahead, and tapping it shows those months
+
+Agreed 3 Nov 2026, from the owner's review of step 2c. Confirms D183's lowest point and adds to it. Built in step 2d.
+
+- The Plan screen's lowest point looks 12 months ahead, the same as Home's (D178), or further when more months are shown (D183).
+- When it falls after the months shown, the line under "Lowest point ahead" is a button with "Show the plan up to Thu 1 Jul 2027" under it. Tapping it shows the months up to that date, counting this month: 10 months from Sun 25 Oct 2026 for Thu 1 Jul 2027, at most 24. Focus then goes to the row it's after, which says "Lowest point ahead".
+- When it's in the months shown, nothing changes: the line isn't a button.
+
+Why: the owner's answer. The two screens always agree on the lowest point, and the Plan screen shows it with one tap.
+
+### D191. "Today to Thu 29 Oct": confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2c. Confirms D183's heading for the first pay period.
+
+Why: the owner confirmed it.
+
+### D192. Typing the real pay: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2c. Confirms D185.
+
+Typing the real amount of an estimate for just this one takes off the Estimate label, and the sheet says "£21.54 more than the estimate."
+
+Why: the owner confirmed it.
+
+### D193. No "Move to next payday" for money coming in: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2c. Confirms D188.
+
+Why: the owner confirmed it. Moving pay to the next payday would put two paydays on one day.
+
+### D194. What the Plan screen remembers: confirmed
+
+Agreed 3 Nov 2026, from the owner's review of step 2c. Confirms D187.
+
+Filters and extra months go back to the start each time PrePenny opens. Pay periods or Months is kept on the phone.
+
+Why: the owner confirmed it.
+
+### D195. Cloudflare is set up
+
+Agreed 3 Nov 2026, from the owner's review of step 2c. Completes D68 and D175.
+
+The owner set up Cloudflare. The live app is at https://prepenny.prepenny.workers.dev/app/, and each pull request gets its own preview link, posted on it by the Deploy workflow (step 2c's pull request got one). README.md has the link.
+
+Why: the owner's answer.
+
+## Made during step 2d
+
+D196 is the owner's instruction for step 2d. D197 to D203 were decided on 3 Nov 2026 while building step 2d. Questions for the owner are in `PLAN.md`.
+
+### D196. Sam's example has his four pay weeks, one for each step of his pattern
+
+The owner's instruction for step 2d, 3 Nov 2026. Replaces D165's three pay weeks.
+
+- The example has Sam's pay profile and four pay weeks, from his payslips for weeks 26 to 29 in brief 8.6, linked to his pattern's steps as D5 says: steps 1 and 3 are 3-shift weeks, steps 2 and 4 are 4-shift weeks.
+  - Rota week 1, 3 shifts: 34.5 hours at £12.71, shift premium £114.69 (week 26).
+  - Rota week 2, 4 shifts: 46 hours at £12.71, shift premium £210.23 (week 27).
+  - Rota week 3, 3 shifts: 34.25 hours at £12.71, shift premium £142.29 (week 28).
+  - Rota week 4, 4 shifts: 46 hours at £12.71, shift premium £172.01 (week 29).
+- Week 29's 11.5 hours of overtime aren't in its lines: overtime is what "I did overtime" adds, so the pay week is the usual week. Before, step 4 used week 27's lines.
+- Overtime is at £19.07, remembered on the pay profile, and each payday covers work up to the Sunday 5 days before it (D131), as before.
+- The engine's fixture has the same four weeks, so the example is still exactly the tested plan (D165). No figure changes: every brief 8.3 test passes, and so do the owner's overtime figures (+£155.12 on Fri 6 Nov, −£100.43 on Fri 13 Nov), which fall on steps 2 and 3.
+- The pattern's amounts stay as the owner typed them. For step 4 the tax tables give £592.03 from week 29's lines, against the pattern's £592.17: the pattern is Sam's own estimate, and only overtime and missed shifts use the pay weeks.
+
+Why: the owner's instruction. Each payday's overtime is worked out from the week it really is.
+
+### D197. Update balance
+
+Decided 3 Nov 2026 in step 2d. Adds to brief 4.2, D33, D46, D87 and the Update balance sketch in ARCHITECTURE.md 4.6.
+
+- Step 1: the account, Home's first (D168), and "Type what your bank shows now". A balance below zero is typed with a minus sign, or with "It's overdrawn, below £0.00" ticked, because a phone's number keyboard often has no minus key.
+- The balance is for today. Typing a balance from an earlier day isn't offered; that's a question for the owner in `PLAN.md`.
+- Step 2: "The plan expected £604.53 by the end of today." (D46), "Your bank shows £600.00." and "That's £4.53 less.", "That's £4.53 more." or "They match."
+- Step 3: every payment, pay-later bill and money set aside for that account dated today or earlier and not ticked, oldest first, in the plan's order. Budget rows and spends aren't listed, because they're never ticked (D109). Each box starts unticked, so nothing is ticked without a tap; "Tick all" ticks them all, then says "Untick all". Whether they should start ticked is a question for the owner.
+- Done saves the new balance with everything ticked as one change, with each tick marked as made inside the update, so one Undo takes all of it back (D33, D87). The time stored is the phone's clock (D182).
+- Then: "Balance updated", "£600.00, Fri 30 Oct, 9:14am", how many were ticked, and the account's new lowest point ahead with Tight or Short. The undo bar says "Current account balance updated, and 7 payments ticked."
+- Each step's heading takes focus, and Back goes to the step before.
+
+Why: these follow the brief and the sketch where they didn't say exactly. Ticking needs the person's own tap, because a tick says the money really went.
+
+### D198. I spent
+
+Decided 3 Nov 2026 in step 2d. Adds to brief 4.5, D2, D115 and D119.
+
+- Pick the budget (when there's more than one), type how much, and it's saved for today. The date can be changed to an earlier day, never a later one (D119).
+- The sheet shows that budget's week or month: "This week, to Thu 29 Oct", Spent and Left, and "£25 + £7 from last time" when something rolled over (D30). With an amount typed: "With this: £10.00 spent, £15.00 left." A spend dated before this week or month says it goes in an earlier one.
+- The undo bar says "£6.00 spent on Travel. This week: £10.00 spent, £15.00 left."
+- With no budgets, the sheet says "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, come with the Budgets screen, which is still being built." The Budgets screen is built in step 2f, and the words change then to say where it is.
+- A spend's amount must be above zero (D115). No note is asked, to keep it to two taps.
+
+Why: brief 4.5 asks for "I spent" in two taps with spent and left for the week or month.
+
+### D199. Add a payment
+
+Decided 3 Nov 2026 in step 2d. Adds to brief 4.3 and 4.4, D86, D150 and D160.
+
+- Going out, Coming in, or Between accounts (only with two accounts or more), then the name, amount and account.
+- "Next payment" starts at today. A date before today says "Pick today or a later date. If it's already gone, update your balance instead." (D150), and the engine refuses it too.
+- How often: once; every 1 to 52 weeks, on the next payment's weekday ("Every 2 weeks, on a Tuesday."); every 1 to 12 months; or on chosen dates. For monthly, the choices come from the next payment's date, so the next payment is always the date typed: "The 13th of the month", "The second Friday of the month", "The last Friday of the month" in a month's last 7 days, "The last day of the month" on the last day, and "The last working day of the month" on that day, which then hides the weekend rule (D145). Months can be left out, but not the next payment's month. Chosen dates are the next payment and the dates added after it, each once.
+- When it ends (for weekly and monthly only): never, after a number of payments, or on a date. A different last amount only when it ends (D78).
+- The weekend and bank holiday rule, the type (D79: it starts as Other, or Savings between accounts), a debt it pays off (money going out only, D98) or a savings goal whose account it moves money into or out of (D114), never a budget (D160), "This is an estimate" and a note.
+- Every mistake is explained beside its box, and focus goes to the first one. The undo bar says "Car MOT added."
+- Not offered here: an irregular weekly estimate, a pay pattern and money set aside. Setup asks for those (step 2e).
+
+Why: these are the choices brief 4.3 and 4.4 list, in the order a person thinks of them, with the monthly choices tied to the date so the "Next payment" is never a different day from the one typed.
+
+### D200. I did overtime and I missed a shift
+
+Decided 3 Nov 2026 in step 2d. Adds to brief 4.3, D5, D44, D124, D130, D131 and D140.
+
+- One sheet, opened by Home's "I did overtime", with "Overtime" or "Missed a shift" at the top. Its title follows the choice.
+- The day starts as today and can be any day. The hours start as the hours of the last one saved of that kind. Overtime and a missed shift each keep their own hours and rate while the sheet is open, and choosing another pay starts from that pay's own.
+- The rate is remembered: overtime uses the rate of the last overtime saved, or the pay profile's (£19.07 for Sam), shown as "At £19.07 an hour." with "Change the rate". A missed shift uses the pay week's basic rate (D123), shown the same way. Remembering the rate this way needs no second change, so one Undo takes the shift back.
+- Before saving, the engine makes the change on a copy of the plan and the sheet says what it does: "This adds £155.12 to your pay on Fri 6 Nov, making it £773.58." or "This takes £100.43 off your pay on Fri 13 Nov, making it £368.63." Save makes exactly that change. The undo bar says "Overtime added. Your pay on Fri 6 Nov goes up by £155.12."
+- The box for extras shows only when that payday's pay week has extras, such as a shift premium (D130). It stays while the hours or extras are typed, and goes, with anything typed in it, when the day moves to a payday without them.
+- With no pay details, the sheet says they come with the pay calculator (step 2g). A payday with no saved pay week gets the engine's refusal in words; asking once for the usual hours and rate (D5) is for setup and the pay calculator.
+- Refusals in words: a payday with its real pay in (D44), no payday for that day, no pay week, no rate, and too much in extras.
+
+Why: brief 4.3 asks for two taps, the rate remembered, and the payday's new balance. Working it out on a copy means the sheet never shows a figure that Save wouldn't make.
+
+### D201. A test-only "today" and test plan
+
+Decided 3 Nov 2026 in step 2d, from the owner's instruction for the tests.
+
+- The end-to-end tests can set another today (Fri 30 Oct for brief 8.4 test 5) and a plan to use in place of the example (the example with a Travel budget), in `apps/web/lib/test-setting.ts`.
+- It's read only in a browser driven by test software, which says so with `navigator.webdriver`, from a value the tests put on the page before PrePenny starts. People's own browsers never set it, and nothing on screen, no web address and nothing stored on the phone turns it on.
+- A test plan is treated as the example: the banner says so, and changes made in a test are kept until the test ends.
+
+Why: the owner asked for a test-only setting the real app can't reach. The tests use the same build that's put online, so the setting can't be left out of it; checking for test software keeps it out of reach.
+
+### D202. "PrePenny has been updated. Tap to reload."
+
+Decided 3 Nov 2026 in step 2d, from the owner's instruction.
+
+- When a new version of PrePenny has arrived on the phone and taken over, a small note shows at the bottom, above the undo bar: "PrePenny has been updated. Tap to reload." Tapping it loads the new version straight away. Screen readers hear it appear.
+- The very first time PrePenny is put on a phone isn't a new version, so no note shows then.
+- PrePenny also looks for a new version each time it comes back on screen, because a phone can keep it open for days.
+- The new version still takes over as soon as it arrives, as before; the note says the screen open now is the old one.
+
+Why: the owner's instruction. Without it, someone could keep using an old screen for days after an update.
+
+### D203. Smaller choices in step 2d
+
+Decided 3 Nov 2026 in step 2d.
+
+- Every sheet uses the same boxes and styles as the edit sheet (D188): a label above each box, a hint or the mistake under it, the date written PrePenny's way under each date box, and an amount after a "£".
+- A sheet starts afresh each time it opens, with the plan's figures worked out again then, never the ones from the last time it was open. Closing it puts focus back on its button (WCAG 2.4.3).
+- Every mistake moves focus to its box, or to the choice in a group, and is read out with it.
+- The engine's random test of every command (step 2a's owner test 3) also runs one fixed case that adds an account and then closes it. Random runs alone made a close about 1 time in 20 too few, so the test failed by chance on GitHub; its checks are unchanged.
+- Amounts in the sheets' sentences have no plus or minus sign, so a line never breaks between "+" and "£" on a 320px screen.
+- Months to leave out are in two columns, so "September" fits at 320px.
+
+Why: the same look everywhere (DESIGN.md), and every screen works at 320px (D37).
