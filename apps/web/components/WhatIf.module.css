@@ -71,6 +71,7 @@
 }
 
 .pairName {
+  margin: 0;
   font-size: var(--size-body);
   font-weight: 600;
   overflow-wrap: anywhere;
