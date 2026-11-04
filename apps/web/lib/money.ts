@@ -3,6 +3,7 @@
 // from the engine; nothing here uses floating point for money.
 
 import type { Pence } from '@prepenny/engine';
+import { strings } from '../strings/en-GB.ts';
 import { parseAmount } from './amount.ts';
 
 /** The proper minus sign, never a hyphen (VOICE.md). */
@@ -43,4 +44,25 @@ export function formatMoney(pence: Pence, options: MoneyOptions = {}): string {
 export function rateWords(rate: string): string {
   const pence = parseAmount(rate);
   return pence === null ? `£${rate}` : formatMoney(pence);
+}
+
+const SIGNS: Readonly<Record<string, string>> = strings.setup.debts.signs;
+
+/** The sign in front of an amount in a currency: "£", "€" or "$". */
+export function currencySign(currency: string): string {
+  return SIGNS[currency] ?? `${currency} `;
+}
+
+/**
+ * An amount in a debt's own currency, in its smallest unit: "€1,400.57" for
+ * 140057 cents in euros, or "£420.99" in pounds (brief 4.6: both currencies shown).
+ */
+export function formatIn(minor: number, currency: string, options: MoneyOptions = {}): string {
+  const pounds = formatMoney(minor, options);
+  return currency === 'GBP' ? pounds : pounds.replace('£', currencySign(currency));
+}
+
+/** "€1.1612": a rate per £1 as the person typed it, with its currency's sign. */
+export function perPoundWords(rate: string, currency: string): string {
+  return `${currencySign(currency)}${rate}`;
 }

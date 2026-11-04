@@ -492,12 +492,15 @@ test('the overtime sheet keeps the extras box while typing, and each kind its ow
   await noAxeProblems(page);
 });
 
-test('with no budgets, I spent says how to add one', async ({ page }) => {
+test('with no budgets, I spent says how to add one, and offers Add a budget (D207)', async ({
+  page,
+}) => {
   await openHome(page);
   const sheet = await openAction(page, 'I spent');
   await expect(sheet.getByTestId('no-budgets')).toHaveText(
-    "There's no budget to spend from yet. Budgets, such as Travel at £25 a week, come with the Budgets screen, which is still being built.",
+    "There's no budget to spend from yet. Add one, such as Travel at £25 a week, then write down what you spend from it.",
   );
+  await expect(sheet.getByRole('button', { name: 'Add a budget' })).toBeVisible();
   await noAxeProblems(page);
 });
 

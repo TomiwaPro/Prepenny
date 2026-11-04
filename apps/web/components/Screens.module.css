@@ -1,0 +1,239 @@
+/* The screens under Debts and More (step 2f): cards on the paper, rows split
+   by 1px lines, no shadows or gradients (DESIGN.md). */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.back {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: var(--tap);
+  font-size: var(--size-body);
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.heading:focus {
+  outline: none;
+}
+
+.purpose {
+  font-size: var(--size-body);
+  color: var(--ink-muted);
+}
+
+.card {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.cardTitle {
+  font-size: var(--size-heading);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.label {
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.figure {
+  font-size: var(--size-key-figure);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.line {
+  font-size: var(--size-body);
+}
+
+.second {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+/* A thin brass line inside a card (DESIGN.md: brass for lines only). */
+.rule {
+  height: 1px;
+  margin: var(--space-1) 0;
+  border: 0;
+  background: var(--brass);
+}
+
+/* "Estimate": a word, in a soft pill that isn't a money state's colour. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  color: var(--ink);
+  font-size: var(--size-label);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* A list of rows in a card, split by 1px lines. */
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list > li + li {
+  border-top: 1px solid var(--divider);
+}
+
+/* A whole row that opens another screen, with an arrow on the right. */
+.rowLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  padding: var(--space-3) 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.rowBody {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.rowTop {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
+}
+
+.rowName {
+  font-size: var(--size-name);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rowLink:hover .rowName {
+  text-decoration: underline;
+}
+
+.rowAmount {
+  margin-left: auto;
+  font-size: var(--size-name);
+  font-weight: 600;
+  text-align: right;
+}
+
+.arrow {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid var(--ink-muted);
+  border-right: 2px solid var(--ink-muted);
+  transform: rotate(45deg);
+}
+
+/* The progress bar: navy on the sunk colour, with its words beside it. */
+.progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+.bar {
+  display: block;
+  flex: 1 1 8rem;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  /* Navy as text: dark navy in light mode, cream in dark mode, so the fill stands out on either. */
+  background: var(--accent-text);
+}
+
+.progressWords {
+  font-size: var(--size-second);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--size-body);
+}
+
+.total dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 14px;
+  border-radius: var(--radius-inner);
+  background: var(--sunk);
+}
+
+.sectionHeading {
+  font-size: var(--size-heading);
+  font-weight: 700;
+}

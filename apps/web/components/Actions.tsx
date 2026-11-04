@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Actions.module.css';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
+import { BudgetSheet } from './BudgetSheet.tsx';
 import { OvertimeSheet } from './OvertimeSheet.tsx';
 import { SpentSheet } from './SpentSheet.tsx';
 import { UpdateBalanceSheet } from './UpdateBalanceSheet.tsx';
@@ -21,11 +22,13 @@ const actions = [
   { id: 'overtime', label: strings.actions.overtime, main: false },
 ] as const;
 
-type ActionId = (typeof actions)[number]['id'];
+type ActionId = (typeof actions)[number]['id'] | 'add-budget';
 
 export function Actions() {
   const [open, setOpen] = useState<ActionId | null>(null);
-  const close = () => setOpen(null);
+  // Each sheet closes only itself: a sheet that closes because another one
+  // opened in its place mustn't close the new one too.
+  const closeIf = (id: ActionId) => () => setOpen((now) => (now === id ? null : now));
   return (
     <section className={styles.actions} aria-label={strings.actions.label}>
       <div className={styles.grid}>
@@ -41,10 +44,22 @@ export function Actions() {
           </button>
         ))}
       </div>
-      <UpdateBalanceSheet open={open === 'update-balance'} onClose={close} />
-      <AddPaymentSheet open={open === 'add-payment'} onClose={close} />
-      <SpentSheet open={open === 'spent'} onClose={close} />
-      <OvertimeSheet open={open === 'overtime'} onClose={close} />
+      <UpdateBalanceSheet open={open === 'update-balance'} onClose={closeIf('update-balance')} />
+      <AddPaymentSheet open={open === 'add-payment'} onClose={closeIf('add-payment')} />
+      <SpentSheet
+        open={open === 'spent'}
+        onClose={closeIf('spent')}
+        onAddBudget={() => setOpen('add-budget')}
+      />
+      {/* "Add a budget" from I spent: once it's added, back to I spent to write down the spend (D207). */}
+      <BudgetSheet
+        open={open === 'add-budget'}
+        budget={null}
+        onClose={(added) =>
+          setOpen((now) => (now === 'add-budget' ? (added ? 'spent' : null) : now))
+        }
+      />
+      <OvertimeSheet open={open === 'overtime'} onClose={closeIf('overtime')} />
     </section>
   );
 }

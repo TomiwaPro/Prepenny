@@ -11,20 +11,31 @@
 // and can be undone from the undo bar. A change the engine refuses is
 // explained with words from the strings file, never its code.
 
-import type { EditCommand, JustThisOneEdits, ThisAndLaterEdits } from '@prepenny/engine';
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import type { EditCommand, JustThisOneEdits, Schedule, ThisAndLaterEdits } from '@prepenny/engine';
+import Link from 'next/link';
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { amountForTyping, parseAmount } from '../lib/amount.ts';
 import { formatDay } from '../lib/dates.ts';
+import { holidaysFor } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import { formatMoney } from '../lib/money.ts';
+import {
+  blankPayment,
+  type PaymentErrors,
+  repeatSchedule,
+  sameSchedule,
+  type WhenForm,
+} from '../lib/new-payment.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
+import { CheckOption } from './Fields.tsx';
 import styles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';
 import { Sheet } from './Sheet.tsx';
 import { StatusPill } from './StatusPill.tsx';
+import { focusField, RepeatFields, useWhenRefs } from './WhenFields.tsx';
 
 const t = strings.edit;
 
@@ -122,8 +133,25 @@ function EditForm({
   readonly today: string;
   readonly onDone: (version: number) => void;
 }) {
-  const { makeChange } = usePlanActions();
+  const { makeChange, loaded } = usePlanActions();
   const id = useId();
+  const holidays = useMemo(
+    () => holidaysFor(loaded?.records.settings?.nation ?? 'england-and-wales'),
+    [loaded?.records.settings?.nation],
+  );
+  // "Change how often it repeats" (D96, step 2f): the boxes start at how it repeats now.
+  const [changeOften, setChangeOften] = useState(false);
+  const [repeat, setRepeat] = useState<WhenForm>(() => ({
+    ...blankPayment(row.originalDate, '', ''),
+    howOften: row.repeats?.howOften ?? 'monthly',
+    weeks: String(row.repeats?.howOften === 'weekly' ? row.repeats.every : 1),
+    months: String(row.repeats?.howOften === 'monthly' ? row.repeats.every : 1),
+    monthlyOn: row.repeats?.monthlyOn ?? 'day',
+    leaveOut: (row.repeats?.leftOut.length ?? 0) > 0,
+    leftOut: [...(row.repeats?.leftOut ?? [])],
+  }));
+  const [repeatErrors, setRepeatErrors] = useState<PaymentErrors>({});
+  const repeatRefs = useWhenRefs();
   const [view, setView] = useState<'main' | 'remove'>('main');
   const [busy, setBusy] = useState(false);
   // A refusal, shown beside what was tapped: the quick actions, Save or Remove.
@@ -168,6 +196,12 @@ function EditForm({
   const later = isPayment && scope === 'later';
   const isEstimate = estimateChoice ?? (row.isEstimate && (later || !amountChanged));
   const askPattern = later && row.hasPattern && amountChanged;
+  const canChangeOften = later && row.repeats !== null;
+  // The new schedule starts from the payment's date in its schedule, before
+  // any weekend or bank holiday move: rent due on Sun 1 Nov and paid on Mon
+  // 2 Nov repeats on the 1st (D96). A date typed above is taken as that date.
+  const scheduleDate = date === row.paymentDate ? row.originalDate : date;
+  const oftenOn = canChangeOften && changeOften;
 
   async function change(command: EditCommand, message: string, at: 'actions' | 'save' | 'remove') {
     if (busy) return;
@@ -190,6 +224,27 @@ function EditForm({
       fields[first].current?.focus();
       return;
     }
+    // A new "how often" from this payment on, worked out from the date above (D96).
+    let schedule: Schedule | null = null;
+    if (oftenOn) {
+      const mistakes: PaymentErrors = {};
+      schedule = repeatSchedule({ ...repeat, date: scheduleDate }, holidays, mistakes);
+      setRepeatErrors(mistakes);
+      const wrong = (['weeks', 'months', 'leaveOut'] as const).find(
+        (key) => mistakes[key] !== undefined,
+      );
+      if (wrong !== undefined) {
+        focusField(repeatRefs[wrong].current, mistakes, { date: scheduleDate });
+        return;
+      }
+      if (
+        schedule !== null &&
+        row.repeats !== null &&
+        sameSchedule(schedule, row.repeats.schedule)
+      ) {
+        schedule = null;
+      }
+    }
     const edits: { -readonly [K in keyof JustThisOneEdits]: JustThisOneEdits[K] } = {};
     if (amountChanged) edits.amount = amount;
     if (date !== row.paymentDate) edits.date = date;
@@ -200,7 +255,7 @@ function EditForm({
     // is the real one, so it's sent as the real amount even when it's the
     // same as the estimate: a pay-later bill's real amount always stands (D111, D185).
     if (!later && row.isEstimate && !isEstimate && amount !== null) edits.amount = amount;
-    if (Object.keys(edits).length === 0) {
+    if (Object.keys(edits).length === 0 && schedule === null) {
       setProblem({ text: t.nothingChanged, at: 'save' });
       return;
     }
@@ -215,6 +270,7 @@ function EditForm({
     const { amount: newAmount, ...rest } = edits;
     const laterEdits: ThisAndLaterEdits = {
       ...rest,
+      ...(schedule === null ? {} : { schedule }),
       ...(newAmount === undefined
         ? {}
         : askPattern && patternScope === 'step'
@@ -397,6 +453,11 @@ function EditForm({
       {row.editing === 'bill' ? <p className={styles.note}>{t.billRow}</p> : null}
       {row.editing === 'set-aside' ? <p className={styles.note}>{t.setAsideRow}</p> : null}
       {row.editing === 'none' ? <p className={styles.note}>{t.budgetRow}</p> : null}
+      {row.editing === 'bill' || row.editing === 'none' ? (
+        <Link className={styles.outlined} href="/app/budgets/">
+          {t.goToBudgets}
+        </Link>
+      ) : null}
 
       {canChange ? (
         <form
@@ -502,6 +563,31 @@ function EditForm({
                 { value: 'later', label: t.thisAndLater },
               ]}
               onChange={setScope}
+            />
+          ) : null}
+          {canChangeOften ? (
+            <div className={styles.withHint}>
+              <CheckOption
+                checked={changeOften}
+                onChange={setChangeOften}
+                describedBy={`${id}-often-hint`}
+              >
+                {t.changeOften}
+              </CheckOption>
+              <p id={`${id}-often-hint`} className={styles.hint}>
+                {t.changeOftenHint}
+              </p>
+            </div>
+          ) : null}
+          {oftenOn ? (
+            <RepeatFields
+              id={`${id}-often`}
+              form={{ ...repeat, date: scheduleDate }}
+              set={(key, value) => setRepeat((now) => ({ ...now, [key]: value }))}
+              errors={repeatErrors}
+              refs={repeatRefs}
+              holidays={holidays}
+              howOften={['weekly', 'monthly']}
             />
           ) : null}
           {askPattern ? (

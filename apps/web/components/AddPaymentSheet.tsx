@@ -48,18 +48,27 @@ const t = strings.addPayment;
 
 const mistakes = paymentMistakes;
 
+/** How the form starts when it's opened from a debt or a savings goal (step 2f): linked to it. */
+export type PaymentPreset = Partial<
+  Pick<PaymentForm, 'direction' | 'name' | 'accountId' | 'toAccountId' | 'type' | 'link'>
+>;
+
 export function AddPaymentSheet({
   open,
   onClose,
+  preset,
 }: {
   readonly open: boolean;
   readonly onClose: () => void;
+  readonly preset?: PaymentPreset;
 }) {
   const opened = useOpenCount(open);
   const shown = useActionsView(open);
   return (
     <Sheet open={open} title={t.title} intro={t.intro} onClose={onClose}>
-      {opened === 0 ? null : <AddPaymentForm key={opened} shown={shown} onDone={onClose} />}
+      {opened === 0 ? null : (
+        <AddPaymentForm key={opened} shown={shown} onDone={onClose} preset={preset ?? {}} />
+      )}
     </Sheet>
   );
 }
@@ -67,32 +76,37 @@ export function AddPaymentSheet({
 function AddPaymentForm({
   shown,
   onDone,
+  preset,
 }: {
   readonly shown: ShownActions;
   readonly onDone: () => void;
+  readonly preset: PaymentPreset;
 }) {
   const view = shown.view;
   if (view === null) {
     return shown.failed ? <Problem text={strings.errors.plan} /> : <p>{strings.sheet.working}</p>;
   }
-  return <PaymentFields view={view} onDone={onDone} />;
+  return <PaymentFields view={view} onDone={onDone} preset={preset} />;
 }
 
 function PaymentFields({
   view,
   onDone,
+  preset,
 }: {
   readonly view: NonNullable<ShownActions['view']>;
   readonly onDone: () => void;
+  readonly preset: PaymentPreset;
 }) {
   const { makeChange, loaded } = usePlanActions();
   const id = useId();
   const today = view.today;
   const first = view.accounts.find((one) => one.id === view.homeAccountId) ?? view.accounts[0];
   const other = view.accounts.find((one) => one.id !== first?.id) ?? first;
-  const [form, setForm] = useState<PaymentForm>(() =>
-    blankPayment(today, first?.id ?? '', other?.id ?? ''),
-  );
+  const [form, setForm] = useState<PaymentForm>(() => ({
+    ...blankPayment(today, first?.id ?? '', other?.id ?? ''),
+    ...preset,
+  }));
   const [errors, setErrors] = useState<PaymentErrors>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

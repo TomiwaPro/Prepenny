@@ -6,16 +6,19 @@
 // tall as the sheet so all of it shows. Step 2d-2: the Coming up page at
 // 360px in light, on the first visit with "How to read this", and with Fri
 // 6 Nov opened. Step 2e: setup's welcome and steps 1, 2 and 8 at 360px in
-// light, filled in with Priya's answers. Each page is as tall as the whole
-// page, with the bottom navigation at the bottom. Run only when asked, one
-// step at a time:
+// light, filled in with Priya's answers. Step 2f: Debts, the Family loan,
+// Budgets, Savings goals and Accounts at 360px in light; Budgets and
+// Savings goals on the example with the owner's test 5 Travel budget and
+// test 6 Holiday goal added, because the example has none (D180). Each
+// page is as tall as the whole page, with the bottom navigation at the
+// bottom. Run only when asked, one step at a time:
 //
 //   SCREENS=1 pnpm e2e --project phone-360 screens -g "Step 2d-2"
 
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, type Page, test } from '@playwright/test';
-import { parsePounds } from '@prepenny/engine';
+import { type PlanRecords, parsePounds } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
 import { openOnExample, settingScript } from './fixtures.ts';
@@ -284,3 +287,125 @@ test('Step 2e: setup, with Priya’s answers', async ({ browser }) => {
   });
   await context.close();
 });
+
+/**
+ * The example with the owner's test 5 Travel budget, roll-over on and £18.00
+ * spent the week before, and test 6's Holiday goal with £50.00 moved every
+ * Friday from Fri 30 Oct (step 2f).
+ */
+const withBudgetAndGoal: PlanRecords = {
+  ...examplePlan,
+  budgets: [
+    {
+      id: 'travel',
+      accountId: 'current',
+      name: 'Travel',
+      amount: parsePounds('25.00'),
+      every: 'week',
+      leaves: 'at-start',
+      rollOver: true,
+      startsOn: '2026-10-16',
+      createdAt: '2026-10-16T09:00:00Z',
+    },
+  ],
+  spends: [
+    {
+      id: 'week-before',
+      budgetId: 'travel',
+      amount: parsePounds('18.00'),
+      spentOn: '2026-10-20',
+      recordedAt: '2026-10-20T17:00:00Z',
+    },
+    {
+      id: 'bus-24-oct',
+      budgetId: 'travel',
+      amount: parsePounds('4.00'),
+      spentOn: '2026-10-24',
+      recordedAt: '2026-10-24T17:00:00Z',
+    },
+  ],
+  goals: [
+    {
+      id: 'holiday',
+      name: 'Holiday',
+      target: parsePounds('1200.00'),
+      accountId: 'savings',
+      startingAmount: 0,
+    },
+  ],
+  series: [
+    ...examplePlan.series,
+    {
+      id: 'to-holiday',
+      accountId: 'current',
+      toAccountId: 'savings',
+      name: 'Saving for Holiday',
+      direction: 'transfer',
+      amount: parsePounds('50.00'),
+      start: '2026-10-30',
+      schedule: { kind: 'weekly', every: 1 },
+      end: { kind: 'never' },
+      holidayRule: 'keep',
+      type: 'savings',
+      goalId: 'holiday',
+      isEstimate: false,
+      familyId: 'to-holiday',
+      familyCreatedAt: '2026-10-25T12:00:00Z',
+    },
+  ],
+};
+
+const moneyShots = [
+  { file: 'debts-360-light.png', path: '/app/debts/', ready: 'owed-now', plan: null },
+  {
+    file: 'family-loan-360-light.png',
+    path: '/app/debt/?id=family-loan',
+    ready: 'left-now',
+    plan: null,
+  },
+  {
+    file: 'budgets-360-light.png',
+    path: '/app/budgets/',
+    ready: 'budget',
+    plan: withBudgetAndGoal,
+  },
+  {
+    file: 'savings-goals-360-light.png',
+    path: '/app/goals/',
+    ready: 'goal',
+    plan: withBudgetAndGoal,
+  },
+  { file: 'accounts-360-light.png', path: '/app/accounts/', ready: 'account', plan: null },
+] as const;
+
+for (const shot of moneyShots) {
+  test(`Step 2f: ${shot.file}`, async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width: 360, height: 800 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: 'light',
+      reducedMotion: 'reduce',
+      locale: 'en-GB',
+      timezoneId: 'Europe/London',
+    });
+    await openOnExample(context);
+    if (shot.plan !== null) {
+      await context.addInitScript(settingScript, [
+        TEST_SETTING_KEY,
+        { plan: shot.plan } satisfies TestSetting,
+      ] as const);
+    }
+    const page = await context.newPage();
+    await page.goto(shot.path);
+    await expect(page.getByTestId(shot.ready).first()).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({ width: 360, height });
+    const step = join(screens, '2f');
+    mkdirSync(step, { recursive: true });
+    await page.screenshot({ path: join(step, shot.file) });
+    await context.close();
+  });
+}

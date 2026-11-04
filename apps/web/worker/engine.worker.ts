@@ -3,8 +3,10 @@
 
 import { EngineInputError } from '@prepenny/engine';
 import { workOutActionsView } from '../lib/actions-view.ts';
+import { compareWaysToPay, workOutDebtsView } from '../lib/debts-view.ts';
 import { runEdit, runEdits } from '../lib/edit.ts';
 import { workOutHome } from '../lib/home.ts';
+import { workOutAccountsView, workOutBudgetsView, workOutGoalsView } from '../lib/money-views.ts';
 import { previewPayChange } from '../lib/pay-preview.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
 import { workOutSetupView } from '../lib/setup-view.ts';
@@ -33,6 +35,16 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return runEdits(ask.records, ask.today, ask.commands);
     case 'setup':
       return workOutSetupView(ask.records, ask.today);
+    case 'debts':
+      return workOutDebtsView(ask.records, ask.today);
+    case 'budgets':
+      return workOutBudgetsView(ask.records, ask.today);
+    case 'goals':
+      return workOutGoalsView(ask.records, ask.today);
+    case 'accounts':
+      return workOutAccountsView(ask.records, ask.today);
+    case 'compare':
+      return compareWaysToPay(ask.records, ask.today, ask.compare);
     default:
       throw new EngineInputError('bad-request', 'The worker was asked something it does not know.');
   }

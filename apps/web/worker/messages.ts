@@ -2,10 +2,12 @@
 // figures cross; a refusal comes back as the engine's code alone, never its
 // message, so no name or note can leak into an error report later (CLAUDE.md).
 
-import type { EditCommand, PlanRecords } from '@prepenny/engine';
+import type { CardComparison, EditCommand, PlanRecords } from '@prepenny/engine';
 import type { ActionsView } from '../lib/actions-view.ts';
+import type { CompareAsk as CompareRequest, DebtsView } from '../lib/debts-view.ts';
 import type { EditResult } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
+import type { AccountsView, BudgetsView, GoalsView } from '../lib/money-views.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 import type { SetupView } from '../lib/setup-view.ts';
@@ -63,7 +65,36 @@ export interface SetupAsk {
   readonly today: string;
 }
 
-export type Ask = HomeAsk | PlanAsk | EditAsk | ActionsAsk | PayPreviewAsk | EditsAsk | SetupAsk;
+/** The screens under Debts and More that the worker works out (step 2f). */
+export type ScreenKind = 'debts' | 'budgets' | 'goals' | 'accounts';
+
+/** What one of the screens under Debts or More shows (step 2f). */
+export type ScreenAsk = {
+  readonly [K in ScreenKind]: {
+    readonly kind: K;
+    readonly records: PlanRecords;
+    readonly today: string;
+  };
+}[ScreenKind];
+
+/** Comparing ways to pay a credit card (brief 4.6, D102). */
+export interface CompareAsk {
+  readonly kind: 'compare';
+  readonly records: PlanRecords;
+  readonly today: string;
+  readonly compare: CompareRequest;
+}
+
+export type Ask =
+  | HomeAsk
+  | PlanAsk
+  | EditAsk
+  | ActionsAsk
+  | PayPreviewAsk
+  | EditsAsk
+  | SetupAsk
+  | ScreenAsk
+  | CompareAsk;
 
 /** What each kind of question is answered with. */
 export interface Answers {
@@ -74,6 +105,11 @@ export interface Answers {
   readonly 'pay-preview': PayPreview;
   readonly edits: EditResult;
   readonly setup: SetupView;
+  readonly debts: DebtsView;
+  readonly budgets: BudgetsView;
+  readonly goals: GoalsView;
+  readonly accounts: AccountsView;
+  readonly compare: CardComparison;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

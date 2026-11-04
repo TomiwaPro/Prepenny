@@ -14,7 +14,9 @@ import type {
   PlanRecords,
   PlanRow,
   RowKind,
+  Schedule,
 } from '@prepenny/engine';
+import type { MonthlyOn } from './new-payment.ts';
 
 /**
  * What the edit sheet can do with a row:
@@ -72,6 +74,38 @@ export interface RowView {
   readonly nextPayday: string | null;
   /** The row the lowest point ahead is after (brief 5.5). */
   readonly isLowest: boolean;
+  /**
+   * How often its series repeats, for "Change how often it repeats" (D96,
+   * step 2f): every so many weeks or months. Null when it doesn't repeat
+   * that way: once, on chosen dates, a weekly estimate, or not a payment.
+   */
+  readonly repeats: RepeatsView | null;
+}
+
+export interface RepeatsView {
+  /** The schedule as it's stored, to tell whether a new one differs. */
+  readonly schedule: Schedule;
+  readonly howOften: 'weekly' | 'monthly';
+  readonly every: number;
+  readonly monthlyOn: MonthlyOn;
+  readonly leftOut: readonly number[];
+}
+
+function repeatsOf(schedule: Schedule): RepeatsView | null {
+  if (schedule.kind === 'weekly') {
+    return { schedule, howOften: 'weekly', every: schedule.every, monthlyOn: 'day', leftOut: [] };
+  }
+  if (schedule.kind !== 'monthly') return null;
+  const on = schedule.on;
+  const monthlyOn: MonthlyOn =
+    on.kind === 'weekday' ? (on.position === 'last' ? 'last-weekday' : 'weekday') : on.kind;
+  return {
+    schedule,
+    howOften: 'monthly',
+    every: schedule.every,
+    monthlyOn,
+    leftOut: schedule.leaveOut ?? [],
+  };
 }
 
 function editingOf(kind: RowKind): RowEditing {
@@ -147,6 +181,7 @@ export function rowMaker(plan: Plan, records: PlanRecords) {
           ? nextPaydayAfter(payment.date)
           : null,
       isLowest: key === lowestKey,
+      repeats: own === undefined || editing !== 'payment' ? null : repeatsOf(own.schedule),
     };
   };
 }

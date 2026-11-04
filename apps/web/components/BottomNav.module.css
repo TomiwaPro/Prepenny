@@ -31,7 +31,7 @@
   text-align: center;
 }
 
-.link[aria-current="page"] {
+.link[aria-current] {
   color: var(--accent-text);
   font-weight: 700;
 }
@@ -45,6 +45,6 @@
   border-radius: 14px;
 }
 
-.link[aria-current="page"] .pill {
+.link[aria-current] .pill {
   background: var(--nav-active);
 }

@@ -67,6 +67,13 @@ function engineWorker(): Worker {
   return started;
 }
 
+/** Any question the worker answers, worked out in the background. */
+export function askInBackground<K extends Ask['kind']>(
+  question: Extract<Ask, { kind: K }>,
+): Promise<Answers[K]> {
+  return ask(question);
+}
+
 function ask<K extends Ask['kind']>(question: Extract<Ask, { kind: K }>): Promise<Answers[K]> {
   return new Promise((resolve, reject) => {
     const id = nextId;

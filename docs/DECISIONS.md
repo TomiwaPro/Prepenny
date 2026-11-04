@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 onwards were decided while building step 2e, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 onwards were decided while building step 2f, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -2402,6 +2402,8 @@ Why: these are the brief's choices, with the details setup needs to make "I did 
 
 ### D224. Steps 3 to 5: rent, bills and debts
 
+The first point is replaced by D231 for rent and bills. The minimum rule comes in step 2f (D238).
+
 Decided 4 Nov 2026 in step 2e. Adds to brief 4.1, 4.4 and 4.6, D98 and D153. The weekend rule is a question for the owner in `PLAN.md`.
 
 - Payments going out that setup adds keep their date on a weekend or bank holiday. Setup doesn't ask, to stay under 5 minutes; Add a payment does.
@@ -2412,6 +2414,8 @@ Decided 4 Nov 2026 in step 2e. Adds to brief 4.1, 4.4 and 4.6, D98 and D153. The
 Why: these are brief 4.1's boxes for each step, with what the engine needs.
 
 ### D225. Step 6: each budget starts with its next week or month
+
+Replaced by D230: budgets in setup start this week or month.
 
 Decided 4 Nov 2026 in step 2e. Adds to brief 4.5, D29, D107, D108 and D152. A question for the owner in `PLAN.md`.
 
@@ -2460,4 +2464,189 @@ Decided 4 Nov 2026 in step 2e.
 - Add a payment and setup share the same boxes for when a payment happens, so they always ask the same way. An amount box can show another currency's sign, for a debt in euros or dollars.
 
 Why: each follows an earlier decision where the instructions didn't say exactly.
+
+## From the owner's review of step 2e
+
+D230 to D233 were agreed by the owner on 4 Nov 2026, answering the five questions left at the end of step 2e. D230 and D231 were built in step 2f.
+
+### D230. Budgets in setup start this week or month, with "Already spent"
+
+Agreed 4 Nov 2026, from the owner's review of step 2e. Replaces D225, and D228's words for a budget's start in setup.
+
+- A budget added in setup starts today, so its first week or month is the one with today in it (D107), not the next one.
+- Each has one optional box: "Already spent this week", or "this month". That amount is saved as a spend for today, recorded just before the account's latest balance was typed in, so it's inside the balance (D2, D33), and only what's left leaves today. Left empty, the whole amount leaves today, the safe choice.
+- Decided in step 2f: the "Starts" date box is gone from setup, because a budget always starts this week or month. A line says which: "It starts this week, Mon 19 Oct to Sun 25 Oct." A pay-later card's budget says "It starts with the card bill for this month." Something typed that isn't an amount says "Type an amount, for example 6, or leave it empty."
+
+Figures that changed in the setup tests, and why:
+
+- Priya on Sun 25 Oct, with £230.00 already spent from this month's £260.00 Food and £20.00 from this week's £25.00 Travel: £35.00 leaves today (£30.00 Food and £5.00 Travel), because her month (Wed 30 Sep to Thu 29 Oct) and week (Mon 19 Oct to Sun 25 Oct) now have a budget. Her lowest point ahead goes from £1,222.73 to £1,187.73, still on Thu 29 Oct, and Left to spend until Fri 30 Oct from £14.28 to £49.28. Every balance from Sun 25 Oct is £35.00 lower than before, apart from the days D231 moves.
+- Kofi on Tue 27 Oct, with £30.00 already spent from this week's £70.00 Fuel and £15.00 from £45.00 Food: £70.00 leaves today. His lowest point ahead goes from £156.00 to £86.00, still on Thu 5 Nov, and Left to spend until Mon 2 Nov from £0.00 to £70.00.
+- The tests now check every day's balance against each person's test plan with these two answers made on it, and pin the new figures above.
+
+Why: the owner's answer. Starting with the next week planned nothing for the days already in this one, though money still leaves for them; asking what's already gone keeps the plan true to the bank.
+
+### D231. Rent and bills in setup move to the next working day
+
+Agreed 4 Nov 2026, from the owner's review of step 2e. Replaces the first point of D224 for rent and bills.
+
+- Rent and bills added in setup move to the next working day when they fall on a weekend or bank holiday, as Direct Debits and standing orders usually do.
+- Debt payments added in setup keep their date. Add a payment still lets people choose (D199).
+
+Figures that changed in the setup tests, and why: Priya's rent and council tax on Sun 1 Nov now go out on Mon 2 Nov, and 23 more of her payments in the next year move off a weekend or bank holiday, such as Cloud storage on Sat 27 Feb 2027 to Mon 1 Mar 2027, so her February ends £2.99 higher than it would with only D230. Kofi's rent on Sun 1 Nov now goes out on Mon 2 Nov, and 10 more of his payments move; his van finance keeps its dates.
+
+Why: the owner's answer. That's when the money really leaves the bank.
+
+### D232. Pay at weekends moves to the working day before: confirmed
+
+Agreed 4 Nov 2026, from the owner's review of step 2e. Confirms the second point of D223.
+
+Why: the owner confirmed it.
+
+### D233. "First savings goal reached" and "Saving for Holiday": confirmed
+
+Agreed 4 Nov 2026, from the owner's review of step 2e. Confirms D226's name for money moved into a goal and D227's card.
+
+Why: the owner confirmed it.
+
+## Made during step 2f
+
+D234 to D246 were decided on 4 Nov 2026 while building step 2f, the Debts, Budgets, Savings goals and Accounts screens; D246 came from the outside review. Questions for the owner are in `PLAN.md`.
+
+### D234. Closing an account at £0.00, and the move before it
+
+Decided 4 Nov 2026 in step 2f. Builds D158 and D181. Adds to D151.
+
+- The engine works out the account's balance at the end of today and refuses the close with the code `account-has-money` unless it's £0.00, naming only the account and the date (D87). It's checked after D151's "nothing planned", so an account still in use says that first.
+- "Move £3.12 to another account first" adds a payment between accounts for today, for the whole amount, named "From Old account to Current account", of the type Savings, and ticks it as paid in the same change, so one Undo takes both back. It's marked as done because D151 counts an unticked payment as still planned, and an account closes only once the money has really moved. The line under the button says "This adds a move today, marked as done. Make the same move in your bank." When it's overdrawn, the button says "Move £3.12 into it from another account first" and the move goes the other way (D181).
+- With more than one other account, "Move it to" (or "Move it from") picks which. With none, it says "There's no other account to move it to. Add one first."
+- A closed account is listed under "Closed accounts", "Closed. Kept for its history."
+
+Why: D158 asks the engine to refuse, so no phone can do it by mistake, and the owner's test 7 closes the account once it's at £0.00.
+
+### D235. The Debts screens
+
+Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D43, D99, D100 and the Debts sketches in ARCHITECTURE.md 4.6.
+
+- Debts: "Owed now", with "6 debts. Family loan counted at €1.1612 per £1." and "Estimate" when it includes a card's interest (D104). Then "Each debt", "In the order they're paid off. Tap one to see its payments.": paid off first, first; those still owed after 24 months last, in the order they were added. Each shows what's left now, "about £1,206.14" for another currency, "Paid off on", "Paid off" or "£225.25 still left on Wed 25 Oct 2028", "Estimate" where it applies (D100), and the bar with "42% paid". Closed debts are listed after, "Closed. Not counted in Owed now."
+- One debt, at `/app/debt/?id=…`: "Back to Debts", the kind ("Money owed to a person, in euros"), Left now with "About £1,206.14 at €1.1612 per £1", the interest added since the last update when there is some (D104), "Interest not included" for a card with no rate, Paid off on, the bar and "€996.36 paid of €2,396.93". Then every linked payment and, for a card, each statement day with interest, as "Interest, estimate", with what's left after it. A payment in another currency shows what comes off in that currency on its second line: "Mon 26 Oct, €145.15".
+- Its rows aren't buttons: "To change one payment, tap it on Coming up." The edit sheet works from the plan's rows, which look 12 months ahead, and these look 24.
+- Actions: Update from statement, Change the rate (another currency only), Add a payment (linked to this debt, named after it, of the type Debt), Change its details, and Close this debt. A closed debt shows none of them.
+- The progress bar is a picture only; its words say the same (brief Part 6).
+
+Why: these follow the brief, the sketches and the decisions named where they didn't say exactly.
+
+### D236. "Make it £20.99 and stop after it"
+
+Decided 4 Nov 2026 in step 2f. Builds D63.
+
+- The fix is offered on the first payment not ticked that's more than what's left, when more than 1p (or 1 cent) was left before it. Payments after it are all more than what's left and say so, without a fix of their own.
+- The payment's new amount is what was left before it, converted to pounds at the debt's rate for another currency, rounded once (D9). The change is that amount for just this one, then "Remove this and later" from the next payment of every series linked to the debt, so nothing more is paid to it. It's one change, so one Undo puts all of it back (D87).
+- The undo bar says "Credit card made £20.99, and later payments to it removed."
+
+Why: D63 names the fix but not what "stop after it" removes; a debt that's paid off needs no more payments from any of its series.
+
+### D237. A credit card's details and comparing ways to pay
+
+Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D101, D102, D104, D106 and D146.
+
+- "Interest and minimum": the rate a year, "0% until" when it has one, the statement day, the minimum rule or the typed minimum, and the next statement's interest and minimum, each "an estimate".
+- "Compare ways to pay" shows for a card with a statement day. The fixed amount starts at the card's planned monthly payment and can be changed. The day payments go out comes from that payment; with none, it asks "Day of the month you pay".
+- Each way says "150 payments, £647.14 interest", or "It never clears: the interest is more than the payment." The minimum says "Not known: later minimums need a rule, such as interest plus 1% of the balance." when the minimum is typed or not known (D102). Under it: "Estimates from the card's interest rate. PrePenny shows the numbers, not which to choose." (brief Part 3, principle 10).
+
+Why: the owner's test 4 compares £25 a month, the card's own payment, and the comparison needs a payment day.
+
+### D238. Adding and changing a debt
+
+Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D98, D101, D106, D153 and D224.
+
+- The add and change sheets ask the same as setup's step 5, from one shared set of boxes: every kind in brief 4.6, a currency and rate for money owed to a person, what's owed now (adding only), what it started at, and for a credit card the interest rate, "0% until, if it has an offer", the statement day and "Minimum payment": "I don't know it", "As on my statement" with the amount, or "A rule, such as interest plus 1%" with the percentage (1 to start) and "At least" (£5.00 to start). Setup asks these too now.
+- The statement day is needed with an interest rate or a minimum rule (D13). A new debt can come with its payments, which keep their date, as in setup (D231).
+- Changing a debt sends only what differs (D153). Its balance changes with Update from statement, so the change sheet doesn't ask for it. A card that becomes another kind has its card details cleared.
+
+Why: the owner asked for every kind in brief 4.6, and setup and the Debts screen should ask the same way.
+
+### D239. Update from statement, Change the rate and Close
+
+Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D62, D103 and D153.
+
+- Update from statement asks "What the statement shows now", in the debt's own currency, for today, as Update balance does (D205). Linked payments from today or earlier that aren't ticked are listed with "Tick any payment to it that has already gone"; each starts unticked (D204). It's saved as one change with its ticks (D103).
+- Change the rate asks "How many EUR to £1", starting at the rate now. Every payment is converted again at the new rate.
+- Close asks once: "Closing it takes it out of Owed now. Its payments stay in your plan until you remove them." (D153).
+
+Why: these follow the decisions named; the brief doesn't say how each looks.
+
+### D240. The Budgets screen
+
+Decided 4 Nov 2026 in step 2f. Adds to brief 4.5, D30, D61, D107, D152 and D161.
+
+- Each budget: "£25.00 a week, from Current account", how it leaves ("All leaves at the start of the week or month.", "Spread across the days: £3.57 a day." or the pay-later card's bill day), "Roll-over on" when it is, then "This week, to Thu 29 Oct" (or "Starts Fri 30 Oct" for one that starts later) with Spent and Left, and what rolled over as "£25 + £7 from last week", in whole pounds when there are no pence (D166). A pay-later budget adds "On the pay-later card: £80.00 left until Sat 28 Nov." and its bill.
+- A budget that starts after the plan's usual 3 months still shows its first week or month (PLAN.md, left for later 3).
+- "Add a budget" asks its name, amount, every week or month, how it leaves (with the bill day, and the card's own statement day if known, for a pay-later bill), which account, "Starts" (today, or later), and roll-over. It starts today unless changed, so this week's or month's whole amount is planned, the safe choice (D230). It doesn't ask "Already spent": outside setup, the latest balance may be days old, so what's already spent may not be inside it. This is a question for the owner in `PLAN.md`.
+- "Change Travel" changes its name, amount ("From this week on."), how it leaves, roll-over and the pay-later days, sending only what differs; the engine refuses what D152 and D161 refuse, in words. "End this budget" sets its last week or month, today or later.
+
+Why: these follow the brief and the decisions named, where they didn't say how the screen looks.
+
+### D241. "Add a budget" from I spent
+
+Decided 4 Nov 2026 in step 2f. Builds D207.
+
+With no budgets, I spent says "There's no budget to spend from yet. Add one, such as Travel at £25 a week, then write down what you spend from it." with "Add a budget". It opens the budget form straight away; once the budget is added, I spent opens again with it, ready for the spend.
+
+Why: the owner's D207; coming back to I spent finishes what the person set out to do.
+
+### D242. The Savings goals screen
+
+Decided 4 Nov 2026 in step 2f. Adds to brief 4.7, D114, D139 and D153.
+
+- Each goal: "£350.00 saved of £1,500.00", the bar with "23% saved", "Reached on Fri 28 May 2027" (", an estimate" when it depends on one), or "Not reached in the next 24 months: £900.00 saved by Wed 25 Oct 2028.", its date with "That's on time for your date." or "That's after your date.", where it's kept, and "No money is planned to move into it yet." when there's none.
+- "Add a savings goal" asks the same as setup's step 7 (D226), from one shared set of boxes. "Change Holiday" changes what it's for, the target, the date, the account and what was already saved. "Add a payment into Holiday" opens Add a payment as a move into its account, linked to it. "Close Holiday" asks once.
+
+Why: these follow the brief and the decisions named.
+
+### D243. The Accounts screen, and where you live
+
+Decided 4 Nov 2026 in step 2f. Adds to brief 4.2, D151 and D155.
+
+- Each account: its name and kind, "£267.54, checked today" or "checked Fri 30 Oct", "No overdraft" or its limit, and "Tight under £20.00".
+- "Add an account" asks the same as setup's step 1 (D222). "Change Current account" changes its name, overdraft limit and warning level, as the owner listed; its kind isn't changed here, because it decides which account Home shows (D168).
+- "Bank holidays": "Payments that move on bank holidays follow England and Wales." with "Change where you live", a sheet with the three parts of the UK and Save (D155).
+
+Why: the owner's list for the Accounts screen.
+
+### D244. Changing how often a payment repeats
+
+Decided 4 Nov 2026 in step 2f. Builds PLAN.md's left for later 16. Adds to D91, D96 and D199.
+
+- With "This and all later ones" chosen, a payment that repeats every few weeks or months offers "Change how often it repeats", "From this payment on. The date above is the first one." It opens the same boxes as Add a payment: every week or few weeks, or every month or few months, on a day the date above gives ("The 3rd of the month"), with months left out.
+- The new schedule is sent with the date (D96's "a command can still give a schedule of its own"). When it comes out the same as now, it isn't sent. How it ends stays: an end date becomes the same number of payments (D91).
+- Not offered for a payment that happens once, on chosen dates or as a weekly estimate, or for just this one.
+
+Why: the owner's instruction, using the engine's way of taking a new schedule from step 1c.
+
+### D245. Smaller choices in step 2f
+
+Decided 4 Nov 2026 in step 2f.
+
+- More's sentence is now "Your accounts, budgets and savings goals, and settings for PrePenny on this phone.", with "Your plan" first: Accounts, Budgets and Savings goals, each a whole row with a line saying what's there. "Help and your account are still being built." comes last.
+- The bottom navigation marks Debts on a debt's page and More on the screens under it.
+- A budget's row and a pay-later bill in the edit sheet say to change them on the Budgets screen, with "Go to Budgets" (PLAN.md, left for later 15).
+- Each sheet that closes because another opened in its place closes only itself, so "Add a budget" from I spent stays open.
+- The screenshots of Budgets and Savings goals use the example with the owner's test 5 Travel budget and test 6 Holiday goal added, because the example has none (D180).
+- The setup tests compare a spend's budget like any other id, now that setup saves spends.
+
+Why: each follows the owner's instructions or an earlier decision where they didn't say exactly.
+
+### D246. Fixes from the outside review of step 2f
+
+Decided 4 Nov 2026 in step 2f, from an outside review of the step. Adds to D230, D234, D238, D240, D244 and D245.
+
+- **A debt's currency stays as it is.** Changing a debt's kind used to switch it to pounds, so the Family loan's €1,400.57 became £1,400.57 and Owed now went from £3,214.86 to £3,409.29. Its balance is kept in its own currency, so the change sheet no longer offers the currency: it says "It's in euros. That stays as it is, so what's owed doesn't change.", and the rate can still be changed.
+- **How often starts from the payment's own date.** For a payment moved off a weekend or bank holiday, such as rent due on Sun 1 Nov and paid on Mon 2 Nov, the new schedule is worked out from Sun 1 Nov, its date before the move, so it repeats on the 1st. Before, the engine refused it. The hint now also says "If it ends on a date, it now ends after the same number of payments." (D91).
+- **A budget offers only the changes that can work.** A pay-later bill is monthly and starts afresh (D107, D161), so a weekly budget, or one with spending recorded, isn't offered "As one pay-later bill each month", and the sheet says "To move it to a pay-later card, end it and add a new monthly budget...". A pay-later budget says it stays on the card.
+- **"Already spent" in setup only where it can be inside the balance.** A pay-later card isn't asked, because its spending never leaves the bank. When the account's balance was typed on an earlier day, as when setup is finished another day (D221), PrePenny can't tell how much of the spending that balance shows, so the spend is recorded now and the whole amount still leaves today, the safe choice (D230).
+- **The move before closing can't be made twice.** A quick second tap, before the figures are worked out again, does nothing. The line under the button names the other account: "This adds a move to Current account today, marked as done. Make the same move in your bank."
+- **Focus and headings.** When "Make it £20.99 and stop after it", or closing a debt or a goal, takes away the button that was tapped, focus goes to Undo. The confirm sheet starts afresh each time it opens. Closed accounts and goals are a heading level below "Closed accounts" and "Closed goals", and with only closed goals the screen no longer says "No savings goals yet".
+- **The progress bar in dark mode** is filled with Navy as text, cream on the dark track, so it shows; in light mode it's the same navy as before.
+
+Why: the review found each with a case that misled about money, refused something valid or made the screen harder to use.
 

@@ -3,11 +3,13 @@
 // Step 6, spending money (brief 4.1 and 4.5, D29, D31, D32, D152, step 2e):
 // budgets such as Food and Travel, weekly or monthly, and how each leaves the
 // account: all at the start, spread across the days, or as a pay-later bill.
-// Each starts with the next week or month, so it never takes money for days
-// already gone; the person can choose another day.
+// Each starts this week or month (D230), with one optional box for what's
+// already spent: that's inside the balance, so only what's left leaves
+// today. Left empty, the whole amount leaves today, the safe choice.
 
 import type { BudgetEvery, BudgetLeaves, EditCommand } from '@prepenny/engine';
 import { useId, useState } from 'react';
+import { formatDay } from '../../lib/dates.ts';
 import { newId, timeInOrder } from '../../lib/ids.ts';
 import { formatMoney } from '../../lib/money.ts';
 import {
@@ -16,10 +18,11 @@ import {
   blankBudget,
   budgetTyped,
   buildBudget,
+  latestBalanceAt,
 } from '../../lib/setup-forms.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { ChoiceList } from '../ChoiceList.tsx';
-import { DateField, describedBy, Field, MoneyInput } from '../Fields.tsx';
+import { describedBy, Field, MoneyInput } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
 import { focusFirst } from './focus.ts';
 import { AddedList, SetupCard, StepFrame } from './StepFrame.tsx';
@@ -41,8 +44,8 @@ export function StepSpending() {
     saved.length > 0
       ? []
       : [
-          { key: newId(), form: blankBudget(t.food, 'month', firstAccount, '') },
-          { key: newId(), form: blankBudget(t.travel, 'week', firstAccount, '') },
+          { key: newId(), form: blankBudget(t.food, 'month', firstAccount) },
+          { key: newId(), form: blankBudget(t.travel, 'week', firstAccount) },
         ],
   );
   const [errors, setErrors] = useState<Readonly<Record<string, BudgetErrors>>>({});
@@ -53,36 +56,30 @@ export function StepSpending() {
       ),
     );
   const formId = (key: string) => `${id}-${key}`;
-  const starts = step.view?.budgetStarts ?? null;
-
-  /** The day it starts: the start of its next week or month, unless the person chose another day. */
-  const startsOn = (form: BudgetForm): string => {
-    if (form.startsOnChanged) return form.startsOn;
-    const every = form.leaves === 'pay-later' ? 'month' : form.every;
-    return (every === 'week' ? starts?.week : starts?.month) ?? step.today;
-  };
+  const periods = step.view?.budgetPeriods ?? null;
 
   async function next() {
     step.setProblem(null);
     const found: Record<string, BudgetErrors> = {};
-    const built: { key: string; budgetId: string; command: EditCommand }[] = [];
+    const built: { key: string; budgetId: string; commands: EditCommand[] }[] = [];
     for (const draft of drafts) {
       if (!budgetTyped(draft.form)) continue;
       const budgetId = newId();
       const result = buildBudget(
-        { ...draft.form, startsOn: startsOn(draft.form) },
+        draft.form,
         step.today,
-        budgetId,
+        { budgetId, spendId: newId() },
         timeInOrder(),
+        latestBalanceAt(step.records.balanceUpdates, draft.form.accountId),
       );
-      if (result.ok) built.push({ key: draft.key, budgetId, command: result.command });
+      if (result.ok) built.push({ key: draft.key, budgetId, commands: result.commands });
       else found[draft.key] = result.errors;
     }
     setErrors(found);
     if (Object.keys(found).length > 0) {
       focusFirst(
         drafts.flatMap((draft) =>
-          (['name', 'amount', 'billDay', 'startsOn'] as const)
+          (['name', 'amount', 'billDay', 'alreadySpent'] as const)
             .filter((field) => found[draft.key]?.[field] !== undefined)
             .map((field) => `${formId(draft.key)}-${field}`),
         ),
@@ -92,7 +89,7 @@ export function StepSpending() {
     step.setBusy(true);
     for (const one of built) {
       const outcome = await step.save({
-        commands: [one.command],
+        commands: one.commands,
         item: { kind: 'budget', id: one.budgetId },
       });
       if (!outcome.ok) {
@@ -148,13 +145,21 @@ export function StepSpending() {
           if (mistake === undefined) return undefined;
           if (mistake === 'nameError') return strings.setup.nameError;
           if (mistake === 'amountError') return strings.setup.amountError;
-          if (mistake === 'dateError') return strings.setup.dateError;
-          if (mistake === 'startBeforeToday') return strings.setup.startBeforeToday;
+          if (mistake === 'alreadySpentError') return t.alreadySpentError;
           return t.billDayError;
         };
         const payLater = form.leaves === 'pay-later';
         const every: BudgetEvery = payLater ? 'month' : form.every;
         const name = form.name.trim();
+        const period = periods === null ? null : every === 'week' ? periods.week : periods.month;
+        const startsLine = payLater
+          ? t.startsPayLater
+          : period === null
+            ? null
+            : (every === 'week' ? t.startsWeek : t.startsMonth)(
+                formatDay(period.start, step.today),
+                formatDay(period.end, step.today),
+              );
         return (
           <SetupCard
             key={draft.key}
@@ -231,23 +236,30 @@ export function StepSpending() {
                 onChange={(accountId) => setForm(draft.key, { accountId })}
               />
             ) : null}
-            <DateField
-              id={`${base}-startsOn`}
-              label={t.starts}
-              value={startsOn(form)}
-              today={step.today}
-              min={step.today}
-              onChange={(value) => setForm(draft.key, { startsOn: value, startsOnChanged: true })}
-              error={error('startsOn')}
-              extraHint={
-                form.startsOnChanged
-                  ? null
-                  : {
-                      id: `${base}-startsOn-hint`,
-                      text: every === 'week' ? t.startsWeek : t.startsMonth,
-                    }
-              }
-            />
+            {startsLine === null ? null : (
+              <p id={`${base}-starts`} className={formStyles.hint}>
+                {startsLine}
+              </p>
+            )}
+            {payLater ? null : (
+              <Field
+                id={`${base}-alreadySpent`}
+                label={every === 'week' ? t.alreadySpentWeek : t.alreadySpentMonth}
+                error={error('alreadySpent')}
+                hint={t.alreadySpentHint}
+              >
+                <MoneyInput
+                  id={`${base}-alreadySpent`}
+                  value={form.alreadySpent}
+                  onChange={(alreadySpent) => setForm(draft.key, { alreadySpent })}
+                  invalid={error('alreadySpent') !== undefined}
+                  describedBy={describedBy(`${base}-alreadySpent`, error('alreadySpent'), [
+                    `${base}-alreadySpent-hint`,
+                    startsLine === null ? null : `${base}-starts`,
+                  ])}
+                />
+              </Field>
+            )}
             <button
               type="button"
               className={formStyles.quiet}
@@ -264,7 +276,7 @@ export function StepSpending() {
         className={formStyles.outlined}
         onClick={() => {
           const key = newId();
-          setDrafts((now) => [...now, { key, form: blankBudget('', 'week', firstAccount, '') }]);
+          setDrafts((now) => [...now, { key, form: blankBudget('', 'week', firstAccount) }]);
           requestAnimationFrame(() => document.getElementById(`${formId(key)}-name`)?.focus());
         }}
       >

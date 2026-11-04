@@ -5,6 +5,7 @@
 // With `onOpen`, the whole row is a button that opens the edit sheet (brief
 // 4.4): the row is the "first tap" of brief Part 3, principle 4.
 
+import type { ReactNode } from 'react';
 import styles from './PaymentRow.module.css';
 import { type Status, StatusPill } from './StatusPill.tsx';
 
@@ -24,6 +25,9 @@ export interface PaymentRowProps {
   readonly onOpen?: () => void;
   /** Finds the row again after the plan changes, to put focus back on it. */
   readonly rowKey?: string;
+  /** Anything under the row in the same list item, such as a one-tap fix. */
+  readonly extra?: ReactNode;
+  readonly testId?: string;
 }
 
 export function PaymentRow({
@@ -37,6 +41,8 @@ export function PaymentRow({
   status,
   onOpen,
   rowKey,
+  extra = null,
+  testId,
 }: PaymentRowProps) {
   const inside = (
     <>
@@ -59,7 +65,7 @@ export function PaymentRow({
     </>
   );
   return (
-    <li className={styles.item}>
+    <li className={styles.item} data-testid={testId}>
       {onOpen === undefined ? (
         <div className={styles.row}>{inside}</div>
       ) : (
@@ -73,6 +79,7 @@ export function PaymentRow({
           {inside}
         </button>
       )}
+      {extra}
     </li>
   );
 }

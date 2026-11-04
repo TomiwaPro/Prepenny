@@ -143,16 +143,7 @@ export function WhenFields<F extends WhenForm>({
     const mistake = errors[field];
     return mistake === undefined ? undefined : paymentMistakes[mistake];
   };
-  const validDate = isDate(form.date);
-  const choices = validDate ? monthlyChoices(form.date, holidays) : (['day'] as MonthlyOn[]);
-  const monthlyOn = choices.includes(form.monthlyOn) ? form.monthlyOn : 'day';
   const repeats = form.howOften === 'weekly' || form.howOften === 'monthly';
-  const howOftenLabels: Record<HowOften, string> = {
-    once: t.once,
-    weekly: t.weekly,
-    monthly: t.monthly,
-    dates: t.dates,
-  };
 
   return (
     <>
@@ -167,77 +158,16 @@ export function WhenFields<F extends WhenForm>({
         inputRef={refs.date}
       />
 
-      {howOften.length > 1 ? (
-        <ChoiceList<HowOften>
-          legend={t.howOften}
-          name={`${id}-often`}
-          value={form.howOften}
-          options={howOften.map((value) => ({ value, label: howOftenLabels[value] }))}
-          onChange={(value) => set('howOften', value)}
-        />
-      ) : null}
-
-      {form.howOften === 'weekly' ? (
-        <Field
-          id={`${id}-weeks`}
-          label={t.weeksApart}
-          error={error('weeks')}
-          hint={
-            validDate && /^\d+$/.test(form.weeks) && Number(form.weeks) >= 1
-              ? `${t.weeksApartHint} ${t.everyWeeks(Number(form.weeks), weekdayName(form.date))}`
-              : t.weeksApartHint
-          }
-        >
-          <input
-            ref={refs.weeks}
-            id={`${id}-weeks`}
-            className={`${styles.input} num`}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={form.weeks}
-            aria-invalid={errors.weeks !== undefined}
-            aria-describedby={describedBy(`${id}-weeks`, error('weeks'), [`${id}-weeks-hint`])}
-            onChange={(event) => set('weeks', event.target.value)}
-          />
-        </Field>
-      ) : null}
-
-      {form.howOften === 'monthly' ? (
-        <>
-          <Field
-            id={`${id}-months`}
-            label={t.monthsApart}
-            error={error('months')}
-            hint={t.monthsApartHint}
-          >
-            <input
-              ref={refs.months}
-              id={`${id}-months`}
-              className={`${styles.input} num`}
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              value={form.months}
-              aria-invalid={errors.months !== undefined}
-              aria-describedby={describedBy(`${id}-months`, error('months'), [`${id}-months-hint`])}
-              onChange={(event) => set('months', event.target.value)}
-            />
-          </Field>
-          {validDate ? (
-            <ChoiceList<MonthlyOn>
-              legend={t.onWhichDay}
-              name={`${id}-on`}
-              value={monthlyOn}
-              options={choices.map((value) => ({ value, label: monthlyLabel(value, form.date) }))}
-              onChange={(value) => set('monthlyOn', value)}
-            />
-          ) : null}
-          {showLeaveOut ? (
-            <LeaveOut id={id} form={form} set={set} error={error('leaveOut')} refs={refs} />
-          ) : null}
-        </>
-      ) : null}
+      <RepeatFields
+        id={id}
+        form={form}
+        set={set}
+        errors={errors}
+        refs={refs}
+        holidays={holidays}
+        howOften={howOften}
+        showLeaveOut={showLeaveOut}
+      />
 
       {form.howOften === 'dates' ? (
         <ChosenDates
@@ -313,6 +243,121 @@ export function WhenFields<F extends WhenForm>({
               ) : null}
             </>
           )}
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * How often a payment repeats (D199): the choice of how often, then the
+ * weeks apart, or the months apart with the day of the month worked out
+ * from the date and any months left out. Shared by the "when" fields and
+ * the edit sheet's "Change how often it repeats" (D96, step 2f).
+ */
+export function RepeatFields<F extends WhenForm>({
+  id,
+  form,
+  set,
+  errors,
+  refs,
+  holidays,
+  howOften = ALL_HOW_OFTEN,
+  showLeaveOut = true,
+}: {
+  readonly id: string;
+  readonly form: F;
+  readonly set: <K extends keyof WhenForm>(key: K, value: WhenForm[K]) => void;
+  readonly errors: PaymentErrors;
+  readonly refs: WhenRefs;
+  readonly holidays: BankHolidayLookup;
+  readonly howOften?: readonly HowOften[];
+  readonly showLeaveOut?: boolean;
+}) {
+  const error = (field: PaymentField) => {
+    const mistake = errors[field];
+    return mistake === undefined ? undefined : paymentMistakes[mistake];
+  };
+  const validDate = isDate(form.date);
+  const choices = validDate ? monthlyChoices(form.date, holidays) : (['day'] as MonthlyOn[]);
+  const monthlyOn = choices.includes(form.monthlyOn) ? form.monthlyOn : 'day';
+  const howOftenLabels: Record<HowOften, string> = {
+    once: t.once,
+    weekly: t.weekly,
+    monthly: t.monthly,
+    dates: t.dates,
+  };
+  return (
+    <>
+      {howOften.length > 1 ? (
+        <ChoiceList<HowOften>
+          legend={t.howOften}
+          name={`${id}-often`}
+          value={form.howOften}
+          options={howOften.map((value) => ({ value, label: howOftenLabels[value] }))}
+          onChange={(value) => set('howOften', value)}
+        />
+      ) : null}
+
+      {form.howOften === 'weekly' ? (
+        <Field
+          id={`${id}-weeks`}
+          label={t.weeksApart}
+          error={error('weeks')}
+          hint={
+            validDate && /^\d+$/.test(form.weeks) && Number(form.weeks) >= 1
+              ? `${t.weeksApartHint} ${t.everyWeeks(Number(form.weeks), weekdayName(form.date))}`
+              : t.weeksApartHint
+          }
+        >
+          <input
+            ref={refs.weeks}
+            id={`${id}-weeks`}
+            className={`${styles.input} num`}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={form.weeks}
+            aria-invalid={errors.weeks !== undefined}
+            aria-describedby={describedBy(`${id}-weeks`, error('weeks'), [`${id}-weeks-hint`])}
+            onChange={(event) => set('weeks', event.target.value)}
+          />
+        </Field>
+      ) : null}
+
+      {form.howOften === 'monthly' ? (
+        <>
+          <Field
+            id={`${id}-months`}
+            label={t.monthsApart}
+            error={error('months')}
+            hint={t.monthsApartHint}
+          >
+            <input
+              ref={refs.months}
+              id={`${id}-months`}
+              className={`${styles.input} num`}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={form.months}
+              aria-invalid={errors.months !== undefined}
+              aria-describedby={describedBy(`${id}-months`, error('months'), [`${id}-months-hint`])}
+              onChange={(event) => set('months', event.target.value)}
+            />
+          </Field>
+          {validDate ? (
+            <ChoiceList<MonthlyOn>
+              legend={t.onWhichDay}
+              name={`${id}-on`}
+              value={monthlyOn}
+              options={choices.map((value) => ({ value, label: monthlyLabel(value, form.date) }))}
+              onChange={(value) => set('monthlyOn', value)}
+            />
+          ) : null}
+          {showLeaveOut ? (
+            <LeaveOut id={id} form={form} set={set} error={error('leaveOut')} refs={refs} />
+          ) : null}
         </>
       ) : null}
     </>
