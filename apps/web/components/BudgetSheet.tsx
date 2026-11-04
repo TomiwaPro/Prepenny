@@ -6,6 +6,10 @@
 // change counts from this week or month on; weeks and months that have ended
 // stay as they were (D161). Ending it sets its last week or month (D152).
 // Each is one change with one Undo.
+//
+// A new budget that starts today asks the same optional "Already spent this
+// week" (or "this month") as setup, saved the same way (D230, D246), from
+// the owner's answer to step 2f.
 
 import type { BudgetEvery, BudgetLeaves, EditCommand } from '@prepenny/engine';
 import { useId, useRef, useState } from 'react';
@@ -15,6 +19,7 @@ import { newId, timeNow } from '../lib/ids.ts';
 import type { BudgetCard } from '../lib/money-views.ts';
 import { readDate } from '../lib/new-payment.ts';
 import { refusalMessage } from '../lib/refusals.ts';
+import { alreadySpentCommand, latestBalanceAt, optionalAmount } from '../lib/setup-forms.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
 import { CheckOption, DateField, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
@@ -37,10 +42,12 @@ interface Form {
   readonly accountId: string;
   readonly startsOn: string;
   readonly rollOver: boolean;
+  /** "Already spent this week" (or "this month"), for a new budget that starts today. */
+  readonly alreadySpent: string;
 }
 
 type Mistakes = Partial<
-  Record<'name' | 'amount' | 'billDay' | 'statementDay' | 'startsOn', string>
+  Record<'name' | 'amount' | 'billDay' | 'statementDay' | 'startsOn' | 'alreadySpent', string>
 >;
 
 const DAY = /^\d{1,2}$/;
@@ -84,7 +91,7 @@ function BudgetForm({
   readonly budget: BudgetCard | null;
   readonly onDone: (added: boolean) => void;
 }) {
-  const { loaded, makeChange } = usePlanActions();
+  const { loaded, makeChange, makeChanges } = usePlanActions();
   const id = useId();
   const today = loaded?.today ?? '';
   const accounts = (loaded?.records.accounts ?? [])
@@ -101,6 +108,7 @@ function BudgetForm({
     accountId: stored?.accountId ?? accounts[0]?.value ?? '',
     startsOn: today,
     rollOver: stored?.rollOver ?? false,
+    alreadySpent: '',
   }));
   const [errors, setErrors] = useState<Mistakes>({});
   const [busy, setBusy] = useState(false);
@@ -121,11 +129,20 @@ function BudgetForm({
       : []),
   ];
   const every: BudgetEvery = payLater ? 'month' : form.every;
+  // Only a new budget that starts today has a week or month already under way,
+  // and a pay-later card's spending never leaves the bank (D246).
+  const asksSpent = budget === null && !payLater && readDate(form.startsOn) === today;
 
-  async function change(command: EditCommand, message: string, at: 'save' | 'end') {
+  async function change(
+    command: EditCommand | readonly EditCommand[],
+    message: string,
+    at: 'save' | 'end',
+  ) {
     setBusy(true);
     setProblem(null);
-    const outcome = await makeChange(command, message);
+    const outcome = Array.isArray(command)
+      ? await makeChanges(command, message)
+      : await makeChange(command as EditCommand, message);
     setBusy(false);
     if (outcome.ok) onDone(budget === null && at === 'save');
     else setProblem({ text: refusalMessage(outcome.code), at });
@@ -148,31 +165,48 @@ function BudgetForm({
     if (budget === null && (startsOn === null || startsOn < today)) {
       found.startsOn = strings.setup.startBeforeToday;
     }
+    const spent = asksSpent ? optionalAmount(form.alreadySpent) : null;
+    if (spent === 'bad') found.alreadySpent = words.alreadySpentError;
     setErrors(found);
-    const order = ['name', 'amount', 'billDay', 'statementDay', 'startsOn'] as const;
+    const order = [
+      'name',
+      'amount',
+      'billDay',
+      'statementDay',
+      'startsOn',
+      'alreadySpent',
+    ] as const;
     if (order.some((field) => found[field] !== undefined)) {
       focusFirst(order.filter((field) => found[field] !== undefined).map((f) => `${id}-${f}`));
       return;
     }
-    if (amount === null) return;
+    if (amount === null || spent === 'bad') return;
     if (budget === null || stored === null) {
-      change(
-        {
-          kind: 'add-budget',
-          budget: {
-            id: newId(),
-            accountId: form.accountId,
-            name,
-            amount,
-            every,
-            leaves: form.leaves,
-            rollOver: form.rollOver,
-            startsOn: startsOn ?? today,
-            ...(billDay === null ? {} : { billDay }),
-            ...(payLater && statementDay !== null ? { statementDay } : {}),
-            createdAt: timeNow(),
-          },
+      const budgetId = newId();
+      const now = timeNow();
+      const add: EditCommand = {
+        kind: 'add-budget',
+        budget: {
+          id: budgetId,
+          accountId: form.accountId,
+          name,
+          amount,
+          every,
+          leaves: form.leaves,
+          rollOver: form.rollOver,
+          startsOn: startsOn ?? today,
+          ...(billDay === null ? {} : { billDay }),
+          ...(payLater && statementDay !== null ? { statementDay } : {}),
+          createdAt: now,
         },
+      };
+      if (spent === null || spent === 0) {
+        change(add, t.added(name), 'save');
+        return;
+      }
+      const balance = latestBalanceAt(loaded?.records.balanceUpdates ?? [], form.accountId);
+      change(
+        [add, alreadySpentCommand({ budgetId, spendId: newId() }, spent, today, now, balance)],
         t.added(name),
         'save',
       );
@@ -313,6 +347,24 @@ function BudgetForm({
             error={error('startsOn')}
             extraHint={{ id: `${id}-startsOn-hint`, text: t.startsHint }}
           />
+        ) : null}
+        {asksSpent ? (
+          <Field
+            id={`${id}-alreadySpent`}
+            label={every === 'week' ? words.alreadySpentWeek : words.alreadySpentMonth}
+            error={error('alreadySpent')}
+            hint={words.alreadySpentHint}
+          >
+            <MoneyInput
+              id={`${id}-alreadySpent`}
+              value={form.alreadySpent}
+              onChange={(alreadySpent) => set({ alreadySpent })}
+              invalid={error('alreadySpent') !== undefined}
+              describedBy={describedBy(`${id}-alreadySpent`, error('alreadySpent'), [
+                `${id}-alreadySpent-hint`,
+              ])}
+            />
+          </Field>
         ) : null}
         <CheckOption checked={form.rollOver} onChange={(rollOver) => set({ rollOver })}>
           {t.rollOver}

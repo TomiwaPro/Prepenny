@@ -479,6 +479,8 @@ export const strings = {
     save: 'Save',
     stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
     working: 'Working it out.',
+    yes: 'Yes',
+    no: 'No',
   },
 
   /** Shared by the sheets' boxes. */
@@ -916,14 +918,21 @@ export const strings = {
     payments: 'Payments',
     paymentsIntro: 'What comes off the debt each time, and what is left after it.',
     noPayments: "No payments are planned for it yet. Add one to see the date it's paid off.",
-    toChange: 'To change one payment, tap it on Coming up.',
+    toChange: 'Tap a payment to change it, move it or skip it.',
     secondForeign: (date: string, amount: string) => `${date}, ${amount}`,
     interestRow: 'Interest, estimate',
     minimumRow: (amount: string) => `Minimum about ${amount}`,
     left: (amount: string) => `${amount} left`,
     moreThanLeft: (amount: string) => `${amount} more than what's left`,
     fix: (amount: string) => `Make it ${amount} and stop after it`,
-    fixHint: 'Later payments to this debt are removed. Undo puts them back.',
+    /** What else "stop after it" removes, said before the tap (step 2g). */
+    alsoRemoves: (name: string, count: number, continues: boolean) => {
+      if (continues)
+        return `This also removes every later payment to ${name}. Undo puts them back.`;
+      if (count === 0) return `No other payment to ${name} is planned, so nothing else changes.`;
+      if (count === 1) return `This also removes 1 later payment to ${name}. Undo puts it back.`;
+      return `This also removes ${count} later payments to ${name}. Undo puts them back.`;
+    },
     fixed: (name: string, amount: string) =>
       `${name} made ${amount}, and later payments to it removed.`,
     actions: 'Change this debt',
@@ -1015,8 +1024,13 @@ export const strings = {
   /** Closing a debt, a goal or an account. */
   closing: {
     debtTitle: 'Close this debt',
-    debtIntro:
-      'Closing it takes it out of Owed now. Its payments stay in your plan until you remove them.',
+    debtIntro: 'Closing it takes it out of Owed now.',
+    /** Closing a debt can also remove its payments still to come (step 2g). */
+    alsoRemove: (count: number, continues: boolean) => {
+      if (continues) return 'Also remove every payment planned to it?';
+      if (count === 1) return 'Also remove its planned payment?';
+      return `Also remove its ${count} planned payments?`;
+    },
     debtConfirm: 'Close this debt',
     goalTitle: 'Close this goal',
     goalIntro:
@@ -1024,6 +1038,7 @@ export const strings = {
     goalConfirm: 'Close this goal',
     keep: 'Keep it open',
     debtClosed: (name: string) => `${name} closed.`,
+    debtClosedAndRemoved: (name: string) => `${name} closed, and its planned payments removed.`,
     goalClosed: (name: string) => `${name} closed.`,
   },
 
@@ -1075,8 +1090,7 @@ export const strings = {
     statementDayHint: 'Leave it empty and each bill covers spending up to the day before it.',
     statementDayError: 'Type a day, a number from 1 to 31, or leave it empty.',
     starts: 'Starts',
-    startsHint:
-      'Its first week or month is the one with this day in it. The whole amount is planned for it.',
+    startsHint: 'Its first week or month is the one with this day in it.',
     rollOver: "Roll over what's left to the next week or month",
     save: 'Add budget',
     saveChanges: 'Save',
@@ -1178,9 +1192,11 @@ export const strings = {
     moveOut: (amount: string) => `Move ${amount} to another account first`,
     moveIn: (amount: string) => `Move ${amount} into it from another account first`,
     moveHintTo: (account: string) =>
-      `This adds a move to ${account} today, marked as done. Make the same move in your bank.`,
+      `This adds a move to ${account} today, marked as done. Make the same move in your banking app.`,
     moveHintFrom: (account: string) =>
-      `This adds a move from ${account} today, marked as done. Make the same move in your bank.`,
+      `This adds a move from ${account} today, marked as done. Make the same move in your banking app.`,
+    /** Said once the move is added, ticked (step 2g). */
+    nowMove: (amount: string) => `Now move ${amount} in your banking app too.`,
     moveName: (from: string, to: string) => `From ${from} to ${to}`,
     moved: (amount: string, from: string, to: string) => `${amount} moved from ${from} to ${to}.`,
     noOther: "There's no other account to move it to. Add one first.",

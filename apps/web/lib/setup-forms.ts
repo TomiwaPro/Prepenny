@@ -62,7 +62,7 @@ export function blankWhen(howOften: WhenForm['howOften'] = 'monthly'): WhenForm 
 }
 
 /** A whole number of pence from a box that may be left empty. */
-function optionalAmount(text: string): number | null | 'bad' {
+export function optionalAmount(text: string): number | null | 'bad' {
   if (text.trim() === '') return null;
   return parseAmount(text) ?? 'bad';
 }
@@ -1003,19 +1003,36 @@ export function buildBudget(
     },
   ];
   if (spent !== null && spent > 0) {
-    commands.push({
-      kind: 'spend',
-      spend: {
-        id: ids.spendId,
-        budgetId: ids.budgetId,
-        amount: spent,
-        spentOn: today,
-        recordedAt:
-          balance !== null && balance.checkedOn === today ? justBefore(balance.checkedAt) : now,
-      },
-    });
+    commands.push(alreadySpentCommand(ids, spent, today, now, balance));
   }
   return { ok: true, commands };
+}
+
+/**
+ * "Already spent this week" as a spend for today (D230, D246): recorded just
+ * before the account's balance was typed in when that was today, so it's
+ * inside the balance and only what's left leaves today; otherwise recorded
+ * now, so the whole amount still leaves today. Setup and Add a budget share
+ * it (step 2g).
+ */
+export function alreadySpentCommand(
+  ids: { readonly budgetId: string; readonly spendId: string },
+  spent: number,
+  today: string,
+  now: string,
+  balance: { readonly checkedAt: string; readonly checkedOn: string } | null,
+): EditCommand {
+  return {
+    kind: 'spend',
+    spend: {
+      id: ids.spendId,
+      budgetId: ids.budgetId,
+      amount: spent,
+      spentOn: today,
+      recordedAt:
+        balance !== null && balance.checkedOn === today ? justBefore(balance.checkedAt) : now,
+    },
+  };
 }
 
 // Step 7: savings

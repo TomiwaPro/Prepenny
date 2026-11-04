@@ -513,11 +513,17 @@ for (const colorScheme of ['light', 'dark'] as const) {
         }),
       ).toBeChecked();
       await expect(closing).toContainText(
-        'This adds a move to Current account today, marked as done. Make the same move in your bank.',
+        'This adds a move to Current account today, marked as done. Make the same move in your banking app.',
       );
       await noAxeProblems(page);
       await closing.getByRole('button', { name: 'Move £3.12 to another account first' }).click();
-      await expect(undoBar(page)).toContainText('£3.12 moved from Old account to Current account.');
+      // The owner's answer to step 2f: the move is added ticked, with a reminder.
+      await expect(undoBar(page)).toContainText(
+        '£3.12 moved from Old account to Current account. Now move £3.12 in your banking app too.',
+      );
+      await expect(closing.getByTestId('move-reminder')).toHaveText(
+        'Now move £3.12 in your banking app too.',
+      );
       await expect(closing.getByRole('button', { name: 'Close this account' })).toBeVisible();
       await closing.getByRole('button', { name: 'Close this account' }).click();
       await expect(sheet).toBeHidden();

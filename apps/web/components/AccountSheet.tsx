@@ -254,6 +254,8 @@ function ChangeAccount({
   const [moved, setMoved] = useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new end-of-today figure is the reason to run again
   useEffect(() => setMoved(false), [account.endOfToday]);
+  // After the move: "Now move £3.12 in your banking app too." (step 2g).
+  const [reminder, setReminder] = useState<string | null>(null);
   const closeHeading = useRef<HTMLHeadingElement>(null);
   const set = (change: Partial<Form>) => setForm((now) => ({ ...now, ...change }));
   const other = others.find((one) => one.id === otherId) ?? others[0];
@@ -265,6 +267,7 @@ function ChangeAccount({
     message: string,
     at: 'save' | 'close',
     done: boolean,
+    remind: string | null = null,
   ) {
     setBusy(true);
     setProblem(null);
@@ -278,6 +281,7 @@ function ChangeAccount({
       setProblem({ text: refusalMessage(outcome.code), at });
       return;
     }
+    setReminder(remind);
     if (done) onDone();
     else closeHeading.current?.focus();
   }
@@ -344,9 +348,10 @@ function ChangeAccount({
         // Marked as done: the account closes once the money has really moved (D151, D158).
         { kind: 'tick', seriesId, originalDate: today, tickedAt: timeNow() },
       ],
-      t.moved(leftWords, from.name, to.name),
+      `${t.moved(leftWords, from.name, to.name)} ${t.nowMove(leftWords)}`,
       'close',
       false,
+      t.nowMove(leftWords),
     );
   }
 
@@ -378,6 +383,11 @@ function ChangeAccount({
         <h3 id={`${id}-close`} ref={closeHeading} tabIndex={-1} className={styles.subheading}>
           {t.closeHeading}
         </h3>
+        {reminder === null ? null : (
+          <p className={`${styles.note} num`} data-testid="move-reminder">
+            {reminder}
+          </p>
+        )}
         {account.closing === 'in-use' ? <p className={styles.note}>{t.inUse}</p> : null}
         {account.closing === 'ready' ? (
           <>

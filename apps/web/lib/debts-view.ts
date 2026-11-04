@@ -27,7 +27,8 @@ import {
   workOutPayments,
 } from '@prepenny/engine';
 import { holidaysFor } from './holidays.ts';
-import { settingsOf } from './plan-input.ts';
+import { settingsOf, workOutPlanTo } from './plan-input.ts';
+import { type RowView, rowMaker } from './rows.ts';
 
 /** A linked payment as it comes off the debt. */
 export interface DebtPaymentView {
@@ -51,6 +52,22 @@ export interface DebtPaymentView {
   readonly moreThanLeft: MinorUnits | null;
   /** The one-tap fix, on the first payment that's more than what's left (D63). */
   readonly fix: DebtFix | null;
+  /**
+   * The payment as the edit sheet changes it, from the plan worked out as
+   * far ahead as the debt looks, or null when it has no row in the plan, as
+   * when it was ticked before the balance was last updated (step 2g).
+   */
+  readonly edit: RowView | null;
+}
+
+/**
+ * How many payments a removal takes away, up to the last day looked at, and
+ * whether it takes more after that day too, so the words say "every" rather
+ * than a number that isn't all of them (step 2g).
+ */
+export interface Removing {
+  readonly count: number;
+  readonly continues: boolean;
 }
 
 /** A credit card's statement day: the month's interest and minimum, both estimates (brief 5.6). */
@@ -72,6 +89,15 @@ export interface DebtFix {
   /** That amount's own currency figure: what was left before it. */
   readonly inDebt: MinorUnits;
   /** The new amount for just this one, then every later payment to the debt removed. One change, one undo. */
+  readonly commands: readonly EditCommand[];
+  /** The later payments to the debt it removes, said before the tap (step 2g). */
+  readonly alsoRemoves: Removing;
+}
+
+/** "Also remove its 3 planned payments?" when the debt is closed (step 2g). */
+export interface PlannedPayments {
+  readonly removing: Removing;
+  /** "Remove this and later" from each linked series' next payment from today. */
   readonly commands: readonly EditCommand[];
 }
 
@@ -138,6 +164,8 @@ export interface DebtView {
   readonly toTick: readonly DebtTick[];
   /** How many payments are linked to it, so the page can say when there are none. */
   readonly linkedSeries: number;
+  /** Its payments still to come from today, which closing it can also remove, or null when there are none. */
+  readonly planned: PlannedPayments | null;
 }
 
 export interface DebtsView {
@@ -220,14 +248,84 @@ function fixCommands(
   return commands;
 }
 
+/** Finds the edit sheet's row for a linked payment, by its series and original date. */
+type EditRows = (seriesId: string, originalDate: string) => RowView | null;
+
+/** Whether a family of series has a payment after the last day looked at. */
+function continuesAfter(
+  records: PlanRecords,
+  familyId: string,
+  to: string,
+  holidays: ReturnType<typeof holidaysFor>,
+): boolean {
+  const list = records.series.filter((one) => one.familyId === familyId);
+  const last = parseDate(to);
+  return workOutPayments({
+    series: list,
+    changes: records.changes ?? [],
+    holidays,
+    from: formatDate(addDays(last, 1)),
+    to: formatDate(addDays(last, 400)),
+  }).some((payment) => !payment.skipped);
+}
+
+type PaymentRowOf = Extract<DebtPlan['rows'][number], { kind: 'payment' }>;
+
+/**
+ * Closing a debt can also remove its payments still to come (step 2g):
+ * "Remove this and later" from each linked series' first payment from
+ * today that isn't ticked, with nothing ticked after it (D92).
+ */
+function plannedOf(
+  records: PlanRecords,
+  plan: DebtPlan,
+  today: string,
+  to: string,
+): PlannedPayments | null {
+  const familyOf = new Map(records.series.map((one) => [one.id, one.familyId]));
+  const byFamily = new Map<string, PaymentRowOf[]>();
+  for (const row of plan.rows) {
+    if (row.kind !== 'payment') continue;
+    const family = familyOf.get(row.payment.seriesId);
+    if (family === undefined) continue;
+    byFamily.set(family, [...(byFamily.get(family) ?? []), row]);
+  }
+  const holidays = holidaysFor(settingsOf(records).nation);
+  const commands: EditCommand[] = [];
+  let count = 0;
+  let continues = false;
+  for (const [familyId, rows] of byFamily) {
+    let from = -1;
+    for (let i = rows.length - 1; i >= 0; i -= 1) {
+      const row = rows[i];
+      if (row === undefined || row.ticked) break;
+      if (row.payment.date >= today) from = i;
+    }
+    const first = rows[from];
+    if (first === undefined) continue;
+    commands.push({
+      kind: 'remove-this-and-later',
+      seriesId: first.payment.seriesId,
+      originalDate: first.payment.originalDate,
+    });
+    count += rows.length - from;
+    continues ||= continuesAfter(records, familyId, to, holidays);
+  }
+  return commands.length === 0 ? null : { removing: { count, continues }, commands };
+}
+
 function rowsOf(
   records: PlanRecords,
   plan: DebtPlan,
   today: string,
+  to: string,
+  editRow: EditRows,
 ): { rows: DebtRowView[]; toTick: DebtTick[] } {
   const debt = plan.debt;
   const rows: DebtRowView[] = [];
   const toTick: DebtTick[] = [];
+  const familyOf = new Map(records.series.map((one) => [one.id, one.familyId]));
+  const payments = plan.rows.filter((row): row is PaymentRowOf => row.kind === 'payment');
   let fixed = false;
   for (const row of plan.rows) {
     if (row.kind === 'statement') {
@@ -250,10 +348,32 @@ function rowsOf(
         fixed = true;
         const amount =
           debt.rate === undefined ? leftBefore : fromOtherCurrency(leftBefore, debt.rate);
+        const commands = fixCommands(records, debt, payment, payment.number, amount, today);
+        // What else goes: the payments after this one that the commands remove.
+        const family = familyOf.get(payment.seriesId);
+        const removed = new Set(
+          commands.flatMap((command) =>
+            command.kind === 'remove-this-and-later' ? [familyOf.get(command.seriesId)] : [],
+          ),
+        );
+        const later = payments.filter((other) => {
+          const otherFamily = familyOf.get(other.payment.seriesId);
+          if (!removed.has(otherFamily)) return false;
+          return otherFamily === family
+            ? other.payment.number > payment.number
+            : other.payment.date > payment.date;
+        });
+        const holidays = holidaysFor(settingsOf(records).nation);
         fix = {
           amount,
           inDebt: leftBefore,
-          commands: fixCommands(records, debt, payment, payment.number, amount, today),
+          commands,
+          alsoRemoves: {
+            count: later.length,
+            continues: [...removed].some(
+              (one) => one !== undefined && continuesAfter(records, one, to, holidays),
+            ),
+          },
         };
       }
     }
@@ -281,6 +401,7 @@ function rowsOf(
       paidOff: row.paidOff,
       moreThanLeft: row.moreThanLeft,
       fix,
+      edit: editRow(payment.seriesId, payment.originalDate),
     });
   }
   return { rows, toTick };
@@ -322,9 +443,15 @@ function cardOf(records: PlanRecords, plan: DebtPlan, today: string): CardView |
   };
 }
 
-function viewOf(records: PlanRecords, plan: DebtPlan, today: string): DebtView {
+function viewOf(
+  records: PlanRecords,
+  plan: DebtPlan,
+  today: string,
+  to: string,
+  editRow: EditRows,
+): DebtView {
   const debt = plan.debt;
-  const { rows, toTick } = rowsOf(records, plan, today);
+  const { rows, toTick } = rowsOf(records, plan, today, to, editRow);
   return {
     id: debt.id,
     debt,
@@ -349,6 +476,7 @@ function viewOf(records: PlanRecords, plan: DebtPlan, today: string): DebtView {
     card: cardOf(records, plan, today),
     toTick,
     linkedSeries: records.series.filter((one) => one.debtId === debt.id).length,
+    planned: debt.closed === true ? null : plannedOf(records, plan, today, to),
   };
 }
 
@@ -374,7 +502,22 @@ export function workOutDebtsView(records: PlanRecords, today: string): DebtsView
     today,
     to,
   });
-  const views = plan.debts.map((one) => viewOf(records, one, today));
+  // The plan as far ahead as the debts look, for the edit sheet's rows (step 2g).
+  const whole = workOutPlanTo(records, today, to);
+  const make = rowMaker(whole, records);
+  const linked = new Set(
+    records.series.flatMap((one) => (one.debtId === undefined ? [] : [one.id])),
+  );
+  const found = new Map<string, RowView>();
+  for (const account of whole.accounts) {
+    for (const row of account.rows) {
+      if (row.kind !== 'payment' || !linked.has(row.payment.seriesId)) continue;
+      found.set(`${row.payment.seriesId}|${row.payment.originalDate}`, make(row, null));
+    }
+  }
+  const editRow: EditRows = (seriesId, originalDate) =>
+    found.get(`${seriesId}|${originalDate}`) ?? null;
+  const views = plan.debts.map((one) => viewOf(records, one, today, to, editRow));
   const open = views.filter((one) => !one.closed);
   return {
     today,
