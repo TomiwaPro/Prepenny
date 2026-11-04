@@ -26,3 +26,15 @@ export function newId(
 export function timeNow(now: Date = new Date()): string {
   return now.toISOString();
 }
+
+let lastMoment = 0;
+
+/**
+ * The time now, always later than the last one this function gave, so
+ * records made one after another in the same moment keep the order they
+ * were made in, for the same-day order (D12, step 2e).
+ */
+export function timeInOrder(now: number = Date.now()): string {
+  lastMoment = Math.max(now, lastMoment + 1);
+  return new Date(lastMoment).toISOString();
+}
