@@ -23,7 +23,6 @@ import { ChoiceList } from './ChoiceList.tsx';
 import { DateField, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
 import styles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';
-import { Segmented } from './Segmented.tsx';
 import { Sheet } from './Sheet.tsx';
 import { type ShownActions, useActionsView } from './useActionsView.ts';
 import { useOpenCount } from './useOpenCount.ts';
@@ -52,6 +51,7 @@ export function OvertimeSheet({
     <Sheet
       open={open}
       title={now === 'overtime' ? t.titleOvertime : t.titleMissed}
+      intro={t.intro}
       onClose={onClose}
     >
       {opened === 0 ? null : (
@@ -344,7 +344,8 @@ function ShiftFields({
         save();
       }}
     >
-      <Segmented<Kind>
+      {/* A question with two clear answers, not a switch whose sides look like buttons (D213). */}
+      <ChoiceList<Kind>
         legend={t.what}
         name={`${id}-kind`}
         value={kind}
@@ -358,7 +359,6 @@ function ShiftFields({
           setExtrasText('');
           onKind(next);
         }}
-        testId="shift-kind"
       />
       {pay.length > 1 ? (
         <ChoiceList<string>

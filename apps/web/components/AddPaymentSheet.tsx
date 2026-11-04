@@ -62,7 +62,7 @@ export function AddPaymentSheet({
   const opened = useOpenCount(open);
   const shown = useActionsView(open);
   return (
-    <Sheet open={open} title={t.title} onClose={onClose}>
+    <Sheet open={open} title={t.title} intro={t.intro} onClose={onClose}>
       {opened === 0 ? null : <AddPaymentForm key={opened} shown={shown} onDone={onClose} />}
     </Sheet>
   );

@@ -41,7 +41,7 @@ export function PartsScreen() {
   const short = useMemo(shortExample, []);
   const day = (date: string) => formatDay(date, EXAMPLE_TODAY);
   return (
-    <SimplePage heading={strings.parts.heading} line={strings.parts.intro}>
+    <SimplePage heading={strings.parts.heading} purpose={strings.parts.intro}>
       <p className={styles.caption}>
         {strings.parts.whenShort(formatMoney(10000), day('2026-10-30'))}
       </p>
