@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, and D261 comes from the owner's instruction after step 2g was merged. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 onwards were decided while building step 2h, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -2697,6 +2697,8 @@ Why: the owner's answer. Nobody should be surprised by payments going.
 
 ### D250. Closing a debt offers to remove its planned payments
 
+No starting on No is replaced by D265: neither answer is chosen.
+
 Agreed 4 Nov 2026, from the owner's review of step 2f. Answers the question in D239 and replaces its words "Its payments stay in your plan until you remove them."
 
 - "Close this debt" asks "Also remove its 3 planned payments?" with Yes and No. Yes removes them and closes the debt as one change, so one Undo puts all of it back. No closes it and keeps them, as before.
@@ -2726,6 +2728,8 @@ Why: the owner's answer. A person looking at a debt shouldn't have to go to anot
 D252 to D260 were decided on 4 Nov 2026 while building step 2g, What if and the take-home pay calculator; D260 came from an outside review. Questions for the owner are in `PLAN.md`.
 
 ### D252. The What if screen
+
+Closing PrePenny throwing practice changes away, and Throw them away forgetting them at once, are replaced by D264.
 
 Decided 4 Nov 2026 in step 2g. Builds brief 4.10 and D135, with the What if sketch in ARCHITECTURE.md 4.6.
 
@@ -2781,6 +2785,8 @@ Test (the owner's test 3 and 4): week 26's lines with week 25's payslip on Fri 3
 Why: a result worked out for one payday's tax week should go on that payday. The box starts on the next payday, so the owner's one tap is still one tap.
 
 ### D256. "Save as a pay week"
+
+A main pay with weeks linked keeping them is replaced by D263, which asks which paydays the week is for.
 
 Decided 4 Nov 2026 in step 2g. Builds brief 4.15 ("Save a person's usual lines as a template") and PLAN.md's left for later 17. Adds to D5 and D154.
 
@@ -2864,4 +2870,91 @@ The owner's instruction, 4 Nov 2026, after a reviewer's machine saw the What if 
 Test: each property test file, run 30 times in a row, passes every time.
 
 Why: the owner's instruction. A check that something was covered is only worth having if it can't fail by chance.
+
+## From the owner's review of step 2g
+
+D262 to D267 were agreed by the owner on 4 Nov 2026, answering the six questions left at the end of step 2g. They were built in step 2h. Points marked "decided in step 2h" weren't in the owner's answer.
+
+### D262. Your job, under More
+
+Agreed 4 Nov 2026, from the owner's review of step 2g. Answers the first half of question 3 (D256). Adds to brief 4.15, D5, D131, D154 and D162.
+
+- More has "Your job", "Tax code, pension and overtime rate, from your payslip". It shows each saved job: how often it's paid, the tax code and how it's worked out, the workplace pension, student loans, other deductions, the last payslip's figures, the overtime rate, the last day of work each payday pays for ("Fri 30 Oct pays for work up to Sun 25 Oct", D131), and the usual weeks, with which week of the pay pattern each is for.
+- "Change these details" changes the tax code, the way it's worked out, the pension, student loans, other deductions, the last payslip's figures, the overtime rate and the last day each pay covers, as one change with one Undo.
+- Changes rework overtime and missed shifts saved for paydays still to come (D154, D162).
+- Decided in step 2h:
+  - The tax boxes and the last payslip's boxes are the pay calculator's own, so both ask the same way; the overtime rate and the last day covered are asked as setup asks them (D223).
+  - Only a part the person changed is sent (D153), so a saved figure the boxes can't show, such as a payslip from the tax year before, is never cleared by mistake. Saving with nothing changed says "Change something first, then save."
+  - Before saving, the engine makes the change on a copy, and the undo bar says what it does to paydays still to come: "Your job details changed. Your pay on Fri 6 Nov is now £779.06." It names up to two paydays, then "And 3 more paydays."
+  - The overtime rate can be left empty by someone who never does overtime. The last day covered can be changed but not cleared, because without it a shift has no payday (D131). A new last day that would put a saved shift on another payday is refused in words (D154): "A shift saved for a payday still to come would then go on another payday. Remove that shift, change this, then add the shift again."
+  - How often the job is paid isn't changed here, because it follows the pay's own schedule.
+  - With no job saved, it says where one comes from: setup's overtime question or Save as a pay week, with "Go to the Pay calculator".
+
+Test: Sam with 11.5 hours of overtime on Mon 26 Oct saved for Fri 6 Nov (£773.58): taking the pension off makes Fri 6 Nov £779.06, exactly what the overtime gives when it's added after the change, and Undo puts back £773.58.
+
+Why: the owner's answer. Someone whose tax code or pension changes needs one place to change it, and overtime saved before must follow it.
+
+### D263. "Save as a pay week" asks which paydays it's for
+
+Agreed 4 Nov 2026, from the owner's review of step 2g. Answers the second half of question 3. Replaces D256's point that a main pay with weeks linked keeps them and the new week is only saved to start from.
+
+- "Save as a pay week" asks "Which paydays is it for?": "Every payday" or "One week of the pattern". The second asks "Which week of the pattern?", each with its next payday and the week it uses now: "Week 2 of 4, next on Fri 6 Nov", "Uses Rota week 2, 4 shifts now."
+- Every payday links the new week to every step of the pattern. One week of the pattern links it to that step only; the other steps keep their own (D5). Overtime and missed shifts saved for paydays still to come are worked out again (D154).
+- Decided in step 2h:
+  - "Every payday" starts chosen, the choice D256 made for pay with no week yet.
+  - Pay with one amount has no pattern, so it isn't asked: "It's for every payday."
+  - A pattern whose steps don't all have a week yet only offers every payday, with "Once every payday has a pay week, you can save one for a single week of your pay pattern.", because a step can't be left with no week: "I did overtime" needs one (D5).
+  - The undo bar says "Short week saved as the pay week for week 2 of your pay pattern." or "... for every payday."
+  - A week no payday uses any more stays saved, to start from in the Pay calculator, and Your job says so: "Kept to start from in the Pay calculator".
+
+Test: on Sam's example, a "Short week" saved for week 2 of 4 links only step 2 (Fri 6 Nov, 4 Dec, 1 Jan, 29 Jan, 26 Feb); Rota week 2 is kept to start from.
+
+Why: the owner's answer. Sam's rota has different weeks, so a week has to go on the right paydays.
+
+### D264. What if's practice changes are kept on the phone until they're kept or thrown away
+
+Agreed 4 Nov 2026, from the owner's review of step 2g. Answers question 4. Replaces D252's points that closing PrePenny throws practice changes away and that "Throw them away" forgets them at once.
+
+- Practice changes are saved on this phone until they're kept or thrown away, even after PrePenny is closed.
+- "Throw them away" asks first: "Throw away 3 practice changes?", with "Throw them away" and "Keep practising".
+- Decided in step 2h:
+  - Each plan keeps its own: the example's are never the person's own plan's. "Start again with the example" throws the example's away (D182).
+  - They're kept in the phone's own database beside its settings, never sent anywhere (ARCHITECTURE.md 3.8), and checked before they're trusted. Taking one back is kept too.
+  - When PrePenny opens again they're made again on the real plan as it is then (D135); if one can't be made any more, all of them are thrown away and the screen says so, as before.
+  - The question is the sheet's first line, under its title "Throw them away", because VOICE.md bans questions as headlines: "Throw away 3 practice changes? Your real plan stays exactly as it was." With one: "Throw away 1 practice change?"
+
+Test: Sam's Fri 30 Oct pay at £503.06 in practice is still there after PrePenny is opened again, with −£95.47 beside the real £4.53; two practice changes ask "Throw away 2 practice changes?".
+
+Why: the owner's answer. Practice shouldn't be lost because the phone closed the app, and throwing it away should never be a slip.
+
+### D265. Closing a debt asks with neither answer chosen
+
+Agreed 4 Nov 2026, from the owner's review of step 2g. Answers question 6. Replaces D250's point that No starts chosen.
+
+- "Also remove its 6 planned payments?" starts with neither Yes nor No chosen. The person must pick one.
+- Decided in step 2h: tapping "Close this debt" with neither chosen says "Choose Yes or No first." beside the question, and focus goes to Yes, the question's first answer (D203). Nothing changes until one is picked.
+
+Test: Sam's Family loan: neither is chosen, Close says "Choose Yes or No first.", then Yes removes all six and Undo puts them back.
+
+Why: the owner's answer. Both answers change something, so neither should be picked for the person.
+
+### D266. The calculator's estimate label and "Add to plan": confirmed
+
+Agreed 4 Nov 2026, from the owner's review of step 2g. Answers questions 1 and 2. Confirms D255 and its use of D124.
+
+- With week 25's payslip figures and the payday on Fri 30 Oct, tax week 30, the result is labelled an estimate: "Your last payslip is from tax week 25, so weeks 26 to 29 are counted as the same pay as this one. That makes it an estimate."
+- "Add to plan" adds the result to the payday in the calculator's payday box, which starts on the next payday.
+
+Why: the owner confirmed both as built.
+
+### D267. What if shows only the accounts that change: confirmed, with "Your other accounts don't change."
+
+Agreed 4 Nov 2026, from the owner's review of step 2g. Answers question 5. Confirms D253's accounts and adds a line.
+
+- What if shows Home's account and any other account whose lowest point or shortfall the practice changes (D253).
+- Decided in step 2h: under them, when any open account isn't shown, it says "Your other accounts don't change." It wasn't on screen at the end of step 2g; the owner's answer names it, so it's added.
+
+Test: Sam's Fri 30 Oct pay at £503.06 shows only Current account, with "Your other accounts don't change." for Savings.
+
+Why: the owner's answer. The person knows nothing is hidden that moves.
 

@@ -58,7 +58,7 @@ Found while building step 2c:
 
 Found while building step 2d:
 
-17. **Asking once for the usual hours and rate** (step 2g, D5): setup saves the usual week for each payday of the pattern now (D223). Someone who chose "Do this later" still gets the words from D200 on "I did overtime", until the pay calculator (step 2g) saves the pay weeks. The pay calculator also adds the pension, student loan and the year so far that setup doesn't ask for. Done in step 2g: "Save as a pay week" saves the week, and the calculator's tax settings when the pay has none, and links it to every payday when the pay has no week yet (D256). Changing tax settings that are already saved, and choosing which payday of a pattern a new week is for, aren't on a screen yet (question 3 below).
+17. **Asking once for the usual hours and rate** (step 2g, D5): setup saves the usual week for each payday of the pattern now (D223). Someone who chose "Do this later" still gets the words from D200 on "I did overtime", until the pay calculator (step 2g) saves the pay weeks. The pay calculator also adds the pension, student loan and the year so far that setup doesn't ask for. Done in step 2g: "Save as a pay week" saves the week, and the calculator's tax settings when the pay has none, and links it to every payday when the pay has no week yet (D256). Changing tax settings that are already saved, and choosing which payday of a pattern a new week is for: done in step 2h (D262, D263).
 18. **The Budgets screen.** Done in step 2f: "I spent" with no budgets offers "Add a budget" (D241).
 
 Found while building step 2g:
@@ -69,14 +69,7 @@ Found while building step 2g:
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
 
-1. **Your test 3 is labelled an estimate on Fri 30 Oct (D255, D124).** With week 25's payslip figures and the payday on Fri 30 Oct, which is tax week 30, the calculator gives exactly your figures, £452.17 with tax £58.80, but says "Your last payslip is from tax week 25, so weeks 26 to 29 are counted as the same pay as this one. That makes it an estimate." With the payday set to Fri 2 Oct, week 26 itself, it gives the same figures and isn't an estimate. Say if that's right.
-2. **"Add to plan" is for the payday in the calculator (D255).** The payday box starts on your next payday, so the button is "Add to plan as the Fri 30 Oct estimate". If you change the box to another of your paydays, such as Fri 6 Nov, the button adds it to that one instead; a date that isn't one of your paydays isn't added anywhere. Say if it should always add to the next payday, whatever the box says.
-3. **Save as a pay week never changes tax settings already saved (D256).** It saves the week, and the calculator's tax code, pension and year so far only when the pay has none yet. On pay that already has a week for each payday of its pattern, like Sam's, the new week is saved for starting from, and each payday keeps its week. Say if you'd like a way to change the saved tax settings, or to choose which payday of the pattern a week is for.
-4. **What if keeps practice changes while PrePenny is open (D252).** Going to another screen and back keeps them; closing PrePenny throws them away. "Throw them away" doesn't ask again first. Say if they should be kept after closing, or if Throw them away should ask first.
-5. **What if shows only the accounts the practice changes (D253).** It always shows Home's account, and any other account whose lowest point or shortfall the practice changes. Say if it should show every account.
-6. **Closing a debt starts on No (D250).** "Also remove its 6 planned payments?" starts with No chosen, so nothing more goes without a tap. Say if it should start on Yes, or ask with no answer chosen.
-
-The owner answered the five questions from step 2f on 4 Nov 2026: D247 to D251.
+The owner answered the six questions from step 2g on 4 Nov 2026: D262 to D267.
 
 ## Launch checklist (started)
 
