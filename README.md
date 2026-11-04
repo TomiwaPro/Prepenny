@@ -4,7 +4,7 @@ Plan every penny before payday.
 
 PrePenny is a money planner for people in the UK who live payday to payday. You type in what your bank shows today and every payment coming up, and it shows the balance left after each one, the lowest point ahead and when each debt is paid off.
 
-The money engine is built (Phase 1, done 3 Nov 2026), and the app is being built in Phase 2: so far, Home and the Coming up page with Sam's example plan, where any payment can be changed, moved, ticked or removed and the change undone, and Home's four actions: Update balance, I spent, Add a payment, and I did overtime. See `PLAN.md` for progress.
+The money engine is built (Phase 1, done 3 Nov 2026), and the app is being built in Phase 2: so far, first-time setup, where someone makes their own plan in eight steps saved on their phone; Home and the Coming up page, where any payment can be changed, moved, ticked or removed and the change undone; Home's four actions: Update balance, I spent, Add a payment, and I did overtime; and Sam's example plan to look around in. See `PLAN.md` for progress.
 
 ## Where the documents are
 
@@ -36,7 +36,7 @@ pnpm --filter @prepenny/web exec playwright install chromium
 pnpm e2e
 ```
 
-To look at the app on a computer while working on it, run `pnpm --filter @prepenny/web dev` and open http://localhost:3000/app/.
+To look at the app on a computer while working on it, run `pnpm --filter @prepenny/web dev` and open http://localhost:3000/. A browser with nothing saved starts at the welcome and setup.
 
 ## Putting PrePenny online
 
