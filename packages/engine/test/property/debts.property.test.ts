@@ -10,6 +10,10 @@
 //   since the update, and progress is 100% only when it's paid off (D34,
 //   D99, D104).
 // - The answer is the same whatever order the records are given in.
+//
+// Enough paid-off debts and enough interest are covered by construction,
+// never left to chance: fixed debts, each paid off with interest added since
+// its statement, are checked the same way before the random ones.
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -167,122 +171,197 @@ function build(wish: Wishes): DebtsInput {
   return { debts: [debt], series, changes, ticks, holidays: englandAndWales, today, to };
 }
 
+/** What one debt's check saw, to count. */
+interface Seen {
+  readonly paidOff: boolean;
+  readonly withInterest: number;
+  readonly interestInLeftNow: boolean;
+}
+
+/** Every check on one made-up debt. */
+function checkDebt(wish: Wishes): Seen {
+  let withInterest = 0;
+  let paidOff = false;
+  let interestInLeftNow = false;
+  const input = build(wish);
+  const plan = workOutDebts(input).debts[0];
+  if (plan === undefined) throw new Error('No debt.');
+  const debt = input.debts[0] as Debt;
+
+  let balance = debt.balance;
+  let firstPaidOff: string | null = balance <= 1 ? debt.balanceOn : null;
+  for (const row of plan.rows) {
+    if (row.kind === 'statement') {
+      expect(firstPaidOff, 'interest after it was paid off').toBeNull();
+      expect(row.interest).toBeGreaterThanOrEqual(0);
+      balance += row.interest;
+      withInterest += row.interest > 0 ? 1 : 0;
+      if (row.minimum !== null) {
+        expect(row.minimum).toBeLessThanOrEqual(Math.max(0, balance));
+      }
+    } else {
+      // What's left counts as nothing once it's 1p or less (D100).
+      const over = row.amount - (balance <= 1 ? 0 : balance);
+      expect(row.moreThanLeft).toBe(over > 1 ? over : null);
+      balance -= row.amount;
+      expect(row.paidOff).toBe(balance <= 1);
+      // Never before the balance date: a row at the start pays it off on that date.
+      if (firstPaidOff === null && balance <= 1) {
+        firstPaidOff = [row.date, debt.balanceOn].sort()[1] as string;
+      }
+      // Planned payments from the balance date on, including that day itself (D105).
+      if (!row.ticked) {
+        expect(row.date >= debt.balanceOn && row.date <= input.to).toBe(true);
+      }
+    }
+    expect(row.balanceAfter).toBe(balance);
+    expect(row.leftAfter).toBe(balance <= 1 ? 0 : balance);
+  }
+  expect(plan.paidOffOn).toBe(firstPaidOff);
+  expect(plan.leftAtEnd).toBe(firstPaidOff === null ? balance : null);
+  if (firstPaidOff !== null) paidOff = true;
+
+  // Left now, worked out a second way (D99, D104): the balance, minus
+  // every payment ticked after the update, plus 24.9% ÷ 12 on each
+  // statement day from the day after the balance date to today, with
+  // that day's payments first and nothing once it's paid off.
+  const amountOf = (tick: Tick): number => {
+    const one = input.series.find((s) => s.id === tick.seriesId) as Series;
+    const payment = workOutPayments({
+      series: [one],
+      changes: (input.changes ?? []).filter((c) => c.seriesId === one.id),
+      holidays: englandAndWales,
+      from: at(debt.balanceOn, -400),
+      to: at(input.to, 400),
+    }).find((p) => p.originalDate === tick.originalDate);
+    const pence = payment?.amount ?? 0;
+    return debt.rate === undefined ? pence : toOtherCurrency(pence, debt.rate);
+  };
+  const after = (input.ticks ?? []).filter(
+    (t) => t.tickedAt > debt.balanceAt && t.inDebtUpdate !== debt.id,
+  );
+  let walk = debt.balance;
+  let interest = 0;
+  let gone = walk <= 1;
+  const daysToToday = Math.max(0, parseDate(input.today) - parseDate(debt.balanceOn));
+  const daysToLast = Math.max(
+    daysToToday,
+    ...after.map((t) => parseDate(t.paidOn) - parseDate(debt.balanceOn)),
+  );
+  for (let i = -60; i <= daysToLast; i += 1) {
+    const day = at(debt.balanceOn, i);
+    for (const t of after) {
+      if (t.paidOn !== day) continue;
+      walk -= amountOf(t);
+      if (walk <= 1) gone = true;
+    }
+    const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+    const monthEnd = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const statementToday =
+      debt.statementDay !== undefined && d === Math.min(debt.statementDay, monthEnd);
+    if (statementToday && i > 0 && i <= daysToToday && !gone && walk > 0) {
+      const added = Number(divideRounded(BigInt(walk) * 249n, 12000n));
+      interest += added;
+      walk += added;
+    }
+  }
+  expect(plan.interestSinceUpdate).toBe(interest);
+  if (interest > 0) interestInLeftNow = true;
+  expect(plan.leftNow).toBe(walk <= 1 ? 0 : walk);
+
+  // Left now and progress (D34, D99), with a card's interest up to today (D104).
+  expect(plan.leftNow).toBeGreaterThanOrEqual(0);
+  expect(plan.leftNow).toBeLessThanOrEqual(debt.balance + plan.interestSinceUpdate);
+  expect(plan.leftNowIsEstimate).toBe(plan.interestSinceUpdate > 0);
+  if (debt.kind !== 'credit-card') expect(plan.interestSinceUpdate).toBe(0);
+  expect(plan.paidOffNow).toBe(plan.leftNow === 0);
+  expect(plan.percentPaid === 100).toBe(plan.paidOffNow);
+  expect(plan.percentPaid).toBeGreaterThanOrEqual(0);
+
+  // The same whatever order the records come in.
+  const reversed = workOutDebts({
+    ...input,
+    series: [...input.series].reverse(),
+    changes: [...(input.changes ?? [])].reverse(),
+    ticks: [...(input.ticks ?? [])].reverse(),
+  });
+  expect(reversed.debts[0]).toEqual(plan);
+  return { paidOff, withInterest, interestInLeftNow };
+}
+
+/**
+ * Fixed debts, one for every 3 days from Thu 1 Jan 2026: a credit card
+ * updated 10 days ago, with its statement day 5 days ago, so interest is
+ * added since the update, and £500.00 a week from 4 days ago, which pays it
+ * off within the 60 days looked at.
+ */
+const FIXED_DEBTS: readonly Wishes[] = Array.from({ length: 120 }, (_, i) => {
+  const today = dayFromParts(2026, 1, 1) + 3 * i;
+  const statementDay = Number(formatDate(today - 5).slice(8));
+  return {
+    today,
+    balanceDaysAgo: 10,
+    length: 60,
+    debt: {
+      euros: false,
+      card: true,
+      balance: 100_000 + 100 * i,
+      start: 150_000,
+      statementDay,
+      balanceMinute: 8 * 60,
+    },
+    series: [
+      {
+        amount: 50_000,
+        weekly: true,
+        every: 1,
+        startOffset: 6,
+        payments: null,
+        lastAmount: null,
+        isEstimate: false,
+        familyTime: 0,
+      },
+    ],
+    changes: [],
+    ticks: [],
+  };
+});
+
 describe('debts hold for any debt, payments, ticks and changes', () => {
   it('keeps every row, Paid off on, More than what’s left and Left now consistent', () => {
     let paidOff = 0;
     let withInterest = 0;
     let interestInLeftNow = 0;
+    const count = (seen: Seen) => {
+      if (seen.paidOff) paidOff += 1;
+      withInterest += seen.withInterest;
+      if (seen.interestInLeftNow) interestInLeftNow += 1;
+    };
+    // The fixed debts first: each is paid off, with interest added since its update.
+    FIXED_DEBTS.forEach((wish, i) => {
+      const seen = checkDebt(wish);
+      expect([seen.paidOff, seen.withInterest > 0, seen.interestInLeftNow], `fixed ${i}`).toEqual([
+        true,
+        true,
+        true,
+      ]);
+      count(seen);
+    });
+    /** The bars, checked after the fixed ones, which alone meet them, and again after the random ones. */
+    const enough = () => {
+      // Enough paid-off debts and interest for this to mean something.
+      expect(paidOff).toBeGreaterThan(100);
+      expect(withInterest).toBeGreaterThan(100);
+      expect(interestInLeftNow).toBeGreaterThan(50);
+    };
+    enough();
+    // Then random ones.
     fc.assert(
       fc.property(wishes, (wish) => {
-        const input = build(wish);
-        const plan = workOutDebts(input).debts[0];
-        if (plan === undefined) throw new Error('No debt.');
-        const debt = input.debts[0] as Debt;
-
-        let balance = debt.balance;
-        let firstPaidOff: string | null = balance <= 1 ? debt.balanceOn : null;
-        for (const row of plan.rows) {
-          if (row.kind === 'statement') {
-            expect(firstPaidOff, 'interest after it was paid off').toBeNull();
-            expect(row.interest).toBeGreaterThanOrEqual(0);
-            balance += row.interest;
-            withInterest += row.interest > 0 ? 1 : 0;
-            if (row.minimum !== null) {
-              expect(row.minimum).toBeLessThanOrEqual(Math.max(0, balance));
-            }
-          } else {
-            // What's left counts as nothing once it's 1p or less (D100).
-            const over = row.amount - (balance <= 1 ? 0 : balance);
-            expect(row.moreThanLeft).toBe(over > 1 ? over : null);
-            balance -= row.amount;
-            expect(row.paidOff).toBe(balance <= 1);
-            // Never before the balance date: a row at the start pays it off on that date.
-            if (firstPaidOff === null && balance <= 1) {
-              firstPaidOff = [row.date, debt.balanceOn].sort()[1] as string;
-            }
-            // Planned payments from the balance date on, including that day itself (D105).
-            if (!row.ticked) {
-              expect(row.date >= debt.balanceOn && row.date <= input.to).toBe(true);
-            }
-          }
-          expect(row.balanceAfter).toBe(balance);
-          expect(row.leftAfter).toBe(balance <= 1 ? 0 : balance);
-        }
-        expect(plan.paidOffOn).toBe(firstPaidOff);
-        expect(plan.leftAtEnd).toBe(firstPaidOff === null ? balance : null);
-        if (firstPaidOff !== null) paidOff += 1;
-
-        // Left now, worked out a second way (D99, D104): the balance, minus
-        // every payment ticked after the update, plus 24.9% ÷ 12 on each
-        // statement day from the day after the balance date to today, with
-        // that day's payments first and nothing once it's paid off.
-        const amountOf = (tick: Tick): number => {
-          const one = input.series.find((s) => s.id === tick.seriesId) as Series;
-          const payment = workOutPayments({
-            series: [one],
-            changes: (input.changes ?? []).filter((c) => c.seriesId === one.id),
-            holidays: englandAndWales,
-            from: at(debt.balanceOn, -400),
-            to: at(input.to, 400),
-          }).find((p) => p.originalDate === tick.originalDate);
-          const pence = payment?.amount ?? 0;
-          return debt.rate === undefined ? pence : toOtherCurrency(pence, debt.rate);
-        };
-        const after = (input.ticks ?? []).filter(
-          (t) => t.tickedAt > debt.balanceAt && t.inDebtUpdate !== debt.id,
-        );
-        let walk = debt.balance;
-        let interest = 0;
-        let gone = walk <= 1;
-        const daysToToday = Math.max(0, parseDate(input.today) - parseDate(debt.balanceOn));
-        const daysToLast = Math.max(
-          daysToToday,
-          ...after.map((t) => parseDate(t.paidOn) - parseDate(debt.balanceOn)),
-        );
-        for (let i = -60; i <= daysToLast; i += 1) {
-          const day = at(debt.balanceOn, i);
-          for (const t of after) {
-            if (t.paidOn !== day) continue;
-            walk -= amountOf(t);
-            if (walk <= 1) gone = true;
-          }
-          const [y, m, d] = day.split('-').map(Number) as [number, number, number];
-          const monthEnd = new Date(Date.UTC(y, m, 0)).getUTCDate();
-          const statementToday =
-            debt.statementDay !== undefined && d === Math.min(debt.statementDay, monthEnd);
-          if (statementToday && i > 0 && i <= daysToToday && !gone && walk > 0) {
-            const added = Number(divideRounded(BigInt(walk) * 249n, 12000n));
-            interest += added;
-            walk += added;
-          }
-        }
-        expect(plan.interestSinceUpdate).toBe(interest);
-        if (interest > 0) interestInLeftNow += 1;
-        expect(plan.leftNow).toBe(walk <= 1 ? 0 : walk);
-
-        // Left now and progress (D34, D99), with a card's interest up to today (D104).
-        expect(plan.leftNow).toBeGreaterThanOrEqual(0);
-        expect(plan.leftNow).toBeLessThanOrEqual(debt.balance + plan.interestSinceUpdate);
-        expect(plan.leftNowIsEstimate).toBe(plan.interestSinceUpdate > 0);
-        if (debt.kind !== 'credit-card') expect(plan.interestSinceUpdate).toBe(0);
-        expect(plan.paidOffNow).toBe(plan.leftNow === 0);
-        expect(plan.percentPaid === 100).toBe(plan.paidOffNow);
-        expect(plan.percentPaid).toBeGreaterThanOrEqual(0);
-
-        // The same whatever order the records come in.
-        const reversed = workOutDebts({
-          ...input,
-          series: [...input.series].reverse(),
-          changes: [...(input.changes ?? [])].reverse(),
-          ticks: [...(input.ticks ?? [])].reverse(),
-        });
-        expect(reversed.debts[0]).toEqual(plan);
+        count(checkDebt(wish));
       }),
       { numRuns: 1000 },
     );
-    // Enough paid-off debts and interest for this to mean something.
-    expect(paidOff).toBeGreaterThan(100);
-    expect(withInterest).toBeGreaterThan(100);
-    expect(interestInLeftNow).toBeGreaterThan(50);
+    enough();
   });
 });

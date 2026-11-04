@@ -10,6 +10,10 @@
 // - An edit is only ever refused for a reason, never because it would leave
 //   records the plan can't use.
 // - Debts still work out after every edit, "Update from statement" included (step 1d).
+//
+// Every kind of edit, and enough splits, are covered by construction, never
+// left to chance: fixed plans with an edit of every kind, and a split of
+// every series, are checked the same way before the random ones.
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -557,9 +561,240 @@ function tryEdit(input: PlanWithDebts, command: EditCommand): Edit | null {
 const halves = (input: PlanWithDebts) =>
   halvesProblems(input, at(input.today, -250), at(input.to, 250));
 
+/**
+ * Makes one edit and checks it: undo gives back exactly the records from
+ * before, the same edit again gives the same records, every change and tick
+ * it didn't touch still belongs to the same payment, and private transfers
+ * stay in step. Counts what was made. Gives the edit and the plan after it,
+ * or null when the engine refused it for a reason.
+ */
+function checkCommand(
+  input: PlanWithDebts,
+  command: EditCommand,
+  made: Map<string, number>,
+): { edit: Edit; after: PlanWithDebts } | null {
+  const edit = tryEdit(input, command);
+  if (edit === null) return null;
+  made.set(command.kind, (made.get(command.kind) ?? 0) + 1);
+  if (command.kind === 'this-and-later' && command.edits.stepAmount !== undefined) {
+    made.set('step-amount', (made.get('step-amount') ?? 0) + 1);
+  }
+  if ((command.kind === 'tick' || command.kind === 'untick') && command.setAside) {
+    made.set(`set-aside-${command.kind}`, (made.get(`set-aside-${command.kind}`) ?? 0) + 1);
+  }
+  // Edits that carried a set-aside tick along: splits, removals and undo (D116).
+  if (
+    command.kind !== 'tick' &&
+    command.kind !== 'untick' &&
+    edit.writes.some((w) => w.kind === 'tick' && w.setAside)
+  ) {
+    made.set('set-aside-carried', (made.get('set-aside-carried') ?? 0) + 1);
+  }
+  const after = applyWrites(input, edit.writes);
+
+  // Undo gives back exactly the records from before.
+  const undo = editPlan(after, { kind: 'undo', edit });
+  const back = applyWrites(after, undo.writes);
+  expect(canonical(back)).toEqual(canonical(input));
+
+  // The same edit again gives the same records as the first time.
+  const again = editPlan(back, command);
+  expect(sameValue(again, edit)).toBe(true);
+  expect(canonical(applyWrites(back, again.writes))).toEqual(canonical(after));
+
+  // A change or tick the edit didn't touch still belongs to the same payment.
+  const touched = new Set(
+    edit.writes.flatMap((w) =>
+      w.kind === 'change' || w.kind === 'tick'
+        ? [
+            `${w.kind}|${w.seriesId}|${w.originalDate}${w.kind === 'tick' && w.setAside ? '|set-aside' : ''}`,
+          ]
+        : [],
+    ),
+  );
+  const nowAt = paymentOfRecord(after);
+  for (const [key, number] of paymentOfRecord(input)) {
+    if (touched.has(key)) continue;
+    expect(nowAt.get(key), `${command.kind} left ${key} loose`).toBe(number);
+  }
+
+  // Both halves of a private transfer still match, and the plan and its debts still work.
+  expect(halves(after)).toEqual([]);
+  workOutPlan(after);
+  workOutDebts(after);
+  return { edit, after };
+}
+
+const fixedSeries = (part: Partial<SeriesWish>): SeriesWish => ({
+  account: 0,
+  other: 0,
+  direction: 'out',
+  amount: 3_000,
+  cycle: null,
+  cycleOffset: 0,
+  schedule: { kind: 'weekly', every: 1 },
+  dateOffsets: [0],
+  startOffset: 0,
+  end: { kind: 'never' },
+  lastAmount: null,
+  holidayRule: 'keep',
+  isEstimate: false,
+  note: null,
+  familyTime: 0,
+  name: 'A',
+  debt: null,
+  setAside: false,
+  ...part,
+});
+
+/**
+ * Fixed plans, one for every 17 days from Mon 5 Jan 2026: two accounts;
+ * weekly pay in a pattern of two amounts, with 25% set aside, as the main
+ * pay; rent on the 1st, paying off the card; and bills every 2 weeks.
+ */
+const FIXED_PLANS: readonly PlanWish[] = Array.from({ length: 24 }, (_, i) => ({
+  today: dayFromParts(2026, 1, 5) + 17 * i,
+  length: 90,
+  accounts: 2,
+  balances: [100_000, 50_000, 0],
+  series: [
+    fixedSeries({
+      direction: 'in',
+      amount: 60_000,
+      cycle: [50_000, 60_000],
+      startOffset: -14,
+      isEstimate: true,
+      name: 'Pay',
+      setAside: true,
+    }),
+    fixedSeries({
+      amount: 50_000,
+      schedule: { kind: 'monthly', every: 1, on: { kind: 'day', day: 1 } },
+      startOffset: -40,
+      familyTime: 1,
+      name: 'Rent',
+      debt: 0,
+    }),
+    fixedSeries({
+      schedule: { kind: 'weekly', every: 2 },
+      startOffset: -3,
+      familyTime: 2,
+      name: 'Bills',
+    }),
+  ],
+  privateTransfer: null,
+  changes: [],
+  ticks: [],
+  mainPay: 0,
+}));
+
+/**
+ * An edit of every kind on a fixed plan, in an order where each can be made:
+ * ticking pay and its money set aside, unticking both, a new amount, a move,
+ * a removal, Move to next payday, Update balance, Update from statement, a
+ * new amount for one week of the pattern from a ticked payday on (which
+ * carries the set-aside tick to the new series), Remove this and later, and
+ * undo. Each command is built from the plan as it is at that moment.
+ */
+const FIXED_EDITS: readonly ((input: PlanWithDebts, earlier: readonly Edit[]) => EditCommand)[] = [
+  (input) => ({
+    kind: 'tick',
+    ...ref(input, 'series-0', 3),
+    tickedAt: timeOn(input.today, 540, 1),
+  }),
+  (input) => ({
+    kind: 'tick',
+    ...ref(input, 'series-0', 3),
+    tickedAt: timeOn(input.today, 540, 2),
+    setAside: true,
+  }),
+  (input) => ({ kind: 'untick', ...ref(input, 'series-0', 3), setAside: true }),
+  (input) => ({
+    kind: 'tick',
+    ...ref(input, 'series-0', 4),
+    tickedAt: timeOn(input.today, 540, 3),
+    setAside: true,
+  }),
+  (input) => ({ kind: 'just-this-one', ...ref(input, 'series-2', 1), edits: { amount: 3_500 } }),
+  (input) => {
+    const payment = paymentOf(input, 'series-2', 2);
+    return { kind: 'move', ...ref(input, 'series-2', 2), date: at(payment.date, 1) };
+  },
+  (input) => ({ kind: 'remove-this-one', ...ref(input, 'series-2', 3) }),
+  (input) => ({ kind: 'move-to-next-payday', ...ref(input, 'series-2', 4) }),
+  (input) => ({
+    kind: 'update-balance',
+    update: {
+      id: 'fixed-update',
+      accountId: 'account-0',
+      balance: 90_000,
+      checkedOn: input.today,
+      checkedAt: timeOn(input.today, 600),
+    },
+  }),
+  (input) => ({
+    kind: 'update-from-statement',
+    debtId: 'debt-0',
+    balance: 40_000,
+    balanceOn: input.today,
+    balanceAt: timeOn(input.today, 605),
+    ticks: [],
+  }),
+  (input) => ({
+    kind: 'this-and-later',
+    ...ref(input, 'series-0', 3),
+    edits: { stepAmount: 55_000 },
+    newSeriesId: 'fixed-split',
+    newOtherHalfSeriesId: 'fixed-split-half',
+  }),
+  (input) => ({ kind: 'untick', ...ref(input, 'fixed-split', 0) }),
+  (input) => ({ kind: 'remove-this-and-later', ...ref(input, 'series-2', 5) }),
+  (_input, earlier) => ({ kind: 'undo', edit: earlier[earlier.length - 1] as Edit }),
+];
+
+/** A series' payment by its place among that series' payments, as commands pick them. */
+function paymentOf(input: PlanInput, seriesId: string, k: number) {
+  const payment = allPayments(input).filter((p) => p.seriesId === seriesId)[k];
+  if (payment === undefined) throw new Error(`${seriesId} has no payment ${k}.`);
+  return payment;
+}
+
+const ref = (input: PlanInput, seriesId: string, k: number) => ({
+  seriesId,
+  originalDate: paymentOf(input, seriesId, k).originalDate,
+});
+
 describe('editing holds for any plan and any edits', () => {
   it('undoes every edit exactly, redoes it the same way, and keeps private transfers in step', () => {
     const made = new Map<string, number>();
+    // The fixed plans first, each with an edit of every kind, each checked to have been made.
+    FIXED_PLANS.forEach((wish, i) => {
+      let input = buildPlan(wish);
+      expect(halves(input)).toEqual([]);
+      const earlier: Edit[] = [];
+      FIXED_EDITS.forEach((make, step) => {
+        const command = make(input, earlier);
+        const done = checkCommand(input, command, made);
+        expect(done, `fixed plan ${i}, edit ${step + 1}: ${command.kind}`).not.toBeNull();
+        if (done === null) return;
+        input = done.after;
+        earlier.push(done.edit);
+      });
+    });
+    /** The bars, checked after the fixed ones, which alone meet them, and again after the random ones. */
+    const enough = () => {
+      // Every kind of edit must really have been made, many times, for this to mean anything.
+      for (const kind of [...KINDS, 'step-amount']) {
+        expect(made.get(kind) ?? 0, kind).toBeGreaterThan(20);
+      }
+      // Set-aside ticks are rarer.
+      for (const kind of ['set-aside-tick', 'set-aside-untick']) {
+        expect(made.get(kind) ?? 0, kind).toBeGreaterThan(8);
+      }
+      expect(made.get('set-aside-carried') ?? 0, 'set-aside-carried').toBeGreaterThan(1);
+    };
+    enough();
+    // Then random ones.
     fc.assert(
       fc.property(
         planWish,
@@ -571,79 +806,71 @@ describe('editing holds for any plan and any edits', () => {
           wishes.forEach((commandWishOne, step) => {
             const command = commandFrom(commandWishOne, input, step, earlier);
             if (command === null) return;
-            const edit = tryEdit(input, command);
-            if (edit === null) return;
-            made.set(command.kind, (made.get(command.kind) ?? 0) + 1);
-            if (command.kind === 'this-and-later' && command.edits.stepAmount !== undefined) {
-              made.set('step-amount', (made.get('step-amount') ?? 0) + 1);
-            }
-            if ((command.kind === 'tick' || command.kind === 'untick') && command.setAside) {
-              made.set(
-                `set-aside-${command.kind}`,
-                (made.get(`set-aside-${command.kind}`) ?? 0) + 1,
-              );
-            }
-            // Edits that carried a set-aside tick along: splits, removals and undo (D116).
-            if (
-              command.kind !== 'tick' &&
-              command.kind !== 'untick' &&
-              edit.writes.some((w) => w.kind === 'tick' && w.setAside)
-            ) {
-              made.set('set-aside-carried', (made.get('set-aside-carried') ?? 0) + 1);
-            }
-            const after = applyWrites(input, edit.writes);
-
-            // Undo gives back exactly the records from before.
-            const undo = editPlan(after, { kind: 'undo', edit });
-            const back = applyWrites(after, undo.writes);
-            expect(canonical(back)).toEqual(canonical(input));
-
-            // The same edit again gives the same records as the first time.
-            const again = editPlan(back, command);
-            expect(sameValue(again, edit)).toBe(true);
-            expect(canonical(applyWrites(back, again.writes))).toEqual(canonical(after));
-
-            // A change or tick the edit didn't touch still belongs to the same payment.
-            const touched = new Set(
-              edit.writes.flatMap((w) =>
-                w.kind === 'change' || w.kind === 'tick'
-                  ? [
-                      `${w.kind}|${w.seriesId}|${w.originalDate}${w.kind === 'tick' && w.setAside ? '|set-aside' : ''}`,
-                    ]
-                  : [],
-              ),
-            );
-            const nowAt = paymentOfRecord(after);
-            for (const [key, number] of paymentOfRecord(input)) {
-              if (touched.has(key)) continue;
-              expect(nowAt.get(key), `${command.kind} left ${key} loose`).toBe(number);
-            }
-
-            // Both halves of a private transfer still match, and the plan and its debts still work.
-            expect(halves(after)).toEqual([]);
-            workOutPlan(after);
-            workOutDebts(after);
-
-            input = after;
-            earlier.push(edit);
+            const done = checkCommand(input, command, made);
+            if (done === null) return;
+            input = done.after;
+            earlier.push(done.edit);
           });
         },
       ),
       { numRuns: 1000 },
     );
-    // Every kind of edit must really have been made, many times, for this to mean anything.
-    for (const kind of [...KINDS, 'step-amount']) {
-      expect(made.get(kind) ?? 0, kind).toBeGreaterThan(20);
-    }
-    // Set-aside ticks are rarer: usually about 45 ticks, 30 unticks and 10 carried along.
-    for (const kind of ['set-aside-tick', 'set-aside-untick']) {
-      expect(made.get(kind) ?? 0, kind).toBeGreaterThan(8);
-    }
-    expect(made.get('set-aside-carried') ?? 0, 'set-aside-carried').toBeGreaterThan(1);
+    enough();
   });
 
   it('gives exactly the same payments and balances after splitting a series without changing anything', () => {
     let splits = 0;
+    /** Splits one series at one of its payments, and checks nothing changed. True when it split. */
+    const splitCheck = (input: PlanWithDebts, which: number, k: number): boolean => {
+      const one = input.series[which % input.series.length] as Series;
+      const list = allPayments(input).filter((p) => p.seriesId === one.id);
+      const payment = list[k % Math.max(1, list.length)];
+      if (payment === undefined) return false;
+      const edit = editPlan(input, {
+        kind: 'this-and-later',
+        seriesId: one.id,
+        originalDate: payment.originalDate,
+        edits: {},
+        newSeriesId: 'split-new',
+        newOtherHalfSeriesId: 'split-other',
+      });
+      const after = applyWrites(input, edit.writes);
+      const fromSplit = new Map(
+        after.series
+          .filter((s) => s.id === 'split-new' || s.id === 'split-other')
+          .map((s) => [s.id, s.splitFrom as string]),
+      );
+      const asBefore = (text: string) =>
+        text.replace(
+          /"seriesId":"(split-new|split-other)"/g,
+          (_, id: string) => `"seriesId":"${fromSplit.get(id)}"`,
+        );
+      // As a set: workOutPayments lists same-day payments in the order the
+      // series are given, and the new series comes last in the list.
+      const each = (one: PlanInput) =>
+        allPayments(one)
+          .map((p) => asBefore(JSON.stringify(p)))
+          .sort();
+      expect(each(after)).toEqual(each(input));
+      expect(asBefore(JSON.stringify(workOutPlan(after)))).toBe(JSON.stringify(workOutPlan(input)));
+      return fromSplit.size > 0;
+    };
+    // Fixed first: every series of every fixed plan, split at its second and third payments.
+    FIXED_PLANS.forEach((wish, i) => {
+      const input = buildPlan(wish);
+      input.series.forEach((one, which) => {
+        for (const k of [1, 2]) {
+          expect(splitCheck(input, which, k), `fixed plan ${i}: ${one.id} at ${k + 1}`).toBe(true);
+          splits += 1;
+        }
+      });
+    });
+    /** The bars, checked after the fixed ones, which alone meet them, and again after the random ones. */
+    const enough = () => {
+      expect(splits).toBeGreaterThan(100);
+    };
+    enough();
+    // Then random ones.
     fc.assert(
       fc.property(
         planWish,
@@ -658,44 +885,11 @@ describe('editing holds for any plan and any edits', () => {
             const edit = command === null ? null : tryEdit(input, command);
             if (edit !== null) input = applyWrites(input, edit.writes);
           });
-          const one = input.series[which % input.series.length] as Series;
-          const list = allPayments(input).filter((p) => p.seriesId === one.id);
-          const payment = list[k % Math.max(1, list.length)];
-          if (payment === undefined) return;
-          const edit = editPlan(input, {
-            kind: 'this-and-later',
-            seriesId: one.id,
-            originalDate: payment.originalDate,
-            edits: {},
-            newSeriesId: 'split-new',
-            newOtherHalfSeriesId: 'split-other',
-          });
-          const after = applyWrites(input, edit.writes);
-          const fromSplit = new Map(
-            after.series
-              .filter((s) => s.id === 'split-new' || s.id === 'split-other')
-              .map((s) => [s.id, s.splitFrom as string]),
-          );
-          if (fromSplit.size > 0) splits += 1;
-          const asBefore = (text: string) =>
-            text.replace(
-              /"seriesId":"(split-new|split-other)"/g,
-              (_, id: string) => `"seriesId":"${fromSplit.get(id)}"`,
-            );
-          // As a set: workOutPayments lists same-day payments in the order the
-          // series are given, and the new series comes last in the list.
-          const each = (one: PlanInput) =>
-            allPayments(one)
-              .map((p) => asBefore(JSON.stringify(p)))
-              .sort();
-          expect(each(after)).toEqual(each(input));
-          expect(asBefore(JSON.stringify(workOutPlan(after)))).toBe(
-            JSON.stringify(workOutPlan(input)),
-          );
+          if (splitCheck(input, which, k)) splits += 1;
         },
       ),
       { numRuns: 300 },
     );
-    expect(splits).toBeGreaterThan(100);
+    enough();
   });
 });

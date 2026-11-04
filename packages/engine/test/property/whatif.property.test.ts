@@ -10,6 +10,11 @@
 //   What if's "Keep", which is one edit however many practice changes it holds.
 // - What if never changes the real plan, and "Keep" saves exactly the
 //   practice plan (D135).
+//
+// Every kind of practice change, and enough splits, are covered by
+// construction, never left to chance: every run starts with a fixed practice
+// change of every kind before the random ones, and the splits start with a
+// fixed split of every series. Each fixed one is checked to have been made.
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
@@ -56,6 +61,28 @@ const changeWish = fc.record({
 type ChangeWish = typeof changeWish extends fc.Arbitrary<infer W> ? W : never;
 
 const at = (date: string, days: number) => formatDate(addDays(parseDate(date), days));
+
+/**
+ * A practice change of every kind, made first in every run, before the
+ * random ones. Each is aimed at a different payment, and each is made on
+ * every person's plan; overtime only where there are pay details to work it
+ * out from (D5).
+ */
+const FIXED_PRACTICE: readonly ChangeWish[] = [
+  { kind: 'overtime', which: 0, amount: 0, days: 1 },
+  { kind: 'amount', which: 3, amount: 1234, days: 0 },
+  { kind: 'move', which: 5, amount: 0, days: 2 },
+  { kind: 'remove', which: 7, amount: 0, days: 0 },
+  { kind: 'later-amount', which: 9, amount: 4321, days: 0 },
+  { kind: 'later-note', which: 11, amount: 0, days: 0 },
+  { kind: 'next-payday', which: 13, amount: 0, days: 0 },
+  { kind: 'tick', which: 15, amount: 0, days: 0 },
+  { kind: 'remove-later', which: 17, amount: 0, days: 0 },
+];
+
+/** Overtime needs pay details to work out from (D5): Sam's and Dee's plans have them. */
+const hasPayDetails = (input: WhatIfInput) =>
+  input.series.some((one) => one.payProfileId !== undefined);
 
 /** A practice change from a wish, about a payment in the plan from today on. */
 function practiceFrom(wish: ChangeWish, records: WhatIfInput, step: number): EditCommand | null {
@@ -111,25 +138,30 @@ function practiceFrom(wish: ChangeWish, records: WhatIfInput, step: number): Edi
   }
 }
 
-/** The practice changes the engine makes, one after another, and the records they leave. */
+/**
+ * The practice changes the engine makes, one after another, and the records
+ * they leave, with whether each wish was made.
+ */
 function practise(input: WhatIfInput, wishes: readonly ChangeWish[], counts: Map<string, number>) {
   let records = input;
   const made: EditCommand[] = [];
-  wishes.forEach((wish, step) => {
+  const done = wishes.map((wish, step) => {
     const command = practiceFrom(wish, records, step);
-    if (command === null) return;
+    if (command === null) return false;
     try {
       records = applyWrites(records, editPlan(records, command).writes);
       made.push(command);
       counts.set(wish.kind, (counts.get(wish.kind) ?? 0) + 1);
+      return true;
     } catch (error) {
       expect(error).toBeInstanceOf(EngineInputError);
       expect((error as EngineInputError).code, (error as Error).message).not.toBe(
         'edit-breaks-plan',
       );
+      return false;
     }
   });
-  return { records, made };
+  return { records, made, done };
 }
 
 const asText = (input: WhatIfInput) => JSON.stringify({ ...input, holidays: null });
@@ -138,14 +170,18 @@ describe('What if holds on every person’s plan, with any practice changes', ()
   it('never changes the real plan, keeps exactly the practice plan, and undoes it in one step', () => {
     let changed = 0;
     const counts = new Map<string, number>();
-    fc.assert(
-      fc.property(
-        fc.constantFrom(...names),
-        fc.array(changeWish, { minLength: 1, maxLength: 5 }),
-        (name, wishes) => {
+    // 20 runs for each of the six people: 120 in all.
+    for (const name of names) {
+      fc.assert(
+        fc.property(fc.array(changeWish, { minLength: 1, maxLength: 5 }), (wishes) => {
           const input = (people[name] as () => WhatIfInput)();
           const before = asText(input);
-          const { records, made } = practise(input, wishes, counts);
+          // The fixed change of every kind first, then the random ones.
+          const { records, made, done } = practise(input, [...FIXED_PRACTICE, ...wishes], counts);
+          FIXED_PRACTICE.forEach((wish, i) => {
+            const applies = wish.kind !== 'overtime' || hasPayDetails(input);
+            expect(done[i], `${name}: the fixed ${wish.kind}`).toBe(applies);
+          });
           const result = whatIf(input, made);
 
           // Throwing it away: the real records and the real plan are exactly as before.
@@ -181,10 +217,10 @@ describe('What if holds on every person’s plan, with any practice changes', ()
             }
             expect(moved).toBe(0);
           }
-        },
-      ),
-      { numRuns: 120 },
-    );
+        }),
+        { numRuns: 20 },
+      );
+    }
     expect(changed).toBeGreaterThan(60);
     // Every kind of practice change must really have been made, for this to mean anything.
     for (const kind of KINDS) expect(counts.get(kind) ?? 0, kind).toBeGreaterThan(5);
@@ -192,40 +228,67 @@ describe('What if holds on every person’s plan, with any practice changes', ()
 
   it('test 45: gives exactly the same plan after splitting any series without changing anything', () => {
     let splits = 0;
-    fc.assert(
-      fc.property(fc.constantFrom(...names), fc.nat(), fc.nat({ max: 30 }), (name, which, k) => {
-        const input = (people[name] as () => WhatIfInput)();
-        const one = input.series[which % input.series.length];
-        if (one === undefined) return;
-        const payments = workOutPayments({
+    /** Splits one series at one of its payments, and checks nothing changed. True when it split. */
+    const splitCheck = (name: string, which: number, k: number): boolean => {
+      const input = (people[name] as () => WhatIfInput)();
+      const one = input.series[which % input.series.length];
+      if (one === undefined) return false;
+      const payments = workOutPayments({
+        series: input.series,
+        changes: input.changes ?? [],
+        holidays: input.holidays,
+        from: input.today,
+        to: input.to,
+      }).filter((p) => p.seriesId === one.id);
+      const payment = payments[k % Math.max(1, payments.length)];
+      if (payment === undefined) return false;
+      const edit = editPlan(input as EditInput, {
+        kind: 'this-and-later',
+        seriesId: one.id,
+        originalDate: payment.originalDate,
+        edits: {},
+        newSeriesId: 'split-new',
+      });
+      const after = applyWrites(input, edit.writes);
+      const split = after.series.find((s) => s.id === 'split-new');
+      const asBefore = (text: string) =>
+        split === undefined
+          ? text
+          : text.replace(/"seriesId":"split-new"/g, `"seriesId":"${split.splitFrom}"`);
+      expect(asBefore(JSON.stringify(workOutPlan(after)))).toBe(JSON.stringify(workOutPlan(input)));
+      return split !== undefined;
+    };
+    // Fixed first: every series of every person, split at its second and
+    // third payments in the view, where it has them. Each of those is a split.
+    for (const name of names) {
+      const input = (people[name] as () => WhatIfInput)();
+      input.series.forEach((one, which) => {
+        const count = workOutPayments({
           series: input.series,
           changes: input.changes ?? [],
           holidays: input.holidays,
           from: input.today,
           to: input.to,
-        }).filter((p) => p.seriesId === one.id);
-        const payment = payments[k % Math.max(1, payments.length)];
-        if (payment === undefined) return;
-        const edit = editPlan(input as EditInput, {
-          kind: 'this-and-later',
-          seriesId: one.id,
-          originalDate: payment.originalDate,
-          edits: {},
-          newSeriesId: 'split-new',
-        });
-        const after = applyWrites(input, edit.writes);
-        const split = after.series.find((s) => s.id === 'split-new');
-        if (split !== undefined) splits += 1;
-        const asBefore = (text: string) =>
-          split === undefined
-            ? text
-            : text.replace(/"seriesId":"split-new"/g, `"seriesId":"${split.splitFrom}"`);
-        expect(asBefore(JSON.stringify(workOutPlan(after)))).toBe(
-          JSON.stringify(workOutPlan(input)),
-        );
+        }).filter((p) => p.seriesId === one.id).length;
+        for (const k of [1, 2]) {
+          if (k >= count) continue;
+          expect(splitCheck(name, which, k), `${name}: ${one.id} at payment ${k + 1}`).toBe(true);
+          splits += 1;
+        }
+      });
+    }
+    /** The bars, checked after the fixed ones, which alone meet them, and again after the random ones. */
+    const enough = () => {
+      expect(splits).toBeGreaterThan(60);
+    };
+    enough();
+    // Then random ones.
+    fc.assert(
+      fc.property(fc.constantFrom(...names), fc.nat(), fc.nat({ max: 30 }), (name, which, k) => {
+        if (splitCheck(name, which, k)) splits += 1;
       }),
       { numRuns: 150 },
     );
-    expect(splits).toBeGreaterThan(60);
+    enough();
   });
 });
