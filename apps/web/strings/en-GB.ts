@@ -1593,6 +1593,8 @@ export const strings = {
 
   notFound: {
     heading: "This page isn't here",
+    /** What it's for, in one plain sentence (D213, step 2h). */
+    purpose: 'The address may be mistyped, or the page has moved. Your plan is safe on this phone.',
     goHome: 'Go to Home',
   },
 } as const;

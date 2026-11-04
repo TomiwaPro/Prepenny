@@ -66,8 +66,8 @@ const SCREENS = [
   { path: '/app/', heading: 'Home', purpose: strings.home.purpose },
   { path: '/app/coming-up/', heading: 'Coming up', purpose: strings.comingUp.purpose },
   { path: '/app/debts/', heading: 'Debts', purpose: strings.debts.purpose },
-  { path: '/app/debt/?id=family-loan', heading: 'Family loan', purpose: null },
-  { path: '/app/debt/?id=credit-card', heading: 'Credit card', purpose: null },
+  { path: '/app/debt/?id=family-loan', heading: 'Family loan', purpose: strings.debt.purpose },
+  { path: '/app/debt/?id=credit-card', heading: 'Credit card', purpose: strings.debt.purpose },
   { path: '/app/more/', heading: 'More', purpose: strings.more.purpose },
   { path: '/app/accounts/', heading: 'Accounts', purpose: strings.accounts.purpose },
   { path: '/app/budgets/', heading: 'Budgets', purpose: strings.budgets.purpose },
@@ -80,7 +80,11 @@ const SCREENS = [
     heading: 'Take-home pay calculator',
     purpose: strings.pay.publicPurpose,
   },
-  { path: '/app/no-such-page/', heading: strings.notFound.heading, purpose: null },
+  {
+    path: '/app/no-such-page/',
+    heading: strings.notFound.heading,
+    purpose: strings.notFound.purpose,
+  },
 ] as const;
 
 /** Opens a screen and waits for it to be drawn with the plan's own figures. */
