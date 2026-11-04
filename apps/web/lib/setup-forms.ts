@@ -10,11 +10,14 @@ import {
   type BudgetEvery,
   type BudgetLeaves,
   coveredToFromDates,
+  type Debt,
+  type DebtEdits,
   type DebtKind,
   type EditCommand,
   EngineInputError,
   type HolidayRule,
   lastWorkingDayOfMonth,
+  type MinimumRule,
   type NewSeries,
   type PayFrequency,
   type PaymentType,
@@ -25,7 +28,7 @@ import {
   type Series,
   workOutPayments,
 } from '@prepenny/engine';
-import { parseAmount, parseSignedAmount } from './amount.ts';
+import { amountForTyping, parseAmount, parseSignedAmount } from './amount.ts';
 import {
   buildWhen,
   holidayRuleFor,
@@ -637,6 +640,15 @@ export interface DebtForm extends OutgoingForm {
   readonly interest: string;
   /** Credit cards: the statement day, needed with an interest rate (D13). */
   readonly statementDay: string;
+  /** Credit cards: "0% until", if it has an offer (D106). */
+  readonly zeroUntil: string;
+  /** Credit cards: the minimum payment, not known, typed from the statement, or a rule (D101). */
+  readonly minimum: 'none' | 'typed' | 'rule';
+  readonly minimumAmount: string;
+  /** The rule's percentage of the balance: 1 in "interest plus 1% of the balance". */
+  readonly minimumPercent: string;
+  /** The rule's lowest minimum: £5 in "at least £5". */
+  readonly minimumAtLeast: string;
   /** "I don't have payments planned for it yet". */
   readonly noPayments: boolean;
 }
@@ -648,6 +660,10 @@ export type DebtField =
   | 'rate'
   | 'interest'
   | 'statementDay'
+  | 'zeroUntil'
+  | 'minimumAmount'
+  | 'minimumPercent'
+  | 'minimumAtLeast'
   | keyof PaymentErrors;
 
 export type DebtMistake =
@@ -656,6 +672,10 @@ export type DebtMistake =
   | 'currencyRateError'
   | 'interestError'
   | 'statementDayError'
+  | 'statementDayNeeded'
+  | 'zeroUntilError'
+  | 'minimumError'
+  | 'percentError'
   | NonNullable<PaymentErrors[keyof PaymentErrors]>;
 
 export type DebtErrors = Partial<Record<DebtField, DebtMistake>>;
@@ -674,8 +694,130 @@ export function blankDebt(accountId: string): DebtForm {
     started: '',
     interest: '',
     statementDay: '',
+    zeroUntil: '',
+    minimum: 'none',
+    minimumAmount: '',
+    minimumPercent: '1',
+    minimumAtLeast: '5.00',
     noPayments: false,
   };
+}
+
+/** A debt's card details as the engine wants them, or the mistakes in them (D98, D101, D106). */
+interface CardDetails {
+  readonly interestRate: string | null;
+  readonly statementDay: number | null;
+  readonly zeroInterestUntil: string | null;
+  readonly minimumRule: MinimumRule | null;
+}
+
+function cardDetailsOf(form: DebtForm, errors: DebtErrors): CardDetails {
+  const none: CardDetails = {
+    interestRate: null,
+    statementDay: null,
+    zeroInterestUntil: null,
+    minimumRule: null,
+  };
+  if (form.kind !== 'credit-card') return none;
+  let interestRate: string | null = null;
+  if (form.interest.trim() !== '') {
+    interestRate = positiveDecimal(form.interest.replace(/%$/, ''), PERCENT);
+    if (interestRate === null || Number(interestRate) > 100) errors.interest = 'interestError';
+  }
+  let minimumRule: MinimumRule | null = null;
+  if (form.minimum === 'typed') {
+    const amount = parseAmount(form.minimumAmount);
+    if (amount === null) errors.minimumAmount = 'minimumError';
+    else minimumRule = { kind: 'typed', amount };
+  } else if (form.minimum === 'rule') {
+    const percent = positiveDecimal(form.minimumPercent.replace(/%$/, ''), PERCENT);
+    if (percent === null || Number(percent) > 100) errors.minimumPercent = 'percentError';
+    const atLeast = form.minimumAtLeast.trim() === '' ? 0 : parseAmount(form.minimumAtLeast);
+    if (atLeast === null) errors.minimumAtLeast = 'minimumError';
+    if (percent !== null && atLeast !== null) minimumRule = { kind: 'rule', percent, atLeast };
+  }
+  let statementDay: number | null = null;
+  const typed = form.statementDay.trim();
+  const needed = form.interest.trim() !== '' || form.minimum === 'rule';
+  if (typed !== '') {
+    const day = Number(typed);
+    if (!/^\d{1,2}$/.test(typed) || day < 1 || day > 31) errors.statementDay = 'statementDayError';
+    else statementDay = day;
+  } else if (needed) {
+    errors.statementDay = form.interest.trim() !== '' ? 'statementDayError' : 'statementDayNeeded';
+  }
+  let zeroInterestUntil: string | null = null;
+  if (form.zeroUntil.trim() !== '') {
+    zeroInterestUntil = readDate(form.zeroUntil);
+    if (zeroInterestUntil === null) errors.zeroUntil = 'zeroUntilError';
+  }
+  return { interestRate, statementDay, zeroInterestUntil, minimumRule };
+}
+
+/** A stored debt as its form starts in the change sheet (D153). */
+export function debtFormOf(debt: Debt, accountId: string): DebtForm {
+  const minimum = debt.minimumRule;
+  return {
+    ...blankDebt(accountId),
+    name: debt.name,
+    kind: debt.kind,
+    currency: (DEBT_CURRENCIES as readonly string[]).includes(debt.currency)
+      ? (debt.currency as DebtCurrency)
+      : 'GBP',
+    rate: debt.rate ?? '',
+    owed: amountForTyping(debt.balance),
+    started: amountForTyping(debt.startingBalance),
+    interest: debt.interestRate ?? '',
+    statementDay: debt.statementDay === undefined ? '' : String(debt.statementDay),
+    zeroUntil: debt.zeroInterestUntil ?? '',
+    minimum: minimum === undefined ? 'none' : minimum.kind,
+    minimumAmount: minimum?.kind === 'typed' ? amountForTyping(minimum.amount) : '',
+    minimumPercent: minimum?.kind === 'rule' ? minimum.percent : '1',
+    minimumAtLeast: minimum?.kind === 'rule' ? amountForTyping(minimum.atLeast) : '5.00',
+    noPayments: true,
+  };
+}
+
+/**
+ * The change to a debt's details (D153): only what differs is sent, and a
+ * credit card's own fields are cleared when it becomes another kind (D98).
+ * Its balance changes with Update from statement, not here.
+ */
+export function buildDebtChange(
+  form: DebtForm,
+  debt: Debt,
+):
+  | { readonly ok: true; readonly command: EditCommand | null }
+  | { readonly ok: false; readonly errors: DebtErrors } {
+  const errors: DebtErrors = {};
+  const name = form.name.trim();
+  if (name === '') errors.name = 'nameError';
+  const started = optionalAmount(form.started);
+  if (started === 'bad') errors.started = 'startedError';
+  let rate: string | null = null;
+  if (form.currency !== 'GBP') {
+    rate = positiveDecimal(form.rate, RATE);
+    if (rate === null) errors.rate = 'currencyRateError';
+  }
+  const card = cardDetailsOf(form, errors);
+  if (Object.keys(errors).length > 0 || started === 'bad') return { ok: false, errors };
+  const edits: { -readonly [K in keyof DebtEdits]: DebtEdits[K] } = {};
+  if (name !== debt.name) edits.name = name;
+  if (form.kind !== debt.kind) edits.kind = form.kind;
+  if (form.currency !== debt.currency) edits.currency = form.currency;
+  if (rate !== (debt.rate ?? null)) edits.rate = rate;
+  const startingBalance = started ?? debt.balance;
+  if (startingBalance !== debt.startingBalance) edits.startingBalance = startingBalance;
+  if (card.interestRate !== (debt.interestRate ?? null)) edits.interestRate = card.interestRate;
+  if (card.statementDay !== (debt.statementDay ?? null)) edits.statementDay = card.statementDay;
+  if (card.zeroInterestUntil !== (debt.zeroInterestUntil ?? null)) {
+    edits.zeroInterestUntil = card.zeroInterestUntil;
+  }
+  if (JSON.stringify(card.minimumRule) !== JSON.stringify(debt.minimumRule ?? null)) {
+    edits.minimumRule = card.minimumRule;
+  }
+  if (Object.keys(edits).length === 0) return { ok: true, command: null };
+  return { ok: true, command: { kind: 'change-debt', debtId: debt.id, edits } };
 }
 
 export function debtTyped(form: DebtForm): boolean {
@@ -703,18 +845,7 @@ export function buildDebt(
     rate = positiveDecimal(form.rate, RATE);
     if (rate === null) errors.rate = 'currencyRateError';
   }
-  let interest: string | null = null;
-  let statementDay: number | null = null;
-  if (form.kind === 'credit-card' && form.interest.trim() !== '') {
-    interest = positiveDecimal(form.interest.replace(/%$/, ''), PERCENT);
-    if (interest === null || Number(interest) > 100) errors.interest = 'interestError';
-    const day = Number(form.statementDay.trim());
-    if (!/^\d{1,2}$/.test(form.statementDay.trim()) || day < 1 || day > 31) {
-      errors.statementDay = 'statementDayError';
-    } else {
-      statementDay = day;
-    }
-  }
+  const card = cardDetailsOf(form, errors);
   let payment: ReturnType<typeof buildOutgoing> | null = null;
   if (!form.noPayments) {
     payment = buildOutgoing({ ...form, name: name === '' ? '-' : name }, 'debt', today, holidays);
@@ -736,8 +867,10 @@ export function buildDebt(
         balanceOn: today,
         balanceAt: now,
         startingBalance: started ?? owed,
-        ...(interest === null ? {} : { interestRate: interest }),
-        ...(statementDay === null ? {} : { statementDay }),
+        ...(card.interestRate === null ? {} : { interestRate: card.interestRate }),
+        ...(card.zeroInterestUntil === null ? {} : { zeroInterestUntil: card.zeroInterestUntil }),
+        ...(card.statementDay === null ? {} : { statementDay: card.statementDay }),
+        ...(card.minimumRule === null ? {} : { minimumRule: card.minimumRule }),
       },
     },
   ];

@@ -5,25 +5,22 @@
 // debts". Money owed to a person can be in another currency, at the rate
 // the person sets.
 
-import type { DebtKind, EditCommand } from '@prepenny/engine';
-import { DEBT_KINDS } from '@prepenny/engine';
+import type { EditCommand } from '@prepenny/engine';
 import { useId, useState } from 'react';
 import { newId, timeInOrder } from '../../lib/ids.ts';
-import { formatMoney } from '../../lib/money.ts';
+import { formatIn, formatMoney } from '../../lib/money.ts';
 import type { PaymentErrors } from '../../lib/new-payment.ts';
 import { seriesWords } from '../../lib/schedule-words.ts';
 import {
   blankDebt,
   buildDebt,
-  DEBT_CURRENCIES,
-  type DebtCurrency,
   type DebtErrors,
   type DebtForm,
   debtTyped,
 } from '../../lib/setup-forms.ts';
 import { strings } from '../../strings/en-GB.ts';
-import { ChoiceList } from '../ChoiceList.tsx';
-import { CheckOption, describedBy, Field, MoneyInput } from '../Fields.tsx';
+import { DEBT_FIELD_ORDER, DebtFields } from '../DebtFields.tsx';
+import { CheckOption } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
 import { focusFirst } from './focus.ts';
 import { OutgoingFields, outgoingFieldIds } from './OutgoingFields.tsx';
@@ -31,16 +28,6 @@ import { AddedList, SetupCard, StepFrame } from './StepFrame.tsx';
 import { useStep } from './useStep.ts';
 
 const t = strings.setup.debts;
-
-/** The sign in front of an amount in each currency. */
-const SIGNS: Readonly<Record<DebtCurrency, string>> = t.signs;
-
-/** An amount in a debt's own currency, for its card. */
-function inCurrency(minor: number, currency: string): string {
-  const pounds = formatMoney(minor);
-  const sign = SIGNS[currency as DebtCurrency];
-  return sign === undefined || sign === SIGNS.GBP ? pounds : pounds.replace(SIGNS.GBP, sign);
-}
 
 interface Draft {
   readonly key: string;
@@ -87,9 +74,9 @@ export function StepDebts() {
           if (mistakes === undefined) return [];
           const base = formId(draft.key);
           return [
-            ...(['name', 'rate', 'owed', 'started', 'interest', 'statementDay'] as const)
-              .filter((field) => mistakes[field] !== undefined)
-              .map((field) => `${base}-${field}`),
+            ...DEBT_FIELD_ORDER.filter((field) => mistakes[field] !== undefined).map(
+              (field) => `${base}-${field}`,
+            ),
             ...outgoingFieldIds(`${base}-pay`, mistakes as PaymentErrors),
           ];
         }),
@@ -138,8 +125,8 @@ export function StepDebts() {
               name: debt.name,
               line:
                 payment === undefined
-                  ? t.card(inCurrency(debt.balance, debt.currency), t.kinds[debt.kind])
-                  : `${t.card(inCurrency(debt.balance, debt.currency), t.kinds[debt.kind])}. ${t.cardPayment(formatMoney(payment.amount), seriesWords(payment, step.today))}`,
+                  ? t.card(formatIn(debt.balance, debt.currency), t.kinds[debt.kind])
+                  : `${t.card(formatIn(debt.balance, debt.currency), t.kinds[debt.kind])}. ${t.cardPayment(formatMoney(payment.amount), seriesWords(payment, step.today))}`,
               onRemove: () => step.removeItem(item.id),
               problem: step.removeProblem(item.id),
             },
@@ -151,143 +138,16 @@ export function StepDebts() {
         const form = draft.form;
         const mistakes = errors[draft.key] ?? {};
         const base = formId(draft.key);
-        const error = (field: keyof DebtErrors) => {
-          const mistake = mistakes[field];
-          if (mistake === undefined) return undefined;
-          if (field === 'name') return t.nameError;
-          if (field === 'rate') return t.rateError;
-          return mistake in t ? (t as unknown as Record<string, string>)[mistake] : undefined;
-        };
-        const sign = SIGNS[form.currency];
         return (
           <SetupCard key={draft.key} heading={t.heading} testId="debt-form">
-            <Field id={`${base}-name`} label={t.name} error={error('name')}>
-              <input
-                id={`${base}-name`}
-                className={formStyles.input}
-                type="text"
-                autoComplete="off"
-                value={form.name}
-                aria-invalid={error('name') !== undefined}
-                aria-describedby={describedBy(`${base}-name`, error('name'))}
-                onChange={(event) => setForm(draft.key, { name: event.target.value })}
-              />
-            </Field>
-            <ChoiceList<DebtKind>
-              legend={t.kind}
-              name={`${base}-kind`}
-              value={form.kind}
-              options={DEBT_KINDS.map((value) => ({ value, label: t.kinds[value] }))}
-              onChange={(kind) =>
-                setForm(draft.key, {
-                  kind,
-                  // Only money owed to a person is offered in another currency.
-                  ...(kind === 'owed-to-a-person' ? {} : { currency: 'GBP' as const }),
-                })
-              }
+            <DebtFields
+              base={base}
+              form={form}
+              set={(change) => setForm(draft.key, change)}
+              errors={mistakes}
+              today={step.today}
+              showOwed
             />
-            {form.kind === 'owed-to-a-person' ? (
-              <ChoiceList<DebtCurrency>
-                legend={t.currency}
-                name={`${base}-currency`}
-                value={form.currency}
-                options={DEBT_CURRENCIES.map((value) => ({ value, label: t.currencies[value] }))}
-                onChange={(currency) => setForm(draft.key, { currency })}
-              />
-            ) : null}
-            {form.currency === 'GBP' ? null : (
-              <Field
-                id={`${base}-rate`}
-                label={t.rate(form.currency)}
-                error={error('rate')}
-                hint={t.rateHint}
-              >
-                <input
-                  id={`${base}-rate`}
-                  className={`${formStyles.input} num`}
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  value={form.rate}
-                  aria-invalid={error('rate') !== undefined}
-                  aria-describedby={describedBy(`${base}-rate`, error('rate'), [
-                    `${base}-rate-hint`,
-                  ])}
-                  onChange={(event) => setForm(draft.key, { rate: event.target.value })}
-                />
-              </Field>
-            )}
-            <Field id={`${base}-owed`} label={t.owed} error={error('owed')}>
-              <MoneyInput
-                id={`${base}-owed`}
-                symbol={sign}
-                value={form.owed}
-                onChange={(owed) => setForm(draft.key, { owed })}
-                invalid={error('owed') !== undefined}
-                describedBy={describedBy(`${base}-owed`, error('owed'))}
-              />
-            </Field>
-            <Field
-              id={`${base}-started`}
-              label={t.started}
-              error={error('started')}
-              hint={t.startedHint}
-            >
-              <MoneyInput
-                id={`${base}-started`}
-                symbol={sign}
-                value={form.started}
-                onChange={(started) => setForm(draft.key, { started })}
-                invalid={error('started') !== undefined}
-                describedBy={describedBy(`${base}-started`, error('started'), [
-                  `${base}-started-hint`,
-                ])}
-              />
-            </Field>
-            {form.kind === 'credit-card' ? (
-              <>
-                <Field
-                  id={`${base}-interest`}
-                  label={t.interest}
-                  error={error('interest')}
-                  hint={t.interestHint}
-                >
-                  <input
-                    id={`${base}-interest`}
-                    className={`${formStyles.input} num`}
-                    type="text"
-                    inputMode="decimal"
-                    autoComplete="off"
-                    value={form.interest}
-                    aria-invalid={error('interest') !== undefined}
-                    aria-describedby={describedBy(`${base}-interest`, error('interest'), [
-                      `${base}-interest-hint`,
-                    ])}
-                    onChange={(event) => setForm(draft.key, { interest: event.target.value })}
-                  />
-                </Field>
-                <Field
-                  id={`${base}-statementDay`}
-                  label={t.statementDay}
-                  error={error('statementDay')}
-                  hint={t.statementDayHint}
-                >
-                  <input
-                    id={`${base}-statementDay`}
-                    className={`${formStyles.input} num`}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={form.statementDay}
-                    aria-invalid={error('statementDay') !== undefined}
-                    aria-describedby={describedBy(`${base}-statementDay`, error('statementDay'), [
-                      `${base}-statementDay-hint`,
-                    ])}
-                    onChange={(event) => setForm(draft.key, { statementDay: event.target.value })}
-                  />
-                </Field>
-              </>
-            ) : null}
             <div className={formStyles.group}>
               <h2 className={formStyles.subheading}>{t.payments}</h2>
               <CheckOption

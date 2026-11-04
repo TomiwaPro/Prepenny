@@ -1,15 +1,9 @@
 import type { Metadata } from 'next';
-import { SimplePage } from '../../../components/SimplePage.tsx';
+import { DebtsScreen } from '../../../components/DebtsScreen.tsx';
 import { strings } from '../../../strings/en-GB.ts';
 
 export const metadata: Metadata = { title: strings.debts.heading };
 
 export default function DebtsPage() {
-  return (
-    <SimplePage
-      heading={strings.debts.heading}
-      purpose={strings.debts.purpose}
-      line={strings.debts.stillBeingBuilt}
-    />
-  );
+  return <DebtsScreen />;
 }
