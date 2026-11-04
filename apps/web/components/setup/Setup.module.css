@@ -1,0 +1,194 @@
+/* First-time setup (DESIGN.md, the setup sketches in ARCHITECTURE.md 4.6,
+   step 2e): one step a screen, on the paper, with rounded cards for what's
+   been added and for each form. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--column);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) var(--space-6);
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  min-height: var(--tap);
+}
+
+.count {
+  font-size: var(--size-label);
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.skip {
+  min-height: var(--tap);
+  padding: var(--space-2) var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--accent-text);
+  font-size: var(--size-second);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.heading {
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+}
+
+.heading:focus {
+  outline: none;
+}
+
+.intro {
+  font-size: var(--size-body);
+  color: var(--ink-muted);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* A form or a group of choices, on a card. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  min-width: 0;
+}
+
+.cardHeading {
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+/* What's been added so far, one row each. */
+.added {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  list-style: none;
+}
+
+.added > li + li {
+  border-top: 1px solid var(--divider);
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.itemWords {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.itemName {
+  font-size: var(--size-name);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.itemLine {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.label {
+  align-self: flex-start;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--nav-active);
+  font-size: var(--size-label);
+  font-weight: 700;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.row > * {
+  flex: 1 1 8rem;
+}
+
+/* The pattern's amounts and the usual weeks: two to a row when there's room. */
+.pairs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: var(--space-3);
+}
+
+/* The welcome. */
+
+.welcome {
+  justify-content: center;
+  gap: var(--space-3);
+  padding-top: var(--space-6);
+}
+
+.name {
+  font-size: var(--size-key-figure);
+  font-weight: 700;
+  color: var(--accent-text);
+  letter-spacing: -0.2px;
+}
+
+.tagline {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.description {
+  margin-bottom: var(--space-3);
+  font-size: var(--size-name);
+  color: var(--ink-muted);
+}
+
+/* Here's your plan. */
+
+.figures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
