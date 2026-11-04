@@ -84,12 +84,12 @@ function payment(fields: Partial<NewSeries> = {}): EditCommand {
   };
 }
 
-const newAccount = (id = 'pot', name = 'Christmas pot'): EditCommand => ({
+const newAccount = (id = 'pot', name = 'Christmas pot', balance = '40.00'): EditCommand => ({
   kind: 'add-account',
   account: { id, name, kind: 'savings', overdraftLimit: 0, warningLevel: 0 },
   balance: {
     id: `${id}-start`,
-    balance: pounds('40.00'),
+    balance: pounds(balance),
     checkedOn: samToday,
     checkedAt: '2026-10-25T12:00:00Z',
   },
@@ -121,12 +121,56 @@ describe('accounts (D151)', () => {
   });
 
   it('closes an account once nothing is planned in it, and then takes nothing new', () => {
-    const withPot = made(sam, newAccount());
+    const withPot = made(sam, newAccount('pot', 'Christmas pot', '0.00'));
     const closed = made(withPot, { kind: 'close-account', accountId: 'pot' });
     expect(closed.accounts.find((one) => one.id === 'pot')?.closed).toBe(true);
     refuses('account-closed', payment({ accountId: 'pot' }), closed);
     refuses('account-closed', { kind: 'close-account', accountId: 'pot' }, closed);
     refuses('account-closed', { kind: 'change-account', accountId: 'pot', edits: {} }, closed);
+  });
+
+  it('closes an account only at £0.00 at the end of today, once its money has moved (D158, D181)', () => {
+    // £40.00 left in it: refused until it's moved to another account.
+    const withPot = made(sam, newAccount());
+    refuses('account-has-money', { kind: 'close-account', accountId: 'pot' }, withPot);
+    const move = (from: string, to: string, amount: string): EditCommand[] => [
+      payment({
+        id: `move-${from}`,
+        accountId: from,
+        toAccountId: to,
+        name: 'Move',
+        direction: 'transfer',
+        amount: pounds(amount),
+        start: samToday,
+        type: 'savings',
+      }),
+      {
+        kind: 'tick',
+        seriesId: `move-${from}`,
+        originalDate: samToday,
+        tickedAt: '2026-10-25T12:05:00Z',
+      },
+    ];
+    const moved = move('pot', 'current', '40.00').reduce((now, one) => made(now, one), withPot);
+    const closed = made(moved, { kind: 'close-account', accountId: 'pot' });
+    expect(closed.accounts.find((one) => one.id === 'pot')?.closed).toBe(true);
+    // Overdrawn by £3.12: refused until that's moved into it from another account.
+    const overdrawn = made(sam, {
+      kind: 'add-account',
+      account: { id: 'old', name: 'Old', kind: 'current', overdraftLimit: 10_000, warningLevel: 0 },
+      balance: {
+        id: 'old-start',
+        balance: -pounds('3.12'),
+        checkedOn: samToday,
+        checkedAt: '2026-10-25T12:00:00Z',
+      },
+    });
+    refuses('account-has-money', { kind: 'close-account', accountId: 'old' }, overdrawn);
+    const filled = move('current', 'old', '3.12').reduce((now, one) => made(now, one), overdrawn);
+    made(filled, { kind: 'close-account', accountId: 'old' });
+    // An unticked move is still planned, so it's refused for that instead.
+    const unticked = made(withPot, move('pot', 'current', '40.00')[0] as EditCommand);
+    refuses('account-in-use', { kind: 'close-account', accountId: 'pot' }, unticked);
   });
 
   it('refuses to close an account while payments, budgets or goals still use it', () => {
@@ -515,7 +559,7 @@ describe('main pay and nation (D155)', () => {
 });
 
 describe('owner test 4: every refusal has a plain code', () => {
-  const withPot = made(sam, newAccount());
+  const withPot = made(sam, newAccount('pot', 'Christmas pot', '0.00'));
 
   it.each<[string, string, EditCommand]>([
     [

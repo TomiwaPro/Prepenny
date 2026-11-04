@@ -1,7 +1,9 @@
 // Adding, changing and closing accounts (brief 4.2, D151). Each is one edit,
 // so one undo (D87).
 
+import { balanceAtEndOf, workOutPlan } from '../balance/plan.ts';
 import { ACCOUNT_KINDS, type Account, type BalanceUpdate } from '../balance/types.ts';
+import { formatDate } from '../dates/day.ts';
 import { checkPence, checkPenceNotNegative } from '../money/pence.ts';
 import { paymentAtIndex } from '../schedule/payments.ts';
 import type { PreparedSeries } from '../schedule/series.ts';
@@ -124,10 +126,24 @@ function stillPlanned(context: Context, prepared: PreparedSeries): boolean {
 }
 
 /**
+ * The account's balance at the end of today, as the plan works it out
+ * (D158): what the bank showed, with everything up to today applied.
+ */
+function balanceAtEndOfToday(context: Context, id: string): number {
+  const today = formatDate(context.today);
+  const plan = workOutPlan({ ...context.input, today, to: today });
+  const account = plan.accounts.find((one) => one.account.id === id);
+  if (account === undefined) refuse('unknown-account', `Account ${id} isn't in the plan.`);
+  return balanceAtEndOf(account, today);
+}
+
+/**
  * Closes an account (D151). Refused while anything is still planned in it:
  * a payment, money set aside or a budget's bill that's still to come or not
- * ticked yet, a budget that hasn't ended, or a savings goal kept in it. The
- * account keeps its balance updates for the history.
+ * ticked yet, a budget that hasn't ended, or a savings goal kept in it. Also
+ * refused unless the plan shows £0.00 in it at the end of today, so money
+ * never quietly drops out of the plan (D158, D181). The account keeps its
+ * balance updates for the history.
  */
 export function closeAccount(context: Context, accountId: string): void {
   const account = accountNow(context, accountId);
@@ -151,6 +167,12 @@ export function closeAccount(context: Context, accountId: string): void {
   }
   for (const [goalId, { goal }] of context.checked.goals) {
     if (goal.accountId === id && goal.closed !== true) inUse(`goal ${goalId} is kept in it`);
+  }
+  if (balanceAtEndOfToday(context, id) !== 0) {
+    refuse(
+      'account-has-money',
+      `Account ${id} can't be closed until it shows nothing in it at the end of ${formatDate(context.today)}.`,
+    );
   }
   context.draft.set({ kind: 'account', id, value: { ...account, closed: true } });
 }
