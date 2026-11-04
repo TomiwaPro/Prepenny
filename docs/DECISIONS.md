@@ -3047,7 +3047,7 @@ Decided 4 Nov 2026 in step 2h, from the wording review. The owner asked for a li
 | Where | Before | Now |
 | --- | --- | --- |
 | Pay calculator and Your job | "The usual way, cumulative" | "The usual way, with all your pay so far this tax year" |
-| | "Week 1 or month 1, on an emergency code" | "Each payday taxed on its own: week 1 or month 1, W1, M1 or X on a payslip" |
+| | "Week 1 or month 1, on an emergency code" | "Each pay taxed on its own: week 1 or month 1, W1, M1 or X on a payslip" |
 | | "Worked on earnings from, each week" and "Up to, each week" | "Pension starts on pay over, each week" and "And stops at, each week" |
 | | "From your last payslip: gross for tax so far" and "…tax paid so far" | "Taxable pay so far this tax year" and "Tax paid so far this tax year", under the heading "From your last payslip", with where to find them on a payslip |
 | | "Check the tax week on it." | "Check the tax week you typed from that payslip." |

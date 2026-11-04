@@ -1016,7 +1016,7 @@ export const strings = {
     taxCodeHint: 'As it is on your payslip, for example 1257L.',
     basis: 'How your tax is worked out',
     cumulative: 'The usual way, with all your pay so far this tax year',
-    weekOne: 'Each payday taxed on its own: week 1 or month 1, W1, M1 or X on a payslip',
+    weekOne: 'Each pay taxed on its own: week 1 or month 1, W1, M1 or X on a payslip',
     pension: 'I pay into a workplace pension',
     pensionPercent: 'Percentage that comes off',
     pensionLower: (period: string) => `Pension starts on pay over, each ${period}`,
