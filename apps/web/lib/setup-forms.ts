@@ -781,7 +781,8 @@ export function debtFormOf(debt: Debt, accountId: string): DebtForm {
 /**
  * The change to a debt's details (D153): only what differs is sent, and a
  * credit card's own fields are cleared when it becomes another kind (D98).
- * Its balance changes with Update from statement, not here.
+ * Its balance changes with Update from statement, not here, and its
+ * currency never changes, because the balance is kept in it (D246).
  */
 export function buildDebtChange(
   form: DebtForm,
@@ -794,8 +795,9 @@ export function buildDebtChange(
   if (name === '') errors.name = 'nameError';
   const started = optionalAmount(form.started);
   if (started === 'bad') errors.started = 'startedError';
+  // The currency stays as it is: the balance is kept in it (D246).
   let rate: string | null = null;
-  if (form.currency !== 'GBP') {
+  if (debt.currency !== 'GBP') {
     rate = positiveDecimal(form.rate, RATE);
     if (rate === null) errors.rate = 'currencyRateError';
   }
@@ -804,7 +806,6 @@ export function buildDebtChange(
   const edits: { -readonly [K in keyof DebtEdits]: DebtEdits[K] } = {};
   if (name !== debt.name) edits.name = name;
   if (form.kind !== debt.kind) edits.kind = form.kind;
-  if (form.currency !== debt.currency) edits.currency = form.currency;
   if (rate !== (debt.rate ?? null)) edits.rate = rate;
   const startingBalance = started ?? debt.balance;
   if (startingBalance !== debt.startingBalance) edits.startingBalance = startingBalance;
@@ -926,16 +927,20 @@ export function justBefore(time: string): string {
   return new Date(Date.parse(time) - 1).toISOString();
 }
 
-/** When an account's latest balance was typed in, or null when it has none. */
+/** An account's latest balance update: when it was typed in and its date. Null when it has none. */
 export function latestBalanceAt(
-  updates: readonly { readonly accountId: string; readonly checkedAt: string }[],
+  updates: readonly {
+    readonly accountId: string;
+    readonly checkedAt: string;
+    readonly checkedOn: string;
+  }[],
   accountId: string,
-): string | null {
-  let latest: string | null = null;
+): { readonly checkedAt: string; readonly checkedOn: string } | null {
+  let latest: { checkedAt: string; checkedOn: string } | null = null;
   for (const update of updates) {
     if (update.accountId !== accountId) continue;
-    if (latest === null || Date.parse(update.checkedAt) > Date.parse(latest)) {
-      latest = update.checkedAt;
+    if (latest === null || Date.parse(update.checkedAt) > Date.parse(latest.checkedAt)) {
+      latest = { checkedAt: update.checkedAt, checkedOn: update.checkedOn };
     }
   }
   return latest;
@@ -946,15 +951,19 @@ export function latestBalanceAt(
  * the one with today in it. What's already spent this week or month is
  * saved as a spend for today, recorded just before the account's balance
  * was typed in, so it's inside that balance (D2) and only what's left
- * leaves today. Left empty, the whole amount leaves today.
+ * leaves today. Left empty, the whole amount leaves today. When the
+ * balance was typed on an earlier day, PrePenny can't tell how much of it
+ * the balance shows, so the spend is recorded now and the whole amount
+ * still leaves today, the safe choice; a pay-later card's spending never
+ * leaves the bank, so it isn't asked (D246).
  */
 export function buildBudget(
   form: BudgetForm,
   today: string,
   ids: { readonly budgetId: string; readonly spendId: string },
   now: string,
-  /** When the account's latest balance was typed in. */
-  balanceAt: string | null,
+  /** The account's latest balance update. */
+  balance: { readonly checkedAt: string; readonly checkedOn: string } | null,
 ):
   | { readonly ok: true; readonly commands: EditCommand[] }
   | { readonly ok: false; readonly errors: BudgetErrors } {
@@ -970,7 +979,7 @@ export function buildBudget(
       errors.billDay = 'billDayError';
     else billDay = day;
   }
-  const spent = optionalAmount(form.alreadySpent);
+  const spent = form.leaves === 'pay-later' ? null : optionalAmount(form.alreadySpent);
   if (spent === 'bad') errors.alreadySpent = 'alreadySpentError';
   if (Object.keys(errors).length > 0 || amount === null || spent === 'bad') {
     return { ok: false, errors };
@@ -1001,7 +1010,8 @@ export function buildBudget(
         budgetId: ids.budgetId,
         amount: spent,
         spentOn: today,
-        recordedAt: balanceAt === null ? now : justBefore(balanceAt),
+        recordedAt:
+          balance !== null && balance.checkedOn === today ? justBefore(balance.checkedAt) : now,
       },
     });
   }

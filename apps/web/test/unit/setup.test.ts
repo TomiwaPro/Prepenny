@@ -310,7 +310,10 @@ describe('Step 6: a budget starts this week or month (D230)', () => {
       amount: '260',
       alreadySpent: '230',
     };
-    const built = buildBudget(food, SUNDAY, { budgetId: 'food', spendId: 'spent' }, NOW, NOW);
+    const built = buildBudget(food, SUNDAY, { budgetId: 'food', spendId: 'spent' }, NOW, {
+      checkedAt: NOW,
+      checkedOn: SUNDAY,
+    });
     expect(built).toEqual({
       ok: true,
       commands: [
@@ -354,7 +357,7 @@ describe('Step 6: a budget starts this week or month (D230)', () => {
       SUNDAY,
       { budgetId: 'food', spendId: 'spent' },
       NOW,
-      NOW,
+      { checkedAt: NOW, checkedOn: SUNDAY },
     );
     if (!empty.ok) throw new Error('The budget should be fine.');
     expect(empty.commands.map((one) => one.kind)).toEqual(['add-budget']);
@@ -366,7 +369,7 @@ describe('Step 6: a budget starts this week or month (D230)', () => {
         SUNDAY,
         { budgetId: 'food', spendId: 'spent' },
         NOW,
-        NOW,
+        { checkedAt: NOW, checkedOn: SUNDAY },
       ),
     ).toEqual({ ok: false, errors: { alreadySpent: 'alreadySpentError' } });
   });
@@ -384,5 +387,29 @@ describe('Steps 3 to 5: rent and bills move to the next working day, debts keep 
       const built = buildOutgoing(form, type, SUNDAY, holidays);
       expect(built.ok && built.series.holidayRule).toBe(rule);
     }
+  });
+});
+
+describe('Step 6: "Already spent" only where it can be inside the balance (D246)', () => {
+  const food = { ...blankBudget('Food', 'month', 'current'), amount: '260', alreadySpent: '230' };
+  const ids = { budgetId: 'food', spendId: 'spent' };
+
+  it('records it now, so the whole amount still leaves today, when the balance is from an earlier day', () => {
+    const built = buildBudget(food, '2026-10-27', ids, NOW, {
+      checkedAt: '2026-10-25T09:00:00.000Z',
+      checkedOn: SUNDAY,
+    });
+    expect(built.ok && built.commands[1]).toMatchObject({
+      kind: 'spend',
+      spend: { spentOn: '2026-10-27', recordedAt: NOW },
+    });
+  });
+
+  it("doesn't save it for a pay-later card, whose spending never leaves the bank", () => {
+    const built = buildBudget({ ...food, leaves: 'pay-later', billDay: '29' }, SUNDAY, ids, NOW, {
+      checkedAt: NOW,
+      checkedOn: SUNDAY,
+    });
+    expect(built.ok && built.commands.map((one) => one.kind)).toEqual(['add-budget']);
   });
 });

@@ -241,23 +241,25 @@ export function StepSpending() {
                 {startsLine}
               </p>
             )}
-            <Field
-              id={`${base}-alreadySpent`}
-              label={every === 'week' ? t.alreadySpentWeek : t.alreadySpentMonth}
-              error={error('alreadySpent')}
-              hint={t.alreadySpentHint}
-            >
-              <MoneyInput
+            {payLater ? null : (
+              <Field
                 id={`${base}-alreadySpent`}
-                value={form.alreadySpent}
-                onChange={(alreadySpent) => setForm(draft.key, { alreadySpent })}
-                invalid={error('alreadySpent') !== undefined}
-                describedBy={describedBy(`${base}-alreadySpent`, error('alreadySpent'), [
-                  `${base}-alreadySpent-hint`,
-                  startsLine === null ? null : `${base}-starts`,
-                ])}
-              />
-            </Field>
+                label={every === 'week' ? t.alreadySpentWeek : t.alreadySpentMonth}
+                error={error('alreadySpent')}
+                hint={t.alreadySpentHint}
+              >
+                <MoneyInput
+                  id={`${base}-alreadySpent`}
+                  value={form.alreadySpent}
+                  onChange={(alreadySpent) => setForm(draft.key, { alreadySpent })}
+                  invalid={error('alreadySpent') !== undefined}
+                  describedBy={describedBy(`${base}-alreadySpent`, error('alreadySpent'), [
+                    `${base}-alreadySpent-hint`,
+                    startsLine === null ? null : `${base}-starts`,
+                  ])}
+                />
+              </Field>
+            )}
             <button
               type="button"
               className={formStyles.quiet}
