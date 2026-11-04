@@ -454,10 +454,10 @@ export function PayCalculator({
                 className={formStyles.outlined}
                 onClick={() => {
                   change((now) => ({ ...now, ...linesFromWeek(week) }));
-                  setUsed(t.usedWeek(week.name));
+                  setUsed(t.weekFilled(week.name));
                 }}
               >
-                {t.useWeek(week.name)}
+                {t.weekButton(week.name)}
               </button>
             ))}
           </div>
