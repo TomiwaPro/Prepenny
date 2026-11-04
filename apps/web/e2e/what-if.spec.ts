@@ -29,10 +29,6 @@ async function noSidewaysScroll(page: Page) {
 
 const undoBar = (page: Page) => page.getByTestId('undo-bar');
 
-/** The practice plan's payments, under "Payments, with your practice changes". */
-const practicePayments = (page: Page) =>
-  page.getByRole('region', { name: 'Payments, with your practice changes' });
-
 /** A payment's row in the practice plan, in the payday that starts on `start`. */
 async function practiceRow(page: Page, start: string, name: string): Promise<Locator> {
   await openPeriod(page, start);

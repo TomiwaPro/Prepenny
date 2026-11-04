@@ -9,11 +9,12 @@
 // next payday covers, and the usual week, with "Do this later".
 
 import type { HolidayRule, Series } from '@prepenny/engine';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { formatDay } from '../../lib/dates.ts';
 import { newId, timeInOrder } from '../../lib/ids.ts';
 import { formatMoney, rateWords } from '../../lib/money.ts';
 import { type MonthlyOn, monthlyChoices } from '../../lib/new-payment.ts';
+import { incomeFromDraft, takePayDraft } from '../../lib/pay-draft.ts';
 import { seriesWords } from '../../lib/schedule-words.ts';
 import {
   blankIncome,
@@ -92,6 +93,22 @@ export function StepPay() {
   const [details, setDetails] = useState<PayDetailsForm | null>(null);
   const [detailsErrors, setDetailsErrors] = useState<PayDetailsErrors>({});
   const refs = useWhenRefs();
+  // "Start a free plan with this pay" on the public calculator (step 2g): its
+  // pay fills in the first income, once.
+  const [fromCalculator, setFromCalculator] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: read once, when the step first opens
+  useEffect(() => {
+    if (savedIncomes.length > 0) return;
+    const draft = takePayDraft();
+    if (draft === null) return;
+    setDrafts((now) => {
+      const only = now[0];
+      return now.length === 1 && only !== undefined
+        ? [{ ...only, form: { ...only.form, ...incomeFromDraft(draft, step.today) } }]
+        : now;
+    });
+    setFromCalculator(true);
+  }, []);
 
   const setForm = (key: string, change: Partial<IncomeForm>) =>
     setDrafts((now) =>
@@ -290,6 +307,11 @@ export function StepPay() {
       busy={step.busy}
       problem={step.problem}
     >
+      {fromCalculator ? (
+        <p className={formStyles.note} data-testid="from-calculator">
+          {t.fromCalculator}
+        </p>
+      ) : null}
       <AddedList
         items={[
           ...savedSeries.map((series) => ({

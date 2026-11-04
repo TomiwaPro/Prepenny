@@ -8,6 +8,7 @@ import { runEdit, runEdits } from '../lib/edit.ts';
 import { workOutHome } from '../lib/home.ts';
 import { workOutAccountsView, workOutBudgetsView, workOutGoalsView } from '../lib/money-views.ts';
 import { previewPayChange } from '../lib/pay-preview.ts';
+import { workOutPayView } from '../lib/pay-view.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
 import { workOutSetupView } from '../lib/setup-view.ts';
 import { workOutWhatIfView } from '../lib/what-if-view.ts';
@@ -46,6 +47,8 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return workOutAccountsView(ask.records, ask.today);
     case 'compare':
       return compareWaysToPay(ask.records, ask.today, ask.compare);
+    case 'pay':
+      return workOutPayView(ask.records, ask.today);
     case 'what-if':
       return workOutWhatIfView(ask.records, ask.today, ask.practice);
     default:
