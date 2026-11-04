@@ -2,7 +2,8 @@
 // the plan saved in the phone's own database, the offline note, and opening
 // with no signal once the app has been opened before.
 
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures.ts';
 
 async function openHome(page: Page) {
   await page.goto('/app/');

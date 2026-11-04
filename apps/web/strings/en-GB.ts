@@ -852,6 +852,9 @@ export const strings = {
     example: 'Example plan',
     exampleLine: 'You can change the example to try things out. Your changes stay on this phone.',
     startAgain: 'Start again with the example',
+    /** With the person's own plan showing (step 2e). */
+    lookLine: 'See how PrePenny works with a made-up plan. Your own plan stays as it is.',
+    lookAtExample: 'Look at the example plan',
     startAgainCheck: 'Your changes to the example will go, and it goes back to how it started.',
     startAgainConfirm: 'Start again',
     keepChanges: 'Keep my changes',

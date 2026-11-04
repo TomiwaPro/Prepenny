@@ -7,11 +7,36 @@ import { useSyncExternalStore } from 'react';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Notes.module.css';
 
-export function ExampleBanner() {
+/**
+ * "This is an example plan. Nothing here is yours.", with a way back to the
+ * person's own plan, or to making one (step 2e). Without `onLeave`, as on
+ * the parts page, it's the words alone.
+ */
+export function ExampleBanner({
+  ownPlan = 'none',
+  onLeave,
+}: {
+  readonly ownPlan?: 'none' | 'setting-up' | 'ready';
+  readonly onLeave?: () => void;
+}) {
+  const leave =
+    ownPlan === 'ready'
+      ? strings.banners.backToMyPlan
+      : ownPlan === 'setting-up'
+        ? strings.banners.backToMakingMyPlan
+        : strings.banners.makeMyPlan;
   return (
-    <p className={`${styles.note} ${styles.example}`} data-testid="example-banner">
-      {strings.banners.example}
-    </p>
+    <div
+      className={`${styles.note} ${styles.example} ${styles.withButton}`}
+      data-testid="example-banner"
+    >
+      <p>{strings.banners.example}</p>
+      {onLeave === undefined ? null : (
+        <button type="button" className={styles.leave} onClick={onLeave}>
+          {leave}
+        </button>
+      )}
+    </div>
   );
 }
 

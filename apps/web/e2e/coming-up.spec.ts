@@ -4,7 +4,7 @@
 // old address, no sideways scrolling, text at 200% and tap targets.
 
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import {
   AXE_TAGS,
   chooseView,
@@ -17,6 +17,7 @@ import {
   period,
   rowIn,
 } from './coming-up.ts';
+import { expect, test } from './fixtures.ts';
 
 async function noAxeProblems(page: Page) {
   expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
@@ -57,7 +58,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
           { exact: true },
         ),
       ).toBeVisible();
-      await expect(page.getByTestId('example-banner')).toHaveText(
+      await expect(page.getByTestId('example-banner').locator('p')).toHaveText(
         'This is an example plan. Nothing here is yours.',
       );
       const account = page.getByTestId('plan-account');

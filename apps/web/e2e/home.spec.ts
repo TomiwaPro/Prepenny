@@ -4,7 +4,8 @@
 // and WCAG 2.2 AA checked by axe in light and dark.
 
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures.ts';
 
 const MINUS = '−';
 
@@ -59,7 +60,7 @@ async function clippedText(page: Page) {
 }
 
 async function expectEveryFigure(page: Page) {
-  await expect(page.getByTestId('example-banner')).toHaveText(
+  await expect(page.getByTestId('example-banner').locator('p')).toHaveText(
     'This is an example plan. Nothing here is yours.',
   );
 
