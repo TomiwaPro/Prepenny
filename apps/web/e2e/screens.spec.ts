@@ -89,7 +89,7 @@ for (const shot of planShots) {
     mkdirSync(step, { recursive: true });
     if (shot.sheet) {
       const fri30 = page.locator('[data-testid="period"][data-start="2026-10-30"]');
-      await fri30.locator(':scope > h3 > button').click();
+      await fri30.locator(':scope > :is(h3, h4) > button').click();
       await fri30.getByRole('button', { name: /^Rent / }).click();
       await expect(page.getByRole('dialog', { name: 'Rent' })).toBeVisible();
       await page.screenshot({ path: join(step, shot.file) });
@@ -245,7 +245,7 @@ for (const shot of comingUpShots) {
     if (shot.open !== null) {
       await page.getByRole('button', { name: 'Got it' }).click();
       const payday = page.locator(`[data-testid="period"][data-start="${shot.open}"]`);
-      await payday.locator(':scope > h3 > button').click();
+      await payday.locator(':scope > :is(h3, h4) > button').click();
       await expect(payday).toHaveAttribute('data-open', 'true');
       // Nothing is focused, so the picture shows the page as it looks.
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -446,7 +446,7 @@ test('Step 2g: what-if-360-light.png', async ({ browser }) => {
   await page.goto('/app/what-if/?from=coming-up');
   await expect(page.getByTestId('side-by-side')).toBeVisible();
   const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
-  await friday.locator(':scope > h3 > button').click();
+  await friday.locator(':scope > :is(h3, h4) > button').click();
   await friday.getByRole('button', { name: /^Pay Fri/ }).click();
   const sheet = page.getByRole('dialog', { name: 'Pay' });
   await sheet.getByLabel('Amount').fill('503.06');

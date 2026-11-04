@@ -178,7 +178,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(lowest.getByText('Short', { exact: true })).toBeVisible();
       await nav(page, 'Coming up').click();
       const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
-      await friday.locator(':scope > h3 > button').click();
+      await friday.locator(':scope > :is(h3, h4) > button').click();
       await expect(friday.getByRole('button', { name: /^Pay Fri 30 Oct, estimate/ })).toContainText(
         '+£452.17',
       );
@@ -361,4 +361,23 @@ fresh('the public page stays readable with text at 200%', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Work out take-home pay' })).toBeVisible();
   await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
   expect(await layoutProblems(page)).toEqual([]);
+});
+
+test('after Remove, focus goes to the Add button for that list, never the page itself (WCAG 2.4.3)', async ({
+  page,
+}) => {
+  await openCalculator(page);
+  const lists = [
+    ['Add another kind of hours', 'Remove this line'],
+    ['Add a fixed amount, such as a shift premium', 'Remove this amount'],
+    ['Add another deduction, such as union fees', 'Remove this deduction'],
+  ] as const;
+  for (const [add, remove] of lists) {
+    const addButton = page.getByRole('button', { name: add, exact: true });
+    // Two of them, so Remove takes one and the list stays.
+    await addButton.click();
+    await addButton.click();
+    await page.getByRole('button', { name: remove, exact: true }).last().click();
+    await expect(addButton).toBeFocused();
+  }
 });

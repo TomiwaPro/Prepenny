@@ -41,7 +41,7 @@ import formStyles from '../Form.module.css';
 import { ChosenDates, isDate, monthlyLabel, useWhenRefs } from '../WhenFields.tsx';
 import { focusFirst } from './focus.ts';
 import styles from './Setup.module.css';
-import { AddedList, SetupCard, StepFrame } from './StepFrame.tsx';
+import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.tsx';
 import { useStep } from './useStep.ts';
 
 const t = strings.setup.pay;
@@ -357,7 +357,10 @@ export function StepPay() {
           onRemove={
             index === 0 && savedSeries.length === 0
               ? null
-              : () => setDrafts((now) => now.filter((one) => one.key !== draft.key))
+              : () => {
+                  setDrafts((now) => now.filter((one) => one.key !== draft.key));
+                  focusAddAnother();
+                }
           }
           fieldId={(field) => fieldId(draft.key, field)}
           today={step.today}
@@ -369,6 +372,7 @@ export function StepPay() {
       ))}
 
       <button
+        data-add-another
         type="button"
         className={formStyles.outlined}
         onClick={() => {
@@ -392,6 +396,7 @@ export function StepPay() {
               setMainPayError(false);
             }}
             describedBy={`${id}-main-pay-hint${mainPayError ? ` ${id}-main-pay-error` : ''}`}
+            invalid={mainPayError}
           />
           <p id={`${id}-main-pay-hint`} className={formStyles.hint}>
             {t.mainPayHint}
@@ -754,6 +759,7 @@ function IncomeFields({
                   describedBy={
                     error('setAsideTo') === undefined ? undefined : `${fieldId('setAsideTo')}-error`
                   }
+                  invalid={error('setAsideTo') !== undefined}
                 />
                 {error('setAsideTo') === undefined ? null : (
                   <p id={`${fieldId('setAsideTo')}-error`} className={formStyles.error}>

@@ -97,7 +97,7 @@ function Job({
         type="button"
         className={formStyles.outlined}
         aria-haspopup="dialog"
-        aria-describedby={headingId}
+        aria-label={t.changeFor(job.name)}
         onClick={onChange}
       >
         {t.change}
@@ -118,9 +118,16 @@ export function JobScreen() {
         back={{ label: t.back, href: '/app/more/' }}
       />
       {view === null ? (
-        <p className={screenStyles.card} role={failed ? 'alert' : undefined}>
-          {failed ? strings.errors.plan : t.loading}
-        </p>
+        failed ? (
+          // A new line, so screen readers read it out (WCAG 4.1.3).
+          <p key="failed" className={screenStyles.card} role="alert">
+            {strings.errors.plan}
+          </p>
+        ) : (
+          <p key="loading" className={screenStyles.card}>
+            {t.loading}
+          </p>
+        )
       ) : view.jobs.length === 0 ? (
         <section className={screenStyles.card} aria-labelledby="no-job">
           <h2 id="no-job" className={screenStyles.cardTitle}>

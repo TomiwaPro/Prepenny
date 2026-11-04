@@ -292,6 +292,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // Anything added can be removed while setting up, as one undo (D221)…
       await again.getByRole('button', { name: 'Remove Rent' }).click();
       await expect(again.getByTestId('added')).toHaveCount(0);
+      // Its row and button have gone, so focus moves to the step's title (WCAG 2.4.3).
+      await expect(again.getByRole('heading', { level: 1 })).toBeFocused();
       await expect(box(again, 'Amount')).toBeVisible();
       expect((await ownRecords(again)).series.map((one) => one.name)).toEqual(['Pay']);
       // …except something a later step uses: the pay arrives in the account.

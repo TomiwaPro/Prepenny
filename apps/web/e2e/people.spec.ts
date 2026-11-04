@@ -108,7 +108,7 @@ async function expectHomeLowest(page: Page, days: Days, account: string, today: 
 async function practiceSkip(page: Page, start: string, name: string) {
   const where = period(page, start);
   if ((await where.getAttribute('data-open')) !== 'true') {
-    await where.locator(':scope > h3 > button').click();
+    await where.locator(':scope > :is(h3, h4) > button').click();
   }
   await where
     .getByRole('button', { name: new RegExp(`^${name} (Mon|Tue|Wed|Thu|Fri|Sat|Sun)`) })
@@ -153,12 +153,16 @@ async function priyaJourney(page: Page) {
   const view = page.getByRole('dialog', { name: 'View' });
   await view.getByRole('radio', { name: 'By calendar month' }).check();
   await view.getByRole('button', { name: 'Done' }).click();
-  await expect(period(page, '2026-11-01').locator(':scope > h3')).toContainText('November');
+  await expect(period(page, '2026-11-01').locator(':scope > :is(h3, h4)')).toContainText(
+    'November',
+  );
   for (let month = 0; month < 3; month += 1) {
     await page.getByRole('button', { name: 'Show another month' }).click();
   }
-  await expect(period(page, '2027-01-01').locator(':scope > h3')).toContainText('January 2027');
-  await period(page, '2027-01-01').locator(':scope > h3 > button').click();
+  await expect(period(page, '2027-01-01').locator(':scope > :is(h3, h4)')).toContainText(
+    'January 2027',
+  );
+  await period(page, '2027-01-01').locator(':scope > :is(h3, h4) > button').click();
   await expect(rowIn(page, '2027-01-01', 'Car insurance')).toContainText(`${MINUS}£612.40`);
   await noAxeProblems(page);
   await page.getByRole('button', { name: 'View', exact: true }).click();
@@ -667,7 +671,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // What if: his Fri 30 Oct pay £100 less, beside the real plan (brief 4.10, D135).
       await openWhatIf(page);
       const pay = period(page, '2026-10-30');
-      await pay.locator(':scope > h3 > button').click();
+      await pay.locator(':scope > :is(h3, h4) > button').click();
       await pay.getByRole('button', { name: /^Pay Fri/ }).click();
       const sheet = page.getByRole('dialog', { name: 'Pay' });
       await sheet.getByLabel('Amount').fill('503.06');

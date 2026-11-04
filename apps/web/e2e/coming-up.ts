@@ -28,7 +28,7 @@ export const period = (page: Page, start: string) =>
 
 /** The button that opens and closes a later payday or month. */
 export const paydayButton = (page: Page, start: string) =>
-  period(page, start).locator(':scope > h3 > button');
+  period(page, start).locator(':scope > :is(h3, h4) > button');
 
 /** Opens a later payday or month in place, if it isn't open already (D211). */
 export async function openPeriod(page: Page, start: string) {

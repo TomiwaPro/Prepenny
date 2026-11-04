@@ -353,9 +353,16 @@ export function PayScreen() {
         back={{ label: t.back, href: '/app/more/' }}
       />
       {initial === null || view === null ? (
-        <p className={screenStyles.card} role={failed ? 'alert' : undefined}>
-          {failed ? strings.errors.plan : t.loading}
-        </p>
+        failed ? (
+          // A new line, so screen readers read it out (WCAG 4.1.3).
+          <p key="failed" className={screenStyles.card} role="alert">
+            {strings.errors.plan}
+          </p>
+        ) : (
+          <p key="loading" className={screenStyles.card}>
+            {t.loading}
+          </p>
+        )
       ) : (
         <PayCalculator
           initial={initial}

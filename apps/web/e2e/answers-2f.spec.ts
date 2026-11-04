@@ -114,12 +114,24 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(question.getByRole('radio', { name: 'Yes' })).not.toBeChecked();
       await expect(question.getByRole('radio', { name: 'No' })).not.toBeChecked();
       await noAxeProblems(page);
-      await sheet.getByRole('button', { name: 'Close this debt' }).click();
-      await expect(sheet.getByRole('alert')).toHaveText('Choose Yes or No first.');
-      await expect(question.getByRole('radio', { name: 'Yes' })).toBeFocused();
+      // The mistake is read with the radio that takes focus, every time Close is
+      // tapped, as a text box's mistake is (D203, step 2h).
+      for (let tap = 0; tap < 2; tap += 1) {
+        await sheet.getByRole('button', { name: 'Close this debt' }).click();
+        const yes = question.getByRole('radio', { name: 'Yes' });
+        await expect(yes).toBeFocused();
+        await expect(yes).toHaveAccessibleDescription('Choose Yes or No first.');
+        await expect(yes).toHaveAttribute('aria-invalid', 'true');
+        await expect(question.getByRole('radio', { name: 'No' })).toHaveAccessibleDescription(
+          'Choose Yes or No first.',
+        );
+      }
       await expect(sheet).toBeVisible();
       await question.getByRole('radio', { name: 'Yes' }).check();
-      await expect(sheet.getByRole('alert')).toHaveCount(0);
+      await expect(sheet.getByText('Choose Yes or No first.')).toHaveCount(0);
+      await expect(question.getByRole('radio', { name: 'Yes' })).not.toHaveAttribute(
+        'aria-invalid',
+      );
       await sheet.getByRole('button', { name: 'Close this debt' }).click();
       await expect(sheet).toBeHidden();
       await expect(undoBar(page)).toContainText(

@@ -23,7 +23,7 @@ import { CheckOption, describedBy, Field, MoneyInput } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
 import { focusFirst } from './focus.ts';
 import styles from './Setup.module.css';
-import { AddedList, SetupCard, StepFrame } from './StepFrame.tsx';
+import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.tsx';
 import { useStep } from './useStep.ts';
 
 const t = strings.setup.account;
@@ -240,7 +240,10 @@ export function StepAccounts() {
               <button
                 type="button"
                 className={formStyles.quiet}
-                onClick={() => setDrafts((now) => now.filter((one) => one.key !== draft.key))}
+                onClick={() => {
+                  setDrafts((now) => now.filter((one) => one.key !== draft.key));
+                  focusAddAnother();
+                }}
               >
                 {t.removeForm}
               </button>
@@ -250,6 +253,7 @@ export function StepAccounts() {
       })}
 
       <button
+        data-add-another
         type="button"
         className={formStyles.outlined}
         onClick={() => {

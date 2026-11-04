@@ -213,6 +213,7 @@ export function GoalFields({
                     describedBy={
                       error('fromAccount') === undefined ? undefined : `${base}-from-error`
                     }
+                    invalid={error('fromAccount') !== undefined}
                   />
                   {error('fromAccount') === undefined ? null : (
                     <p id={`${base}-from-error`} className={formStyles.error}>

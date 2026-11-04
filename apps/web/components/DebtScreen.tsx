@@ -15,7 +15,7 @@
 // removes; and closing the debt asks whether to remove its planned payments.
 
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { dateTile, formatDay } from '../lib/dates.ts';
 import type { DebtPaymentView, DebtRowView, DebtsView, DebtView } from '../lib/debts-view.ts';
 import { formatIn, formatMoney, perPoundWords } from '../lib/money.ts';
@@ -358,13 +358,24 @@ export function DebtScreen() {
   const debt =
     view === null ? null : ([...view.debts, ...view.closed].find((one) => one.id === id) ?? null);
   const back = { label: t.back, href: '/app/debts/' };
+  const name = debt?.name ?? null;
+  // The page's title names the debt, as its heading does (WCAG 2.4.2, step 2h).
+  useEffect(() => {
+    document.title = strings.app.title(name ?? strings.debts.heading);
+  }, [name]);
   if (view === null) {
     return (
       <>
         <ScreenHeader heading={strings.debts.heading} purpose={t.purpose} back={back} />
-        <p className={styles.card} role={failed ? 'alert' : undefined}>
-          {failed ? strings.errors.plan : strings.debts.loading}
-        </p>
+        {failed ? (
+          <p key="failed" className={styles.card} role="alert">
+            {strings.errors.plan}
+          </p>
+        ) : (
+          <p key="loading" className={styles.card}>
+            {strings.debts.loading}
+          </p>
+        )}
       </>
     );
   }

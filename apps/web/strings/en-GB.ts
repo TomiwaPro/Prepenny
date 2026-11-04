@@ -1222,6 +1222,9 @@ export const strings = {
         ? 'Overtime or a missed shift is saved for a payday still to come. Changing these details works out that pay again.'
         : `${count} changes for overtime or missed shifts are saved for paydays still to come. Changing these details works out that pay again.`,
     change: 'Change these details',
+    /** The button's name for screen readers, so two jobs' buttons sound different. */
+    changeFor: (name: string) =>
+      name === '' ? 'Change these details' : `Change these details for ${name}`,
     sheetTitle: 'Your job details',
     overtimeHeading: 'Overtime and missed shifts',
     sheetIntro: "Change anything that's different on your latest payslip.",

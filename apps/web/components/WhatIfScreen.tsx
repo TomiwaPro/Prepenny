@@ -137,9 +137,14 @@ function Shortfall({
           </p>
           <ul id={listId} className={styles.list} data-testid="could-move">
             {shown.map((one, index) => (
-              // Two payments can share a name and a day, so the place in the list is part of the key.
-              // biome-ignore lint/suspicious/noArrayIndexKey: the list is worked out afresh each time
-              <li key={`${index} ${one.name} ${one.date}`} className={whatIfStyles.moveRow}>
+              <li
+                // Two payments can share a name and a day, so the place in the list is part of the key.
+                // biome-ignore lint/suspicious/noArrayIndexKey: the list is worked out afresh each time
+                key={`${index} ${one.name} ${one.date}`}
+                className={whatIfStyles.moveRow}
+                // The first newly shown row takes focus when Show all goes (WCAG 2.4.3).
+                tabIndex={index === COULD_MOVE_SHOWN ? -1 : undefined}
+              >
                 <span className={whatIfStyles.moveName}>
                   <span>{one.name}</span>
                   <span className={styles.second}>{formatDay(one.date, today)}</span>
@@ -153,7 +158,13 @@ function Shortfall({
               type="button"
               className={formStyles.outlined}
               aria-controls={listId}
-              onClick={() => setAll(true)}
+              onClick={() => {
+                setAll(true);
+                requestAnimationFrame(() => {
+                  const first = document.getElementById(listId)?.children[COULD_MOVE_SHOWN];
+                  if (first instanceof HTMLElement) first.focus();
+                });
+              }}
             >
               {t.showAll(shortfall.couldMove.length)}
             </button>
@@ -532,12 +543,13 @@ export function WhatIfScreen() {
         >
           {t.yourChanges}
         </h2>
+        {/* The note takes focus, so it's read out once, outside the live list (WCAG 4.1.3). */}
+        {note === null ? null : (
+          <p ref={noteRef} tabIndex={-1} className={styles.line} data-testid="what-if-note">
+            {note}
+          </p>
+        )}
         <div role="status">
-          {note === null ? null : (
-            <p ref={noteRef} tabIndex={-1} className={styles.line} data-testid="what-if-note">
-              {note}
-            </p>
-          )}
           {!ready ? null : changes.length === 0 ? (
             note === null ? (
               <p className={styles.second}>{t.noChanges}</p>
@@ -604,9 +616,16 @@ export function WhatIfScreen() {
       </section>
 
       {view === null || !ready ? (
-        <p className={styles.card} role={failed ? 'alert' : undefined}>
-          {failed ? strings.errors.plan : t.loading}
-        </p>
+        failed ? (
+          // A new line, so screen readers read it out (WCAG 4.1.3).
+          <p key="failed" className={styles.card} role="alert">
+            {strings.errors.plan}
+          </p>
+        ) : (
+          <p key="loading" className={styles.card}>
+            {t.loading}
+          </p>
+        )
       ) : (
         <SideBySide view={view} />
       )}

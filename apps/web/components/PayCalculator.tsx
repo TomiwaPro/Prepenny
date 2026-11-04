@@ -222,6 +222,14 @@ function NamedAmounts({
   );
 }
 
+/**
+ * A row's Remove button goes with its row, so focus moves to the list's "Add
+ * another" button once the row has gone (WCAG 2.4.3).
+ */
+function focusSoon(id: string) {
+  requestAnimationFrame(() => document.getElementById(id)?.focus());
+}
+
 function PayslipCheck({
   form,
   edits,
@@ -345,10 +353,10 @@ function PayslipCheck({
             <button type="button" className={formStyles.main} onClick={check}>
               {t.checkButton}
             </button>
+            {/* It takes focus, so it's read out once, without a live region (WCAG 4.1.3). */}
             <div
               ref={outcomeRef}
               tabIndex={-1}
-              role="status"
               className={styles.outcome}
               data-testid="payslip-outcome"
             >
@@ -508,10 +516,14 @@ export function TaxBoxes({ id, form, errors, today, set }: BoxesProps) {
             deductions: form.deductions.map((row) => (row.key === key ? { ...row, ...part } : row)),
           })
         }
-        onRemove={(key) => set({ deductions: form.deductions.filter((row) => row.key !== key) })}
+        onRemove={(key) => {
+          set({ deductions: form.deductions.filter((row) => row.key !== key) });
+          focusSoon(`${id}-add-deduction`);
+        }}
       />
       {form.deductions.length < MOST_LINES ? (
         <button
+          id={`${id}-add-deduction`}
           type="button"
           className={formStyles.outlined}
           onClick={() => set({ deductions: [...form.deductions, blankAmount()] })}
@@ -667,8 +679,10 @@ export function PayCalculator({
       ...now,
       extras: now.extras.map((row) => (row.key === key ? { ...row, ...part } : row)),
     }));
-  const removeExtra = (key: string) =>
+  const removeExtra = (key: string) => {
     change((now) => ({ ...now, extras: now.extras.filter((row) => row.key !== key) }));
+    focusSoon(`${id}-add-extra`);
+  };
 
   return (
     <div className={styles.calculator}>
@@ -767,12 +781,13 @@ export function PayCalculator({
                   <button
                     type="button"
                     className={formStyles.quiet}
-                    onClick={() =>
+                    onClick={() => {
                       change((now) => ({
                         ...now,
                         lines: now.lines.filter((one) => one.key !== line.key),
-                      }))
-                    }
+                      }));
+                      focusSoon(`${id}-add-line`);
+                    }}
                   >
                     {t.removeLine}
                   </button>
@@ -782,6 +797,7 @@ export function PayCalculator({
           })}
           {form.lines.length < MOST_LINES ? (
             <button
+              id={`${id}-add-line`}
               type="button"
               className={formStyles.outlined}
               onClick={() => change((now) => ({ ...now, lines: [...now.lines, blankLine()] }))}
@@ -805,6 +821,7 @@ export function PayCalculator({
           />
           {form.extras.length < MOST_LINES ? (
             <button
+              id={`${id}-add-extra`}
               type="button"
               className={formStyles.outlined}
               onClick={() => change((now) => ({ ...now, extras: [...now.extras, blankAmount()] }))}
@@ -868,13 +885,15 @@ export function PayCalculator({
         <Problem text={problem} />
       </form>
 
-      {worked === null ? (
-        stale ? (
-          <p className={screenStyles.card} role="status" data-testid="pay-stale">
+      {/* Always on the page, so "You changed something" is read out when it appears (WCAG 4.1.3). */}
+      <div role="status">
+        {worked === null && stale ? (
+          <p className={screenStyles.card} data-testid="pay-stale">
             {t.changedSince}
           </p>
-        ) : null
-      ) : (
+        ) : null}
+      </div>
+      {worked === null ? null : (
         <section
           className={`${screenStyles.card} ${styles.result}`}
           aria-labelledby={`${id}-result`}

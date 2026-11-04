@@ -91,9 +91,11 @@ function Choices({
               setUnanswered(false);
             }}
             describedBy={unanswered ? `${name}-unanswered` : undefined}
+            invalid={unanswered}
           />
           {unanswered ? (
-            <p id={`${name}-unanswered`} className={styles.error} role="alert">
+            // Read with the radio that takes focus, on every tap (step 2h).
+            <p id={`${name}-unanswered`} className={styles.error}>
               {strings.sheet.chooseYesOrNo}
             </p>
           ) : null}
