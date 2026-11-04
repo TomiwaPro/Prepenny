@@ -9,7 +9,7 @@ import { recordsOf, type StoredRecord } from '../data/db.ts';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { AXE_TAGS } from './coming-up.ts';
 import { settingScript } from './fixtures.ts';
-import { PRIYA_TODAY } from './setup-answers.ts';
+import { KOFI_ALREADY_SPENT, KOFI_TODAY, PRIYA_TODAY } from './setup-answers.ts';
 
 export async function noAxeProblems(page: Page) {
   expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
@@ -362,4 +362,103 @@ export async function setUpPriya(page: Page, at: (step: number) => Promise<void>
   await expect(page.getByTestId('setup-summary')).toBeVisible();
   await noAxeProblems(page);
   await at(8);
+}
+
+/** Step 1 to step 7 with Kofi's answers (brief Part 2, D137), checking each with axe; it ends on step 8. */
+export async function setUpKofi(page: Page) {
+  await startSetup(page, KOFI_TODAY);
+  await fillAccount(lastForm(page, 'account'), {
+    name: 'Current account',
+    balance: '640',
+    warning: '50',
+  });
+  await page.getByRole('button', { name: 'Add another account' }).click();
+  await fillAccount(lastForm(page, 'account'), {
+    name: 'Tax',
+    kind: 'Savings',
+    balance: '1180',
+    warning: '0',
+  });
+  await next(page);
+
+  await expectStep(page, 2, "How you're paid");
+  const platform = async (name: string, date: string, amount: string) => {
+    const form = lastForm(page, 'income');
+    await box(form, 'Name').fill(name);
+    await radio(form, 'It changes: plan with a weekly estimate').check();
+    await box(form, 'Next payday').fill(date);
+    await box(form, 'About how much comes in each week').fill(amount);
+    await radio(form, 'Keep the date').check();
+    await form.getByRole('checkbox', { name: 'Put part of it aside, such as for tax' }).check();
+    await box(form, 'How much, as a percentage').fill('25');
+    await radio(form.getByRole('group', { name: 'Move it to' }), 'Tax').check();
+  };
+  await platform('Rides', '2026-11-02', '380');
+  await page.getByRole('button', { name: 'Add another income' }).click();
+  await platform('Deliveries', '2026-10-28', '145');
+  await page.getByRole('button', { name: 'Add another income' }).click();
+  await platform('Parcels', '2026-10-30', '90');
+  const mainPay = page.getByRole('group', { name: 'Which is your main pay?' });
+  await radio(mainPay, 'Rides').check();
+  // Self-employed pay has no shifts, so the question isn't asked.
+  await expect(
+    page.getByRole('group', { name: 'Do you ever work extra hours or miss shifts?' }),
+  ).toHaveCount(0);
+  await noAxeProblems(page);
+  await next(page);
+
+  await expectStep(page, 3, 'Rent or mortgage');
+  await box(page, 'Amount').fill('650');
+  await fillWhen(page.getByRole('form'), { date: '2026-11-01' });
+  await next(page);
+
+  await expectStep(page, 4, 'Bills');
+  const bill = (key: string) => page.locator(`[data-bill="${key}"]`);
+  await bill('insurance').getByRole('checkbox', { name: 'Insurance', exact: true }).check();
+  await box(bill('insurance'), 'Name').fill('Van insurance');
+  await box(bill('insurance'), 'Amount').fill('96');
+  await fillWhen(bill('insurance'), { date: '2026-11-12' });
+  await bill('phone').getByRole('checkbox', { name: 'Phone', exact: true }).check();
+  await box(bill('phone'), 'Amount').fill('25');
+  await fillWhen(bill('phone'), { date: '2026-11-20' });
+  await page.getByRole('button', { name: 'Add another bill' }).click();
+  const tax = lastForm(page, 'bill');
+  await box(tax, 'Name').fill('Self Assessment');
+  await box(tax, 'Amount').fill('1450');
+  await fillWhen(tax, { date: '2027-01-29', often: 'Once' });
+  await radio(tax.getByRole('group', { name: 'From' }), 'Tax').check();
+  await tax.getByRole('checkbox', { name: 'This is an estimate' }).check();
+  await next(page);
+
+  await expectStep(page, 5, 'Debts');
+  await page.getByRole('button', { name: 'Add a debt' }).click();
+  const van = lastForm(page, 'debt');
+  await box(van, 'Name').fill('Van finance');
+  await radio(van, 'Loan').check();
+  await box(van, 'What you owe now').fill('6936');
+  await box(van, 'What it started at, if you know').fill('10404');
+  await box(van, 'Each payment').fill('289');
+  await fillWhen(van, { date: '2026-11-05', payments: '24' });
+  await noAxeProblems(page);
+  await next(page);
+
+  await expectStep(page, 6, 'Spending money');
+  const fuel = page.getByTestId('budget-form').first();
+  const food = page.getByTestId('budget-form').nth(1);
+  await box(fuel, 'Name').fill('Fuel');
+  await box(fuel, 'Amount').fill('70');
+  await radio(fuel, 'Week').check();
+  await box(food, 'Name').fill('Food');
+  await box(food, 'Amount').fill('45');
+  // His weeks run Monday to Sunday, and each starts this week (D14, D108, D230).
+  await expect(fuel.getByText('It starts this week, Mon 26 Oct to Sun 1 Nov.')).toBeVisible();
+  await expect(food.getByText('It starts this week, Mon 26 Oct to Sun 1 Nov.')).toBeVisible();
+  await box(fuel, 'Already spent this week').fill(KOFI_ALREADY_SPENT.Fuel);
+  await box(food, 'Already spent this week').fill(KOFI_ALREADY_SPENT.Food);
+  await noAxeProblems(page);
+  await next(page);
+
+  await expectStep(page, 7, 'Savings');
+  await skip(page);
+  await expectStep(page, 8, "Here's your plan");
 }
