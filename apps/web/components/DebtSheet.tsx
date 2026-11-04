@@ -156,6 +156,7 @@ function DebtSheetForm({
         errors={errors}
         today={today}
         showOwed={debt === null}
+        currencyFixed={debt !== null}
       />
       {debt === null ? (
         <div className={styles.group}>

@@ -30,6 +30,8 @@ function Account({
   readonly onChange: (() => void) | null;
 }) {
   const balance = formatMoney(account.balance);
+  // A closed account sits under "Closed accounts", one level down.
+  const Heading = onChange === null ? 'h3' : 'h2';
   return (
     <section
       className={styles.card}
@@ -38,9 +40,9 @@ function Account({
       data-account={account.name}
     >
       <div className={styles.cardHead}>
-        <h2 id={`account-${account.id}`} className={styles.cardTitle}>
+        <Heading id={`account-${account.id}`} className={styles.cardTitle}>
           {account.name}
-        </h2>
+        </Heading>
         <span className={styles.second}>{t.kinds[account.kind]}</span>
       </div>
       <p className={`${styles.line} num`}>

@@ -11,6 +11,7 @@ import { Problem } from './Fields.tsx';
 import styles from './Form.module.css';
 import type { ChangeOutcome } from './PlanProvider.tsx';
 import { Sheet } from './Sheet.tsx';
+import { useOpenCount } from './useOpenCount.ts';
 
 export function ConfirmSheet({
   open,
@@ -30,32 +31,50 @@ export function ConfirmSheet({
   /** Closed: `changed` says whether the change was made. */
   readonly onClose: (changed: boolean) => void;
 }) {
+  const opened = useOpenCount(open);
+  return (
+    <Sheet open={open} title={title} intro={intro} onClose={() => onClose(false)}>
+      <Choices key={opened} confirm={confirm} keep={keep} onConfirm={onConfirm} onClose={onClose} />
+    </Sheet>
+  );
+}
+
+/** The two buttons, starting afresh each time the sheet opens. */
+function Choices({
+  confirm,
+  keep,
+  onConfirm,
+  onClose,
+}: {
+  readonly confirm: string;
+  readonly keep: string;
+  readonly onConfirm: () => Promise<ChangeOutcome>;
+  readonly onClose: (changed: boolean) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   return (
-    <Sheet open={open} title={title} intro={intro} onClose={() => onClose(false)}>
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.main}
-          aria-disabled={busy}
-          onClick={async () => {
-            if (busy) return;
-            setBusy(true);
-            setProblem(null);
-            const outcome = await onConfirm();
-            setBusy(false);
-            if (outcome.ok) onClose(true);
-            else setProblem(refusalMessage(outcome.code));
-          }}
-        >
-          {confirm}
-        </button>
-        <button type="button" className={styles.quiet} onClick={() => onClose(false)}>
-          {keep}
-        </button>
-        <Problem text={problem} />
-      </div>
-    </Sheet>
+    <div className={styles.actions}>
+      <button
+        type="button"
+        className={styles.main}
+        aria-disabled={busy}
+        onClick={async () => {
+          if (busy) return;
+          setBusy(true);
+          setProblem(null);
+          const outcome = await onConfirm();
+          setBusy(false);
+          if (outcome.ok) onClose(true);
+          else setProblem(refusalMessage(outcome.code));
+        }}
+      >
+        {confirm}
+      </button>
+      <button type="button" className={styles.quiet} onClick={() => onClose(false)}>
+        {keep}
+      </button>
+      <Problem text={problem} />
+    </div>
   );
 }

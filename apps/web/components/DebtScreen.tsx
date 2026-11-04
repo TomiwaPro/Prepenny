@@ -24,6 +24,7 @@ import { DebtSheet } from './DebtSheet.tsx';
 import { paidOffWords } from './DebtsScreen.tsx';
 import { Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
+import { focusUndoBar } from './focusUndo.ts';
 import { PaymentRow } from './PaymentRow.tsx';
 import { usePlanActions } from './PlanProvider.tsx';
 import { RateSheet } from './RateSheet.tsx';
@@ -55,9 +56,11 @@ function Fix({ row }: { readonly row: DebtPaymentView }) {
           if (busy) return;
           setBusy(true);
           setProblem(null);
-          const outcome = await makeChanges(fix.commands, t.fixed(row.name, amount));
+          const message = t.fixed(row.name, amount);
+          const outcome = await makeChanges(fix.commands, message);
           setBusy(false);
-          if (!outcome.ok) setProblem(refusalMessage(outcome.code));
+          if (outcome.ok) focusUndoBar(message);
+          else setProblem(refusalMessage(outcome.code));
         }}
       >
         {t.fix(amount)}
@@ -298,7 +301,10 @@ function OneDebt({ debt, view }: { readonly debt: DebtView; readonly view: Debts
         onConfirm={() =>
           makeChange({ kind: 'close-debt', debtId: debt.id }, strings.closing.debtClosed(debt.name))
         }
-        onClose={close}
+        onClose={(changed) => {
+          close();
+          if (changed) focusUndoBar(strings.closing.debtClosed(debt.name));
+        }}
       />
     </>
   );

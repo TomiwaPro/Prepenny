@@ -14,6 +14,7 @@ import { strings } from '../strings/en-GB.ts';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
 import { ConfirmSheet } from './ConfirmSheet.tsx';
 import formStyles from './Form.module.css';
+import { focusUndoBar } from './focusUndo.ts';
 import { GoalSheet } from './GoalSheet.tsx';
 import { usePlanActions } from './PlanProvider.tsx';
 import { ProgressBar, ScreenHeader } from './ScreenParts.tsx';
@@ -40,6 +41,8 @@ function Goal({
   readonly view: GoalsView;
   readonly onOpen: (kind: 'change' | 'move' | 'close') => void;
 }) {
+  // A closed goal sits under "Closed goals", one level down.
+  const Heading = goal.closed ? 'h3' : 'h2';
   return (
     <section
       className={styles.card}
@@ -47,9 +50,9 @@ function Goal({
       data-testid="goal"
       data-goal={goal.name}
     >
-      <h2 id={`goal-${goal.id}`} className={styles.cardTitle}>
+      <Heading id={`goal-${goal.id}`} className={styles.cardTitle}>
         {goal.name}
-      </h2>
+      </Heading>
       <p className={`${styles.line} num`}>
         {t.savedOf(formatMoney(goal.savedSoFar), formatMoney(goal.target))}
       </p>
@@ -126,7 +129,7 @@ export function GoalsScreen() {
         <p className={styles.card} role={failed ? 'alert' : undefined}>
           {failed ? strings.errors.plan : t.loading}
         </p>
-      ) : view.goals.length === 0 ? (
+      ) : view.goals.length === 0 && view.closed.length === 0 ? (
         <section className={styles.card} data-testid="no-goals">
           <h2 className={styles.cardTitle}>{t.none}</h2>
           <p className={styles.line}>{t.noneLine}</p>
@@ -190,7 +193,11 @@ export function GoalsScreen() {
             strings.closing.goalClosed(chosen?.name ?? ''),
           )
         }
-        onClose={close}
+        onClose={(changed) => {
+          const name = chosen?.name ?? '';
+          close();
+          if (changed) focusUndoBar(strings.closing.goalClosed(name));
+        }}
       />
     </>
   );

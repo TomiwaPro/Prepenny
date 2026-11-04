@@ -66,6 +66,7 @@ export function DebtFields({
   errors,
   today,
   showOwed,
+  currencyFixed = false,
 }: {
   /** The start of every box's id. */
   readonly base: string;
@@ -75,6 +76,12 @@ export function DebtFields({
   readonly today: string;
   /** "What you owe now": only when it's added. After that it changes with Update from statement. */
   readonly showOwed: boolean;
+  /**
+   * Changing a debt: its currency stays as it is, because what's owed is
+   * kept in that currency, and another one would change how much is owed
+   * (D246).
+   */
+  readonly currencyFixed?: boolean;
 }) {
   const error = (field: keyof DebtErrors) => debtMistakeWords(field, errors[field]);
   const sign = (t.signs as Readonly<Record<DebtCurrency, string>>)[form.currency];
@@ -142,11 +149,17 @@ export function DebtFields({
           set({
             kind,
             // Only money owed to a person is offered in another currency.
-            ...(kind === 'owed-to-a-person' ? {} : { currency: 'GBP' as const }),
+            ...(kind === 'owed-to-a-person' || currencyFixed ? {} : { currency: 'GBP' as const }),
           })
         }
       />
-      {form.kind === 'owed-to-a-person' ? (
+      {currencyFixed ? (
+        form.currency === 'GBP' ? null : (
+          <p className={styles.hint}>
+            {sheet.currencyFixed(strings.debt.currencyNames[form.currency])}
+          </p>
+        )
+      ) : form.kind === 'owed-to-a-person' ? (
         <ChoiceList<DebtCurrency>
           legend={t.currency}
           name={`${base}-currency`}

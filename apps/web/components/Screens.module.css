@@ -188,7 +188,8 @@
   display: block;
   height: 100%;
   border-radius: var(--radius-pill);
-  background: var(--navy);
+  /* Navy as text: dark navy in light mode, cream in dark mode, so the fill stands out on either. */
+  background: var(--accent-text);
 }
 
 .progressWords {

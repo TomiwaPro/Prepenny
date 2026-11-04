@@ -860,7 +860,8 @@ export const strings = {
     budgetRow: 'This is spending money from a budget. Change it on the Budgets screen, under More.',
     goToBudgets: 'Go to Budgets',
     changeOften: 'Change how often it repeats',
-    changeOftenHint: 'From this payment on. The date above is the first one.',
+    changeOftenHint:
+      'From this payment on. The date above is the first one. If it ends on a date, it now ends after the same number of payments.',
     amountError: 'Type an amount, for example 25.',
     dateError: 'Choose a date.',
     nameError: 'Type a name, for example Rent.',
@@ -963,6 +964,8 @@ export const strings = {
     addIntro: "Add something you're paying off, to see the date it's paid off.",
     changeTitle: 'Change this debt',
     changeIntro: "Change this debt's details. What's left changes with Update from statement.",
+    currencyFixed: (currency: string) =>
+      `It's in ${currency}. That stays as it is, so what's owed doesn't change.`,
     zeroUntil: '0% until, if it has an offer',
     zeroUntilHint: 'Leave it empty if it has no 0% offer.',
     minimum: 'Minimum payment',
@@ -1062,6 +1065,10 @@ export const strings = {
     changeTitle: 'Change this budget',
     changeIntro:
       'Change it from this week or month on. Weeks and months that have ended stay as they were.',
+    staysPayLater:
+      'It stays on the pay-later card. To plan it another way, end it and add a new budget.',
+    noPayLaterSwitch:
+      'To move it to a pay-later card, end it and add a new monthly budget, because a card bill comes once a month and starts afresh.',
     amountFromWeek: 'From this week on.',
     amountFromMonth: 'From this month on.',
     statementDay: "The card's statement day, if you know it",
@@ -1170,7 +1177,10 @@ export const strings = {
     moveFrom: 'Move it from',
     moveOut: (amount: string) => `Move ${amount} to another account first`,
     moveIn: (amount: string) => `Move ${amount} into it from another account first`,
-    moveHint: 'This adds a move today, marked as done. Make the same move in your bank.',
+    moveHintTo: (account: string) =>
+      `This adds a move to ${account} today, marked as done. Make the same move in your bank.`,
+    moveHintFrom: (account: string) =>
+      `This adds a move from ${account} today, marked as done. Make the same move in your bank.`,
     moveName: (from: string, to: string) => `From ${from} to ${to}`,
     moved: (amount: string, from: string, to: string) => `${amount} moved from ${from} to ${to}.`,
     noOther: "There's no other account to move it to. Add one first.",
