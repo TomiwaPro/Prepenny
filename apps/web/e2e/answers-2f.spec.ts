@@ -102,7 +102,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('debt-row')).toHaveCount(4);
     });
 
-    test('answer 4: closing a debt asks "Also remove its 6 planned payments?" with Yes and No', async ({
+    test('answer 4: closing a debt asks "Also remove its 6 planned payments?", with neither answer chosen', async ({
       page,
     }) => {
       await openDebt(page, 'Family loan');
@@ -110,10 +110,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const sheet = page.getByRole('dialog', { name: 'Close this debt' });
       await expect(sheet).toContainText('Closing it takes it out of Owed now.');
       const question = sheet.getByRole('group', { name: 'Also remove its 6 planned payments?' });
+      // Neither answer is chosen to start with: the person picks one (step 2h).
       await expect(question.getByRole('radio', { name: 'Yes' })).not.toBeChecked();
-      await expect(question.getByRole('radio', { name: 'No' })).toBeChecked();
+      await expect(question.getByRole('radio', { name: 'No' })).not.toBeChecked();
       await noAxeProblems(page);
+      await sheet.getByRole('button', { name: 'Close this debt' }).click();
+      await expect(sheet.getByRole('alert')).toHaveText('Choose Yes or No first.');
+      await expect(question.getByRole('radio', { name: 'Yes' })).toBeFocused();
+      await expect(sheet).toBeVisible();
       await question.getByRole('radio', { name: 'Yes' }).check();
+      await expect(sheet.getByRole('alert')).toHaveCount(0);
       await sheet.getByRole('button', { name: 'Close this debt' }).click();
       await expect(sheet).toBeHidden();
       await expect(undoBar(page)).toContainText(
@@ -125,6 +131,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('debt-row')).toHaveCount(6);
       // No keeps them, as before.
       await page.getByRole('button', { name: 'Close this debt' }).click();
+      await question.getByRole('radio', { name: 'No' }).check();
       await sheet.getByRole('button', { name: 'Close this debt' }).click();
       await expect(undoBar(page)).toContainText('Family loan closed.');
       await expect(page.getByTestId('debt-row')).toHaveCount(6);

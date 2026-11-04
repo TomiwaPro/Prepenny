@@ -3,9 +3,9 @@
 // A sheet that asks once before a change, such as closing a debt or a goal:
 // what it does in one plain sentence (D213), the button that does it, and
 // one that keeps things as they are. It can ask one more question first, with
-// Yes and No, such as "Also remove its 3 planned payments?" (step 2g), and No
-// to start with, so nothing more changes without a tap. The change can be
-// undone from the undo bar like any other.
+// Yes and No, such as "Also remove its 3 planned payments?" (step 2g). Neither
+// answer is chosen to start with, so the person picks one (step 2h). The
+// change can be undone from the undo bar like any other.
 
 import { useId, useState } from 'react';
 import { refusalMessage } from '../lib/refusals.ts';
@@ -71,21 +71,33 @@ function Choices({
   const name = useId();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const [answer, setAnswer] = useState<'yes' | 'no'>('no');
+  const [answer, setAnswer] = useState<'yes' | 'no' | ''>('');
+  const [unanswered, setUnanswered] = useState(false);
   const yes = question !== null && answer === 'yes';
   return (
     <div className={styles.actions}>
       {question === null ? null : (
-        <ChoiceList<'yes' | 'no'>
-          legend={question}
-          name={name}
-          value={answer}
-          options={[
-            { value: 'yes', label: strings.sheet.yes },
-            { value: 'no', label: strings.sheet.no },
-          ]}
-          onChange={setAnswer}
-        />
+        <div id={`${name}-question`}>
+          <ChoiceList<'yes' | 'no' | ''>
+            legend={question}
+            name={name}
+            value={answer}
+            options={[
+              { value: 'yes', label: strings.sheet.yes },
+              { value: 'no', label: strings.sheet.no },
+            ]}
+            onChange={(next) => {
+              setAnswer(next);
+              setUnanswered(false);
+            }}
+            describedBy={unanswered ? `${name}-unanswered` : undefined}
+          />
+          {unanswered ? (
+            <p id={`${name}-unanswered`} className={styles.error} role="alert">
+              {strings.sheet.chooseYesOrNo}
+            </p>
+          ) : null}
+        </div>
       )}
       <button
         type="button"
@@ -93,6 +105,14 @@ function Choices({
         aria-disabled={busy}
         onClick={async () => {
           if (busy) return;
+          if (question !== null && answer === '') {
+            setUnanswered(true);
+            document
+              .getElementById(`${name}-question`)
+              ?.querySelector<HTMLInputElement>('input')
+              ?.focus();
+            return;
+          }
           setBusy(true);
           setProblem(null);
           const outcome = await onConfirm(yes);
