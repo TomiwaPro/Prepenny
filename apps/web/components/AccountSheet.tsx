@@ -10,7 +10,7 @@
 // before the account can close. Each is one change with one Undo.
 
 import type { AccountKind, EditCommand } from '@prepenny/engine';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { amountForTyping, parseAmount, parseSignedAmount } from '../lib/amount.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import { formatMoney } from '../lib/money.ts';
@@ -249,6 +249,11 @@ function ChangeAccount({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ text: string; at: 'save' | 'close' } | null>(null);
   const [otherId, setOtherId] = useState(others[0]?.id ?? '');
+  // Once the move is made, it can't be made again until the account's
+  // figures have been worked out afresh, so a quick second tap adds nothing.
+  const [moved, setMoved] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new end-of-today figure is the reason to run again
+  useEffect(() => setMoved(false), [account.endOfToday]);
   const closeHeading = useRef<HTMLHeadingElement>(null);
   const set = (change: Partial<Form>) => setForm((now) => ({ ...now, ...change }));
   const other = others.find((one) => one.id === otherId) ?? others[0];
@@ -269,6 +274,7 @@ function ChangeAccount({
         : await makeChanges(commands, message);
     setBusy(false);
     if (!outcome.ok) {
+      setMoved(false);
       setProblem({ text: refusalMessage(outcome.code), at });
       return;
     }
@@ -308,7 +314,8 @@ function ChangeAccount({
   }
 
   function move() {
-    if (busy || loaded === null || other === undefined) return;
+    if (busy || moved || loaded === null || other === undefined) return;
+    setMoved(true);
     const out = account.closing === 'money-left';
     const from = out ? { id: account.id, name: account.name } : other;
     const to = out ? other : { id: account.id, name: account.name };
@@ -414,14 +421,16 @@ function ChangeAccount({
                   <button
                     type="button"
                     className={styles.outlined}
-                    aria-disabled={busy}
+                    aria-disabled={busy || moved}
                     aria-describedby={`${id}-move-hint`}
                     onClick={move}
                   >
                     {(account.closing === 'money-left' ? t.moveOut : t.moveIn)(leftWords)}
                   </button>
                   <p id={`${id}-move-hint`} className={styles.hint}>
-                    {t.moveHint}
+                    {(account.closing === 'money-left' ? t.moveHintTo : t.moveHintFrom)(
+                      other?.name ?? '',
+                    )}
                   </p>
                 </div>
               </>

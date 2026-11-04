@@ -142,7 +142,7 @@ function EditForm({
   // "Change how often it repeats" (D96, step 2f): the boxes start at how it repeats now.
   const [changeOften, setChangeOften] = useState(false);
   const [repeat, setRepeat] = useState<WhenForm>(() => ({
-    ...blankPayment(row.paymentDate, '', ''),
+    ...blankPayment(row.originalDate, '', ''),
     howOften: row.repeats?.howOften ?? 'monthly',
     weeks: String(row.repeats?.howOften === 'weekly' ? row.repeats.every : 1),
     months: String(row.repeats?.howOften === 'monthly' ? row.repeats.every : 1),
@@ -197,6 +197,10 @@ function EditForm({
   const isEstimate = estimateChoice ?? (row.isEstimate && (later || !amountChanged));
   const askPattern = later && row.hasPattern && amountChanged;
   const canChangeOften = later && row.repeats !== null;
+  // The new schedule starts from the payment's date in its schedule, before
+  // any weekend or bank holiday move: rent due on Sun 1 Nov and paid on Mon
+  // 2 Nov repeats on the 1st (D96). A date typed above is taken as that date.
+  const scheduleDate = date === row.paymentDate ? row.originalDate : date;
   const oftenOn = canChangeOften && changeOften;
 
   async function change(command: EditCommand, message: string, at: 'actions' | 'save' | 'remove') {
@@ -224,13 +228,13 @@ function EditForm({
     let schedule: Schedule | null = null;
     if (oftenOn) {
       const mistakes: PaymentErrors = {};
-      schedule = repeatSchedule({ ...repeat, date }, holidays, mistakes);
+      schedule = repeatSchedule({ ...repeat, date: scheduleDate }, holidays, mistakes);
       setRepeatErrors(mistakes);
       const wrong = (['weeks', 'months', 'leaveOut'] as const).find(
         (key) => mistakes[key] !== undefined,
       );
       if (wrong !== undefined) {
-        focusField(repeatRefs[wrong].current, mistakes, { date });
+        focusField(repeatRefs[wrong].current, mistakes, { date: scheduleDate });
         return;
       }
       if (
@@ -578,7 +582,7 @@ function EditForm({
           {oftenOn ? (
             <RepeatFields
               id={`${id}-often`}
-              form={{ ...repeat, date }}
+              form={{ ...repeat, date: scheduleDate }}
               set={(key, value) => setRepeat((now) => ({ ...now, [key]: value }))}
               errors={repeatErrors}
               refs={repeatRefs}

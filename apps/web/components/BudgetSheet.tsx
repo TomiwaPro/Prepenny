@@ -110,6 +110,16 @@ function BudgetForm({
   const endRef = useRef<HTMLInputElement>(null);
   const set = (change: Partial<Form>) => setForm((now) => ({ ...now, ...change }));
   const payLater = form.leaves === 'pay-later';
+  // A change can switch to or from a pay-later card only for a monthly
+  // budget with no spending recorded (D107, D161); otherwise only the
+  // choices that can work are offered.
+  const leavesChoices: { value: BudgetLeaves; label: string }[] = [
+    { value: 'at-start', label: words.atStart },
+    { value: 'spread', label: words.spread },
+    ...(budget === null || (stored?.every === 'month' && !budget.hasSpends)
+      ? [{ value: 'pay-later' as const, label: words.payLater }]
+      : []),
+  ];
   const every: BudgetEvery = payLater ? 'month' : form.every;
 
   async function change(command: EditCommand, message: string, at: 'save' | 'end') {
@@ -263,17 +273,20 @@ function BudgetForm({
             onChange={(value) => set({ every: value })}
           />
         )}
-        <ChoiceList<BudgetLeaves>
-          legend={form.name.trim() === '' ? words.leavesNoName : words.leaves(form.name.trim())}
-          name={`${id}-leaves`}
-          value={form.leaves}
-          options={[
-            { value: 'at-start', label: words.atStart },
-            { value: 'spread', label: words.spread },
-            { value: 'pay-later', label: words.payLater },
-          ]}
-          onChange={(leaves) => set({ leaves })}
-        />
+        {stored?.leaves === 'pay-later' ? (
+          <p className={styles.hint}>{t.staysPayLater}</p>
+        ) : (
+          <ChoiceList<BudgetLeaves>
+            legend={form.name.trim() === '' ? words.leavesNoName : words.leaves(form.name.trim())}
+            name={`${id}-leaves`}
+            value={form.leaves}
+            options={leavesChoices}
+            onChange={(leaves) => set({ leaves })}
+          />
+        )}
+        {budget !== null && stored?.leaves !== 'pay-later' && leavesChoices.length < 3 ? (
+          <p className={styles.hint}>{t.noPayLaterSwitch}</p>
+        ) : null}
         {payLater ? (
           <>
             {dayBox('billDay', words.billDay, null)}
