@@ -18,6 +18,8 @@ Who we write for: someone tired at 11pm after a night shift, on a cheap phone. C
 - No long dashes (— or –) anywhere people read. Use a full stop, comma or colon. Write ranges as "2 to 3".
 - Colour is never the only signal. A status always has a word: Tight, Short, Paid off.
 - All text lives in one strings file so the app can be translated later.
+- Every screen and sheet starts with one plain sentence saying what it's for, so a 16-year-old understands it straight away: "Your bank shows money that's gone. This shows money that's going to go, and what you'll have left each time." (D213)
+- Every control says in words what it does: "Switch account", "Show another month", "Got it". A choice asks or says what's being chosen, with an answer for each option in words: "What happened?" with "I worked extra hours" and "I missed a shift". (D213)
 
 ## Banned
 

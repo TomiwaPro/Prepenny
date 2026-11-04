@@ -95,8 +95,18 @@ Every text pair passes 4.5:1 in both modes, and the text box border and focus ou
 - **Figure card:** label, status pill (always with the word), big figure, date and cause, one line of context.
 - **Payment row:** date tile (day number over month), name with date below, then amount with "£X left" below, right-aligned.
 - **Actions:** a 2 by 2 grid. One navy main button (Update balance); the others outlined.
-- **Bottom navigation:** Home, Plan, Debts, More. Simple line icons (1.7 stroke, round ends) with a label under each, and the active item in a soft pill.
+- **Bottom navigation:** Home, Coming up, Debts, More (D208). Simple line icons (1.7 stroke, round ends) with a label under each, and the active item in a soft pill.
 - **Editing** opens in a bottom sheet on phones and a centred dialog on laptops.
+
+## Every screen says what it's for (D213)
+
+A rule for every screen from now on, agreed by the owner on 4 Nov 2026.
+
+- Each screen starts with one plain sentence saying what it's for, so a 16-year-old understands it straight away. On a page it sits under the heading; on a sheet, under its title.
+- Every control says in words what it does. Where a word alone isn't enough, a line beside or under it says what a tap does: "Open Fri 30 Oct below", "Tap one to see every payment in it."
+- No switch whose options look like separate buttons. A choice is a list with a round button beside each word, under a heading that asks or says what's being chosen, such as "What happened?" or "Group payments".
+- A line that opens and closes is a button that tells screen readers whether it's open.
+- The only control without a word is the small "?" for help (brief 4.16), and screen readers hear what it opens: "How to read this".
 
 ## Never
 
