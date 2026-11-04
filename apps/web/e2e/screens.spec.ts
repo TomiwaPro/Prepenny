@@ -476,8 +476,8 @@ async function fillPayslip(
   await page.getByTestId('extra').first().getByLabel('Amount').fill(slip.premium);
   await page.getByLabel('Payday').fill(slip.payday);
   await page.getByLabel('The tax week on it').fill(slip.week);
-  await page.getByLabel('From your last payslip: gross for tax so far').fill(slip.gross);
-  await page.getByLabel('From your last payslip: tax paid so far').fill(slip.tax);
+  await page.getByLabel('Taxable pay so far this tax year').fill(slip.gross);
+  await page.getByLabel('Tax paid so far this tax year').fill(slip.tax);
 }
 
 test('Step 2g: pay-calculator-360-light.png', async ({ browser }) => {

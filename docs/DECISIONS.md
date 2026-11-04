@@ -2960,7 +2960,7 @@ Why: the owner's answer. The person knows nothing is hidden that moves.
 
 ## Made during step 2h
 
-D268 to D274 were decided on 4 Nov 2026 while building step 2h, the end of Phase 2; D274 came from the outside review.
+D268 to D272 were decided on 4 Nov 2026 while building step 2h, the end of Phase 2. D273 to D275 came from the outside reviews, the same day.
 
 ### D268. Each of the six people's journeys, end to end
 
@@ -3014,3 +3014,57 @@ Decided 4 Nov 2026 in step 2h.
 
 Why: each follows the owner's instructions or an earlier decision where they didn't say exactly.
 
+### D273. What the money, privacy, design and wording reviews changed
+
+Decided 4 Nov 2026 in step 2h, from four outside reviews. Adds to D5, D154, D262 to D264, D266 and D267.
+
+- **Money.** "Every payday" in Save as a pay week also reaches paydays that an earlier part of a split pay still pays for, and Your job lists which weeks each one uses. Your job says when PrePenny doesn't have next tax year's figures yet, so its details can't be checked, and the payslip line names its tax year. What if never shows or keeps one plan's practice changes on another plan.
+- **Privacy.** The pay the public calculator hands to setup is kept for that browser tab only, for an hour at most, and forgotten once setup has it or the example is chosen instead. Practice changes made on the example are forgotten when a new copy of the example arrives. The checks now also watch setup, the offline helper, the console, anything the security rules block, every page's security rules and what's left on the phone.
+- **Design.** A hint longer than a few words goes under its choice, as a second line. Round buttons and tick boxes are drawn in PrePenny's colours, not the browser's. Your job's sheet is in three parts with a heading each, its usual weeks sit under a line, and a phone with no job details gets a card with a title.
+- **Wording.** A message about overtime no longer says the pay calculator is still being built. Three refusals say what to do next. Save as a pay week says it replaces the week in use. The calculator explains the tax week, where the year-so-far figures are on a payslip, and how to tell which student loan plan someone is on. Your job's lines are plainer, and More's sentence mentions pay.
+
+Why: the owner asked for outside reviews against the brief, the decisions, VOICE.md and DESIGN.md, and for everything in scope to be fixed.
+
+### D274. What the accessibility review changed
+
+Decided 4 Nov 2026 in step 2h, from the outside accessibility review (WCAG 2.2 AA). Adds to D188, D203 and D213.
+
+- **Focus after Remove.** When a Remove button takes its own row away, focus moves to the next row's Remove, or the list's "Add another" button, or the step's title, never to nothing. In the pay calculator it moves to that list's Add button. After "Show all" in What if, focus moves to the first newly shown payment.
+- **Mistakes in a group of choices.** A mistake, such as "Choose Yes or No first.", is read with whichever round button has focus, as a text box's mistake is, every time the person taps. Before, it was only on the group, so screen readers often said nothing on a second tap.
+- **Names of choices.** Each round button is named by its own words only, such as "Week 2 of 4, next on Fri 6 Nov", and its hint is read after them. Someone using voice control can say just the words.
+- **Headings.** What if's list of payments with practice changes has its headings one level down, so someone moving by heading can tell it from the real plan.
+- **Status lines.** "You changed something, so work it out again" is read out when it appears. A note that takes focus is read once, not twice. A plan that can't be worked out is read out as a new message.
+- **Names.** Each debt's page is titled with the debt's name, as its heading is. Each job's "Change these details" button names the job for screen readers, so two jobs' buttons sound different.
+
+Test: the end-to-end tests check focus after Remove in setup and the calculator, and that the Yes radio is read with "Choose Yes or No first." on each tap.
+
+Why: the review found each of these failed WCAG 2.2 AA or could be clearer, and the owner asked for everything in scope to be fixed. Two points it raised are for the owner, in `PLAN.md`: how much of a short phone the undo bar and the navigation cover at 200% text, and whether "Take back the last change" in What if should ask first.
+
+### D275. Plainer words, for someone of 16
+
+Decided 4 Nov 2026 in step 2h, from the wording review. The owner asked for a list of screens a 16-year-old might not understand, and for them to be fixed. Replaces the words in D98, D235, D239, D240, D254 and D263 shown here; nothing else about them changes.
+
+| Where | Before | Now |
+| --- | --- | --- |
+| Pay calculator and Your job | "The usual way, cumulative" | "The usual way, with all your pay so far this tax year" |
+| | "Week 1 or month 1, on an emergency code" | "Each payday taxed on its own: week 1 or month 1, W1, M1 or X on a payslip" |
+| | "Worked on earnings from, each week" and "Up to, each week" | "Pension starts on pay over, each week" and "And stops at, each week" |
+| | "From your last payslip: gross for tax so far" and "…tax paid so far" | "Taxable pay so far this tax year" and "Tax paid so far this tax year", under the heading "From your last payslip", with where to find them on a payslip |
+| | "Check the tax week on it." | "Check the tax week you typed from that payslip." |
+| Your job | "Tax week 29 of 2026 to 2027: gross for tax so far…" | "Tax week 29 of 2026 to 2027. Taxable pay so far…" |
+| Debts | "Family loan counted at €1.1612 per £1." | "Family loan is counted at €1.1612 to £1." |
+| A credit card | "Interest not included" | "No interest added, because no rate is saved" |
+| | "interest plus 1% of the balance" | "interest plus 1% of what you owe", because "balance" means the bank balance everywhere else |
+| | "Paying the full balance" | "Paying all you owe each month" |
+| Update from statement | "Update" | "Update what's owed" |
+| Change this debt | "What's left changes with Update from statement." | "To change what you owe, use Update from statement." |
+| Close this debt | "Closing it takes it out of Owed now." | "Closing it stops it counting in Owed now, on Debts." |
+| Budgets | "Roll-over on: what's left moves…" and "Roll over what's left…" | "What's left moves…" and "Carry what's left over…" |
+| Setup's budgets | "Leave it empty if you're not sure: then all of it is planned to leave today." | "Your bank balance already shows it. If you're not sure, leave it empty and all of it is planned to go today." |
+| Change this account | "the amount it warns you under" | "when it warns you it's getting low" |
+| The edit sheet | "is ticked on its own" | "you tick it as paid separately" |
+| Sheets that ask first | "Close" beside "Close this debt" | "Go back", so the two buttons don't both say Close |
+
+Earlier in step 2h, from the same review: the calculator explains the tax week, which student loan plan, and where the year-so-far figures are on a payslip; Your job's lines are plainer; and three refusals say what to do next (D273).
+
+Why: the owner asked for it, and VOICE.md asks for words anyone can follow when they're tired or worried. Five of the review's points change words the owner chose or that need a choice, so they're questions in `PLAN.md` instead.

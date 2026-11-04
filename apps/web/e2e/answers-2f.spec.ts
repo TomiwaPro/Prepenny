@@ -108,7 +108,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openDebt(page, 'Family loan');
       await page.getByRole('button', { name: 'Close this debt' }).click();
       const sheet = page.getByRole('dialog', { name: 'Close this debt' });
-      await expect(sheet).toContainText('Closing it takes it out of Owed now.');
+      await expect(sheet).toContainText('Closing it stops it counting in Owed now, on Debts.');
       const question = sheet.getByRole('group', { name: 'Also remove its 6 planned payments?' });
       // Neither answer is chosen to start with: the person picks one (step 2h).
       await expect(question.getByRole('radio', { name: 'Yes' })).not.toBeChecked();

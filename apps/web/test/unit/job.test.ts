@@ -56,7 +56,7 @@ describe("Your job on Sam's example", () => {
       '4% of your pay from £120.00 to £967.00 a week, before tax',
     );
     expect(soFarWords(job.profile)).toBe(
-      'Tax week 29 of 2026 to 2027: gross for tax so far £10,732.73, tax paid so far £743.40',
+      'Tax week 29 of 2026 to 2027. Taxable pay so far £10,732.73, tax paid so far £743.40',
     );
     expect(coveredWords(job, SUNDAY)).toBe(
       'Fri\u00a030\u00a0Oct pays for work up to Sun\u00a025\u00a0Oct',

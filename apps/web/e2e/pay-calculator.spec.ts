@@ -55,16 +55,16 @@ async function fillIn(page: Page, slip: Payslip) {
   if (slip.payday !== undefined) await page.getByLabel('Payday').fill(slip.payday);
   await radio(page, 'Every week').check();
   await page.getByLabel('Tax code').fill('1257L');
-  await radio(page, 'The usual way, cumulative').check();
+  await radio(page, 'The usual way, with all your pay so far this tax year').check();
   await page.getByRole('checkbox', { name: 'I pay into a workplace pension' }).check();
   await page.getByLabel('Percentage that comes off').fill('4');
-  await page.getByLabel('Worked on earnings from, each week').fill('120');
-  await page.getByLabel('Up to, each week').fill('967');
+  await page.getByLabel('Pension starts on pay over, each week').fill('120');
+  await page.getByLabel('And stops at, each week').fill('967');
   await radio(page, 'Before tax').check();
   await radio(page, 'None').check();
   await page.getByLabel('The tax week on it').fill(slip.week);
-  await page.getByLabel('From your last payslip: gross for tax so far').fill(slip.gross);
-  await page.getByLabel('From your last payslip: tax paid so far').fill(slip.tax);
+  await page.getByLabel('Taxable pay so far this tax year').fill(slip.gross);
+  await page.getByLabel('Tax paid so far this tax year').fill(slip.tax);
 }
 
 /** Week 26 from brief 8.6, with the year so far from week 25's payslip. */

@@ -272,7 +272,7 @@ export const strings = {
       alreadySpentWeek: 'Already spent this week',
       alreadySpentMonth: 'Already spent this month',
       alreadySpentHint:
-        "What you've spent from it so far, which your balance already shows. Leave it empty if you're not sure: then all of it is planned to leave today.",
+        "What you've spent from it so far. Your bank balance already shows it. If you're not sure, leave it empty and all of it is planned to go today.",
       alreadySpentError: 'Type an amount, for example 6, or leave it empty.',
       addAnother: 'Add another budget',
       anotherHeading: 'Another budget',
@@ -475,6 +475,8 @@ export const strings = {
 
   sheet: {
     close: 'Close',
+    /** A sheet that asks before a change, such as "Close this debt", so its two buttons don't both say Close. */
+    goBack: 'Go back',
     stillBeingBuilt: 'This part is still being built.',
     back: 'Back',
     next: 'Next',
@@ -874,7 +876,7 @@ export const strings = {
     keep: "Don't remove it",
     billRow: 'This is a pay-later card bill. To change later bills, change the budget.',
     setAsideRow:
-      'This is money set aside from pay. It moves with its pay, and is ticked on its own.',
+      'This is money set aside from pay. It moves with its pay, and you tick it as paid separately.',
     budgetRow: 'This is spending money from a budget. Change it on the Budgets screen, under More.',
     goToBudgets: 'Go to Budgets',
     changeOften: 'Change how often it repeats',
@@ -892,7 +894,7 @@ export const strings = {
     owedNow: 'Owed now',
     estimate: 'Estimate',
     count: (count: number) => (count === 1 ? '1 debt.' : `${count} debts.`),
-    countedAt: (name: string, rate: string) => `${name} counted at ${rate} per £1.`,
+    countedAt: (name: string, rate: string) => `${name} is counted at ${rate} to £1.`,
     eachDebt: 'Each debt',
     eachDebtIntro: "In the order they're paid off. Tap one to see its payments.",
     noDebts: 'No debts',
@@ -918,7 +920,7 @@ export const strings = {
     aboutAt: (pounds: string, rate: string) => `About ${pounds} at ${rate} per £1`,
     interestIncluded: (amount: string) =>
       `Includes ${amount} of interest added since your last update, an estimate.`,
-    interestNotIncluded: 'Interest not included',
+    interestNotIncluded: 'No interest added, because no rate is saved',
     paidOfStarted: (paid: string, started: string) => `${paid} paid of ${started}`,
     card: 'Interest and minimum payment',
     rateAYear: (rate: string) => `${rate}% a year`,
@@ -926,7 +928,7 @@ export const strings = {
     zeroUntil: (date: string) => `0% until ${date}`,
     statementDay: (day: string) => `Statement on the ${day} of each month`,
     minimumRule: (percent: string, atLeast: string) =>
-      `Minimum: interest plus ${percent}% of the balance, at least ${atLeast}`,
+      `Minimum: interest plus ${percent}% of what you owe, at least ${atLeast}`,
     minimumTyped: (amount: string) => `Minimum: ${amount}, from your statement`,
     nextStatement: (date: string, interest: string) =>
       `Next statement, ${date}: about ${interest} of interest, an estimate.`,
@@ -1013,12 +1015,12 @@ export const strings = {
     taxCode: 'Tax code',
     taxCodeHint: 'As it is on your payslip, for example 1257L.',
     basis: 'How your tax is worked out',
-    cumulative: 'The usual way, cumulative',
-    weekOne: 'Week 1 or month 1, on an emergency code',
+    cumulative: 'The usual way, with all your pay so far this tax year',
+    weekOne: 'Each payday taxed on its own: week 1 or month 1, W1, M1 or X on a payslip',
     pension: 'I pay into a workplace pension',
     pensionPercent: 'Percentage that comes off',
-    pensionLower: (period: string) => `Worked on earnings from, each ${period}`,
-    pensionUpper: (period: string) => `Up to, each ${period}`,
+    pensionLower: (period: string) => `Pension starts on pay over, each ${period}`,
+    pensionUpper: (period: string) => `And stops at, each ${period}`,
     pensionBandHint:
       'Some pensions come off only part of your pay. Leave the next two boxes empty if it comes off all of it.',
     pensionWhen: 'When it comes off',
@@ -1049,8 +1051,8 @@ export const strings = {
       'The tax year starts on 6 April, and its weeks are numbered from then. Your payslip shows the number, often as Tax week or Period.',
     soFarFiguresHint:
       'Your payslip may call them Gross for tax TD and Tax TD, or Taxable pay to date and Tax to date.',
-    grossSoFar: 'From your last payslip: gross for tax so far',
-    taxSoFar: 'From your last payslip: tax paid so far',
+    grossSoFar: 'Taxable pay so far this tax year',
+    taxSoFar: 'Tax paid so far this tax year',
     workOut: 'Work out take-home pay',
     resultHeading: 'Take-home pay',
     gross: (amount: string) => `Gross pay ${amount}`,
@@ -1094,7 +1096,7 @@ export const strings = {
     },
     refused: {
       'bad-year-so-far':
-        "The figures from your last payslip don't fit this payday. Check the tax week on it.",
+        "The figures from your last payslip don't fit this payday. Check the tax week you typed from that payslip.",
       'bad-student-loan': 'Choose one student loan plan, as on your payslip.',
       other: "That couldn't be worked out. Check the boxes and try again.",
     },
@@ -1200,7 +1202,7 @@ export const strings = {
       year: string,
       gross: string,
       tax: string,
-    ) => `Tax ${table} ${period} of ${year}: gross for tax so far ${gross}, tax paid so far ${tax}`,
+    ) => `Tax ${table} ${period} of ${year}. Taxable pay so far ${gross}, tax paid so far ${tax}`,
     soFarNone: 'Not typed in, so the tax on overtime is an estimate',
     overtimeRate: 'Overtime rate',
     overtimeRateLine: (rate: string) => `${rate} an hour`,
@@ -1311,13 +1313,13 @@ export const strings = {
     paysOnError: 'Type a day, a number from 1 to 31.',
     minimum: 'Paying the minimum each month',
     fixedEach: (amount: string) => `Paying ${amount} each month`,
-    full: 'Paying the full balance',
+    full: 'Paying all you owe each month',
     result: (payments: number, interest: string) =>
       payments === 1
         ? `1 payment, ${interest} interest`
         : `${payments} payments, ${interest} interest`,
     never: 'It never clears: the interest is more than the payment.',
-    noMinimum: 'Not known: later minimums need a rule, such as interest plus 1% of the balance.',
+    noMinimum: 'Not known: later minimums need a rule, such as interest plus 1% of what you owe.',
     estimates:
       "Estimates from the card's interest rate. PrePenny shows the numbers, not which to choose.",
     working: 'Working it out.',
@@ -1328,7 +1330,7 @@ export const strings = {
     addTitle: 'Add a debt',
     addIntro: "Add something you're paying off, to see the date it's paid off.",
     changeTitle: 'Change this debt',
-    changeIntro: "Change this debt's details. What's left changes with Update from statement.",
+    changeIntro: "Change this debt's details. To change what you owe, use Update from statement.",
     currencyFixed: (currency: string) =>
       `It's in ${currency}. That stays as it is, so what's owed doesn't change.`,
     zeroUntil: '0% until, if it has an offer',
@@ -1338,7 +1340,7 @@ export const strings = {
     minimumTyped: 'As on my statement',
     minimumRule: 'A rule, such as interest plus 1%',
     minimumAmount: 'Minimum from the statement',
-    minimumPercent: 'Interest plus this percentage of the balance',
+    minimumPercent: 'Interest plus this percentage of what you owe',
     minimumPercentHint: 'Most cards use 1.',
     minimumAtLeast: 'At least',
     minimumError: 'Type an amount, for example 25.',
@@ -1361,7 +1363,7 @@ export const strings = {
     tickHeading: 'Tick any payment to it that has already gone',
     tickIntro: 'The statement shows these already, so they come off the debt once.',
     tickLabel: (date: string, name: string, amount: string) => `${date}, ${name}, ${amount}`,
-    save: 'Update',
+    save: "Update what's owed",
     updated: (name: string) => `${name} updated from its statement.`,
     updatedTicked: (name: string, count: number) =>
       count === 1
@@ -1380,7 +1382,7 @@ export const strings = {
   /** Closing a debt, a goal or an account. */
   closing: {
     debtTitle: 'Close this debt',
-    debtIntro: 'Closing it takes it out of Owed now.',
+    debtIntro: 'Closing it stops it counting in Owed now, on Debts.',
     /** Closing a debt can also remove its payments still to come (step 2g). */
     alsoRemove: (count: number, continues: boolean) => {
       if (continues) return 'Also remove every payment planned to it?';
@@ -1414,7 +1416,7 @@ export const strings = {
     spread: (amount: string) => `Spread across the days: ${amount} a day.`,
     spreadNoDay: 'Spread across the days.',
     payLater: (day: string) => `On a pay-later card, with the bill on the ${day} of each month.`,
-    rollOverOn: "Roll-over on: what's left moves to the next week or month.",
+    rollOverOn: "What's left moves to the next week or month.",
     thisWeek: (end: string) => `This week, to ${end}`,
     thisMonth: (end: string) => `This month, to ${end}`,
     startsOn: (date: string) => `Starts ${date}`,
@@ -1447,7 +1449,7 @@ export const strings = {
     statementDayError: 'Type a day, a number from 1 to 31, or leave it empty.',
     starts: 'Starts',
     startsHint: 'Its first week or month is the one with this day in it.',
-    rollOver: "Roll over what's left to the next week or month",
+    rollOver: "Carry what's left over to the next week or month",
     save: 'Add budget',
     saveChanges: 'Save',
     nothingChanged: 'Change something first, then save.',
@@ -1529,7 +1531,7 @@ export const strings = {
     addTitle: 'Add an account',
     addIntro: 'Add an account with what its bank shows today, so PrePenny can plan for it.',
     changeTitle: 'Change this account',
-    changeIntro: 'Change its name, overdraft limit or the amount it warns you under.',
+    changeIntro: "Change its name, its overdraft limit or when it warns you it's getting low.",
     save: 'Add account',
     saveChanges: 'Save',
     nothingChanged: 'Change something first, then save.',

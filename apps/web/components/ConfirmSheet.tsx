@@ -41,7 +41,13 @@ export function ConfirmSheet({
 }) {
   const opened = useOpenCount(open);
   return (
-    <Sheet open={open} title={title} intro={intro} onClose={() => onClose(false, false)}>
+    <Sheet
+      open={open}
+      title={title}
+      intro={intro}
+      closeLabel={strings.sheet.goBack}
+      onClose={() => onClose(false, false)}
+    >
       <Choices
         key={opened}
         confirm={confirm}
