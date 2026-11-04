@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 onwards were decided while building step 2f, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, and D252 to D260 were decided while building step 2g, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -2525,6 +2525,8 @@ Why: D158 asks the engine to refuse, so no phone can do it by mistake, and the o
 
 ### D235. The Debts screens
 
+The third point is replaced by D251: a debt's payments open the edit sheet.
+
 Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D43, D99, D100 and the Debts sketches in ARCHITECTURE.md 4.6.
 
 - Debts: "Owed now", with "6 debts. Family loan counted at €1.1612 per £1." and "Estimate" when it includes a card's interest (D104). Then "Each debt", "In the order they're paid off. Tap one to see its payments.": paid off first, first; those still owed after 24 months last, in the order they were added. Each shows what's left now, "about £1,206.14" for another currency, "Paid off on", "Paid off" or "£225.25 still left on Wed 25 Oct 2028", "Estimate" where it applies (D100), and the bar with "42% paid". Closed debts are listed after, "Closed. Not counted in Owed now."
@@ -2536,6 +2538,8 @@ Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D43, D99, D100 and the Debts s
 Why: these follow the brief, the sketches and the decisions named where they didn't say exactly.
 
 ### D236. "Make it £20.99 and stop after it"
+
+D249 adds the words that say first what else goes.
 
 Decided 4 Nov 2026 in step 2f. Builds D63.
 
@@ -2567,6 +2571,8 @@ Why: the owner asked for every kind in brief 4.6, and setup and the Debts screen
 
 ### D239. Update from statement, Change the rate and Close
 
+Close's words are replaced by D250, which also offers to remove the debt's planned payments.
+
 Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D62, D103 and D153.
 
 - Update from statement asks "What the statement shows now", in the debt's own currency, for today, as Update balance does (D205). Linked payments from today or earlier that aren't ticked are listed with "Tick any payment to it that has already gone"; each starts unticked (D204). It's saved as one change with its ticks (D103).
@@ -2576,6 +2582,8 @@ Decided 4 Nov 2026 in step 2f. Adds to brief 4.6, D62, D103 and D153.
 Why: these follow the decisions named; the brief doesn't say how each looks.
 
 ### D240. The Budgets screen
+
+Its point that "Add a budget" doesn't ask "Already spent" is replaced by D247.
 
 Decided 4 Nov 2026 in step 2f. Adds to brief 4.5, D30, D61, D107, D152 and D161.
 
@@ -2649,4 +2657,191 @@ Decided 4 Nov 2026 in step 2f, from an outside review of the step. Adds to D230,
 - **The progress bar in dark mode** is filled with Navy as text, cream on the dark track, so it shows; in light mode it's the same navy as before.
 
 Why: the review found each with a case that misled about money, refused something valid or made the screen harder to use.
+
+## From the owner's review of step 2f
+
+D247 to D251 were agreed by the owner on 4 Nov 2026, answering the five questions left at the end of step 2f. They were built in step 2g. Points marked "decided in step 2g" weren't in the owner's answer.
+
+### D247. Add a budget asks "Already spent this week", like setup
+
+Agreed 4 Nov 2026, from the owner's review of step 2f. Answers the question in D240 and replaces its point that Add a budget doesn't ask.
+
+- Adding a budget from the Budgets screen asks the same optional "Already spent this week" (or "this month") as setup, with the same words, saved the same way (D230, D246): a spend for today, recorded just before the account's balance was typed in when that was today, so only what's left leaves today; otherwise recorded now, so the whole amount still leaves today.
+- Decided in step 2g: it's asked only when the budget starts today, because a budget that starts later has no week or month under way, and not for a pay-later card, whose spending never leaves the bank (D246). The "Starts" hint is now "Its first week or month is the one with this day in it."
+
+Test: Travel at £25.00 a week added on Sun 25 Oct with £4.00 already spent shows £4.00 spent and £21.00 left this week, and only £21.00 leaves on Sun 25 Oct.
+
+Why: the owner's answer. Setup and the Budgets screen should ask the same way.
+
+### D248. The move before closing an account is added ticked, with a reminder
+
+Agreed 4 Nov 2026, from the owner's review of step 2f. Confirms the second point of D234 and adds to it.
+
+- "Move £3.12 to another account first" adds the move already ticked, as D234 says.
+- Once it's added, the account sheet and the undo bar say "Now move £3.12 in your banking app too."
+- Decided in step 2g: the line under the button says "Make the same move in your banking app." rather than "in your bank", to match.
+
+Why: the owner's answer. The account can only close once the money has really moved, and the person must make the same move themselves.
+
+### D249. "Make it £20.99 and stop after it" says first what else goes
+
+Agreed 4 Nov 2026, from the owner's review of step 2f. Confirms D236 and adds to it.
+
+- The fix still removes every later payment to the debt, from every series linked to it (D236).
+- Before the tap, the line under the button says what else goes, for example "This also removes 2 later payments to Laptop loan. Undo puts them back." Undo puts them back, as one change (D87).
+- Decided in step 2g: the payments are counted as far ahead as the debt looks, 24 months (D43). When a linked series carries on after that, as a credit card's monthly payment does, the line says "This also removes every later payment to Credit card." instead of a number that wouldn't be all of them. With none after it: "No other payment to Credit card is planned, so nothing else changes." It stays one tap (D63): the words come before it, not in a second step.
+
+Test: Sam's Laptop loan at £250.00 says "This also removes 2 later payments to Laptop loan.", the fix leaves two payments, and Undo puts back all four. Sam's Credit card says "every later payment".
+
+Why: the owner's answer. Nobody should be surprised by payments going.
+
+### D250. Closing a debt offers to remove its planned payments
+
+Agreed 4 Nov 2026, from the owner's review of step 2f. Answers the question in D239 and replaces its words "Its payments stay in your plan until you remove them."
+
+- "Close this debt" asks "Also remove its 3 planned payments?" with Yes and No. Yes removes them and closes the debt as one change, so one Undo puts all of it back. No closes it and keeps them, as before.
+- Decided in step 2g:
+  - No starts chosen, so nothing more goes without a tap.
+  - The planned payments are the linked payments from today on that aren't ticked: each linked series is removed from its first payment from today with nothing ticked after it ("Remove this and later", D92). Payments from before today that aren't ticked stay in Not ticked yet.
+  - They're counted 24 months ahead (D43). When a series carries on after that, it asks "Also remove every payment planned to it?" With one, "Also remove its planned payment?" With none, nothing more is asked.
+  - The undo bar says "Family loan closed, and its planned payments removed."
+
+Test: Sam's Family loan asks "Also remove its 6 planned payments?"; Yes takes away all six, and Undo puts them back.
+
+Why: the owner's answer. A closed debt usually needs no more payments, but only the person knows.
+
+### D251. A debt's payments open the same edit sheet as on Coming up
+
+Agreed 4 Nov 2026, from the owner's review of step 2f. Replaces the third point of D235.
+
+- On a debt's own page, each payment can be tapped and opens the same edit sheet as on Coming up: Mark as paid, Move to next payday, Skip this one, a new amount, date, name or note, and Remove. The page says "Tap a payment to change it, move it or skip it."
+- Decided in step 2g: the sheet's rows come from the plan worked out as far ahead as the debt looks, 24 months, so every payment the page shows can be changed. A payment ticked before the account's balance was last updated has no row in the plan, so it isn't a button. Statement days, which are interest, aren't buttons either.
+
+Test: tapping the Family loan's Mon 26 Oct payment opens its edit sheet with "£112.54 left", and Move to next payday moves it to Fri 30 Oct.
+
+Why: the owner's answer. A person looking at a debt shouldn't have to go to another page to change one of its payments.
+
+## Made during step 2g
+
+D252 to D260 were decided on 4 Nov 2026 while building step 2g, What if and the take-home pay calculator; D260 came from an outside review. Questions for the owner are in `PLAN.md`.
+
+### D252. The What if screen
+
+Decided 4 Nov 2026 in step 2g. Builds brief 4.10 and D135, with the What if sketch in ARCHITECTURE.md 4.6.
+
+- What if is at `/app/what-if/`. It opens from a "What if" button on Coming up, under the lowest point, beside "Try changes in practice, then keep them or throw them away.", and from More. Its link back says "Back to Coming up" or "Back to More", for where it was opened from.
+- The top says plainly: "Practice mode. Try changes here. Your real plan doesn't change unless you keep them."
+- Practice changes are made with the same sheets as real ones. Under "Make a practice change": Add a payment, I did overtime and Update balance. Below, "Payments, with your practice changes" is the Coming up list for the practice plan, where tapping a payment opens the edit sheet. The sheets are given the practice plan, so each change is worked out on it and nothing is saved.
+- "Your practice changes" lists each one, in the words the undo bar would use ("Pay changed for just this one."), with "Take back the last change".
+- "Keep these changes" makes every practice change on the real plan as one change, so one Undo takes all of it back (D87). It works them out again on the real plan as it is then (D135). The undo bar says "Your practice change is now in your plan." and takes focus.
+- "Throw them away" forgets them at once: the real plan was never changed, and an undo of nothing isn't needed. It says "Practice changes thrown away. Your real plan is exactly as it was."
+- Practice changes stay on this phone, in memory, while PrePenny is open (ARCHITECTURE.md 3.8), so going to another screen and back keeps them. Closing PrePenny throws them away. When the real plan changes in the meantime, they're made again on it; if one can't be made any more, all of them are thrown away and the screen says so.
+- The bottom navigation marks More on What if and on the pay calculator (D245).
+
+Why: the owner's instructions, with the engine's What if from step 1g. Using the very same sheets means a practice change and a real one always agree.
+
+### D253. What What if shows side by side
+
+Decided 4 Nov 2026 in step 2g. Adds to D135.
+
+- "Your real plan and practice, side by side", in two columns: "Your real plan" and "Practice".
+- The lowest point ahead looks 12 months ahead, like Home and Coming up (D178), with its date, the payment it's after, and Tight or Short in words. It's shown for Home's account (D168), and for any other account whose lowest point or shortfall the practice changes. An account the practice doesn't change isn't shown. Kofi's Tax account gets less with no work, but its lowest point stays the same, so it isn't shown.
+- A shortfall: "In practice, you'd be £95.47 short on Sun 1 Nov. Moving one of these payments to Fri 6 Nov would fix it." with the payments that could move, biggest first (D69): the first three, and "Show all" for the rest. When the real plan has a shortfall of its own that's different, it's shown too: "Your real plan is £X short on [date]." When no single payment would fix it: "Moving one payment to the next payday wouldn't fix it on its own."
+- "Paid off on": each debt, looking 24 months ahead (D43), in the Debts screen's order (D235), with "an estimate" where it is one, or "£225.25 left on Wed 25 Oct 2028". Savings goals show the date each is reached the same way. Closed debts and goals aren't shown.
+
+Tests: the owner's tests 1 and 2.
+
+Why: the owner's list, "the lowest point with Tight or Short, any shortfall with the payments that could move, and each debt's paid-off date", kept to what the practice can change.
+
+### D254. The calculator's boxes
+
+Decided 4 Nov 2026 in step 2g. Builds brief 4.15 with D120 to D128, D140 and the Pay calculator sketch in ARCHITECTURE.md 4.6.
+
+- Pay: each kind of hours with its kind (Basic, Overtime, Nights, Weekends, Holiday), hours and pay an hour, up to 8, and fixed amounts such as a shift premium, each with what it's for. Rates take up to 4 decimal places, as typed.
+- Tax and deductions: the payday, with "That's tax week 30 of the 2026 to 2027 tax year." under it; how often (every week, 2 weeks, 4 weeks or month); the tax code, as on the payslip; "The usual way, cumulative" or "Week 1 or month 1, on an emergency code"; a workplace pension with its percentage, the earnings it's worked on for each pay period (which can be left empty for all pay), and before or after tax; one student loan plan and a Postgraduate loan (D127); and other deductions by name (D126).
+- From your last payslip: "The tax week on it" (or month), which starts as the week before the payday, "From your last payslip: gross for tax so far" and "From your last payslip: tax paid so far". Both figures, or neither. The week must be before the payday's.
+- National Insurance uses category A and doesn't ask (D122); almost everyone is A.
+- "Work out take-home pay" works it out on the phone. Changing any box afterwards clears the result and says "You changed something, so work it out again.", so a figure on screen always matches the boxes.
+- The result: "Take-home pay" and the amount, then "Tax £58.80, National Insurance £24.89, Pension £17.33" (with student loans and other deductions when there are any), "Gross pay £553.19", and "An estimate, not tax advice." always. When it's an estimate, it says why: without the payslip's figures; a payslip from an earlier week ("Your last payslip is from tax week 25, so weeks 26 to 29 are counted as the same pay as this one. That makes it an estimate.", D124); or a payslip from the tax year before. A tax refund says "Tax refund"; tax held back by the half-of-pay limit says so (D121).
+- "An estimate, not tax advice." is also at the top of the calculator.
+
+Why: these are brief 4.15's boxes, with what the engine needs, asked in the order a payslip shows them.
+
+### D255. "Add to plan as the Fri 30 Oct estimate"
+
+Decided 4 Nov 2026 in step 2g. Builds brief 4.15 ("One tap adds it to the plan as the next payday's estimate").
+
+- In the app, the calculator starts from the plan's own pay: the next payday (D81), the main pay's tax settings, that payday's saved week (D5) and the last payslip's figures when they're from the same tax year.
+- "Add to plan as the Fri 30 Oct estimate" makes that payday's pay the take-home amount, marked as an estimate, for just this one (`takeHomeAsEstimate`), as one change with one Undo. It's for the payday in the box, which starts on the next payday. When the box holds a date that isn't one of the main pay's paydays from tomorrow on, it says "To add it to your plan, choose one of your paydays as the payday above, such as Fri 30 Oct."
+- A payday whose real amount is in already isn't changed (D44): "Your pay on Fri 30 Oct already has its real amount, £603.06, so it stays as it is." Overtime already added for that payday stays on top, and the line says so.
+- With no main pay: "There are no paydays in your plan to add it to yet."
+
+Test (the owner's test 3 and 4): week 26's lines with week 25's payslip on Fri 30 Oct give £452.17, labelled an estimate because Fri 30 Oct is tax week 30 (D124). The figures are the same as on week 26 itself: Fri 2 Oct gives £452.17 exactly. Added as the Fri 30 Oct estimate, it replaces £603.06, and Home's lowest point is −£146.36 on Sun 1 Nov, Short. Undo puts back £4.53.
+
+Why: a result worked out for one payday's tax week should go on that payday. The box starts on the next payday, so the owner's one tap is still one tap.
+
+### D256. "Save as a pay week"
+
+Decided 4 Nov 2026 in step 2g. Builds brief 4.15 ("Save a person's usual lines as a template") and PLAN.md's left for later 17. Adds to D5 and D154.
+
+- It asks a name ("Usual week" to start), and saves the pay lines and fixed amounts as a pay week on the main pay's tax settings, as one change with one Undo.
+- When the main pay has no tax settings saved yet, the calculator's are saved for it first, with the last payslip's figures when they were typed.
+- When the main pay has no saved week linked, this one is linked to every payday, so "I did overtime" can work out its figures (D5). A main pay that already has weeks linked keeps them, as Sam's does: the new week is saved for starting from.
+- Saved weeks are listed at the top of the calculator, "Start from a saved week", each with "Use Rota week 1, 3 shifts", which fills in its lines.
+- The calculator never changes tax settings already saved: those change where they're shown, so overtime figures never change without the person seeing why (D162).
+
+Why: a saved week is only useful if the person can find it again, and changing tax settings from a calculator someone was only trying out would change overtime they saved earlier.
+
+### D257. Check my payslip
+
+Decided 4 Nov 2026 in step 2g. Builds brief 4.15 and D140.
+
+- "Check my payslip" opens under the calculator. It asks for the payslip's gross pay, pension (when there's one), tax, National Insurance, student loan and Postgraduate loan (when there are any), take-home pay, gross for tax so far and tax paid so far, each of which can be left empty. The pay lines and settings are the calculator's.
+- Each figure that differs is listed: "Tax: £105.40 on your payslip, £105.20 worked out by PrePenny. That's £0.20 more on your payslip.", after "These are different from what PrePenny worked out:", and it ends with "Ask your payroll team." It never says which is right, and never says the employer is wrong. National Insurance and take-home pay 1p away aren't listed (D140).
+- When nothing differs: "Every figure you typed is what PrePenny worked out."
+- Amounts under £1 are written as money, "£0.20", as VOICE.md says.
+
+Test (the owner's test 5): week 27's payslip with tax as £105.40 lists only tax, £0.20 more, and "Ask your payroll team."
+
+Why: the owner's words, and the brief's rule that the app never says the employer is wrong.
+
+### D258. The public calculator
+
+Decided 4 Nov 2026 in step 2g. Builds brief 4.15 and 4.17 ("Always free, no account needed").
+
+- The public page is `/pay-calculator/`, titled "Take-home pay calculator", with PrePenny's name linking to the first page. It says: "It all happens on this phone: nothing you type is sent anywhere."
+- It uses the same calculator as the app, starting from 1257L on the cumulative basis, paid weekly, on today's date. It works with nothing saved on the phone, keeps nothing, and the engine works everything out on the phone: no request is made when it works out the pay or checks a payslip. Its links are plain links, so nothing is fetched ahead of a tap.
+- "Start a free plan with this pay" keeps the take-home pay, how often and the payday in the browser's own small store on the phone, never in the web address, so no amount reaches a server or its logs (CLAUDE.md). Then it opens setup. Setup's pay step fills in its first income with it, marked as an estimate, with the payday when it's today or later, and says "Your take-home pay from the calculator is filled in below, as an estimate." The kept pay is forgotten once setup has read it.
+
+Test (the owner's test 6): on a phone with nothing saved, the page works out £452.17 and checks a payslip with no request at all, still with nothing saved, and "Start a free plan with this pay" fills in setup's pay step with £452.17, every week, as an estimate.
+
+Why: the owner's instructions, and the privacy rule that amounts never go to logs.
+
+### D259. Smaller choices in step 2g
+
+Decided 4 Nov 2026 in step 2g.
+
+- More lists Pay calculator ("Take-home pay from your hours, and Check my payslip") and What if ("Try changes in practice before you make them") under "Your plan".
+- The confirm sheet can ask one Yes or No question before its button (D250).
+- After a practice change takes away the row that was tapped, focus goes to "Your practice changes", because What if has no undo bar (WCAG 2.4.3).
+- The Coming up list in What if keeps its own months and opened paydays, apart from the real Coming up page's (D187).
+- The calculator's figures are worked out on the phone's main thread, not in the background worker: one payday's take-home pay is a small sum, and the public page has no plan to send the worker.
+- Add a budget, Add a debt and Add a savings goal wait for the plan before their boxes start. Before, a tap made while the plan was still loading started them with no date and no account. The end-to-end tests found it when the machine was busy.
+
+Why: each follows an earlier decision or the owner's instructions where they didn't say exactly.
+
+### D260. Fixes from the outside review of step 2g
+
+Decided 4 Nov 2026 in step 2g, from an outside review of the step. Adds to D250, D252, D254, D256 and D257.
+
+- **The payslip's week stays with its figures.** Changing the payday used to move "The tax week on it" to the week before the new payday even when the payslip's figures were in, so they were read as a later payslip's. On Sam's example, Fri 6 Nov with his week 29 payslip gave £500.57, with tax £10.40, and didn't say it was an estimate. Now the week moves only while no figures are in, and it gives £452.17, an estimate, because week 30 is counted as the same pay.
+- **Closing a debt removes every planned payment, even with one paid early.** A payment paid early comes off the debt on the day it was paid, so it sorted before the others and Yes was refused. The payments are now taken in payment order: after the last ticked one, "Remove this and later"; before it, each one on its own (D92). Sam's Family loan with Fri 4 Dec paid today asks "Also remove its 5 planned payments?", and Yes leaves only the one paid early.
+- **In What if, focus never lands on the real Undo.** After Keep, the real undo bar stays on the page. A practice change that takes away the row tapped now puts focus on "Your practice changes", so Undo can't be tapped by mistake for the wrong change.
+- **An old payslip check is cleared.** Check my payslip's result clears when any of the calculator's boxes change, as the result does (D254).
+- **The calculator starts on how often the pay comes.** With no tax settings saved, it starts from the main pay's own schedule: every week, 2 weeks, 4 weeks or month. Before, monthly pay started on "Every week", and Save as a pay week would have saved weekly tax settings for it (D256).
+- **Changes that cancel each other out.** Keep says "Your practice changes cancel each other out, so there was nothing to keep. Your real plan is exactly as it was." and makes no change, so there's no Undo that does nothing.
+- **Take back the last change waits for Keep.** While Keep is saving, Take back does nothing, so the list saved is the list shown.
+- **Smaller:** each fixed amount and deduction is a numbered group ("Fixed amount 1"), so its Remove button can be told apart; What if's practice list doesn't change how the real Coming up page groups payments; two payments with the same name and day in "Payments that could move" no longer clash.
+
+Why: the review found each with a case that put a wrong amount on screen, refused something valid, or made a mistake easy.
 

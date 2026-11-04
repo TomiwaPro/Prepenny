@@ -44,6 +44,9 @@ export function DebtSheet({
   readonly onClose: () => void;
 }) {
   const opened = useOpenCount(open);
+  // The boxes start from the plan, so they wait for it: a tap before it has
+  // loaded would start them with no date or account (step 2g).
+  const ready = usePlanActions().loaded !== null;
   return (
     <Sheet
       open={open}
@@ -51,7 +54,7 @@ export function DebtSheet({
       intro={debt === null ? t.addIntro : t.changeIntro}
       onClose={onClose}
     >
-      {opened === 0 ? null : <DebtSheetForm key={opened} debt={debt} onDone={onClose} />}
+      {opened === 0 || !ready ? null : <DebtSheetForm key={opened} debt={debt} onDone={onClose} />}
     </Sheet>
   );
 }

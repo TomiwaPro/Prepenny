@@ -49,6 +49,10 @@ test('every tap target is at least 44 by 44 pixels, on every screen and in a she
   expect(await smallTargets(page)).toEqual([]);
   await page.getByRole('button', { name: 'I spent' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
+  // Measured once the sheet has finished sliding open, not part of the way.
+  await page.waitForFunction(() =>
+    document.getAnimations().every((one) => one.playState !== 'running'),
+  );
   expect(await smallTargets(page)).toEqual([]);
   for (const path of ['/', '/app/coming-up/', '/app/debts/', '/app/more/', '/app/parts/']) {
     await page.goto(path);

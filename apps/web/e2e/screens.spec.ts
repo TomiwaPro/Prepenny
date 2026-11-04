@@ -11,7 +11,9 @@
 // Savings goals on the example with the owner's test 5 Travel budget and
 // test 6 Holiday goal added, because the example has none (D180). Each
 // page is as tall as the whole page, with the bottom navigation at the
-// bottom. Run only when asked, one step at a time:
+// bottom. Step 2g: What if with the owner's test 1 change made, before
+// keeping it; the pay calculator's result for test 3; and Check my payslip
+// for test 5, at 360px in light. Run only when asked, one step at a time:
 //
 //   SCREENS=1 pnpm e2e --project phone-360 screens -g "Step 2d-2"
 
@@ -409,3 +411,119 @@ for (const shot of moneyShots) {
     await context.close();
   });
 }
+
+/** A context for a step 2g screenshot: 360px wide, light, on the example. */
+async function step2gPage(browser: import('@playwright/test').Browser) {
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 800 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    colorScheme: 'light',
+    reducedMotion: 'reduce',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+  });
+  await openOnExample(context);
+  return { context, page: await context.newPage() };
+}
+
+/** The whole page, as tall as it is, into docs/screens/2g. */
+async function shoot2g(page: Page, file: string) {
+  await page.evaluate(() => document.fonts.ready);
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width: 360, height });
+  const step = join(screens, '2g');
+  mkdirSync(step, { recursive: true });
+  await page.screenshot({ path: join(step, file) });
+}
+
+test('Step 2g: what-if-360-light.png', async ({ browser }) => {
+  const { context, page } = await step2gPage(browser);
+  await page.goto('/app/what-if/?from=coming-up');
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
+  await friday.locator(':scope > h3 > button').click();
+  await friday.getByRole('button', { name: /^Pay Fri/ }).click();
+  const sheet = page.getByRole('dialog', { name: 'Pay' });
+  await sheet.getByLabel('Amount').fill('503.06');
+  await sheet.getByRole('button', { name: 'Save' }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByTestId('practice-short')).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shoot2g(page, 'what-if-360-light.png');
+  await context.close();
+});
+
+/** Fills in the calculator with one of brief 8.6's payslips, as the owner's tests 3 and 5 say. */
+async function fillPayslip(
+  page: Page,
+  slip: {
+    hours: string;
+    premium: string;
+    payday: string;
+    week: string;
+    gross: string;
+    tax: string;
+  },
+) {
+  const line = page.getByTestId('pay-line').first();
+  await line.getByLabel('Hours', { exact: true }).fill(slip.hours);
+  await line.getByLabel('Pay an hour').fill('12.71');
+  await page.getByTestId('extra').first().getByLabel('Amount').fill(slip.premium);
+  await page.getByLabel('Payday').fill(slip.payday);
+  await page.getByLabel('The tax week on it').fill(slip.week);
+  await page.getByLabel('From your last payslip: gross for tax so far').fill(slip.gross);
+  await page.getByLabel('From your last payslip: tax paid so far').fill(slip.tax);
+}
+
+test('Step 2g: pay-calculator-360-light.png', async ({ browser }) => {
+  const { context, page } = await step2gPage(browser);
+  await page.goto('/app/pay/');
+  await expect(page.getByRole('button', { name: 'Work out take-home pay' })).toBeVisible();
+  await fillPayslip(page, {
+    hours: '34.5',
+    premium: '114.69',
+    payday: '2026-10-30',
+    week: '25',
+    gross: '7927.57',
+    tax: '375.80',
+  });
+  await page.getByRole('button', { name: 'Work out take-home pay' }).click();
+  await expect(page.getByTestId('take-home')).toHaveText('£452.17');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shoot2g(page, 'pay-calculator-360-light.png');
+  await context.close();
+});
+
+test('Step 2g: check-my-payslip-360-light.png', async ({ browser }) => {
+  const { context, page } = await step2gPage(browser);
+  await page.goto('/app/pay/');
+  await expect(page.getByRole('button', { name: 'Work out take-home pay' })).toBeVisible();
+  await fillPayslip(page, {
+    hours: '46',
+    premium: '210.23',
+    payday: '2026-10-09',
+    week: '26',
+    gross: '8463.43',
+    tax: '434.60',
+  });
+  await page.getByRole('button', { name: 'Check my payslip' }).click();
+  const check = page.getByTestId('payslip-check');
+  for (const [label, value] of [
+    ['Gross pay', '794.89'],
+    ['Pension', '27.00'],
+    ['Tax', '105.40'],
+    ['National Insurance', '44.23'],
+    ['Take-home pay', '618.46'],
+    ['Gross for tax so far', '9231.32'],
+    ['Tax paid so far', '539.80'],
+  ] as const) {
+    await check.getByLabel(label, { exact: true }).fill(value);
+  }
+  await check.getByRole('button', { name: 'Check these figures' }).click();
+  await expect(page.getByTestId('payslip-differences')).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shoot2g(page, 'check-my-payslip-360-light.png');
+  await context.close();
+});

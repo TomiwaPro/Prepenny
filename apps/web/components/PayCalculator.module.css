@@ -1,0 +1,146 @@
+/* The take-home pay calculator (step 2g): cards on the paper, boxes as in
+   the sheets (DESIGN.md), two boxes side by side where they fit at 320px. */
+
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+/* "An estimate, not tax advice.", always shown. */
+.notAdvice {
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* One pay line: its kind, hours and rate, in a group of its own. */
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  border: 0;
+  border-top: 1px solid var(--divider);
+}
+
+.lineLegend {
+  padding: 0;
+  font-size: var(--size-second);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* Two boxes side by side; at 200% text they stack. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.indented {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--brass);
+}
+
+.percentBox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--size-name);
+}
+
+.percentBox > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.result {
+  border: 1px solid var(--brass);
+}
+
+/* A heading that opens and closes the part under it, such as Check my payslip. */
+.disclosure {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.disclosure::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: rotate(45deg);
+}
+
+.disclosure[aria-expanded="true"]::after {
+  transform: rotate(-135deg);
+}
+
+.outcome {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.outcome:focus {
+  outline: none;
+}
+
+.differences {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-inner);
+  background: var(--sunk);
+  list-style: none;
+  font-size: var(--size-body);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--divider);
+}
+
+/* The public page: PrePenny's name, then the calculator in the centred column. */
+.page {
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: var(--tap);
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+  color: var(--accent-text);
+  text-decoration: none;
+}

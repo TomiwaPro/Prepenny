@@ -469,6 +469,21 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
   );
 }
 
+/**
+ * Puts other plan actions under part of a screen: What if gives its sheets
+ * the practice plan this way, so they make practice changes with the same
+ * sheets as real ones, and nothing is saved (brief 4.10, D135, step 2g).
+ */
+export function PlanActionsOverride({
+  value,
+  children,
+}: {
+  readonly value: PlanActions;
+  readonly children: ReactNode;
+}) {
+  return <ActionsContext.Provider value={value}>{children}</ActionsContext.Provider>;
+}
+
 /** The plan as Home shows it. */
 export function usePlan(): PlanState {
   return useContext(PlanContext);

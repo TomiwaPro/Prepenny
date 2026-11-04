@@ -9,8 +9,10 @@ import type { EditResult } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
 import type { AccountsView, BudgetsView, GoalsView } from '../lib/money-views.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
+import type { PayView } from '../lib/pay-view.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 import type { SetupView } from '../lib/setup-view.ts';
+import type { WhatIfView } from '../lib/what-if-view.ts';
 
 /** Everything Home shows. */
 export interface HomeAsk {
@@ -85,8 +87,26 @@ export interface CompareAsk {
   readonly compare: CompareRequest;
 }
 
+/** What the pay calculator needs from the plan (brief 4.15, step 2g). */
+export interface PayAsk {
+  readonly kind: 'pay';
+  readonly records: PlanRecords;
+  readonly today: string;
+}
+
+/** The real plan and the practice plan side by side, for What if (brief 4.10, D135). */
+export interface WhatIfAsk {
+  readonly kind: 'what-if';
+  readonly records: PlanRecords;
+  readonly today: string;
+  /** The practice changes, made in turn on a copy of the plan. */
+  readonly practice: readonly EditCommand[];
+}
+
 export type Ask =
   | HomeAsk
+  | WhatIfAsk
+  | PayAsk
   | PlanAsk
   | EditAsk
   | ActionsAsk
@@ -110,6 +130,8 @@ export interface Answers {
   readonly goals: GoalsView;
   readonly accounts: AccountsView;
   readonly compare: CardComparison;
+  readonly 'what-if': WhatIfView;
+  readonly pay: PayView;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

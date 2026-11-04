@@ -45,6 +45,9 @@ export function GoalSheet({
   readonly onClose: () => void;
 }) {
   const opened = useOpenCount(open);
+  // The boxes start from the plan, so they wait for it: a tap before it has
+  // loaded would start them with no date or account (step 2g).
+  const ready = usePlanActions().loaded !== null;
   return (
     <Sheet
       open={open}
@@ -52,7 +55,7 @@ export function GoalSheet({
       intro={goal === null ? t.addIntro : t.changeIntro}
       onClose={onClose}
     >
-      {opened === 0 ? null : <GoalSheetForm key={opened} goal={goal} onDone={onClose} />}
+      {opened === 0 || !ready ? null : <GoalSheetForm key={opened} goal={goal} onDone={onClose} />}
     </Sheet>
   );
 }

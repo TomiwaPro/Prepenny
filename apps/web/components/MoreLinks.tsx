@@ -1,6 +1,6 @@
 // "Your plan" on More (the More sketch in ARCHITECTURE.md 4.6): Accounts,
-// Budgets and Savings goals, each a whole row that opens its screen, with a
-// line saying what's there (D213).
+// Budgets, Savings goals, the Pay calculator and What if, each a whole row
+// that opens its screen, with a line saying what's there (D213).
 
 import Link from 'next/link';
 import { strings } from '../strings/en-GB.ts';
@@ -12,6 +12,8 @@ const links = [
   { href: '/app/accounts/', label: t.accounts, line: t.accountsLine },
   { href: '/app/budgets/', label: t.budgets, line: t.budgetsLine },
   { href: '/app/goals/', label: t.goals, line: t.goalsLine },
+  { href: '/app/pay/', label: t.payCalculator, line: t.payCalculatorLine },
+  { href: '/app/what-if/', label: t.whatIf, line: t.whatIfLine },
 ] as const;
 
 export function MoreLinks() {

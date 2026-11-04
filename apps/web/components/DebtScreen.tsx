@@ -9,6 +9,10 @@
 // Close. A payment bigger than what's left says by how much, with the one-tap
 // fix "Make it £20.99 and stop after it" (D63). A credit card with a
 // statement day can compare ways to pay, as numbers only (D102).
+//
+// From the owner's answers to step 2f: tapping a payment opens the same edit
+// sheet as on Coming up; the fix says first which later payments it also
+// removes; and closing the debt asks whether to remove its planned payments.
 
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -16,12 +20,14 @@ import { dateTile, formatDay } from '../lib/dates.ts';
 import type { DebtPaymentView, DebtRowView, DebtsView, DebtView } from '../lib/debts-view.ts';
 import { formatIn, formatMoney, perPoundWords } from '../lib/money.ts';
 import { refusalMessage } from '../lib/refusals.ts';
+import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
 import { CompareCard } from './CompareCard.tsx';
 import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { DebtSheet } from './DebtSheet.tsx';
 import { paidOffWords } from './DebtsScreen.tsx';
+import { EditSheet } from './EditSheet.tsx';
 import { Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
 import { focusUndoBar } from './focusUndo.ts';
@@ -31,6 +37,7 @@ import { RateSheet } from './RateSheet.tsx';
 import { EstimateTag, ProgressBar, ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
 import { StatementSheet } from './StatementSheet.tsx';
+import { useEditSheet } from './useEditSheet.ts';
 import { useScreenView } from './useScreenView.ts';
 
 const t = strings.debt;
@@ -38,7 +45,7 @@ const t = strings.debt;
 type Open = 'statement' | 'rate' | 'payment' | 'details' | 'close' | null;
 
 /** The one-tap fix under a payment that's more than what's left (D63). */
-function Fix({ row }: { readonly row: DebtPaymentView }) {
+function Fix({ row, debtName }: { readonly row: DebtPaymentView; readonly debtName: string }) {
   const { makeChanges } = usePlanActions();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -66,7 +73,7 @@ function Fix({ row }: { readonly row: DebtPaymentView }) {
         {t.fix(amount)}
       </button>
       <p id={`fix-${row.key.replace(/\W/g, '-')}`} className={formStyles.hint}>
-        {t.fixHint}
+        {t.alsoRemoves(debtName, fix.alsoRemoves.count, fix.alsoRemoves.continues)}
       </p>
       <Problem text={problem} />
     </div>
@@ -77,10 +84,12 @@ function Row({
   row,
   debt,
   today,
+  onOpen,
 }: {
   readonly row: DebtRowView;
   readonly debt: DebtView;
   readonly today: string;
+  readonly onOpen: (row: RowView) => void;
 }) {
   const day = formatDay(row.date, today);
   const left = (amount: number, paidOff: boolean) =>
@@ -120,7 +129,10 @@ function Row({
       moneyIn={false}
       left={left(row.leftAfter, row.paidOff)}
       status={null}
-      extra={<Fix row={row} />}
+      extra={<Fix row={row} debtName={debt.name} />}
+      {...(row.edit === null
+        ? {}
+        : { rowKey: row.edit.key, onOpen: () => row.edit !== null && onOpen(row.edit) })}
     />
   );
 }
@@ -167,8 +179,18 @@ function CardDetails({ debt, today }: { readonly debt: DebtView; readonly today:
   );
 }
 
-function OneDebt({ debt, view }: { readonly debt: DebtView; readonly view: DebtsView }) {
-  const { makeChange } = usePlanActions();
+function OneDebt({
+  debt,
+  view,
+  version,
+}: {
+  readonly debt: DebtView;
+  readonly view: DebtsView;
+  readonly version: number | null;
+}) {
+  const { makeChange, makeChanges } = usePlanActions();
+  const sheet = useEditSheet(version);
+  const planned = debt.planned;
   const [open, setOpen] = useState<Open>(null);
   const close = () => setOpen(null);
   const money = (amount: number) => formatIn(amount, debt.currency);
@@ -225,7 +247,7 @@ function OneDebt({ debt, view }: { readonly debt: DebtView; readonly view: Debts
             <p className={styles.second}>{t.paymentsIntro}</p>
             <ul className={styles.list} data-testid="debt-rows">
               {debt.rows.map((row) => (
-                <Row key={row.key} row={row} debt={debt} today={view.today} />
+                <Row key={row.key} row={row} debt={debt} today={view.today} onOpen={sheet.open} />
               ))}
             </ul>
             <p className={styles.second}>{t.toChange}</p>
@@ -298,21 +320,41 @@ function OneDebt({ debt, view }: { readonly debt: DebtView; readonly view: Debts
         intro={strings.closing.debtIntro}
         confirm={strings.closing.debtConfirm}
         keep={strings.closing.keep}
-        onConfirm={() =>
-          makeChange({ kind: 'close-debt', debtId: debt.id }, strings.closing.debtClosed(debt.name))
+        question={
+          planned === null
+            ? null
+            : strings.closing.alsoRemove(planned.removing.count, planned.removing.continues)
         }
-        onClose={(changed) => {
+        onConfirm={(yes) =>
+          yes && planned !== null
+            ? makeChanges(
+                [...planned.commands, { kind: 'close-debt', debtId: debt.id }],
+                strings.closing.debtClosedAndRemoved(debt.name),
+              )
+            : makeChange(
+                { kind: 'close-debt', debtId: debt.id },
+                strings.closing.debtClosed(debt.name),
+              )
+        }
+        onClose={(changed, yes) => {
           close();
-          if (changed) focusUndoBar(strings.closing.debtClosed(debt.name));
+          if (changed) {
+            focusUndoBar(
+              yes
+                ? strings.closing.debtClosedAndRemoved(debt.name)
+                : strings.closing.debtClosed(debt.name),
+            );
+          }
         }}
       />
+      <EditSheet row={sheet.editing} today={view.today} onClose={sheet.close} />
     </>
   );
 }
 
 export function DebtScreen() {
   const id = useSearchParams()?.get('id') ?? '';
-  const { view, failed } = useScreenView('debts');
+  const { view, version, failed } = useScreenView('debts');
   const debt =
     view === null ? null : ([...view.debts, ...view.closed].find((one) => one.id === id) ?? null);
   const back = { label: t.back, href: '/app/debts/' };
@@ -337,7 +379,7 @@ export function DebtScreen() {
   return (
     <>
       <ScreenHeader heading={debt.name} purpose={t.purpose} back={back} />
-      <OneDebt debt={debt} view={view} />
+      <OneDebt debt={debt} view={view} version={version} />
     </>
   );
 }
