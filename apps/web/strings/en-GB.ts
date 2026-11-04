@@ -392,8 +392,10 @@ export const strings = {
     purpose:
       "Your bank shows money that's gone. This shows money that's going to go, and what you'll have left each time.",
     howToRead: 'How to read this',
-    /** The "?" beside the heading: what it says to a screen reader (D212). */
+    /** The button beside the heading, in words, after a "?" mark (D212, D216). */
     howToReadButton: 'How to read this',
+    /** The mark before the button's words. Screen readers skip it. */
+    helpMark: '?',
     howToReadPay: [
       'This pay shows every payment from today until the day before your next payday.',
       'Each line under Next paydays is one later pay. Tap it to see its payments.',

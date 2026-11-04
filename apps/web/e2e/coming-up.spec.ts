@@ -243,6 +243,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const help = page.getByTestId('how-to-read');
       const question = page.getByRole('button', { name: 'How to read this' });
       await expect(help).toBeVisible();
+      // The button says what it does in words, after its "?" (D216).
+      await expect(question).toHaveText('?How to read this');
       await expect(question).toHaveAttribute('aria-expanded', 'true');
       await expect(help.getByRole('heading')).toHaveText('How to read this');
       await expect(help.getByRole('listitem')).toHaveText([
