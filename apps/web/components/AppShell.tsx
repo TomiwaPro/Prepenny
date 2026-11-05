@@ -7,6 +7,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { refusalMessage } from '../lib/refusals.ts';
+import { strings } from '../strings/en-GB.ts';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
 import { ExampleBanner, OfflineNote } from './Notes.tsx';
@@ -52,7 +53,9 @@ function ToSetup() {
  */
 function ChangeBar() {
   const { lastChange, undoLastChange, dismissLastChange } = usePlanActions();
-  const [refused, setRefused] = useState<string | null>(null);
+  const [refused, setRefused] = useState<{ readonly full: string; readonly short: string } | null>(
+    null,
+  );
   const path = usePathname();
   const firstPath = useRef(path);
 
@@ -77,7 +80,8 @@ function ChangeBar() {
     holder.current?.querySelector<HTMLElement>('[data-undo-message]')?.focus();
   });
 
-  const message = refused ?? lastChange?.message ?? null;
+  const message = refused?.full ?? lastChange?.message ?? null;
+  const short = refused?.short ?? lastChange?.short ?? message ?? '';
   const canUndo = refused === null && lastChange?.edit !== null && lastChange?.edit !== undefined;
   // The live region is always on the page, and each message is drawn afresh
   // inside it, so screen readers hear every one, even the same words twice.
@@ -89,13 +93,18 @@ function ChangeBar() {
           announce={false}
           placement="inline"
           message={message}
+          short={short}
           {...(canUndo
             ? {
                 onUndo: async () => {
                   if (undoing.current) return;
                   undoing.current = true;
                   const outcome = await undoLastChange(lastChange.id);
-                  if (!outcome.ok) setRefused(refusalMessage(outcome.code));
+                  if (!outcome.ok)
+                    setRefused({
+                      full: refusalMessage(outcome.code),
+                      short: strings.undo.short.cantUndo,
+                    });
                 },
               }
             : {})}

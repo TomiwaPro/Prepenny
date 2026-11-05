@@ -322,7 +322,7 @@ function ShiftFields({
       sure.payday === null
         ? (up ? strings.undo.payUpNoDay : strings.undo.payDownNoDay)(what, amount)
         : (up ? strings.undo.payUp : strings.undo.payDown)(what, day(sure.payday), amount);
-    const outcome = await makeChange(command, message);
+    const outcome = await makeChange(command, { full: message, short: what });
     setBusy(false);
     if (outcome.ok) onDone();
     else setProblem(refusalMessage(outcome.code));

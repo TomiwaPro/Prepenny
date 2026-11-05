@@ -87,7 +87,10 @@ function StatementForm({
         balanceAt: at,
         ticks,
       },
-      ticks.length === 0 ? t.updated(debt.name) : t.updatedTicked(debt.name, ticks.length),
+      {
+        full: ticks.length === 0 ? t.updated(debt.name) : t.updatedTicked(debt.name, ticks.length),
+        short: strings.undo.short.updated(debt.name),
+      },
     );
     setBusy(false);
     if (outcome.ok) onDone();

@@ -76,7 +76,10 @@ function PlanActions({ worked, view }: { readonly worked: Worked; readonly view:
             if (busy) return;
             setBusy(true);
             setProblem(null);
-            const outcome = await makeChange(takeHomeAsEstimate(payday, worked.result), message);
+            const outcome = await makeChange(takeHomeAsEstimate(payday, worked.result), {
+              full: message,
+              short: strings.undo.short.payChanged(day),
+            });
             setBusy(false);
             if (outcome.ok) focusUndoBar(message);
             else setProblem(refusalMessage(outcome.code));
@@ -149,7 +152,10 @@ function SaveWeekSheet({
   );
 }
 
-/** "Week 2 of 4, next on Fri 6 Nov" for each week of the pattern, with the pay week it uses now. */
+/**
+ * "Week 2 of 4, next on Fri 6 Nov" for each week of the pattern, or "Payday
+ * 2 of 4" for pay that isn't weekly (D280), with the usual week it uses now.
+ */
 function stepChoices(view: PayView) {
   const main = view.main;
   if (main === null) return [];
@@ -164,6 +170,7 @@ function stepChoices(view: PayView) {
         step,
         main.steps,
         next === null ? '' : formatDay(next.date, view.today),
+        view.frequency === 'weekly',
       ),
       hint: week === null ? t.saveWeekStepNone : t.saveWeekStepNow(week.name),
     };
@@ -214,6 +221,8 @@ function SaveWeekForm({
   const [busy, setBusy] = useState(false);
   const main = view.main;
   const oneWeek = main !== null && canChooseOneWeek(main);
+  // For pay that isn't weekly, a step of the pattern is a payday, not a week (D280).
+  const weekly = view.frequency === 'weekly';
   return (
     <form
       className={formStyles.form}
@@ -239,12 +248,17 @@ function SaveWeekForm({
           chosen,
         );
         const message = await savedWords(
-          chosen === 'every' ? t.savedWeekEvery(typed) : t.savedWeekStep(typed, chosen),
+          chosen === 'every'
+            ? t.savedWeekEvery(typed)
+            : t.savedWeekStep(typed, chosen, view.frequency === 'weekly'),
           view,
           loaded.records,
           commands,
         );
-        const outcome = await makeChanges(commands, message);
+        const outcome = await makeChanges(commands, {
+          full: message,
+          short: strings.undo.short.usualWeekSaved,
+        });
         setBusy(false);
         if (!outcome.ok) {
           setProblem(refusalMessage(outcome.code));
@@ -274,14 +288,14 @@ function SaveWeekForm({
             value={weekFor}
             options={[
               { value: 'every', label: t.saveWeekEvery, hint: t.saveWeekEveryHint },
-              { value: 'one', label: t.saveWeekOne, hint: t.saveWeekOneHint },
+              { value: 'one', label: t.saveWeekOne(weekly), hint: t.saveWeekOneHint(weekly) },
             ]}
             onChange={setWeekFor}
             hintsUnder
           />
           {weekFor === 'one' ? (
             <ChoiceList<string>
-              legend={t.saveWeekWhich}
+              legend={t.saveWeekWhich(weekly)}
               name={`${id}-step`}
               value={step}
               options={stepChoices(view)}
@@ -293,7 +307,7 @@ function SaveWeekForm({
       ) : (
         <p className={formStyles.hint} data-testid="save-week-every">
           {main !== null && main.steps > 1
-            ? `${t.saveWeekOnlyEvery} ${t.saveWeekOneLater}`
+            ? `${t.saveWeekOnlyEvery} ${t.saveWeekOneLater(weekly)}`
             : t.saveWeekOnlyEvery}
         </p>
       )}

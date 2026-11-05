@@ -12,6 +12,7 @@
 import type { AccountKind, EditCommand } from '@prepenny/engine';
 import { useEffect, useId, useRef, useState } from 'react';
 import { amountForTyping, parseAmount, parseSignedAmount } from '../lib/amount.ts';
+import type { ChangeWords } from '../lib/bar-words.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { AccountCard } from '../lib/money-views.ts';
@@ -264,7 +265,7 @@ function ChangeAccount({
 
   async function change(
     commands: readonly EditCommand[],
-    message: string,
+    message: ChangeWords,
     at: 'save' | 'close',
     done: boolean,
     remind: string | null = null,
@@ -348,7 +349,11 @@ function ChangeAccount({
         // Marked as done: the account closes once the money has really moved (D151, D158).
         { kind: 'tick', seriesId, originalDate: today, tickedAt: timeNow() },
       ],
-      `${t.moved(leftWords, from.name, to.name)} ${t.nowMove(leftWords)}`,
+      // Shorter words still say to make the move (D248, D284).
+      {
+        full: `${t.moved(leftWords, from.name, to.name)} ${t.nowMove(leftWords)}`,
+        short: t.nowMove(leftWords),
+      },
       'close',
       false,
       t.nowMove(leftWords),

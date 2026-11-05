@@ -79,12 +79,16 @@ export function coveredWords(job: JobCard, today: string): string {
   return t.coveredLine(formatDay(job.next.date, today), formatDay(job.coveredUpTo, today));
 }
 
-/** Which paydays a saved week is for: every payday, some weeks of the pattern, earlier paydays, or none. */
+/**
+ * Which paydays a usual week is for: every payday, some weeks of the pattern
+ * ("paydays" for pay that isn't weekly, D280), earlier paydays, or none.
+ */
 export function weekForWords(
   steps: readonly number[],
   of: number,
   until: string | null = null,
   today = '',
+  weekly = true,
 ): string {
   if (steps.length === 0) return until === null ? t.weekKept : t.weekUntil(formatDay(until, today));
   if (steps.length === of) return t.weekEvery;
@@ -92,5 +96,5 @@ export function weekForWords(
     steps.length === 1
       ? String(steps[0])
       : `${steps.slice(0, -1).join(', ')} and ${steps[steps.length - 1]}`;
-  return t.weekSteps(list, steps.length > 1, of);
+  return t.weekSteps(list, steps.length > 1, of, weekly);
 }

@@ -24,6 +24,7 @@ export function ConfirmSheet({
   confirm,
   keep,
   question = null,
+  answers = null,
   onConfirm,
   onClose,
 }: {
@@ -34,6 +35,8 @@ export function ConfirmSheet({
   readonly keep: string;
   /** One more question, answered Yes or No, such as "Also remove its 3 planned payments?". */
   readonly question?: string | null;
+  /** The answers' words when they say what they do, such as "Yes, remove them" (D279). */
+  readonly answers?: { readonly yes: string; readonly no: string } | null;
   /** Makes the change; `yes` is the answer to the question, false when there's none. */
   readonly onConfirm: (yes: boolean) => Promise<ChangeOutcome>;
   /** Closed: `changed` says whether the change was made, and `yes` the answer. */
@@ -53,6 +56,7 @@ export function ConfirmSheet({
         confirm={confirm}
         keep={keep}
         question={question}
+        answers={answers}
         onConfirm={onConfirm}
         onClose={onClose}
       />
@@ -65,12 +69,14 @@ function Choices({
   confirm,
   keep,
   question,
+  answers,
   onConfirm,
   onClose,
 }: {
   readonly confirm: string;
   readonly keep: string;
   readonly question: string | null;
+  readonly answers: { readonly yes: string; readonly no: string } | null;
   readonly onConfirm: (yes: boolean) => Promise<ChangeOutcome>;
   readonly onClose: (changed: boolean, yes: boolean) => void;
 }) {
@@ -89,8 +95,8 @@ function Choices({
             name={name}
             value={answer}
             options={[
-              { value: 'yes', label: strings.sheet.yes },
-              { value: 'no', label: strings.sheet.no },
+              { value: 'yes', label: answers?.yes ?? strings.sheet.yes },
+              { value: 'no', label: answers?.no ?? strings.sheet.no },
             ]}
             onChange={(next) => {
               setAnswer(next);

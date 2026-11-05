@@ -149,7 +149,7 @@ async function priyaJourney(page: Page) {
   await expectHomeLowest(page, expected(), 'Current account', PRIYA_TODAY);
   await noAxeProblems(page);
   await comingUp(page, 'Current account');
-  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('button', { name: 'Change view', exact: true }).click();
   const view = page.getByRole('dialog', { name: 'View' });
   await view.getByRole('radio', { name: 'By calendar month' }).check();
   await view.getByRole('button', { name: 'Done' }).click();
@@ -165,7 +165,7 @@ async function priyaJourney(page: Page) {
   await period(page, '2027-01-01').locator(':scope > :is(h3, h4) > button').click();
   await expect(rowIn(page, '2027-01-01', 'Car insurance')).toContainText(`${MINUS}£612.40`);
   await noAxeProblems(page);
-  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('button', { name: 'Change view', exact: true }).click();
   await view.getByRole('radio', { name: 'By payday' }).check();
   await view.getByRole('button', { name: 'Done' }).click();
   await nav(page, 'More').click();

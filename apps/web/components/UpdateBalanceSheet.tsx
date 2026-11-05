@@ -179,12 +179,13 @@ function UpdateBalanceForm({
       },
       ticks,
     };
-    const outcome = await makeChange(
-      command,
-      ticks.length === 0
-        ? strings.undo.balanceUpdated(account.name)
-        : strings.undo.balanceUpdatedTicked(account.name, ticks.length),
-    );
+    const outcome = await makeChange(command, {
+      full:
+        ticks.length === 0
+          ? strings.undo.balanceUpdated(account.name)
+          : strings.undo.balanceUpdatedTicked(account.name, ticks.length),
+      short: strings.undo.short.balanceUpdated,
+    });
     setBusy(false);
     if (!outcome.ok) {
       setProblem(refusalMessage(outcome.code));

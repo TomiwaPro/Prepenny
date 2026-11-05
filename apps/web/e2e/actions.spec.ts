@@ -281,7 +281,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openHome(page);
-      const sheet = await openAction(page, 'I did overtime');
+      const sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
       await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
       await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
       await expect(sheet.getByText('At £19.07 an hour.')).toBeVisible();
@@ -298,7 +298,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       );
 
       // Opened again, it remembers the hours and the rate (D200).
-      const again = await openAction(page, 'I did overtime');
+      const again = await openAction(page, 'Extra/Missed shift', 'I did overtime');
       await expect(again.getByLabel('Hours', { exact: true })).toHaveValue('11.5');
       await expect(again.getByText('At £19.07 an hour.')).toBeVisible();
       await again.getByRole('button', { name: 'Close', exact: true }).click();
@@ -312,7 +312,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openHome(page);
-      let sheet = await openAction(page, 'I did overtime');
+      let sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
       await sheet.getByRole('radio', { name: 'I missed a shift' }).check();
       sheet = page.getByRole('dialog', { name: 'I missed a shift' });
       await expect(sheet).toBeVisible();
@@ -342,7 +342,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         { button: 'Update balance', title: 'Update balance' },
         { button: 'Add a payment', title: 'Add a payment' },
         { button: 'I spent', title: 'I spent' },
-        { button: 'I did overtime', title: 'I did overtime' },
+        { button: 'Extra/Missed shift', title: 'I did overtime' },
       ];
       for (const one of sheets) {
         const button = page.getByRole('button', { name: one.button, exact: true });
@@ -430,7 +430,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 
       // I did overtime.
-      sheet = await openAction(page, 'I did overtime');
+      sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
       for (const label of ['Day of the overtime', 'Hours']) {
         await expect(sheet.getByLabel(label, { exact: true })).toBeVisible();
       }
@@ -460,7 +460,7 @@ test('the overtime sheet keeps the extras box while typing, and each kind its ow
   page,
 }) => {
   await openHome(page);
-  const sheet = await openAction(page, 'I did overtime');
+  const sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
   await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
   await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
   const extras = sheet.getByLabel('Extras it adds, such as shift premium, if any');

@@ -37,7 +37,7 @@ const SCREENS = [
   { path: '/app/accounts/', heading: 'Accounts', shows: 'Current account' },
   { path: '/app/budgets/', heading: 'Budgets', shows: strings.budgets.purpose },
   { path: '/app/goals/', heading: 'Savings goals', shows: strings.goals.purpose },
-  { path: '/app/pay/', heading: 'Pay calculator', shows: 'Start from a saved week' },
+  { path: '/app/pay/', heading: 'Pay calculator', shows: 'Start from a usual week' },
   { path: '/app/job/', heading: 'Your job', shows: 'Warehouse job' },
   { path: '/app/what-if/', heading: 'What if', shows: 'Your real plan and practice' },
   { path: '/app/what-if/?from=coming-up', heading: 'What if', shows: 'Back to Coming up' },

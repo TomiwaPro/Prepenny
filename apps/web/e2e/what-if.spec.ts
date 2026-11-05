@@ -41,7 +41,7 @@ async function openWhatIfFromComingUp(page: Page) {
   await expect(page.getByTestId('period').first()).toBeVisible();
   const line = page.getByTestId('what-if-line');
   await expect(line).toContainText('Try changes in practice, then keep them or throw them away.');
-  await line.getByRole('link', { name: 'What if' }).click();
+  await line.getByRole('link', { name: 'Try a change' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'What if' })).toBeVisible();
   await expect(page.getByTestId('side-by-side')).toBeVisible();
 }
@@ -160,7 +160,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       ).toContainText('+£603.06');
 
       // Again, and Keep these changes: one change, which one Undo puts back.
-      await page.getByTestId('what-if-line').getByRole('link', { name: 'What if' }).click();
+      await page.getByTestId('what-if-line').getByRole('link', { name: 'Try a change' }).click();
       await expect(page.getByTestId('side-by-side')).toBeVisible();
       await lowerFridayPay(page);
       await expect(page.getByTestId('practice-changes')).toContainText(

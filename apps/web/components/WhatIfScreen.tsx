@@ -28,6 +28,7 @@ import {
   type PracticeChange,
   practiceInMemory,
 } from '../data/practice.ts';
+import { type ChangeWords, fullWords } from '../lib/bar-words.ts';
 import { formatDay } from '../lib/dates.ts';
 import { formatIn, formatMoney } from '../lib/money.ts';
 import { refusalMessage } from '../lib/refusals.ts';
@@ -425,7 +426,9 @@ export function WhatIfScreen() {
 
   /** A practice change from a sheet: worked out on top of the ones before it, never saved. */
   const practiceChange = useCallback(
-    (commands: readonly EditCommand[], message: string): Promise<ChangeOutcome> => {
+    (commands: readonly EditCommand[], words: ChangeWords): Promise<ChangeOutcome> => {
+      // The list of practice changes keeps each one's full words.
+      const message = fullWords(words);
       const task = async (): Promise<ChangeOutcome> => {
         const now = loadedRef.current;
         // Until this plan's own practice changes are read, nothing is added to them.
@@ -504,7 +507,10 @@ export function WhatIfScreen() {
     setBusy(true);
     setProblem(null);
     const message = t.kept(changes.length);
-    const outcome = await real.makeChanges(commandsOf(changes), message);
+    const outcome = await real.makeChanges(commandsOf(changes), {
+      full: message,
+      short: strings.undo.short.kept,
+    });
     setBusy(false);
     if (!outcome.ok) {
       setProblem(refusalMessage(outcome.code));

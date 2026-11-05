@@ -77,7 +77,7 @@ export async function expectRows(where: Locator, rows: readonly Row[]) {
 
 /** Opens the View sheet, picks what's given, and closes it with Done (D210). */
 export async function chooseView(page: Page, choices: readonly string[]) {
-  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('button', { name: 'Change view', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'View' });
   await expect(sheet).toBeVisible();
   for (const choice of choices) {

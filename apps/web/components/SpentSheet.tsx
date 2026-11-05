@@ -166,7 +166,8 @@ function SpentForm({
           recordedAt: timeNow(),
         },
       },
-      message,
+      // Shorter words for very large text leave out the week's figures (D284).
+      { full: message, short: strings.undo.spent(words, budget.name) },
     );
     setBusy(false);
     if (outcome.ok) onDone();

@@ -6,7 +6,9 @@
 export function focusUndoBar(message: string, tries = 20): void {
   const bar = document.querySelector<HTMLElement>('[data-testid="undo-bar"]');
   const button = bar?.querySelector<HTMLElement>('button') ?? null;
-  if (bar !== null && button !== null && bar.textContent?.includes(message) === true) {
+  // The bar keeps its full words, even when it shows shorter ones (D284).
+  const words = bar?.dataset.words ?? bar?.textContent ?? '';
+  if (bar !== null && button !== null && words.includes(message)) {
     button.focus();
     return;
   }

@@ -43,6 +43,7 @@ import {
   fingerprint,
 } from '../data/example-plan.ts';
 import { forgetPractice } from '../data/practice.ts';
+import { type BarWords, barWords, type ChangeWords } from '../lib/bar-words.ts';
 import type { HomeView } from '../lib/home.ts';
 import { setupDone } from '../lib/setup-progress.ts';
 import { testSetting } from '../lib/test-setting.ts';
@@ -79,6 +80,8 @@ export interface LastChange {
   /** Goes up with every change, so the bar is drawn afresh and announced again, even with the same words. */
   readonly id: number;
   readonly message: string;
+  /** Shorter words for very large text (D284). */
+  readonly short: string;
   /** The edit Undo puts back, or null when there's nothing to undo, such as just after an undo. */
   readonly edit: Edit | null;
 }
@@ -102,13 +105,13 @@ export interface PlanActions {
   readonly ownPlan: OwnPlan;
   readonly lastChange: LastChange | null;
   /** Makes one change and, when it works, shows `message` in the undo bar. */
-  makeChange(command: EditCommand, message: string): Promise<ChangeOutcome>;
+  makeChange(command: EditCommand, message: ChangeWords): Promise<ChangeOutcome>;
   /**
    * Makes several commands one after another as one change, so one Undo
    * takes all of them back (D87), such as "Make it £20.99 and stop after it"
    * (D63).
    */
-  makeChanges(commands: readonly EditCommand[], message: string): Promise<ChangeOutcome>;
+  makeChanges(commands: readonly EditCommand[], message: ChangeWords): Promise<ChangeOutcome>;
   /** Undoes the change the bar showed, and refuses when a newer one has been made since. */
   undoLastChange(id: number): Promise<ChangeOutcome>;
   dismissLastChange(): void;
@@ -123,6 +126,15 @@ export interface PlanActions {
 
 /** The person's own plan on this phone (step 2e). */
 export type OwnPlan = 'none' | 'setting-up' | 'ready';
+
+/** A change's words, saying it wasn't saved on the phone (D186). */
+function notKept(words: ChangeWords): BarWords {
+  const { full, short } = barWords(words);
+  return {
+    full: `${full} ${strings.undo.notKept}`,
+    short: `${short} ${strings.undo.short.notKept}`,
+  };
+}
 
 const PlanContext = createContext<PlanState>({ status: 'loading', plan: null });
 
@@ -245,9 +257,10 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     setLoaded(next);
   }, []);
 
-  const showChange = useCallback((message: string, edit: Edit | null) => {
+  const showChange = useCallback((words: ChangeWords, edit: Edit | null) => {
     changeCount.current += 1;
-    const change = message === '' ? null : { id: changeCount.current, message, edit };
+    const { full, short } = barWords(words);
+    const change = full === '' ? null : { id: changeCount.current, message: full, short, edit };
     lastChangeRef.current = change;
     setLastChange(change);
   }, []);
@@ -353,22 +366,22 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
   );
 
   const makeChange = useCallback(
-    (command: EditCommand, message: string) =>
+    (command: EditCommand, message: ChangeWords) =>
       inTurn(async (): Promise<ChangeOutcome> => {
         const outcome = await apply(command);
         if (!outcome.ok) return outcome;
-        showChange(outcome.kept ? message : `${message} ${strings.undo.notKept}`, outcome.edit);
+        showChange(outcome.kept ? message : notKept(message), outcome.edit);
         return { ok: true, version: outcome.version };
       }),
     [apply, inTurn, showChange],
   );
 
   const makeChanges = useCallback(
-    (commands: readonly EditCommand[], message: string) =>
+    (commands: readonly EditCommand[], message: ChangeWords) =>
       inTurn(async (): Promise<ChangeOutcome> => {
         const outcome = await apply(commands);
         if (!outcome.ok) return outcome;
-        showChange(outcome.kept ? message : `${message} ${strings.undo.notKept}`, outcome.edit);
+        showChange(outcome.kept ? message : notKept(message), outcome.edit);
         return { ok: true, version: outcome.version };
       }),
     [apply, inTurn, showChange],
