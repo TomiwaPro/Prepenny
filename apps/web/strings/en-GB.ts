@@ -1157,7 +1157,8 @@ export const strings = {
      */
     saveWeekFor: 'Which paydays is it for?',
     saveWeekEvery: 'Every payday',
-    saveWeekEveryHint: 'Every payday uses it from now on, in place of the weeks they use now.',
+    saveWeekEveryHint:
+      'Every payday uses it from now on, in place of the usual weeks they use now.',
     saveWeekOne: (weekly: boolean) =>
       weekly ? 'One week of the pattern' : 'One payday of the pattern',
     saveWeekOneHint: (weekly: boolean) =>
