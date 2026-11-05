@@ -14,8 +14,10 @@
 // bottom. Step 2g: What if with the owner's test 1 change made, before
 // keeping it; the pay calculator's result for test 3; and Check my payslip
 // for test 5, at 360px in light. Step 2h: each of the six people's Home at
-// 360px in light, set up through the screens, and Your job. Run only when
-// asked, one step at a time:
+// 360px in light, set up through the screens, and Your job. Step 3a: the
+// screens the owner's answers to step 2h changed. Run only when asked, one
+// step at a time, with the browser in British English (LANG=en_GB.UTF-8), so
+// date boxes read 30/10/2026:
 //
 //   SCREENS=1 pnpm e2e --project phone-360 screens -g "Step 2d-2"
 
@@ -173,7 +175,7 @@ const sheetShots: readonly {
   },
   {
     file: 'overtime-360-light.png',
-    button: 'I did overtime',
+    button: 'Extra/Missed shift',
     setting: null,
     fill: async (page) => {
       const sheet = page.getByRole('dialog');
@@ -568,6 +570,8 @@ const people2h = [
     setUp: async (page: Page) => {
       await setUpPriya(page);
       await page.getByRole('button', { name: 'Go to my plan' }).click();
+      // Setup is saved as done before Home opens, so opening it again finds Home.
+      await expect(page.getByTestId('balance')).toBeVisible();
     },
   },
   { file: 'dee-home-360-light.png', setUp: setUpDee },
@@ -576,6 +580,8 @@ const people2h = [
     setUp: async (page: Page) => {
       await setUpKofi(page);
       await page.getByRole('button', { name: 'Go to my plan' }).click();
+      // Setup is saved as done before Home opens, so opening it again finds Home.
+      await expect(page.getByTestId('balance')).toBeVisible();
     },
   },
   { file: 'jess-and-tom-home-360-light.png', setUp: setUpJessAndTom },
@@ -602,5 +608,131 @@ test('Step 2h: your-job-360-light.png', async ({ browser }) => {
   await page.goto('/app/job/');
   await expect(page.getByTestId('job')).toBeVisible();
   await shoot2h(page, 'your-job-360-light.png');
+  await context.close();
+});
+
+// Step 3a: the screens the owner's answers to step 2h changed (D277 to D284),
+// at 360px in light, on Sam's example: Home's "Extra/Missed shift", Coming
+// up's "Try a change" and "Change view", "Mark as arrived", closing a debt,
+// "Payday 2 of 4" for fortnightly pay, and the undo bar at 200% text at 320px.
+
+async function step3aPage(
+  browser: import('@playwright/test').Browser,
+  setting: TestSetting | null = null,
+  width = 360,
+  height = 800,
+) {
+  const context = await browser.newContext({
+    viewport: { width, height },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    colorScheme: 'light',
+    reducedMotion: 'reduce',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+  });
+  await openOnExample(context);
+  if (setting !== null) {
+    await context.addInitScript(settingScript, [TEST_SETTING_KEY, setting] as const);
+  }
+  return { context, page: await context.newPage() };
+}
+
+/** What's on screen now, into docs/screens/3a. */
+async function shoot3a(page: Page, file: string) {
+  await page.evaluate(() => document.fonts.ready);
+  const step = join(screens, '3a');
+  mkdirSync(step, { recursive: true });
+  await page.screenshot({ path: join(step, file) });
+}
+
+test('Step 3a: home-360-light.png', async ({ browser }) => {
+  const { context, page } = await step3aPage(browser);
+  await page.goto('/app/');
+  await expect(page.getByRole('button', { name: 'Extra/Missed shift' })).toBeVisible();
+  await expect(page.getByTestId('balance')).toBeVisible();
+  await expect(page.getByTestId('lowest-point')).toBeVisible();
+  // The whole page, so the four buttons show.
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width: 360, height });
+  await shoot3a(page, 'home-360-light.png');
+  await context.close();
+});
+
+test('Step 3a: coming-up-360-light.png', async ({ browser }) => {
+  const { context, page } = await step3aPage(browser);
+  await page.goto('/app/coming-up/');
+  // "How to read this" shows on the first visit; Got it puts it away (D212).
+  await page.getByRole('button', { name: 'Got it' }).click();
+  await expect(page.getByRole('link', { name: 'Try a change' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Change view' })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shoot3a(page, 'coming-up-360-light.png');
+  await context.close();
+});
+
+test('Step 3a: mark-as-arrived-360-light.png', async ({ browser }) => {
+  const { context, page } = await step3aPage(browser);
+  await page.goto('/app/coming-up/');
+  const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
+  await friday.locator(':scope > :is(h3, h4) > button').click();
+  await friday.getByRole('button', { name: /^Pay Fri/ }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'Pay' }).getByRole('button', { name: 'Mark as arrived' }),
+  ).toBeVisible();
+  await shoot3a(page, 'mark-as-arrived-360-light.png');
+  await context.close();
+});
+
+test('Step 3a: close-debt-360-light.png', async ({ browser }) => {
+  const { context, page } = await step3aPage(browser);
+  await page.goto('/app/debts/');
+  await page.getByRole('link', { name: /^Family loan/ }).click();
+  await page.getByRole('button', { name: 'Close this debt' }).click();
+  await expect(page.getByRole('radio', { name: 'Yes, remove them' })).toBeVisible();
+  await shoot3a(page, 'close-debt-360-light.png');
+  await context.close();
+});
+
+test('Step 3a: usual-week-fortnightly-360-light.png', async ({ browser }) => {
+  const fortnightly: PlanRecords = {
+    ...examplePlan,
+    series: examplePlan.series.map((one) =>
+      one.id === 'pay' ? { ...one, schedule: { kind: 'weekly', every: 2 } } : one,
+    ),
+    payProfiles: (examplePlan.payProfiles ?? []).map(({ soFar: _weekly, ...one }) => ({
+      ...one,
+      frequency: 'two-weekly',
+    })),
+  };
+  const { context, page } = await step3aPage(browser, { plan: fortnightly });
+  await page.goto('/app/pay/');
+  await page.getByRole('button', { name: 'Work out take-home pay' }).click();
+  await page
+    .getByTestId('pay-result')
+    .getByRole('button', { name: 'Save as a usual week' })
+    .click();
+  const sheet = page.getByRole('dialog', { name: 'Save as a usual week' });
+  await sheet.getByRole('radio', { name: 'One payday of the pattern' }).check();
+  await sheet.getByRole('radio', { name: /^Payday 2 of 4/ }).check();
+  await sheet.getByRole('radio', { name: /^Payday 2 of 4/ }).scrollIntoViewIfNeeded();
+  await shoot3a(page, 'usual-week-fortnightly-360-light.png');
+  await context.close();
+});
+
+test('Step 3a: undo-bar-200-percent-320-light.png', async ({ browser }) => {
+  const { context, page } = await step3aPage(browser, null, 320, 640);
+  await page.goto('/app/coming-up/');
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
+  await friday.locator(':scope > :is(h3, h4) > button').click();
+  await friday.getByRole('button', { name: /^Rent Sun/ }).click();
+  const sheet = page.getByRole('dialog', { name: 'Rent' });
+  await sheet.getByLabel('Amount').fill('560');
+  await sheet.getByRole('radio', { name: 'This and all later ones' }).check();
+  await sheet.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByTestId('undo-bar')).toContainText('Rent changed.');
+  await shoot3a(page, 'undo-bar-200-percent-320-light.png');
   await context.close();
 });
