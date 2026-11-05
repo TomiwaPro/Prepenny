@@ -49,6 +49,8 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
+          # This job doesn't use pnpm, so nothing of pnpm's to keep.
+          package-manager-cache: false
 
       - name: Set up the Supabase command line (2.122.0, as in the Check workflow)
         run: npm install --global supabase@2.122.0
