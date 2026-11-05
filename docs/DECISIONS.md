@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 onwards were decided while building step 2h, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 onwards were decided while building step 3a, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -3068,3 +3068,256 @@ Decided 4 Nov 2026 in step 2h, from the wording review. The owner asked for a li
 Earlier in step 2h, from the same review: the calculator explains the tax week, which student loan plan, and where the year-so-far figures are on a payslip; Your job's lines are plainer; and three refusals say what to do next (D273).
 
 Why: the owner asked for it, and VOICE.md asks for words anyone can follow when they're tired or worried. Five of the review's points change words the owner chose or that need a choice, so they're questions in `PLAN.md` instead.
+
+## From the owner's review of step 2h
+
+D276 to D287 were agreed by the owner on 5 Nov 2026, answering ten of the eleven questions left at the end of step 2h (all but testing with people, which is still waiting), with two instructions of the owner's own, D282 and D286. They were built in step 3a. Points marked "decided in step 3a" weren't in the owner's answer.
+
+### D276. Red for Short, and for mistakes in what was typed
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 1. Changes DESIGN.md's rule that red, amber and green are for money states only.
+
+- Mistakes in forms stay red, the same red as Short. DESIGN.md now says: red for Short, and for mistakes in what was typed.
+- Decided in step 3a: every message shown beside a box, or under a form's button, is a mistake in what was typed or chosen, so all of them keep the red they had: "Type an amount, for example 25.", "Choose Yes or No first.", "Change something first, then save." and a refusal in words beside what was tapped (D189). Nothing on screen changes.
+
+Test: "Type a name, for example Car MOT." in Add a payment is drawn in Short's own red, in light and dark.
+
+Why: the owner's answer.
+
+### D277. "Try a change" and "Change view" on Coming up
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 4. Replaces the button words of D210 and D252.
+
+- The button that opens What if says "Try a change". The page it opens is still called What if.
+- The button that opens the View sheet says "Change view". The sheet is still titled View (D210), because a title names what's open, while a button says what it does (D213).
+
+Why: the owner's answer. A button says what it does.
+
+### D278. "Mark as arrived" on money coming in
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 2. Adds to D188.
+
+- On money coming in, the edit sheet's "Mark as paid" says "Mark as arrived".
+- Decided in step 3a:
+  - Money coming in is money arriving in the account shown: pay, benefits and other money in, money moved in from another account, and money set aside arriving in its account (D113). Money going out, and money moved out, still says "Mark as paid".
+  - Once ticked, the button says "Mark as not arrived", and the undo bar "Pay marked as arrived." or "Pay marked as not arrived.".
+  - A ticked row of money coming in says "arrived" where it said "paid": "Sun 25 Oct, estimate, arrived". Money set aside arriving says "Mark this as arrived once the money has moved."
+  - It's decided by which way the money goes, not by its amount, so Sam's £0.00 Christmas bonus is money coming in too.
+
+Test: Sam's Fri 30 Oct pay says "Mark as arrived", not "Mark as paid"; once tapped, it's "Pay marked as arrived." and the row says "Sun 25 Oct, estimate, arrived", because it was ticked early (D1); From savings says "Mark as arrived"; Family loan still says "Mark as paid".
+
+Why: the owner's answer. "Mark as paid" on your own pay read as if you were paying it.
+
+### D279. "Yes, remove them" and "No, keep them"
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 3. Adds to D250 and D265.
+
+- Closing a debt asks "Also remove its 6 planned payments?" with "Yes, remove them" and "No, keep them". Neither starts chosen (D265).
+- Decided in step 3a: with one planned payment it's "Yes, remove it" and "No, keep it". "Choose Yes or No first." stays as it is, because each answer still starts with Yes or No.
+
+Test: Sam's Family loan offers "Yes, remove them" and "No, keep them"; his Pay-later card, with one payment, "Yes, remove it" and "No, keep it". The step 2f test 4 still passes with the new words.
+
+Why: the owner's answer. Each answer says what it does.
+
+### D280. "Payday 2 of 4" for pay that isn't weekly
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 5. Changes D263's words for pay that isn't weekly.
+
+- For pay that isn't weekly, a step of the pay pattern is "Payday 2 of 4", not "Week 2 of 4".
+- Decided in step 3a:
+  - Weekly means every week. Pay every 2 or 4 weeks, or monthly, says payday.
+  - Save as a usual week then says "One payday of the pattern", "Which payday of the pattern?", "Payday 2 of 4, next on Fri 13 Nov" and "Only that payday of your pay pattern uses it, each time it comes round.", and the undo bar "Short week saved as the usual week for payday 2 of your pay pattern."
+  - Your job says "Payday 2 of 4 in your pay pattern", or "Paydays 1 and 3 of 4".
+  - The edit sheet's "Only this week of the pattern" (D97) says "Only this payday of the pattern" for that pay. Weekly pay keeps the owner's own words from D97.
+
+Test: Sam's example with his pay every 2 weeks: Save as a usual week offers "Payday 2 of 4, next on Fri 13 Nov", Your job lists "Payday 2 of 4 in your pay pattern", and the edit sheet offers "Only this payday of the pattern". His weekly pay still says "Week 2 of 4" and "Only this week of the pattern".
+
+Why: the owner's answer. A step of fortnightly pay is a payday, and setup already says "Payday 2".
+
+### D281. "Usual week" everywhere
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 6. Changes the words of D256, D263 and D273.
+
+- The app says "usual week" everywhere it said "pay week" or "saved week": "Save as a usual week", "Save usual week", "Start from a usual week", "Short week saved as the usual week for every payday.", "Has no usual week yet."
+- Decided in step 3a: a unit test checks that no text people read says "pay week" or "saved week". Names inside the code, such as `PayWeek` and the `pay_weeks` table, stay as they are (VOICE.md applies to text people read).
+
+Why: the owner's answer. One name for one thing.
+
+### D282. "Extra/Missed shift" on Home
+
+The owner's instruction, 5 Nov 2026, with the review of step 2h. Replaces "I did overtime" on Home's fourth button (brief 4.9, D213).
+
+- Home's fourth button says "Extra/Missed shift". It opens "What happened?" as now, with "I worked extra hours" and "I missed a shift", and the sheet's title follows the choice: "I did overtime" or "I missed a shift".
+- Decided in step 3a: What if's button for the same sheet says "Extra/Missed shift" too, and Save as a usual week's sentence says "Extra/Missed shift" uses it.
+
+Test: Home's fourth button says "Extra/Missed shift", fits at 320px, and opens "What happened?" with "I worked extra hours" chosen.
+
+Why: the owner's answer.
+
+### D283. Saving a usual week keeps two choices
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 7. Confirms D263.
+
+Save as a usual week asks "Every payday" or "One week of the pattern" ("One payday of the pattern" for pay that isn't weekly, D280). There's no third choice to save a week only to start from.
+
+Why: the owner's answer.
+
+### D284. With very large text, the undo bar uses shorter words
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 8. Adds to D186.
+
+- With very large text, the undo bar uses shorter words, so the bar and the navigation never cover half the screen.
+- Decided in step 3a:
+  - "Very large text" is a screen fewer than 30 lines of text tall: 200% text on any phone, 150% on a small one, or a page zoomed in so far that the screen is that short.
+  - Each change has its short words, saying what changed and nothing more: "Rent changed." (for "Rent changed for this and all later ones."), "Rent removed.", "Balance updated.", "£6.00 spent on Travel.", "Overtime added.", "Missed shift added.", "Job details changed.", "Usual week saved.", "Pay on Fri 30 Oct changed.", "Credit card updated.", "Family loan closed.", "Credit card changed." and "Kept in your plan.". Words that are short already, such as "Family loan marked as paid." or "Change undone.", stay as they are.
+  - Two keep what matters most: moving money before closing an account still says "Now move £3.12 in your banking app too." (D248), and a change the phone couldn't save adds "Not saved on this phone.". A refused undo says "This can't be undone now."
+  - Screen readers hear the words on screen. The bar keeps its full words underneath for moving focus to it.
+
+Test: at 200% text, at 320px and 360px, in light and dark, a new amount for this and all later ones shows "Rent changed." with Undo, Update balance with every payment ticked shows "Balance updated.", and after each, and after Undo, the bar and the navigation cover less than half the screen. With usual text the bar still says "Rent changed for this and all later ones."
+
+Why: the owner's answer.
+
+### D285. "Take back the last change" works straight away: confirmed
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 9. Confirms D252.
+
+In What if, "Take back the last change" takes the last practice change back straight away, without asking. Nothing changes.
+
+Why: the owner's answer. It only takes back practice, never the real plan.
+
+### D286. The Your job screenshot from after step 2h's merge
+
+The owner's instruction, 5 Nov 2026, with the review of step 2h.
+
+The Your job screenshot that was taken again after step 2h was merged, with step 2h's final words, replaces the one in `docs/screens/2h`.
+
+Why: the owner's instruction.
+
+### D287. Phase 3's steps are approved
+
+Agreed 5 Nov 2026, from the owner's review of step 2h. Answers question 10.
+
+Phase 3 is built in steps 3a to 3i, as listed in PLAN.md, one pull request each.
+
+Why: the owner's answer.
+
+## Made during step 3a
+
+D288 to D298 were decided on 5 Nov 2026 while building step 3a, the database and its privacy rules. Questions for the owner are in `PLAN.md`.
+
+### D288. How the database is laid out
+
+Decided 5 Nov 2026 in step 3a. Builds ARCHITECTURE.md 3.1 to 3.6.
+
+- **Where.** A Supabase project in London (D17, D19), changed only by the migrations in `supabase/migrations` (D297). The tables are in Supabase's `public` part, which the app will reach from step 3c with the privacy rules on every row. The checks the rules use are in a part of their own, `app`, which the app's web address never shows.
+- **A table for every kind of record the phone keeps:** accounts, balance updates, series, payment changes, ticks, debts, budgets, spends, savings goals, pay profiles, usual weeks (`pay_weeks`), pay adjustments, settings (D289) and practice changes (D294), and the links a person keeps to themselves (D291). Then people, plans, plan members and invites (ARCHITECTURE.md 3.2), and the history: edits and notices (ARCHITECTURE.md 3.5, D296).
+- **Each column is a field of the engine's own record,** so a plan can come back exactly as it was left (brief Part 10). Money is whole pence, as a whole number a phone can count exactly (never floating point); rates, percentages and hours are exact text, such as "1.1612"; dates are dates. Times the engine compares, such as when a tick was made (D33), are kept exactly as the phone wrote them, such as "2026-10-30T09:14:05Z", because the engine compares them as written and a database's own way of writing a time would change their order.
+- **The sync fields** (ARCHITECTURE.md 3.1) are on every plan record. The database fills in who made it and when, who last changed it and when ("Changed by Tom", brief 4.14), its version and the plan's change number, whatever a phone sends. A phone sends the id, the plan, the record's place among its kind (`list_order`, so lists come back in the order they were made, D168), the edit that saved it and whether it's removed.
+- **Each tick and each change keeps its payment number** (PLAN.md item 4), so an undo in step 3c can check it's still the same payment.
+- **The plan's change number** is kept apart from the plan's own row, so a tick isn't a change to the plan. Saves in one plan wait for each other there, one at a time, so two phones never get the same number (ARCHITECTURE.md 7).
+- **Nothing is ever deleted by a person.** Removing a record marks it removed, which is a change like any other, so the same privacy rules apply (ARCHITECTURE.md 3.1).
+- Budgets keep the time the phone made them (`made_at`) for the same-day order (D12, D107), apart from the database's own `created_at`.
+
+Why: ARCHITECTURE.md 3 sets out the records; these are the choices it left open, each made so the plan on the server is exactly the plan on the phone.
+
+### D289. Each person's main pay and setup, private to them
+
+Decided 5 Nov 2026 in step 3a. Adds to D14, D155 and ARCHITECTURE.md 3.2.
+
+- The plan's nation for bank holidays is on the plan, shared by everyone in it.
+- Each person's main pay (D14), and how far their first-time setup has got (step 2e), are in their own `settings` row for the plan, always private to them. ARCHITECTURE.md 3.2 put the main pay on the plan member record, which both people can read.
+
+Why: Jess's main pay can be on her private account, so naming it where Tom can read it would tell him something about that account.
+
+### D290. Privacy is filled in by the database
+
+Decided 5 Nov 2026 in step 3a. Builds ARCHITECTURE.md 3.6 ("The database fills this in itself from the account, so the app can't forget").
+
+- A record takes its privacy from what it's on: a balance update, a budget or a payment from its account; a change or a tick from its payment; a spend from its budget; a usual week from its pay profile; overtime from its pay. Whatever a phone sends is replaced.
+- An account, a debt or a pay profile is shared or private to the person it belongs to, as they choose; a goal kept in a private account is private to the same person (D65). Someone can make something private only to themselves, never to their partner.
+- Until shared plans come in step 3f, something private stays private ("sharing-comes-later"), and a record can't move to another account. Money between a private account and a shared one is always two linked halves (D16), never one payment.
+- Every check runs as the person making the change, under the privacy rules, so naming something they can't see is refused exactly as naming something that doesn't exist. Nobody can find out what's private by trying.
+
+Why: one forgotten field would put Jess's private payment where Tom can read it (ARCHITECTURE.md 7). Filled in by the database, it can't be forgotten.
+
+### D291. A shared record never names a private one
+
+Decided 5 Nov 2026 in step 3a. Builds D65 and PLAN.md item 5. Changes ARCHITECTURE.md 3.3's `mirror_of`.
+
+- A record everyone in the plan can read never names a record only one person can read: the database refuses it ("link-to-private").
+- So Jess's payment from the joint account to her private credit card is a shared payment with no debt named on it, and the link to her card is kept in `private_links`, which only she reads. Tom's copy of the payment shows its name, date and amount, and nothing about her card (D65). The same goes for a payment into a savings goal of hers, and for a shared tick made inside her card's Update from statement (D62).
+- A debt or goal link is kept for the payment's family, so a split keeps it, as the engine does (D49).
+- The shared half of a private transfer, "From Jess", doesn't name its private half. The private half, on Jess's account, names the shared half instead (`mirrored_by`), so only Jess's phone can join them up (D94).
+- A shared payment can't use a private pay profile or usual week either. Whether Jess's job details should be private when her pay goes into the joint account is a question for the owner in `PLAN.md`.
+
+Test: test 6 in `supabase/tests`.
+
+Why: PLAN.md item 5 asks for the partner's copy to leave the link out. A rule that refuses every such link, rather than hiding one column, can't miss one.
+
+### D292. "Can view only" changes nothing shared
+
+Decided 5 Nov 2026 in step 3a. Builds D51 and ARCHITECTURE.md 3.6.
+
+- Someone who can view only can't add, change, remove or tick anything shared, or change the plan's bank holidays. The database refuses, not only the screen (brief 8.7 test 3).
+- Nobody can add themselves to a plan or change their own role: joining, roles and leaving go through the server's own steps in 3f and 3g.
+- Their own private records are still theirs to change, as ARCHITECTURE.md 3.6 says, so they can keep their own balance up to date. This is a question for the owner in `PLAN.md`.
+
+Why: brief 8.7 test 3, D51, and ARCHITECTURE.md 3.6's rule.
+
+### D293. Locked to one person, and what goes with it
+
+Decided 5 Nov 2026 in step 3a. Adds to D16 and D94.
+
+- A record locked to someone, such as "From Jess", can be changed only by them. Its one-off changes and its ticks are locked with it, because both halves of a transfer change together (D94).
+- Only the person whose money it is can lock a record, to themselves, on a shared account. A locked record carries no note, debt, goal, money set aside or pay details, and its changes no name or note (ARCHITECTURE.md 3.6).
+
+Why: ARCHITECTURE.md 3.6 says the server refuses a shared half that carries anything but the date, amount, schedule and estimate flag, and a tick or change on one half alone would break D94.
+
+### D294. Practice changes have a table, but nothing sends them yet
+
+Decided 5 Nov 2026 in step 3a. A question for the owner in `PLAN.md`.
+
+- The owner listed practice changes among the records to give a table, so there is one, `practice_changes`, always private to the person who made them.
+- ARCHITECTURE.md 3.8 and D264 say practice changes stay on the phone and are never sent anywhere. Nothing in the app sends them in step 3a, and step 3c won't until the owner says which way it should be.
+
+Why: the owner's instruction for this step and an earlier decision disagree, and only the owner can choose.
+
+### D295. Server-only records come with the steps that use them
+
+Decided 5 Nov 2026 in step 3a. Adds to ARCHITECTURE.md 3.7.
+
+- ARCHITECTURE.md 3.7's records kept only on the server get their tables in the step that uses them, so their details are decided with their screens: signed-in devices and recovery contacts in 3e, deletion requests in 3h, reminders and support in Phase 4, and subscriptions, prices, organisations and referrals in Phase 5.
+- Every new table starts with everything refused, and the first database test fails on any table without its rules.
+- Live updates (Supabase Realtime) refuse every private channel until step 3c gives them their rules.
+
+Why: tables made now would be guesses, and the test keeps every later one as safe as these.
+
+### D296. Edits and notices are written only by the server
+
+Decided 5 Nov 2026 in step 3a. Adds to ARCHITECTURE.md 3.5.
+
+The history of edits and the notices have their tables and privacy rules now: each person reads the plan's shared edits and their own, and only their own notices. Nobody can write them until the server's save step, `save_edit`, comes in step 3c.
+
+Why: an edit's "before" copies can hold private records, so who writes them, and with what privacy, belongs with the step that saves edits.
+
+### D297. How database changes reach the real database
+
+Decided 5 Nov 2026 in step 3a. Adds to D175 and ARCHITECTURE.md 1.2.
+
+- On every push and pull request, GitHub starts a fresh local Supabase on its own machine with every migration and the test helpers in `supabase/seed.sql`, runs the pgTAP tests in `supabase/tests`, and checks the database's own functions for mistakes ("Database and its privacy rules").
+- Only from `main`, and only once those checks have passed on that exact commit, the **Database** workflow sends the migrations to the real project in London, as the Deploy workflow does for the live app. It needs three secrets (README.md, "The database"); until they're added, it says so and changes nothing.
+- Only the migrations go to the real project, never the seed, the tests or their made-up people.
+- The Supabase command line is version 2.122.0 (ARCHITECTURE.md 1.2), from npm, and the database is Postgres 17, Supabase's own for new projects.
+
+Why: the owner's instruction: the sandbox can't reach Supabase, so all database work goes through GitHub, and only `main` changes the real project, after its checks.
+
+### D298. The database tests
+
+Decided 5 Nov 2026 in step 3a. Builds brief Part 9 and 8.7 tests 2 and 3.
+
+- Eight files in `supabase/tests/database`, 193 checks, on one shared plan: Jess's, with Tom in it as "Can edit" or "Can view only", Jess's private account with every kind of record on it, Tom's private account, their joint account, and Alex, who has a sign-in but isn't in the plan.
+- Every table is tried, not a list: someone not signed in can't read, add, change or remove anything in any of them; no row Tom can read, in any table, is or names one of Jess's private records; and every table has its rules.
+- Each list a check uses is first checked to hold every kind of record, so a check can't pass by testing nothing.
+- Each rule was broken on purpose, one at a time, to see the tests fail: private rows readable by everyone (16 checks failed), viewers allowed to change things (9), an ended session still working (5), a locked row changeable (3), a shared row allowed to name a private one (2), a person who has left still reading (2), and privacy not filled in from the account (10).
+
+Why: a test that has never been seen to fail could be passing for the wrong reason. The first runs found one real problem and two weak tests, all fixed before anything reached GitHub: a check that let Tom add a balance, a payment or a budget to Jess's private account, saved as shared; a test helper that read a table's column instead of its own input, so the private-account checks covered fewer records than they said; and a session test that couldn't tell an ended session from the person's other phones.
