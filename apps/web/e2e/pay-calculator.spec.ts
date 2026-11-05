@@ -55,16 +55,16 @@ async function fillIn(page: Page, slip: Payslip) {
   if (slip.payday !== undefined) await page.getByLabel('Payday').fill(slip.payday);
   await radio(page, 'Every week').check();
   await page.getByLabel('Tax code').fill('1257L');
-  await radio(page, 'The usual way, cumulative').check();
+  await radio(page, 'The usual way, with all your pay so far this tax year').check();
   await page.getByRole('checkbox', { name: 'I pay into a workplace pension' }).check();
   await page.getByLabel('Percentage that comes off').fill('4');
-  await page.getByLabel('Worked on earnings from, each week').fill('120');
-  await page.getByLabel('Up to, each week').fill('967');
+  await page.getByLabel('Pension starts on pay over, each week').fill('120');
+  await page.getByLabel('And stops at, each week').fill('967');
   await radio(page, 'Before tax').check();
   await radio(page, 'None').check();
   await page.getByLabel('The tax week on it').fill(slip.week);
-  await page.getByLabel('From your last payslip: gross for tax so far').fill(slip.gross);
-  await page.getByLabel('From your last payslip: tax paid so far').fill(slip.tax);
+  await page.getByLabel('Taxable pay so far this tax year').fill(slip.gross);
+  await page.getByLabel('Tax paid so far this tax year').fill(slip.tax);
 }
 
 /** Week 26 from brief 8.6, with the year so far from week 25's payslip. */
@@ -178,7 +178,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(lowest.getByText('Short', { exact: true })).toBeVisible();
       await nav(page, 'Coming up').click();
       const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
-      await friday.locator(':scope > h3 > button').click();
+      await friday.locator(':scope > :is(h3, h4) > button').click();
       await expect(friday.getByRole('button', { name: /^Pay Fri 30 Oct, estimate/ })).toContainText(
         '+£452.17',
       );
@@ -244,16 +244,23 @@ test("a new payday keeps the payslip's week when its figures are in (found by th
   );
 });
 
-test('Save as a pay week keeps the lines, to start from again', async ({ page }) => {
+test('Save as a pay week for every payday keeps the lines, to start from again', async ({
+  page,
+}) => {
   await openCalculator(page);
   await fillIn(page, { ...week26, hours: '30' });
   const result = await workOut(page);
   await result.getByRole('button', { name: 'Save as a pay week' }).click();
   const sheet = page.getByRole('dialog', { name: 'Save as a pay week' });
   await sheet.getByLabel('Name this week').fill('Short week');
+  await expect(
+    sheet.getByRole('group', { name: 'Which paydays is it for?' }).getByRole('radio', {
+      name: 'Every payday',
+    }),
+  ).toBeChecked();
   await sheet.getByRole('button', { name: 'Save pay week' }).click();
   await expect(sheet).toBeHidden();
-  await expect(undoBar(page)).toContainText('Short week saved as a pay week.');
+  await expect(undoBar(page)).toContainText('Short week saved as the pay week for every payday.');
   await expect(page.getByRole('button', { name: 'Use Short week' })).toBeVisible();
   await page.getByRole('button', { name: 'Use Rota week 2, 4 shifts' }).click();
   await expect(
@@ -354,4 +361,23 @@ fresh('the public page stays readable with text at 200%', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Work out take-home pay' })).toBeVisible();
   await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
   expect(await layoutProblems(page)).toEqual([]);
+});
+
+test('after Remove, focus goes to the Add button for that list, never the page itself (WCAG 2.4.3)', async ({
+  page,
+}) => {
+  await openCalculator(page);
+  const lists = [
+    ['Add another kind of hours', 'Remove this line'],
+    ['Add a fixed amount, such as a shift premium', 'Remove this amount'],
+    ['Add another deduction, such as union fees', 'Remove this deduction'],
+  ] as const;
+  for (const [add, remove] of lists) {
+    const addButton = page.getByRole('button', { name: add, exact: true });
+    // Two of them, so Remove takes one and the list stays.
+    await addButton.click();
+    await addButton.click();
+    await page.getByRole('button', { name: remove, exact: true }).last().click();
+    await expect(addButton).toBeFocused();
+  }
 });

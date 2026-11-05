@@ -5,7 +5,7 @@
 // saying what it's for, the step itself, then Next and Back. The title takes
 // focus when the step opens, so a screen reader starts there.
 
-import { type ReactNode, useEffect, useId, useRef } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { SETUP_STEPS } from '../../lib/setup-progress.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { Problem } from '../Fields.tsx';
@@ -82,6 +82,18 @@ export function StepFrame({
   );
 }
 
+/**
+ * Focus for when a form or row has gone: the step's "Add another" button,
+ * or its title if it has none, so keyboard users aren't left on nothing
+ * (WCAG 2.4.3).
+ */
+export function focusAddAnother() {
+  requestAnimationFrame(() => {
+    const add = document.querySelector<HTMLElement>('main [data-add-another]');
+    (add ?? document.querySelector<HTMLElement>('main h1'))?.focus();
+  });
+}
+
 /** What a step has added so far, one row each with Remove (step 2e). */
 export function AddedList({
   items,
@@ -95,11 +107,23 @@ export function AddedList({
     readonly problem?: string | null;
   }[];
 }) {
+  const list = useRef<HTMLUListElement>(null);
+  // Where focus goes once a row has gone: the row that took its place, the
+  // one before it, or "Add another" when none are left.
+  const [focusAt, setFocusAt] = useState<{ at: number; count: number } | null>(null);
+  useEffect(() => {
+    if (focusAt === null || items.length >= focusAt.count) return;
+    setFocusAt(null);
+    const removes = list.current?.querySelectorAll<HTMLElement>('[data-remove]') ?? [];
+    const next = removes[Math.min(focusAt.at, removes.length - 1)];
+    if (next === undefined) focusAddAnother();
+    else next.focus();
+  }, [items.length, focusAt]);
   if (items.length === 0) return null;
   return (
     <section aria-label={t.added}>
-      <ul className={styles.added} data-testid="added">
-        {items.map((item) => (
+      <ul ref={list} className={styles.added} data-testid="added">
+        {items.map((item, at) => (
           <li key={item.id}>
             <div className={styles.item}>
               <div className={styles.itemWords}>
@@ -113,7 +137,11 @@ export function AddedList({
                 type="button"
                 className={formStyles.quiet}
                 aria-label={t.removeNamed(item.name)}
-                onClick={item.onRemove}
+                data-remove
+                onClick={() => {
+                  setFocusAt({ at, count: items.length });
+                  item.onRemove();
+                }}
               >
                 {t.remove}
               </button>

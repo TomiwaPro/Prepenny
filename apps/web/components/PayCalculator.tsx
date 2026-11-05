@@ -38,6 +38,7 @@ import {
   periodBefore,
   periodOf,
   type SavedWeek,
+  type TaxBoxesForm,
   workOutCalculator,
 } from '../lib/pay-calculator.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -71,7 +72,7 @@ function taxYearsWords(today: string): { from: string; to: string } {
 
 function mistakeWords(
   mistake: CalculatorMistake | undefined,
-  form: CalculatorForm,
+  form: TaxBoxesForm,
   today: string,
 ): string | undefined {
   if (mistake === undefined) return undefined;
@@ -172,7 +173,7 @@ function NamedAmounts({
   readonly base: string;
   readonly kind: 'extra' | 'deduction';
   readonly errors: CalculatorErrors;
-  readonly form: CalculatorForm;
+  readonly form: TaxBoxesForm;
   readonly today: string;
   readonly nameLabel: string;
   readonly amountLabel: string;
@@ -219,6 +220,14 @@ function NamedAmounts({
       })}
     </>
   );
+}
+
+/**
+ * A row's Remove button goes with its row, so focus moves to the list's "Add
+ * another" button once the row has gone (WCAG 2.4.3).
+ */
+function focusSoon(id: string) {
+  requestAnimationFrame(() => document.getElementById(id)?.focus());
 }
 
 function PayslipCheck({
@@ -344,10 +353,10 @@ function PayslipCheck({
             <button type="button" className={formStyles.main} onClick={check}>
               {t.checkButton}
             </button>
+            {/* It takes focus, so it's read out once, without a live region (WCAG 4.1.3). */}
             <div
               ref={outcomeRef}
               tabIndex={-1}
-              role="status"
               className={styles.outcome}
               data-testid="payslip-outcome"
             >
@@ -357,6 +366,223 @@ function PayslipCheck({
         ) : null}
       </div>
     </section>
+  );
+}
+
+/** The boxes the calculator and Your job share (step 2h). */
+interface BoxesProps {
+  readonly id: string;
+  readonly form: TaxBoxesForm;
+  readonly errors: CalculatorErrors;
+  readonly today: string;
+  readonly set: (part: Partial<TaxBoxesForm>) => void;
+}
+
+/**
+ * The tax code on the cumulative basis or week 1/month 1, a workplace
+ * pension, student loans and other deductions (brief 4.15).
+ */
+export function TaxBoxes({ id, form, errors, today, set }: BoxesProps) {
+  const error = (field: CalculatorField) => mistakeWords(errors[field], form, today);
+  const periodWord = t.periodWords[form.frequency];
+  return (
+    <>
+      <Field id={`${id}-taxCode`} label={t.taxCode} error={error('taxCode')} hint={t.taxCodeHint}>
+        <input
+          id={`${id}-taxCode`}
+          className={formStyles.input}
+          type="text"
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          value={form.taxCode}
+          aria-invalid={error('taxCode') !== undefined}
+          aria-describedby={describedBy(`${id}-taxCode`, error('taxCode'), [`${id}-taxCode-hint`])}
+          onChange={(event) => set({ taxCode: event.target.value })}
+        />
+      </Field>
+      <ChoiceList<CalculatorForm['basis']>
+        legend={t.basis}
+        name={`${id}-basis`}
+        value={form.basis}
+        options={[
+          { value: 'cumulative', label: t.cumulative },
+          { value: 'week-one', label: t.weekOne },
+        ]}
+        onChange={(basis) => set({ basis })}
+      />
+      <CheckOption checked={form.pension} onChange={(pension) => set({ pension })}>
+        {t.pension}
+      </CheckOption>
+      {form.pension ? (
+        <div className={styles.indented}>
+          <Field
+            id={`${id}-pensionPercent`}
+            label={t.pensionPercent}
+            error={error('pensionPercent')}
+          >
+            <span className={styles.percentBox}>
+              <input
+                id={`${id}-pensionPercent`}
+                className={`${formStyles.input} num`}
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={form.pensionPercent}
+                aria-invalid={error('pensionPercent') !== undefined}
+                aria-describedby={describedBy(`${id}-pensionPercent`, error('pensionPercent'))}
+                onChange={(event) => set({ pensionPercent: event.target.value })}
+              />
+              <span aria-hidden="true">%</span>
+            </span>
+          </Field>
+          <p id={`${id}-band-hint`} className={formStyles.hint}>
+            {t.pensionBandHint}
+          </p>
+          <div className={styles.pair}>
+            <Field
+              id={`${id}-pensionLower`}
+              label={t.pensionLower(periodWord)}
+              error={error('pensionLower')}
+            >
+              <MoneyInput
+                id={`${id}-pensionLower`}
+                value={form.pensionLower}
+                onChange={(pensionLower) => set({ pensionLower })}
+                invalid={error('pensionLower') !== undefined}
+                describedBy={describedBy(`${id}-pensionLower`, error('pensionLower'), [
+                  `${id}-band-hint`,
+                ])}
+              />
+            </Field>
+            <Field
+              id={`${id}-pensionUpper`}
+              label={t.pensionUpper(periodWord)}
+              error={error('pensionUpper')}
+            >
+              <MoneyInput
+                id={`${id}-pensionUpper`}
+                value={form.pensionUpper}
+                onChange={(pensionUpper) => set({ pensionUpper })}
+                invalid={error('pensionUpper') !== undefined}
+                describedBy={describedBy(`${id}-pensionUpper`, error('pensionUpper'), [
+                  `${id}-band-hint`,
+                ])}
+              />
+            </Field>
+          </div>
+          <ChoiceList<CalculatorForm['pensionWhen']>
+            legend={t.pensionWhen}
+            name={`${id}-pensionWhen`}
+            value={form.pensionWhen}
+            options={[
+              { value: 'before-tax', label: t.beforeTax },
+              { value: 'after-tax', label: t.afterTax },
+            ]}
+            onChange={(pensionWhen) => set({ pensionWhen })}
+          />
+        </div>
+      ) : null}
+      <ChoiceList<LoanPlan>
+        legend={t.studentLoan}
+        name={`${id}-loan`}
+        value={form.studentLoan}
+        options={[
+          { value: 'none', label: t.noLoan },
+          ...(['plan-1', 'plan-2', 'plan-4', 'plan-5'] as const).map((value) => ({
+            value,
+            label: t.plans[value],
+          })),
+        ]}
+        onChange={(studentLoan) => set({ studentLoan })}
+      />
+      <CheckOption checked={form.postgraduate} onChange={(postgraduate) => set({ postgraduate })}>
+        {t.postgraduate}
+      </CheckOption>
+      <p className={formStyles.hint}>{t.loanHint}</p>
+      <NamedAmounts
+        rows={form.deductions}
+        base={id}
+        kind="deduction"
+        errors={errors}
+        form={form}
+        today={today}
+        nameLabel={t.deductionName}
+        amountLabel={t.deductionAmount}
+        removeLabel={t.removeDeduction}
+        legend={t.deductionLegend}
+        onChange={(key, part) =>
+          set({
+            deductions: form.deductions.map((row) => (row.key === key ? { ...row, ...part } : row)),
+          })
+        }
+        onRemove={(key) => {
+          set({ deductions: form.deductions.filter((row) => row.key !== key) });
+          focusSoon(`${id}-add-deduction`);
+        }}
+      />
+      {form.deductions.length < MOST_LINES ? (
+        <button
+          id={`${id}-add-deduction`}
+          type="button"
+          className={formStyles.outlined}
+          onClick={() => set({ deductions: [...form.deductions, blankAmount()] })}
+        >
+          {t.addDeduction}
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+/** "From your last payslip": its tax week or month, gross for tax so far and tax paid so far (brief 4.15, D124). */
+export function SoFarBoxes({ id, form, errors, today, set }: BoxesProps) {
+  const error = (field: CalculatorField) => mistakeWords(errors[field], form, today);
+  const monthly = form.frequency === 'monthly';
+  return (
+    <>
+      <Field
+        id={`${id}-soFarPeriod`}
+        label={monthly ? t.soFarMonth : t.soFarWeek}
+        error={error('soFarPeriod')}
+        hint={t.soFarWeekHint}
+      >
+        <input
+          id={`${id}-soFarPeriod`}
+          className={`${formStyles.input} num`}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={form.soFarPeriod}
+          aria-invalid={error('soFarPeriod') !== undefined}
+          aria-describedby={describedBy(`${id}-soFarPeriod`, error('soFarPeriod'), [
+            `${id}-soFarPeriod-hint`,
+          ])}
+          onChange={(event) => set({ soFarPeriod: event.target.value })}
+        />
+      </Field>
+      <p id={`${id}-soFar-hint`} className={formStyles.hint}>
+        {t.soFarFiguresHint}
+      </p>
+      <Field id={`${id}-grossSoFar`} label={t.grossSoFar} error={error('grossSoFar')}>
+        <MoneyInput
+          id={`${id}-grossSoFar`}
+          value={form.grossSoFar}
+          onChange={(grossSoFar) => set({ grossSoFar })}
+          invalid={error('grossSoFar') !== undefined}
+          describedBy={describedBy(`${id}-grossSoFar`, error('grossSoFar'))}
+        />
+      </Field>
+      <Field id={`${id}-taxSoFar`} label={t.taxSoFar} error={error('taxSoFar')}>
+        <MoneyInput
+          id={`${id}-taxSoFar`}
+          value={form.taxSoFar}
+          onChange={(taxSoFar) => set({ taxSoFar })}
+          invalid={error('taxSoFar') !== undefined}
+          describedBy={describedBy(`${id}-taxSoFar`, error('taxSoFar'))}
+        />
+      </Field>
+    </>
   );
 }
 
@@ -442,20 +668,21 @@ export function PayCalculator({
   const found = periodOf(form.payDate, form.frequency);
   const monthly = form.frequency === 'monthly';
   const yearWords = found === null ? '' : t.taxYearWords(found.taxYear);
-  const periodWord = t.periodWords[form.frequency];
 
   const setLine = (key: string, part: Partial<CalculatorForm['lines'][number]>) =>
     change((now) => ({
       ...now,
       lines: now.lines.map((line) => (line.key === key ? { ...line, ...part } : line)),
     }));
-  const setRow = (list: 'extras' | 'deductions') => (key: string, part: Partial<NamedAmountForm>) =>
+  const setExtra = (key: string, part: Partial<NamedAmountForm>) =>
     change((now) => ({
       ...now,
-      [list]: now[list].map((row) => (row.key === key ? { ...row, ...part } : row)),
+      extras: now.extras.map((row) => (row.key === key ? { ...row, ...part } : row)),
     }));
-  const removeRow = (list: 'extras' | 'deductions') => (key: string) =>
-    change((now) => ({ ...now, [list]: now[list].filter((row) => row.key !== key) }));
+  const removeExtra = (key: string) => {
+    change((now) => ({ ...now, extras: now.extras.filter((row) => row.key !== key) }));
+    focusSoon(`${id}-add-extra`);
+  };
 
   return (
     <div className={styles.calculator}>
@@ -554,12 +781,13 @@ export function PayCalculator({
                   <button
                     type="button"
                     className={formStyles.quiet}
-                    onClick={() =>
+                    onClick={() => {
                       change((now) => ({
                         ...now,
                         lines: now.lines.filter((one) => one.key !== line.key),
-                      }))
-                    }
+                      }));
+                      focusSoon(`${id}-add-line`);
+                    }}
                   >
                     {t.removeLine}
                   </button>
@@ -569,6 +797,7 @@ export function PayCalculator({
           })}
           {form.lines.length < MOST_LINES ? (
             <button
+              id={`${id}-add-line`}
               type="button"
               className={formStyles.outlined}
               onClick={() => change((now) => ({ ...now, lines: [...now.lines, blankLine()] }))}
@@ -587,11 +816,12 @@ export function PayCalculator({
             amountLabel={t.extraAmount}
             removeLabel={t.removeExtra}
             legend={t.extraLegend}
-            onChange={setRow('extras')}
-            onRemove={removeRow('extras')}
+            onChange={setExtra}
+            onRemove={removeExtra}
           />
           {form.extras.length < MOST_LINES ? (
             <button
+              id={`${id}-add-extra`}
               type="button"
               className={formStyles.outlined}
               onClick={() => change((now) => ({ ...now, extras: [...now.extras, blankAmount()] }))}
@@ -638,153 +868,7 @@ export function PayCalculator({
             }))}
             onChange={(frequency) => setWhen({ frequency })}
           />
-          <Field
-            id={`${id}-taxCode`}
-            label={t.taxCode}
-            error={error('taxCode')}
-            hint={t.taxCodeHint}
-          >
-            <input
-              id={`${id}-taxCode`}
-              className={formStyles.input}
-              type="text"
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              value={form.taxCode}
-              aria-invalid={error('taxCode') !== undefined}
-              aria-describedby={describedBy(`${id}-taxCode`, error('taxCode'), [
-                `${id}-taxCode-hint`,
-              ])}
-              onChange={(event) => set({ taxCode: event.target.value })}
-            />
-          </Field>
-          <ChoiceList<CalculatorForm['basis']>
-            legend={t.basis}
-            name={`${id}-basis`}
-            value={form.basis}
-            options={[
-              { value: 'cumulative', label: t.cumulative },
-              { value: 'week-one', label: t.weekOne },
-            ]}
-            onChange={(basis) => set({ basis })}
-          />
-          <CheckOption checked={form.pension} onChange={(pension) => set({ pension })}>
-            {t.pension}
-          </CheckOption>
-          {form.pension ? (
-            <div className={styles.indented}>
-              <Field
-                id={`${id}-pensionPercent`}
-                label={t.pensionPercent}
-                error={error('pensionPercent')}
-              >
-                <span className={styles.percentBox}>
-                  <input
-                    id={`${id}-pensionPercent`}
-                    className={`${formStyles.input} num`}
-                    type="text"
-                    inputMode="decimal"
-                    autoComplete="off"
-                    value={form.pensionPercent}
-                    aria-invalid={error('pensionPercent') !== undefined}
-                    aria-describedby={describedBy(`${id}-pensionPercent`, error('pensionPercent'))}
-                    onChange={(event) => set({ pensionPercent: event.target.value })}
-                  />
-                  <span aria-hidden="true">%</span>
-                </span>
-              </Field>
-              <p id={`${id}-band-hint`} className={formStyles.hint}>
-                {t.pensionBandHint}
-              </p>
-              <div className={styles.pair}>
-                <Field
-                  id={`${id}-pensionLower`}
-                  label={t.pensionLower(periodWord)}
-                  error={error('pensionLower')}
-                >
-                  <MoneyInput
-                    id={`${id}-pensionLower`}
-                    value={form.pensionLower}
-                    onChange={(pensionLower) => set({ pensionLower })}
-                    invalid={error('pensionLower') !== undefined}
-                    describedBy={describedBy(`${id}-pensionLower`, error('pensionLower'), [
-                      `${id}-band-hint`,
-                    ])}
-                  />
-                </Field>
-                <Field
-                  id={`${id}-pensionUpper`}
-                  label={t.pensionUpper(periodWord)}
-                  error={error('pensionUpper')}
-                >
-                  <MoneyInput
-                    id={`${id}-pensionUpper`}
-                    value={form.pensionUpper}
-                    onChange={(pensionUpper) => set({ pensionUpper })}
-                    invalid={error('pensionUpper') !== undefined}
-                    describedBy={describedBy(`${id}-pensionUpper`, error('pensionUpper'), [
-                      `${id}-band-hint`,
-                    ])}
-                  />
-                </Field>
-              </div>
-              <ChoiceList<CalculatorForm['pensionWhen']>
-                legend={t.pensionWhen}
-                name={`${id}-pensionWhen`}
-                value={form.pensionWhen}
-                options={[
-                  { value: 'before-tax', label: t.beforeTax },
-                  { value: 'after-tax', label: t.afterTax },
-                ]}
-                onChange={(pensionWhen) => set({ pensionWhen })}
-              />
-            </div>
-          ) : null}
-          <ChoiceList<LoanPlan>
-            legend={t.studentLoan}
-            name={`${id}-loan`}
-            value={form.studentLoan}
-            options={[
-              { value: 'none', label: t.noLoan },
-              ...(['plan-1', 'plan-2', 'plan-4', 'plan-5'] as const).map((value) => ({
-                value,
-                label: t.plans[value],
-              })),
-            ]}
-            onChange={(studentLoan) => set({ studentLoan })}
-          />
-          <CheckOption
-            checked={form.postgraduate}
-            onChange={(postgraduate) => set({ postgraduate })}
-          >
-            {t.postgraduate}
-          </CheckOption>
-          <NamedAmounts
-            rows={form.deductions}
-            base={id}
-            kind="deduction"
-            errors={errors}
-            form={form}
-            today={today}
-            nameLabel={t.deductionName}
-            amountLabel={t.deductionAmount}
-            removeLabel={t.removeDeduction}
-            legend={t.deductionLegend}
-            onChange={setRow('deductions')}
-            onRemove={removeRow('deductions')}
-          />
-          {form.deductions.length < MOST_LINES ? (
-            <button
-              type="button"
-              className={formStyles.outlined}
-              onClick={() =>
-                change((now) => ({ ...now, deductions: [...now.deductions, blankAmount()] }))
-              }
-            >
-              {t.addDeduction}
-            </button>
-          ) : null}
+          <TaxBoxes id={id} form={form} errors={errors} today={today} set={set} />
         </section>
 
         <section className={screenStyles.card} aria-labelledby={`${id}-so-far`}>
@@ -792,44 +876,7 @@ export function PayCalculator({
             {t.soFarHeading}
           </h2>
           <p className={screenStyles.second}>{t.soFarIntro}</p>
-          <Field
-            id={`${id}-soFarPeriod`}
-            label={monthly ? t.soFarMonth : t.soFarWeek}
-            error={error('soFarPeriod')}
-            hint={t.soFarWeekHint}
-          >
-            <input
-              id={`${id}-soFarPeriod`}
-              className={`${formStyles.input} num`}
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              value={form.soFarPeriod}
-              aria-invalid={error('soFarPeriod') !== undefined}
-              aria-describedby={describedBy(`${id}-soFarPeriod`, error('soFarPeriod'), [
-                `${id}-soFarPeriod-hint`,
-              ])}
-              onChange={(event) => set({ soFarPeriod: event.target.value })}
-            />
-          </Field>
-          <Field id={`${id}-grossSoFar`} label={t.grossSoFar} error={error('grossSoFar')}>
-            <MoneyInput
-              id={`${id}-grossSoFar`}
-              value={form.grossSoFar}
-              onChange={(grossSoFar) => set({ grossSoFar })}
-              invalid={error('grossSoFar') !== undefined}
-              describedBy={describedBy(`${id}-grossSoFar`, error('grossSoFar'))}
-            />
-          </Field>
-          <Field id={`${id}-taxSoFar`} label={t.taxSoFar} error={error('taxSoFar')}>
-            <MoneyInput
-              id={`${id}-taxSoFar`}
-              value={form.taxSoFar}
-              onChange={(taxSoFar) => set({ taxSoFar })}
-              invalid={error('taxSoFar') !== undefined}
-              describedBy={describedBy(`${id}-taxSoFar`, error('taxSoFar'))}
-            />
-          </Field>
+          <SoFarBoxes id={id} form={form} errors={errors} today={today} set={set} />
         </section>
 
         <button type="submit" className={formStyles.main}>
@@ -838,13 +885,15 @@ export function PayCalculator({
         <Problem text={problem} />
       </form>
 
-      {worked === null ? (
-        stale ? (
-          <p className={screenStyles.card} role="status" data-testid="pay-stale">
+      {/* Always on the page, so "You changed something" is read out when it appears (WCAG 4.1.3). */}
+      <div role="status">
+        {worked === null && stale ? (
+          <p className={screenStyles.card} data-testid="pay-stale">
             {t.changedSince}
           </p>
-        ) : null
-      ) : (
+        ) : null}
+      </div>
+      {worked === null ? null : (
         <section
           className={`${screenStyles.card} ${styles.result}`}
           aria-labelledby={`${id}-result`}

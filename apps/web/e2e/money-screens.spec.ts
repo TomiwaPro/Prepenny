@@ -162,7 +162,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       ).toBeVisible();
       const owed = page.getByTestId('owed-now');
       await expect(owed).toContainText('£3,214.86');
-      await expect(owed).toContainText('6 debts. Family loan counted at €1.1612 per £1.');
+      await expect(owed).toContainText('6 debts. Family loan is counted at €1.1612 to £1.');
       const debts = page.getByTestId('debt');
       await expect(debts.locator('[class*="rowName"]')).toHaveText([
         'Pay-later card',
@@ -287,7 +287,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openDebt(page, 'Credit card');
-      await expect(page.getByTestId('left-now')).toContainText('Interest not included');
+      await expect(page.getByTestId('left-now')).toContainText(
+        'No interest added, because no rate is saved',
+      );
       const rows = page.getByTestId('debt-row');
       await expect(rows).toHaveCount(24);
       const march = debtRow(page, 'Wed 15 Mar 2028');
@@ -324,7 +326,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const card = page.getByTestId('card-details');
       await expect(card).toContainText('24.9% a year');
       await expect(card).toContainText('Statement on the 10th of each month');
-      await expect(card).toContainText('Minimum: interest plus 1% of the balance, at least £5.00');
+      await expect(card).toContainText('Minimum: interest plus 1% of what you owe, at least £5.00');
       await expect(card).toContainText(
         'Next statement, Tue 10 Nov: about £8.74 of interest, an estimate.',
       );
@@ -341,7 +343,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('compare-fixed')).toContainText(
         '21 payments, £102.32 interest',
       );
-      await expect(page.getByTestId('compare-full')).toContainText('Paying the full balance');
+      await expect(page.getByTestId('compare-full')).toContainText('Paying all you owe each month');
       await expect(page.getByTestId('compare-full')).toContainText('1 payment, £8.74 interest');
       // Numbers only, never advice (brief Part 3, principle 10).
       await expect(compare).toContainText('PrePenny shows the numbers, not which to choose.');
@@ -398,9 +400,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await useSetting(page, { plan: withRollOver });
       await openUnderMore(page, 'Budgets');
       const budget = page.locator('[data-budget="Travel"]');
-      await expect(budget).toContainText(
-        "Roll-over on: what's left moves to the next week or month.",
-      );
+      await expect(budget).toContainText("What's left moves to the next week or month.");
       await expect(budget.getByTestId('rolled-over')).toHaveText('£25 + £7 from last week');
       // £32.00 this week, less the £4.00 spent before the update (D110).
       await expect(budget.getByRole('definition')).toHaveText(['£4.00', '£28.00']);

@@ -7,6 +7,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { Problem } from '../Fields.tsx';
 import { UpdateNote } from '../UpdateNote.tsx';
@@ -29,7 +30,10 @@ function Steps() {
   const hasPlan = state.status === 'ready' && state.plan !== null;
 
   useEffect(() => {
-    if (step === 'done') router.replace('/app/');
+    if (step !== 'done') return;
+    // The plan is set up, so pay kept from the public calculator has no step to go in.
+    forgetPayDraft();
+    router.replace('/app/');
   }, [step, router]);
 
   if (state.status === 'loading' || step === 'done') {

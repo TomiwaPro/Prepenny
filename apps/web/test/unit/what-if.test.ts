@@ -26,6 +26,8 @@ describe("test 1: Sam's Fri 30 Oct pay at £503.06", () => {
 
   it('shows −£95.47 on Sun 1 Nov, Short, beside the real £4.53, Tight', () => {
     expect(view.accounts.map((one) => one.name)).toEqual(['Current account']);
+    // Savings isn't shown: "Your other accounts don't change." (step 2h)
+    expect(view.otherAccounts).toBe(1);
     expect([current?.real.balance, current?.real.date, current?.real.status]).toEqual([
       parsePounds('4.53'),
       '2026-11-01',

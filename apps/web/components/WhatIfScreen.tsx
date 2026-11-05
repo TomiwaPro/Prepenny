@@ -12,14 +12,22 @@
 // makes every practice change on the real plan as one change, which one
 // Undo takes back; "Throw them away" leaves the real plan exactly as it was.
 //
-// Practice changes stay on this phone, in memory, while PrePenny is open
-// (ARCHITECTURE.md 3.8), so going to another screen and back keeps them.
-// They're made again on the real plan each time it changes, as a sync clash
-// runs a command again (D135).
+// Practice changes stay on this phone until they're kept or thrown away,
+// even after PrePenny is closed (ARCHITECTURE.md 3.8, step 2h), so going to
+// another screen and back, or closing PrePenny, keeps them. "Throw them
+// away" asks first: "Throw away 3 practice changes?". They're made again on
+// the real plan each time it changes, as a sync clash runs a command again
+// (D135).
 
 import type { EditCommand } from '@prepenny/engine';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  keepPractice,
+  loadPractice,
+  type PracticeChange,
+  practiceInMemory,
+} from '../data/practice.ts';
 import { formatDay } from '../lib/dates.ts';
 import { formatIn, formatMoney } from '../lib/money.ts';
 import { refusalMessage } from '../lib/refusals.ts';
@@ -35,6 +43,7 @@ import { strings } from '../strings/en-GB.ts';
 import { askInBackground, EngineError } from '../worker/client.ts';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
 import { ComingUpScreen } from './ComingUpScreen.tsx';
+import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
 import { focusUndoBar } from './focusUndo.ts';
@@ -53,15 +62,6 @@ import { UpdateBalanceSheet } from './UpdateBalanceSheet.tsx';
 import whatIfStyles from './WhatIf.module.css';
 
 const t = strings.whatIf;
-
-/** One practice change: the commands one sheet made, and the words it would show in the undo bar. */
-interface PracticeChange {
-  readonly commands: readonly EditCommand[];
-  readonly message: string;
-}
-
-/** The practice changes, kept while PrePenny is open, for the plan they were made on. */
-let memory: { readonly planId: string; readonly changes: readonly PracticeChange[] } | null = null;
 
 const codeOf = (error: unknown) => (error instanceof EngineError ? error.code : 'unexpected');
 
@@ -137,9 +137,14 @@ function Shortfall({
           </p>
           <ul id={listId} className={styles.list} data-testid="could-move">
             {shown.map((one, index) => (
-              // Two payments can share a name and a day, so the place in the list is part of the key.
-              // biome-ignore lint/suspicious/noArrayIndexKey: the list is worked out afresh each time
-              <li key={`${index} ${one.name} ${one.date}`} className={whatIfStyles.moveRow}>
+              <li
+                // Two payments can share a name and a day, so the place in the list is part of the key.
+                // biome-ignore lint/suspicious/noArrayIndexKey: the list is worked out afresh each time
+                key={`${index} ${one.name} ${one.date}`}
+                className={whatIfStyles.moveRow}
+                // The first newly shown row takes focus when Show all goes (WCAG 2.4.3).
+                tabIndex={index === COULD_MOVE_SHOWN ? -1 : undefined}
+              >
                 <span className={whatIfStyles.moveName}>
                   <span>{one.name}</span>
                   <span className={styles.second}>{formatDay(one.date, today)}</span>
@@ -153,7 +158,13 @@ function Shortfall({
               type="button"
               className={formStyles.outlined}
               aria-controls={listId}
-              onClick={() => setAll(true)}
+              onClick={() => {
+                setAll(true);
+                requestAnimationFrame(() => {
+                  const first = document.getElementById(listId)?.children[COULD_MOVE_SHOWN];
+                  if (first instanceof HTMLElement) first.focus();
+                });
+              }}
             >
               {t.showAll(shortfall.couldMove.length)}
             </button>
@@ -278,6 +289,11 @@ function SideBySide({ view }: { readonly view: WhatIfView }) {
           </div>
         );
       })}
+      {view.otherAccounts === 0 ? null : (
+        <p className={styles.second} data-testid="other-accounts">
+          {t.otherAccounts}
+        </p>
+      )}
       {view.debts.length === 0 ? null : (
         <div className={whatIfStyles.account}>
           <h3 className={whatIfStyles.subheading}>{t.paidOffOn}</h3>
@@ -323,7 +339,14 @@ export function WhatIfScreen() {
   const real = usePlanActions();
   const loaded = real.loaded;
   const fromComingUp = useSearchParams()?.get('from') === 'coming-up';
-  const [changes, setChanges] = useState<readonly PracticeChange[]>(() => memory?.changes ?? []);
+  const [changes, setChanges] = useState<readonly PracticeChange[]>(
+    () => (loaded === null ? null : practiceInMemory(loaded.plan.id)) ?? [],
+  );
+  // The plan the practice changes on screen were read for, once they've been read from the phone.
+  const [readFor, setReadFor] = useState<string | null>(() =>
+    loaded !== null && practiceInMemory(loaded.plan.id) !== null ? loaded.plan.id : null,
+  );
+  const [throwing, setThrowing] = useState(false);
   const [shown, setShown] = useState<Shown | null>(null);
   const [failed, setFailed] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -331,6 +354,8 @@ export function WhatIfScreen() {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<Open>(null);
   const changesRef = useRef(changes);
+  const readForRef = useRef(readFor);
+  readForRef.current = readFor;
   const loadedRef = useRef<LoadedPlan | null>(loaded);
   const version = useRef(0);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -342,23 +367,30 @@ export function WhatIfScreen() {
     setChanges(next);
   }, []);
 
-  // Practice changes made on another plan, such as the example, aren't this plan's.
+  // Each plan has its own practice changes, kept on this phone until they're
+  // kept or thrown away, even after PrePenny is closed (step 2h).
+  const planId = loaded?.plan.id ?? null;
   useEffect(() => {
-    if (loaded === null) return;
-    if (memory !== null && memory.planId !== loaded.plan.id) {
-      memory = null;
-      keepChanges([]);
-    }
-  }, [loaded, keepChanges]);
+    if (planId === null || readFor === planId) return;
+    let current = true;
+    loadPractice(planId).then((found) => {
+      if (!current) return;
+      keepChanges(found);
+      setReadFor(planId);
+    });
+    return () => {
+      current = false;
+    };
+  }, [planId, readFor, keepChanges]);
 
   useEffect(() => {
-    if (loaded === null) return;
-    memory = changes.length === 0 ? null : { planId: loaded.plan.id, changes };
-  }, [loaded, changes]);
+    if (planId === null || readFor !== planId) return;
+    void keepPractice(planId, changes);
+  }, [planId, readFor, changes]);
 
   // Worked out again whenever the real plan or the list of changes is new.
   useEffect(() => {
-    if (loaded === null) return;
+    if (loaded === null || readFor !== loaded.plan.id) return;
     if (shown !== null && shown.realVersion === loaded.version && shown.changes === changes) {
       return;
     }
@@ -389,14 +421,16 @@ export function WhatIfScreen() {
     return () => {
       current = false;
     };
-  }, [loaded, changes, shown, keepChanges]);
+  }, [loaded, readFor, changes, shown, keepChanges]);
 
   /** A practice change from a sheet: worked out on top of the ones before it, never saved. */
   const practiceChange = useCallback(
     (commands: readonly EditCommand[], message: string): Promise<ChangeOutcome> => {
       const task = async (): Promise<ChangeOutcome> => {
         const now = loadedRef.current;
-        if (now === null) return { ok: false, code: 'not-ready' };
+        // Until this plan's own practice changes are read, nothing is added to them.
+        if (now === null || readForRef.current !== now.plan.id)
+          return { ok: false, code: 'not-ready' };
         const next = [...changesRef.current, { commands, message }];
         let view: WhatIfView;
         try {
@@ -456,8 +490,11 @@ export function WhatIfScreen() {
     setTimeout(() => noteRef.current?.focus(), 0);
   };
 
+  // The practice changes on screen are this plan's: read from the phone for it (step 2h).
+  const ready = loaded !== null && readFor === loaded.plan.id;
+
   const keep = async () => {
-    if (busy || changes.length === 0) return;
+    if (busy || changes.length === 0 || !ready) return;
     // Changes that cancel each other out leave nothing to keep, and no Undo to offer.
     if (shown !== null && shown.changes === changes && !shown.view.changed) {
       keepChanges([]);
@@ -506,13 +543,14 @@ export function WhatIfScreen() {
         >
           {t.yourChanges}
         </h2>
+        {/* The note takes focus, so it's read out once, outside the live list (WCAG 4.1.3). */}
+        {note === null ? null : (
+          <p ref={noteRef} tabIndex={-1} className={styles.line} data-testid="what-if-note">
+            {note}
+          </p>
+        )}
         <div role="status">
-          {note === null ? null : (
-            <p ref={noteRef} tabIndex={-1} className={styles.line} data-testid="what-if-note">
-              {note}
-            </p>
-          )}
-          {changes.length === 0 ? (
+          {!ready ? null : changes.length === 0 ? (
             note === null ? (
               <p className={styles.second}>{t.noChanges}</p>
             ) : null
@@ -526,7 +564,7 @@ export function WhatIfScreen() {
             </ol>
           )}
         </div>
-        {changes.length === 0 ? null : (
+        {changes.length === 0 || !ready ? null : (
           <>
             <button
               type="button"
@@ -560,10 +598,10 @@ export function WhatIfScreen() {
                 type="button"
                 className={formStyles.outlined}
                 aria-describedby="throw-hint"
+                aria-haspopup="dialog"
                 onClick={() => {
                   if (busy) return;
-                  keepChanges([]);
-                  say(t.thrownAway);
+                  setThrowing(true);
                 }}
               >
                 {t.throwAway}
@@ -577,10 +615,17 @@ export function WhatIfScreen() {
         )}
       </section>
 
-      {view === null ? (
-        <p className={styles.card} role={failed ? 'alert' : undefined}>
-          {failed ? strings.errors.plan : t.loading}
-        </p>
+      {view === null || !ready ? (
+        failed ? (
+          // A new line, so screen readers read it out (WCAG 4.1.3).
+          <p key="failed" className={styles.card} role="alert">
+            {strings.errors.plan}
+          </p>
+        ) : (
+          <p key="loading" className={styles.card}>
+            {t.loading}
+          </p>
+        )
       ) : (
         <SideBySide view={view} />
       )}
@@ -628,6 +673,20 @@ export function WhatIfScreen() {
         <OvertimeSheet open={open === 'overtime'} onClose={closeIf('overtime')} />
         <UpdateBalanceSheet open={open === 'update-balance'} onClose={closeIf('update-balance')} />
       </PlanActionsOverride>
+      <ConfirmSheet
+        open={throwing}
+        title={t.throwAway}
+        intro={t.throwAwayCheck(changes.length)}
+        confirm={t.throwAway}
+        keep={t.keepPractising}
+        onConfirm={async () => ({ ok: true, version: version.current })}
+        onClose={(changed) => {
+          setThrowing(false);
+          if (!changed) return;
+          keepChanges([]);
+          say(t.thrownAway);
+        }}
+      />
     </>
   );
 }

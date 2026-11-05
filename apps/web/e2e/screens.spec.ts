@@ -13,7 +13,9 @@
 // page is as tall as the whole page, with the bottom navigation at the
 // bottom. Step 2g: What if with the owner's test 1 change made, before
 // keeping it; the pay calculator's result for test 3; and Check my payslip
-// for test 5, at 360px in light. Run only when asked, one step at a time:
+// for test 5, at 360px in light. Step 2h: each of the six people's Home at
+// 360px in light, set up through the screens, and Your job. Run only when
+// asked, one step at a time:
 //
 //   SCREENS=1 pnpm e2e --project phone-360 screens -g "Step 2d-2"
 
@@ -24,7 +26,8 @@ import { type PlanRecords, parsePounds } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
 import { openOnExample, settingScript } from './fixtures.ts';
-import { setUpPriya } from './setup.ts';
+import { setUpAli, setUpDee, setUpJessAndTom, setUpSam } from './people.ts';
+import { setUpKofi, setUpPriya } from './setup.ts';
 
 const screens = join(import.meta.dirname, '..', '..', '..', 'docs', 'screens');
 const folder = join(screens, '2b');
@@ -86,7 +89,7 @@ for (const shot of planShots) {
     mkdirSync(step, { recursive: true });
     if (shot.sheet) {
       const fri30 = page.locator('[data-testid="period"][data-start="2026-10-30"]');
-      await fri30.locator(':scope > h3 > button').click();
+      await fri30.locator(':scope > :is(h3, h4) > button').click();
       await fri30.getByRole('button', { name: /^Rent / }).click();
       await expect(page.getByRole('dialog', { name: 'Rent' })).toBeVisible();
       await page.screenshot({ path: join(step, shot.file) });
@@ -242,7 +245,7 @@ for (const shot of comingUpShots) {
     if (shot.open !== null) {
       await page.getByRole('button', { name: 'Got it' }).click();
       const payday = page.locator(`[data-testid="period"][data-start="${shot.open}"]`);
-      await payday.locator(':scope > h3 > button').click();
+      await payday.locator(':scope > :is(h3, h4) > button').click();
       await expect(payday).toHaveAttribute('data-open', 'true');
       // Nothing is focused, so the picture shows the page as it looks.
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -443,7 +446,7 @@ test('Step 2g: what-if-360-light.png', async ({ browser }) => {
   await page.goto('/app/what-if/?from=coming-up');
   await expect(page.getByTestId('side-by-side')).toBeVisible();
   const friday = page.locator('[data-testid="period"][data-start="2026-10-30"]');
-  await friday.locator(':scope > h3 > button').click();
+  await friday.locator(':scope > :is(h3, h4) > button').click();
   await friday.getByRole('button', { name: /^Pay Fri/ }).click();
   const sheet = page.getByRole('dialog', { name: 'Pay' });
   await sheet.getByLabel('Amount').fill('503.06');
@@ -473,8 +476,8 @@ async function fillPayslip(
   await page.getByTestId('extra').first().getByLabel('Amount').fill(slip.premium);
   await page.getByLabel('Payday').fill(slip.payday);
   await page.getByLabel('The tax week on it').fill(slip.week);
-  await page.getByLabel('From your last payslip: gross for tax so far').fill(slip.gross);
-  await page.getByLabel('From your last payslip: tax paid so far').fill(slip.tax);
+  await page.getByLabel('Taxable pay so far this tax year').fill(slip.gross);
+  await page.getByLabel('Tax paid so far this tax year').fill(slip.tax);
 }
 
 test('Step 2g: pay-calculator-360-light.png', async ({ browser }) => {
@@ -525,5 +528,79 @@ test('Step 2g: check-my-payslip-360-light.png', async ({ browser }) => {
   await expect(page.getByTestId('payslip-differences')).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await shoot2g(page, 'check-my-payslip-360-light.png');
+  await context.close();
+});
+
+// Step 2h: each of the six people's Home at 360px in light, set up through
+// the screens with their answers (people.ts, setup.ts), as the owner asked,
+// and Your job on the example.
+
+async function step2hPage(browser: import('@playwright/test').Browser, example = false) {
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 800 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    colorScheme: 'light',
+    reducedMotion: 'reduce',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+  });
+  if (example) await openOnExample(context);
+  return { context, page: await context.newPage() };
+}
+
+/** The whole page, as tall as it is, into docs/screens/2h. */
+async function shoot2h(page: Page, file: string) {
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width: 360, height });
+  const step = join(screens, '2h');
+  mkdirSync(step, { recursive: true });
+  await page.screenshot({ path: join(step, file) });
+}
+
+const people2h = [
+  { file: 'sam-home-360-light.png', setUp: setUpSam },
+  {
+    file: 'priya-home-360-light.png',
+    setUp: async (page: Page) => {
+      await setUpPriya(page);
+      await page.getByRole('button', { name: 'Go to my plan' }).click();
+    },
+  },
+  { file: 'dee-home-360-light.png', setUp: setUpDee },
+  {
+    file: 'kofi-home-360-light.png',
+    setUp: async (page: Page) => {
+      await setUpKofi(page);
+      await page.getByRole('button', { name: 'Go to my plan' }).click();
+    },
+  },
+  { file: 'jess-and-tom-home-360-light.png', setUp: setUpJessAndTom },
+  { file: 'ali-home-360-light.png', setUp: setUpAli },
+] as const;
+
+for (const shot of people2h) {
+  test(`Step 2h: ${shot.file}`, async ({ browser }) => {
+    test.setTimeout(180_000);
+    const { context, page } = await step2hPage(browser);
+    await shot.setUp(page);
+    // Opened again, as from the phone's home screen, so the last change's undo bar has gone.
+    await page.goto('/app/');
+    await expect(page.getByTestId('balance')).toBeVisible();
+    await expect(page.getByTestId('lowest-point')).toBeVisible();
+    await expect(page.getByTestId('undo-bar')).toHaveCount(0);
+    await shoot2h(page, shot.file);
+    await context.close();
+  });
+}
+
+test('Step 2h: your-job-360-light.png', async ({ browser }) => {
+  const { context, page } = await step2hPage(browser, true);
+  await page.goto('/app/job/');
+  await expect(page.getByTestId('job')).toBeVisible();
+  await shoot2h(page, 'your-job-360-light.png');
   await context.close();
 });

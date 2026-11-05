@@ -18,7 +18,10 @@ const serwist = new Serwist({
     cleanupOutdatedCaches: true,
     // "/app/" is served by "/app/index.html", and "/app/plan" by "/app/plan/index.html".
     directoryIndex: 'index.html',
-    ignoreURLParametersMatching: [/^utm_/, /^_rsc$/],
+    // A screen for one record takes its id after a question mark (ARCHITECTURE.md 5),
+    // and What if says where it was opened from: each is still the same file, so
+    // it opens with no signal straight from a saved link or a refresh (step 2h).
+    ignoreURLParametersMatching: [/^utm_/, /^_rsc$/, /^id$/, /^from$/],
   },
   // A new version takes over straight away, so a phone never runs an old copy for long.
   skipWaiting: true,

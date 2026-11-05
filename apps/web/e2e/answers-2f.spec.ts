@@ -58,7 +58,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const spent = sheet.getByLabel('Already spent this week');
       await expect(spent).toBeVisible();
       await expect(sheet).toContainText(
-        "What you've spent from it so far, which your balance already shows.",
+        "What you've spent from it so far. Your bank balance already shows it.",
       );
       // A budget that starts later has no week under way yet, so it isn't asked.
       await sheet.getByLabel('Starts').fill('2026-10-30');
@@ -102,18 +102,36 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('debt-row')).toHaveCount(4);
     });
 
-    test('answer 4: closing a debt asks "Also remove its 6 planned payments?" with Yes and No', async ({
+    test('answer 4: closing a debt asks "Also remove its 6 planned payments?", with neither answer chosen', async ({
       page,
     }) => {
       await openDebt(page, 'Family loan');
       await page.getByRole('button', { name: 'Close this debt' }).click();
       const sheet = page.getByRole('dialog', { name: 'Close this debt' });
-      await expect(sheet).toContainText('Closing it takes it out of Owed now.');
+      await expect(sheet).toContainText('Closing it stops it counting in Owed now, on Debts.');
       const question = sheet.getByRole('group', { name: 'Also remove its 6 planned payments?' });
+      // Neither answer is chosen to start with: the person picks one (step 2h).
       await expect(question.getByRole('radio', { name: 'Yes' })).not.toBeChecked();
-      await expect(question.getByRole('radio', { name: 'No' })).toBeChecked();
+      await expect(question.getByRole('radio', { name: 'No' })).not.toBeChecked();
       await noAxeProblems(page);
+      // The mistake is read with the radio that takes focus, every time Close is
+      // tapped, as a text box's mistake is (D203, step 2h).
+      for (let tap = 0; tap < 2; tap += 1) {
+        await sheet.getByRole('button', { name: 'Close this debt' }).click();
+        const yes = question.getByRole('radio', { name: 'Yes' });
+        await expect(yes).toBeFocused();
+        await expect(yes).toHaveAccessibleDescription('Choose Yes or No first.');
+        await expect(yes).toHaveAttribute('aria-invalid', 'true');
+        await expect(question.getByRole('radio', { name: 'No' })).toHaveAccessibleDescription(
+          'Choose Yes or No first.',
+        );
+      }
+      await expect(sheet).toBeVisible();
       await question.getByRole('radio', { name: 'Yes' }).check();
+      await expect(sheet.getByText('Choose Yes or No first.')).toHaveCount(0);
+      await expect(question.getByRole('radio', { name: 'Yes' })).not.toHaveAttribute(
+        'aria-invalid',
+      );
       await sheet.getByRole('button', { name: 'Close this debt' }).click();
       await expect(sheet).toBeHidden();
       await expect(undoBar(page)).toContainText(
@@ -125,6 +143,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('debt-row')).toHaveCount(6);
       // No keeps them, as before.
       await page.getByRole('button', { name: 'Close this debt' }).click();
+      await question.getByRole('radio', { name: 'No' }).check();
       await sheet.getByRole('button', { name: 'Close this debt' }).click();
       await expect(undoBar(page)).toContainText('Family loan closed.');
       await expect(page.getByTestId('debt-row')).toHaveCount(6);

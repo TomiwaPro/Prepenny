@@ -47,9 +47,15 @@ jobs:
         run: pnpm test
 
   end-to-end:
-    name: Build and end-to-end tests
+    # In three parts side by side, so the whole set, with a journey for each
+    # of the six people (step 2h), stays well inside the time limit.
+    name: Build and end-to-end tests (part ${{ matrix.part }} of 3)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3]
     steps:
       - name: Check out the code
         uses: actions/checkout@v5
@@ -75,12 +81,12 @@ jobs:
         run: pnpm --filter @prepenny/web exec playwright install --with-deps chromium
 
       - name: End-to-end tests at 320px and 360px
-        run: pnpm e2e
+        run: pnpm --filter @prepenny/web exec playwright test --shard=${{ matrix.part }}/3
 
       - name: Keep the test report when something fails
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-part-${{ matrix.part }}
           path: apps/web/playwright-report
           retention-days: 7

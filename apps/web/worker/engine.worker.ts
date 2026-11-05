@@ -6,6 +6,7 @@ import { workOutActionsView } from '../lib/actions-view.ts';
 import { compareWaysToPay, workOutDebtsView } from '../lib/debts-view.ts';
 import { runEdit, runEdits } from '../lib/edit.ts';
 import { workOutHome } from '../lib/home.ts';
+import { previewJobChange, workOutJobView } from '../lib/job-view.ts';
 import { workOutAccountsView, workOutBudgetsView, workOutGoalsView } from '../lib/money-views.ts';
 import { previewPayChange } from '../lib/pay-preview.ts';
 import { workOutPayView } from '../lib/pay-view.ts';
@@ -49,6 +50,10 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return compareWaysToPay(ask.records, ask.today, ask.compare);
     case 'pay':
       return workOutPayView(ask.records, ask.today);
+    case 'job':
+      return workOutJobView(ask.records, ask.today);
+    case 'job-preview':
+      return previewJobChange(ask.records, ask.today, ask.profileId, ask.commands);
     case 'what-if':
       return workOutWhatIfView(ask.records, ask.today, ask.practice);
     default:

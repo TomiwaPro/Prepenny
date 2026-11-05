@@ -23,7 +23,7 @@ import { CheckOption, describedBy, Field } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
 import { focusFirst } from './focus.ts';
 import { OutgoingFields, outgoingFieldIds } from './OutgoingFields.tsx';
-import { AddedList, SetupCard, StepFrame } from './StepFrame.tsx';
+import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.tsx';
 import { useStep } from './useStep.ts';
 
 const t = strings.setup.bills;
@@ -252,7 +252,10 @@ export function StepBills() {
           <button
             type="button"
             className={formStyles.quiet}
-            onClick={() => setDrafts((now) => now.filter((one) => one.key !== draft.key))}
+            onClick={() => {
+              setDrafts((now) => now.filter((one) => one.key !== draft.key));
+              focusAddAnother();
+            }}
           >
             {t.removeBill}
           </button>
@@ -260,6 +263,7 @@ export function StepBills() {
       ))}
 
       <button
+        data-add-another
         type="button"
         className={formStyles.outlined}
         onClick={() => {

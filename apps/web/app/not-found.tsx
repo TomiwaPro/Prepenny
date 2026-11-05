@@ -6,6 +6,7 @@ export default function NotFound() {
   return (
     <main className={styles.page}>
       <h1 className={styles.tagline}>{strings.notFound.heading}</h1>
+      <p className={styles.description}>{strings.notFound.purpose}</p>
       <Link className={styles.button} href="/app/">
         {strings.notFound.goHome}
       </Link>

@@ -179,6 +179,7 @@ export function StepSavings() {
       })}
 
       <button
+        data-add-another
         type="button"
         className={formStyles.outlined}
         onClick={() => {

@@ -34,3 +34,25 @@
   color: var(--ink-muted);
   text-align: right;
 }
+
+/* A longer hint goes under its choice's words, as a second line (DESIGN.md). */
+.stacked {
+  align-items: flex-start;
+  padding: var(--space-2) 0;
+}
+
+.stacked input {
+  margin-top: 0.125rem;
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.under {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}

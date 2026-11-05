@@ -20,6 +20,8 @@ export interface PaydayChoice {
   readonly adjustment: Pence;
   /** The saved pay week of its step of the pattern (D5), or null. */
   readonly weekId: string | null;
+  /** Its step of the pay pattern, counting from 1: always 1 with one amount (D5). */
+  readonly step: number;
 }
 
 export interface PayView {
@@ -64,6 +66,7 @@ export function workOutPayView(records: PlanRecords, today: string): PayView {
         const own = series.get(row.payment.seriesId);
         if (row.kind !== 'payment' || own === undefined || row.payment.date <= today) continue;
         const weeks = own.cyclePayWeeks;
+        const steps = own.amountCycle?.length ?? 1;
         paydays.push({
           seriesId: row.payment.seriesId,
           originalDate: row.payment.originalDate,
@@ -80,6 +83,7 @@ export function workOutPayView(records: PlanRecords, today: string): PayView {
                     weeks.length,
                   )
                 ] ?? null),
+          step: mod(mod(row.payment.number, steps) + mod(own.cycleOffset ?? 0, steps), steps) + 1,
         });
       }
     }
@@ -112,6 +116,17 @@ export function workOutPayView(records: PlanRecords, today: string): PayView {
             payProfileId: profileId,
             steps: latest.amountCycle?.length ?? 1,
             hasPayWeeks: family.some((one) => (one.cyclePayWeeks?.length ?? 0) > 0),
+            weeks: latest.cyclePayWeeks ?? null,
+            // Each length of pattern among the paydays still to come, with a series
+            // of that length: after a new amount for this and all later ones, the
+            // earlier paydays may follow a pattern of another length (step 2h).
+            patterns: [
+              ...new Map(
+                family
+                  .filter((one) => paydays.some((day) => day.seriesId === one.id))
+                  .map((one) => [one.amountCycle?.length ?? 1, one.id] as const),
+              ),
+            ].map(([steps, seriesId]) => ({ seriesId, steps })),
           },
     profile,
     weeks: [

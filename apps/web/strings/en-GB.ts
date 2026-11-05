@@ -272,7 +272,7 @@ export const strings = {
       alreadySpentWeek: 'Already spent this week',
       alreadySpentMonth: 'Already spent this month',
       alreadySpentHint:
-        "What you've spent from it so far, which your balance already shows. Leave it empty if you're not sure: then all of it is planned to leave today.",
+        "What you've spent from it so far. Your bank balance already shows it. If you're not sure, leave it empty and all of it is planned to go today.",
       alreadySpentError: 'Type an amount, for example 6, or leave it empty.',
       addAnother: 'Add another budget',
       anotherHeading: 'Another budget',
@@ -475,6 +475,8 @@ export const strings = {
 
   sheet: {
     close: 'Close',
+    /** A sheet that asks before a change, such as "Close this debt", so its two buttons don't both say Close. */
+    goBack: 'Go back',
     stillBeingBuilt: 'This part is still being built.',
     back: 'Back',
     next: 'Next',
@@ -484,6 +486,7 @@ export const strings = {
     working: 'Working it out.',
     yes: 'Yes',
     no: 'No',
+    chooseYesOrNo: 'Choose Yes or No first.',
   },
 
   /** Shared by the sheets' boxes. */
@@ -624,7 +627,7 @@ export const strings = {
     overtime: 'I worked extra hours',
     missed: 'I missed a shift',
     noPay:
-      'PrePenny needs your pay details to work this out. They come with the pay calculator, which is still being built.',
+      'PrePenny needs your job details to work this out. Save your usual week with Save as a pay week in the Pay calculator, under More.',
     whichPay: 'Which pay',
     dayOvertime: 'Day of the overtime',
     dayMissed: 'Day of the shift',
@@ -710,9 +713,18 @@ export const strings = {
     'payday-not-estimate': 'That payday already has its real pay typed in, so it stays as it is.',
     'no-payday': "There's no payday in the plan that pays for work on that day.",
     'no-pay-week':
-      "PrePenny doesn't know your usual week for that payday yet, so it can't work this out.",
-    'no-pay-profile': 'PrePenny needs your pay details to work this out.',
-    'no-covered-to': 'PrePenny needs to know which days of work each payday pays for.',
+      "PrePenny doesn't know your usual week for that payday yet. Save one with Save as a pay week in the Pay calculator, under More.",
+    'no-pay-profile':
+      'PrePenny needs your job details to work this out. Save your usual week with Save as a pay week in the Pay calculator, under More.',
+    'no-covered-to':
+      'PrePenny needs to know which days of work each payday pays for. Add it in Your job, under More.',
+    'shifts-saved':
+      'Overtime or a missed shift you added for a payday still to come would move to another payday. Remove it, save this change, then add it again.',
+    'covered-to-not-for-frequency':
+      "That last day doesn't fit how often this job is paid. Choose it again.",
+    'bad-tax-code': 'Type the tax code as it is on your payslip, for example 1257L.',
+    'bad-year-so-far':
+      "The figures from your last payslip don't fit your next payday. Check the tax week you typed from that payslip.",
     'no-rate': 'Type the rate for these hours, for example 19.07.',
     'no-extras': 'That payday has no extras, such as a shift premium, to change.',
     'too-much-extras': "That's more than the extras on that payday. Type a smaller amount.",
@@ -864,12 +876,12 @@ export const strings = {
     keep: "Don't remove it",
     billRow: 'This is a pay-later card bill. To change later bills, change the budget.',
     setAsideRow:
-      'This is money set aside from pay. It moves with its pay, and is ticked on its own.',
+      'This is money set aside from pay. It moves with its pay, and you tick it as paid separately.',
     budgetRow: 'This is spending money from a budget. Change it on the Budgets screen, under More.',
     goToBudgets: 'Go to Budgets',
     changeOften: 'Change how often it repeats',
     changeOftenHint:
-      'From this payment on. The date above is the first one. If it ends on a date, it now ends after the same number of payments.',
+      'This changes it from this payment on, starting on the date above. If it was set to end on a date, it now ends after the same number of payments instead.',
     amountError: 'Type an amount, for example 25.',
     dateError: 'Choose a date.',
     nameError: 'Type a name, for example Rent.',
@@ -882,7 +894,7 @@ export const strings = {
     owedNow: 'Owed now',
     estimate: 'Estimate',
     count: (count: number) => (count === 1 ? '1 debt.' : `${count} debts.`),
-    countedAt: (name: string, rate: string) => `${name} counted at ${rate} per £1.`,
+    countedAt: (name: string, rate: string) => `${name} is counted at ${rate} to £1.`,
     eachDebt: 'Each debt',
     eachDebtIntro: "In the order they're paid off. Tap one to see its payments.",
     noDebts: 'No debts',
@@ -908,15 +920,15 @@ export const strings = {
     aboutAt: (pounds: string, rate: string) => `About ${pounds} at ${rate} per £1`,
     interestIncluded: (amount: string) =>
       `Includes ${amount} of interest added since your last update, an estimate.`,
-    interestNotIncluded: 'Interest not included',
+    interestNotIncluded: 'No interest added, because no rate is saved',
     paidOfStarted: (paid: string, started: string) => `${paid} paid of ${started}`,
-    card: 'Interest and minimum',
+    card: 'Interest and minimum payment',
     rateAYear: (rate: string) => `${rate}% a year`,
     noRate: 'No interest rate. Add one with Change its details.',
     zeroUntil: (date: string) => `0% until ${date}`,
     statementDay: (day: string) => `Statement on the ${day} of each month`,
     minimumRule: (percent: string, atLeast: string) =>
-      `Minimum: interest plus ${percent}% of the balance, at least ${atLeast}`,
+      `Minimum: interest plus ${percent}% of what you owe, at least ${atLeast}`,
     minimumTyped: (amount: string) => `Minimum: ${amount}, from your statement`,
     nextStatement: (date: string, interest: string) =>
       `Next statement, ${date}: about ${interest} of interest, an estimate.`,
@@ -1003,13 +1015,14 @@ export const strings = {
     taxCode: 'Tax code',
     taxCodeHint: 'As it is on your payslip, for example 1257L.',
     basis: 'How your tax is worked out',
-    cumulative: 'The usual way, cumulative',
-    weekOne: 'Week 1 or month 1, on an emergency code',
+    cumulative: 'The usual way, with all your pay so far this tax year',
+    weekOne: 'Each pay taxed on its own: week 1 or month 1, W1, M1 or X on a payslip',
     pension: 'I pay into a workplace pension',
     pensionPercent: 'Percentage that comes off',
-    pensionLower: (period: string) => `Worked on earnings from, each ${period}`,
-    pensionUpper: (period: string) => `Up to, each ${period}`,
-    pensionBandHint: 'Leave these empty if it comes off all your pay.',
+    pensionLower: (period: string) => `Pension starts on pay over, each ${period}`,
+    pensionUpper: (period: string) => `And stops at, each ${period}`,
+    pensionBandHint:
+      'Some pensions come off only part of your pay. Leave the next two boxes empty if it comes off all of it.',
     pensionWhen: 'When it comes off',
     beforeTax: 'Before tax',
     afterTax: 'After tax',
@@ -1023,6 +1036,8 @@ export const strings = {
     noLoan: 'None',
     plans: { 'plan-1': 'Plan 1', 'plan-2': 'Plan 2', 'plan-4': 'Plan 4', 'plan-5': 'Plan 5' },
     postgraduate: 'And a Postgraduate loan',
+    loanHint:
+      "Your payslip shows which plan, if any. A Postgraduate loan is for a master's or doctoral degree.",
     deductionName: "What it's for",
     deductionAmount: 'Amount',
     removeDeduction: 'Remove this deduction',
@@ -1032,9 +1047,12 @@ export const strings = {
       'For exact tax, type these from your last payslip. Leave them empty and the result is an estimate.',
     soFarWeek: 'The tax week on it',
     soFarMonth: 'The tax month on it',
-    soFarWeekHint: "It's on your payslip, often as Tax week or Period.",
-    grossSoFar: 'From your last payslip: gross for tax so far',
-    taxSoFar: 'From your last payslip: tax paid so far',
+    soFarWeekHint:
+      'The tax year starts on 6 April, and its weeks are numbered from then. Your payslip shows the number, often as Tax week or Period.',
+    soFarFiguresHint:
+      'Your payslip may call them Gross for tax TD and Tax TD, or Taxable pay to date and Tax to date.',
+    grossSoFar: 'Taxable pay so far this tax year',
+    taxSoFar: 'Tax paid so far this tax year',
     workOut: 'Work out take-home pay',
     resultHeading: 'Take-home pay',
     gross: (amount: string) => `Gross pay ${amount}`,
@@ -1078,7 +1096,7 @@ export const strings = {
     },
     refused: {
       'bad-year-so-far':
-        "The figures from your last payslip don't fit this payday. Check the tax week on it.",
+        "The figures from your last payslip don't fit this payday. Check the tax week you typed from that payslip.",
       'bad-student-loan': 'Choose one student loan plan, as on your payslip.',
       other: "That couldn't be worked out. Check the boxes and try again.",
     },
@@ -1095,12 +1113,29 @@ export const strings = {
     noPay: 'There are no paydays in your plan to add it to yet.',
     saveWeek: 'Save as a pay week',
     saveWeekIntro:
-      'Keep these pay lines as one of your usual weeks, so you can start from them again, and so I did overtime works out your pay from them.',
+      'Save these hours and rates as a usual week. You can start from it again here, and "I did overtime" uses it to work out your pay.',
     saveWeekName: 'Name this week',
     saveWeekDefault: 'Usual week',
     saveWeekNameError: 'Type a name, for example 3-shift week.',
     saveWeekSave: 'Save pay week',
     savedWeek: (name: string) => `${name} saved as a pay week.`,
+    /** Which paydays a saved week is for (D5, step 2h). */
+    saveWeekFor: 'Which paydays is it for?',
+    saveWeekEvery: 'Every payday',
+    saveWeekEveryHint: 'Every payday uses it from now on, in place of the weeks they use now.',
+    saveWeekOne: 'One week of the pattern',
+    saveWeekOneHint: 'Only the paydays on that week of your pay pattern use it.',
+    saveWeekOnlyEvery: "It's for every payday.",
+    saveWeekOneLater:
+      'Once every payday has a pay week, you can save one for a single week of your pay pattern.',
+    saveWeekWhich: 'Which week of the pattern?',
+    saveWeekStep: (step: number, of: number, date: string) =>
+      `Week ${step} of ${of}, next on ${date}`,
+    saveWeekStepNow: (name: string) => `Uses ${name} now. Saving replaces it.`,
+    saveWeekStepNone: 'Has no pay week yet.',
+    savedWeekEvery: (name: string) => `${name} saved as the pay week for every payday.`,
+    savedWeekStep: (name: string, step: number) =>
+      `${name} saved as the pay week for week ${step} of your pay pattern.`,
     startPlan: 'Start a free plan with this pay',
     startPlanHint: (amount: string) =>
       `Opens PrePenny's setup with ${amount} filled in as your pay, an estimate.`,
@@ -1129,6 +1164,91 @@ export const strings = {
     askPayroll: 'Ask your payroll team.',
   },
 
+  /** Your job, under More (step 2h, brief 4.15, D154): the details from the payslip. */
+  job: {
+    heading: 'Your job',
+    purpose:
+      'The details from your payslip that PrePenny uses to work out your pay when you do overtime or miss a shift.',
+    back: 'Back to More',
+    loading: 'Working out your job details.',
+    noJobTitle: 'No job details yet',
+    noJob:
+      'Setup saves them when you say you work extra hours or miss shifts. Or work out your pay in the Pay calculator and tap Save as a pay week.',
+    toCalculator: 'Go to the Pay calculator',
+    forPay: (names: string) => `In your plan as ${names}.`,
+    often: 'Paid',
+    taxCode: 'Tax code',
+    taxCodeLine: (code: string, weekOne: boolean) =>
+      weekOne ? `${code}, each payday taxed on its own` : `${code}, worked out the usual way`,
+    pension: 'Workplace pension',
+    pensionLine: (percent: string, band: string | null, beforeTax: boolean) =>
+      `${percent}% of ${band === null ? 'all your pay' : band}, ${beforeTax ? 'before tax' : 'after tax'}`,
+    pensionBand: (from: string | null, to: string | null, period: string) =>
+      from !== null && to !== null
+        ? `your pay from ${from} to ${to} a ${period}`
+        : from !== null
+          ? `your pay over ${from} a ${period}`
+          : `your pay up to ${to ?? ''} a ${period}`,
+    studentLoan: 'Student loan',
+    loanAndPostgraduate: (plan: string) => `${plan} and a Postgraduate loan`,
+    postgraduateOnly: 'A Postgraduate loan',
+    deductions: 'Other deductions',
+    deduction: (name: string, amount: string) => `${name} ${amount}`,
+    none: 'None',
+    soFar: 'From your last payslip',
+    soFarLine: (
+      table: 'week' | 'month',
+      period: number,
+      year: string,
+      gross: string,
+      tax: string,
+    ) => `Tax ${table} ${period} of ${year}. Taxable pay so far ${gross}, tax paid so far ${tax}`,
+    soFarNone: 'Not typed in, so the tax on overtime is an estimate',
+    overtimeRate: 'Overtime rate',
+    overtimeRateLine: (rate: string) => `${rate} an hour`,
+    notSet: 'Not set',
+    covered: 'Which days of work each payday pays for',
+    coveredLine: (payday: string, upTo: string) => `${payday} pays for work up to ${upTo}`,
+    weeks: 'Usual weeks',
+    weeksIntro: 'Overtime and missed shifts are worked out from these.',
+    weekEvery: 'Every payday',
+    weekSteps: (steps: string, many: boolean, of: number) =>
+      `${many ? 'Weeks' : 'Week'} ${steps} of ${of} in your pay pattern`,
+    weekKept: 'Kept to start from in the Pay calculator',
+    weekUntil: (date: string) => `Used by your paydays up to ${date}, before a change you made`,
+    noTaxYear:
+      "PrePenny doesn't have the tax figures for your next payday yet, so these details can't be checked. They're added before each new tax year.",
+    weeksNone: 'No usual week is saved yet. Save one from the Pay calculator.',
+    shiftsAhead: (count: number) =>
+      count === 1
+        ? 'Overtime or a missed shift is saved for a payday still to come. Changing these details works out that pay again.'
+        : `${count} changes for overtime or missed shifts are saved for paydays still to come. Changing these details works out that pay again.`,
+    change: 'Change these details',
+    /** The button's name for screen readers, so two jobs' buttons sound different. */
+    changeFor: (name: string) =>
+      name === '' ? 'Change these details' : `Change these details for ${name}`,
+    sheetTitle: 'Your job details',
+    overtimeHeading: 'Overtime and missed shifts',
+    sheetIntro: "Change anything that's different on your latest payslip.",
+    soFarIntro:
+      "For exact tax on overtime, type these from your last payslip. Leave them empty and it's an estimate.",
+    reworkHint:
+      'Overtime and missed shifts saved for paydays still to come are worked out again with these details.',
+    overtimeHint: 'From your payslip, for example 19.07. Leave it empty if you never do overtime.',
+    coveredHint: 'The last day of work this pay covers, from your payslip or rota.',
+    save: 'Save these details',
+    nothingChanged: 'Change something first, then save.',
+    saved: 'Your job details changed.',
+    savedPayday: (date: string, amount: string) => `Your pay on ${date} is now ${amount}.`,
+    savedMore: (count: number) =>
+      count === 1 ? 'And 1 more payday.' : `And ${count} more paydays.`,
+    mistakes: {
+      rateError: 'Type the rate, for example 19.07, or leave it empty.',
+      coveredToError: 'Choose the last day of work this payday pays for.',
+      coveredToTooFar: 'Choose a day on or before the payday, within the last 8 weeks.',
+    },
+  },
+
   /** What if (brief 4.10, D135, step 2g): practice changes beside the real plan. */
   whatIf: {
     heading: 'What if',
@@ -1144,6 +1264,12 @@ export const strings = {
     keepHint: 'They go into your real plan as one change, and one Undo takes them all back.',
     throwAway: 'Throw them away',
     throwAwayHint: 'Your real plan stays exactly as it was.',
+    /** Asked before throwing them away (step 2h). */
+    throwAwayCheck: (count: number) =>
+      `Throw away ${count === 1 ? '1 practice change' : `${count} practice changes`}? Your real plan stays exactly as it was.`,
+    keepPractising: 'Keep practising',
+    /** Under the accounts side by side, when some aren't shown (step 2h). */
+    otherAccounts: "Your other accounts don't change.",
     kept: (count: number) =>
       count === 1
         ? 'Your practice change is now in your plan.'
@@ -1187,13 +1313,13 @@ export const strings = {
     paysOnError: 'Type a day, a number from 1 to 31.',
     minimum: 'Paying the minimum each month',
     fixedEach: (amount: string) => `Paying ${amount} each month`,
-    full: 'Paying the full balance',
+    full: 'Paying all you owe each month',
     result: (payments: number, interest: string) =>
       payments === 1
         ? `1 payment, ${interest} interest`
         : `${payments} payments, ${interest} interest`,
     never: 'It never clears: the interest is more than the payment.',
-    noMinimum: 'Not known: later minimums need a rule, such as interest plus 1% of the balance.',
+    noMinimum: 'Not known: later minimums need a rule, such as interest plus 1% of what you owe.',
     estimates:
       "Estimates from the card's interest rate. PrePenny shows the numbers, not which to choose.",
     working: 'Working it out.',
@@ -1204,7 +1330,7 @@ export const strings = {
     addTitle: 'Add a debt',
     addIntro: "Add something you're paying off, to see the date it's paid off.",
     changeTitle: 'Change this debt',
-    changeIntro: "Change this debt's details. What's left changes with Update from statement.",
+    changeIntro: "Change this debt's details. To change what you owe, use Update from statement.",
     currencyFixed: (currency: string) =>
       `It's in ${currency}. That stays as it is, so what's owed doesn't change.`,
     zeroUntil: '0% until, if it has an offer',
@@ -1214,7 +1340,7 @@ export const strings = {
     minimumTyped: 'As on my statement',
     minimumRule: 'A rule, such as interest plus 1%',
     minimumAmount: 'Minimum from the statement',
-    minimumPercent: 'Interest plus this percentage of the balance',
+    minimumPercent: 'Interest plus this percentage of what you owe',
     minimumPercentHint: 'Most cards use 1.',
     minimumAtLeast: 'At least',
     minimumError: 'Type an amount, for example 25.',
@@ -1231,13 +1357,13 @@ export const strings = {
   statement: {
     title: 'Update from statement',
     intro:
-      "Type what the statement shows now, so the date it's paid off starts from the right amount.",
+      'Type what your latest statement says you owe, so the date it is paid off is worked out from the right amount.',
     amount: 'What the statement shows now',
     amountError: 'Type what the statement shows, for example 420.99.',
     tickHeading: 'Tick any payment to it that has already gone',
     tickIntro: 'The statement shows these already, so they come off the debt once.',
     tickLabel: (date: string, name: string, amount: string) => `${date}, ${name}, ${amount}`,
-    save: 'Update',
+    save: "Update what's owed",
     updated: (name: string) => `${name} updated from its statement.`,
     updatedTicked: (name: string, count: number) =>
       count === 1
@@ -1256,7 +1382,7 @@ export const strings = {
   /** Closing a debt, a goal or an account. */
   closing: {
     debtTitle: 'Close this debt',
-    debtIntro: 'Closing it takes it out of Owed now.',
+    debtIntro: 'Closing it stops it counting in Owed now, on Debts.',
     /** Closing a debt can also remove its payments still to come (step 2g). */
     alsoRemove: (count: number, continues: boolean) => {
       if (continues) return 'Also remove every payment planned to it?';
@@ -1290,7 +1416,7 @@ export const strings = {
     spread: (amount: string) => `Spread across the days: ${amount} a day.`,
     spreadNoDay: 'Spread across the days.',
     payLater: (day: string) => `On a pay-later card, with the bill on the ${day} of each month.`,
-    rollOverOn: "Roll-over on: what's left moves to the next week or month.",
+    rollOverOn: "What's left moves to the next week or month.",
     thisWeek: (end: string) => `This week, to ${end}`,
     thisMonth: (end: string) => `This month, to ${end}`,
     startsOn: (date: string) => `Starts ${date}`,
@@ -1323,7 +1449,7 @@ export const strings = {
     statementDayError: 'Type a day, a number from 1 to 31, or leave it empty.',
     starts: 'Starts',
     startsHint: 'Its first week or month is the one with this day in it.',
-    rollOver: "Roll over what's left to the next week or month",
+    rollOver: "Carry what's left over to the next week or month",
     save: 'Add budget',
     saveChanges: 'Save',
     nothingChanged: 'Change something first, then save.',
@@ -1405,7 +1531,7 @@ export const strings = {
     addTitle: 'Add an account',
     addIntro: 'Add an account with what its bank shows today, so PrePenny can plan for it.',
     changeTitle: 'Change this account',
-    changeIntro: 'Change its name, overdraft limit or the amount it warns you under.',
+    changeIntro: "Change its name, its overdraft limit or when it warns you it's getting low.",
     save: 'Add account',
     saveChanges: 'Save',
     nothingChanged: 'Change something first, then save.',
@@ -1447,7 +1573,8 @@ export const strings = {
 
   more: {
     heading: 'More',
-    purpose: 'Your accounts, budgets and savings goals, and settings for PrePenny on this phone.',
+    purpose:
+      'Your accounts, budgets, savings goals and pay, and settings for PrePenny on this phone.',
     stillBeingBuilt: 'Help and your account are still being built.',
     yourPlan: 'Your plan',
     accounts: 'Accounts',
@@ -1459,7 +1586,9 @@ export const strings = {
     whatIf: 'What if',
     whatIfLine: 'Try changes in practice before you make them',
     payCalculator: 'Pay calculator',
-    payCalculatorLine: 'Take-home pay from your hours, and Check my payslip',
+    payCalculatorLine: 'Work out take-home pay from your hours, or check a payslip',
+    job: 'Your job',
+    jobLine: 'Tax code, pension and overtime rate, from your payslip',
     colours: 'Colours',
     coloursHint: 'Dark colours are easier on the eyes at night.',
     matchPhone: 'Match this phone',
@@ -1491,6 +1620,8 @@ export const strings = {
 
   notFound: {
     heading: "This page isn't here",
+    /** What it's for, in one plain sentence (D213, step 2h). */
+    purpose: 'The address may be mistyped, or the page has moved. Your plan is safe on this phone.',
     goHome: 'Go to Home',
   },
 } as const;

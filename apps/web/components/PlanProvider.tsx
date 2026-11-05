@@ -42,6 +42,7 @@ import {
   examplePlan,
   fingerprint,
 } from '../data/example-plan.ts';
+import { forgetPractice } from '../data/practice.ts';
 import type { HomeView } from '../lib/home.ts';
 import { setupDone } from '../lib/setup-progress.ts';
 import { testSetting } from '../lib/test-setting.ts';
@@ -208,6 +209,8 @@ async function planOnPhone(): Promise<OnPhone> {
     if (plan === undefined || exampleNeedsReplacing(plan, example.version)) {
       plan = freshExample();
       await savePlan(db, plan, example.records);
+      // Practice changes made on the old example aren't the new one's (step 2h).
+      await forgetPractice(plan.id);
     }
     if ((await db.device.get(ASKED_TO_KEEP)) === undefined) {
       await db.device.put({ key: ASKED_TO_KEEP, value: await askToKeepData() });
@@ -394,6 +397,8 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       inTurn(async (): Promise<ChangeOutcome> => {
         const plan = freshExample();
         const { records } = theExample();
+        // Practice changes made on the old example aren't the new one's (step 2h).
+        await forgetPractice(plan.id);
         try {
           const db = openDb();
           try {

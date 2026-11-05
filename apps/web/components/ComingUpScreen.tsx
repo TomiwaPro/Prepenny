@@ -18,7 +18,15 @@
 
 import { PAYMENT_TYPES, type PaymentType } from '@prepenny/engine';
 import Link from 'next/link';
-import { useEffect, useId, useRef, useState } from 'react';
+import {
+  type ComponentPropsWithoutRef,
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react';
 import { formatDay, formatMonth, weekdayShort } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
 import { type Filters, NO_FILTERS, rowMatches, type Show } from '../lib/plan-filters.ts';
@@ -152,6 +160,19 @@ function HowToRead({
   );
 }
 
+/**
+ * What if's practice list sits under its own "Payments, with your practice
+ * changes" heading, so its headings go one level down: someone moving by
+ * heading can tell the practice list from the real plan (step 2h).
+ */
+const InPractice = createContext(false);
+
+function Heading({ level, ...rest }: { readonly level: 2 | 3 } & ComponentPropsWithoutRef<'h2'>) {
+  const deeper = useContext(InPractice);
+  const Tag = deeper ? (level === 2 ? 'h3' : 'h4') : level === 2 ? 'h2' : 'h3';
+  return <Tag {...rest} />;
+}
+
 function AccountCard({
   account,
   today,
@@ -167,7 +188,9 @@ function AccountCard({
   return (
     <section className={styles.account} data-testid="plan-account">
       <div className={styles.accountWords}>
-        <h2 className={styles.accountName}>{account.name}</h2>
+        <Heading level={2} className={styles.accountName}>
+          {account.name}
+        </Heading>
         <p className={`${styles.second} num`}>
           {account.checkedOn === today
             ? t.checkedToday(balance)
@@ -322,9 +345,15 @@ function FirstPeriod({
       data-start={period.start}
       data-open="true"
     >
-      <h2 id={headingId} className={styles.periodHeading} tabIndex={-1} data-period-heading>
+      <Heading
+        level={2}
+        id={headingId}
+        className={styles.periodHeading}
+        tabIndex={-1}
+        data-period-heading
+      >
         {period.byMonth ? t.thisMonth(end) : t.thisPay(end)}
-      </h2>
+      </Heading>
       <div className={styles.card}>
         <PeriodRows period={period} today={today} filters={filters} onOpen={onOpen} />
       </div>
@@ -368,7 +397,7 @@ function LaterPeriod({
       data-start={period.start}
       data-open={open ? 'true' : 'false'}
     >
-      <h3 className={styles.laterHeading}>
+      <Heading level={3} className={styles.laterHeading}>
         <button
           id={buttonId}
           type="button"
@@ -392,7 +421,7 @@ function LaterPeriod({
           </span>
           <Icon name="chevron" className={open ? styles.chevronOpen : styles.chevron} />
         </button>
-      </h3>
+      </Heading>
       <section id={regionId} className={styles.laterRows} aria-labelledby={buttonId} hidden={!open}>
         {open ? (
           <PeriodRows period={period} today={today} filters={filters} onOpen={onOpen} />
@@ -681,7 +710,7 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
   const [first, ...later] = account?.periods ?? [];
 
   return (
-    <>
+    <InPractice.Provider value={practice}>
       {practice ? null : (
         <header className={styles.header}>
           <div className={styles.titleLine}>
@@ -771,7 +800,9 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
             {view.mainPayEnded ? <p className={styles.card}>{strings.home.mainPayEnded}</p> : null}
             {account.notTickedYet.length > 0 ? (
               <section className={styles.card} data-testid="not-ticked-yet">
-                <h2 className={styles.sectionHeading}>{t.notTickedYet}</h2>
+                <Heading level={2} className={styles.sectionHeading}>
+                  {t.notTickedYet}
+                </Heading>
                 <p className={styles.second}>{t.notTickedYetIntro}</p>
                 <ul className={styles.rows}>
                   {account.notTickedYet.map((row) => (
@@ -785,9 +816,9 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
 
             {later.length > 0 ? (
               <section className={styles.period} aria-labelledby={laterId}>
-                <h2 id={laterId} className={styles.periodHeading}>
+                <Heading level={2} id={laterId} className={styles.periodHeading}>
                   {view.grouping === 'months' ? t.nextMonths : t.nextPaydays}
-                </h2>
+                </Heading>
                 <p className={styles.tapOne}>{t.tapOne}</p>
                 <ul className={styles.laterCard}>
                   {later.map((period) => (
@@ -857,6 +888,6 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
         onClose={() => setSwitchOpen(false)}
       />
       <EditSheet row={sheet.editing} today={today} onClose={sheet.close} />
-    </>
+    </InPractice.Provider>
   );
 }

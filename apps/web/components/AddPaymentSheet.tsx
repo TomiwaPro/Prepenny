@@ -267,6 +267,7 @@ function PaymentFields({
             options={accountOptions}
             onChange={(value) => set('toAccountId', value)}
             describedBy={errors.toAccount === undefined ? undefined : `${id}-to-error`}
+            invalid={errors.toAccount !== undefined}
           />
           {errors.toAccount === undefined ? null : (
             <p id={`${id}-to-error`} className={styles.error}>

@@ -62,9 +62,13 @@ export function StartAgain() {
       <p className={styles.done} role="status">
         {done ? t.startedAgain : null}
       </p>
-      <Sheet open={asking} title={t.startAgain} onClose={() => setAsking(false)}>
+      <Sheet
+        open={asking}
+        title={t.startAgain}
+        intro={t.startAgainCheck}
+        onClose={() => setAsking(false)}
+      >
         <div className={styles.ask}>
-          <p>{t.startAgainCheck}</p>
           <button
             type="button"
             className={styles.main}

@@ -8,16 +8,23 @@
 // with one Undo; and "Save as a pay week", which keeps the lines as one of
 // the person's usual weeks, so "I did overtime" can work from them (D5).
 
-import { type PlanRecords, takeHomeAsEstimate } from '@prepenny/engine';
+import { type EditCommand, type PlanRecords, takeHomeAsEstimate } from '@prepenny/engine';
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { formatDay } from '../lib/dates.ts';
 import { newId } from '../lib/ids.ts';
+import { paydayChangeWords } from '../lib/job-words.ts';
 import { formatMoney } from '../lib/money.ts';
-import { calculatorFromPlan, saveWeekCommands } from '../lib/pay-calculator.ts';
+import {
+  calculatorFromPlan,
+  canChooseOneWeek,
+  saveWeekCommands,
+  type WeekFor,
+} from '../lib/pay-calculator.ts';
 import type { PayView } from '../lib/pay-view.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import { askInBackground } from '../worker/client.ts';
+import { ChoiceList } from './ChoiceList.tsx';
 import { describedBy, Field, Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
 import { focusUndoBar } from './focusUndo.ts';
@@ -142,6 +149,50 @@ function SaveWeekSheet({
   );
 }
 
+/** "Week 2 of 4, next on Fri 6 Nov" for each week of the pattern, with the pay week it uses now. */
+function stepChoices(view: PayView) {
+  const main = view.main;
+  if (main === null) return [];
+  return Array.from({ length: main.steps }, (_, index) => {
+    const step = index + 1;
+    const next = view.paydays.find((one) => one.step === step) ?? null;
+    const weekId = main.weeks?.[index] ?? null;
+    const week = view.weeks.find((one) => one.id === weekId) ?? null;
+    return {
+      value: String(step),
+      label: t.saveWeekStep(
+        step,
+        main.steps,
+        next === null ? '' : formatDay(next.date, view.today),
+      ),
+      hint: week === null ? t.saveWeekStepNone : t.saveWeekStepNow(week.name),
+    };
+  });
+}
+
+/** The undo bar's words, with any payday whose pay changes because its overtime is worked out again (D154). */
+async function savedWords(
+  base: string,
+  view: PayView,
+  records: PlanRecords,
+  commands: readonly EditCommand[],
+): Promise<string> {
+  const profileId = view.main?.payProfileId ?? null;
+  if (profileId === null) return base;
+  try {
+    const preview = await askInBackground({
+      kind: 'job-preview',
+      records,
+      today: view.today,
+      profileId,
+      commands,
+    });
+    return preview.ok ? `${base}${paydayChangeWords(preview.changes, view.today)}` : base;
+  } catch {
+    return base;
+  }
+}
+
 function SaveWeekForm({
   worked,
   view,
@@ -154,10 +205,15 @@ function SaveWeekForm({
   readonly makeChanges: ReturnType<typeof usePlanActions>['makeChanges'];
 }) {
   const id = useId();
+  const { loaded } = usePlanActions();
   const [name, setName] = useState<string>(t.saveWeekDefault);
+  const [weekFor, setWeekFor] = useState<'every' | 'one'>('every');
+  const [step, setStep] = useState('1');
   const [error, setError] = useState<string | undefined>(undefined);
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const main = view.main;
+  const oneWeek = main !== null && canChooseOneWeek(main);
   return (
     <form
       className={formStyles.form}
@@ -165,7 +221,7 @@ function SaveWeekForm({
       aria-label={t.saveWeek}
       onSubmit={async (event) => {
         event.preventDefault();
-        if (busy || view.main === null) return;
+        if (busy || main === null || loaded === null) return;
         const typed = name.trim();
         if (typed === '') {
           setError(t.saveWeekNameError);
@@ -174,11 +230,21 @@ function SaveWeekForm({
         }
         setError(undefined);
         setBusy(true);
-        const message = t.savedWeek(typed);
-        const outcome = await makeChanges(
-          saveWeekCommands(worked.input, view.main, typed, { weekId: newId(), profileId: newId() }),
-          message,
+        const chosen: WeekFor = oneWeek && weekFor === 'one' ? Number(step) : 'every';
+        const commands = saveWeekCommands(
+          worked.input,
+          main,
+          typed,
+          { weekId: newId(), profileId: newId() },
+          chosen,
         );
+        const message = await savedWords(
+          chosen === 'every' ? t.savedWeekEvery(typed) : t.savedWeekStep(typed, chosen),
+          view,
+          loaded.records,
+          commands,
+        );
+        const outcome = await makeChanges(commands, message);
         setBusy(false);
         if (!outcome.ok) {
           setProblem(refusalMessage(outcome.code));
@@ -200,6 +266,37 @@ function SaveWeekForm({
           onChange={(event) => setName(event.target.value)}
         />
       </Field>
+      {oneWeek ? (
+        <>
+          <ChoiceList<'every' | 'one'>
+            legend={t.saveWeekFor}
+            name={`${id}-for`}
+            value={weekFor}
+            options={[
+              { value: 'every', label: t.saveWeekEvery, hint: t.saveWeekEveryHint },
+              { value: 'one', label: t.saveWeekOne, hint: t.saveWeekOneHint },
+            ]}
+            onChange={setWeekFor}
+            hintsUnder
+          />
+          {weekFor === 'one' ? (
+            <ChoiceList<string>
+              legend={t.saveWeekWhich}
+              name={`${id}-step`}
+              value={step}
+              options={stepChoices(view)}
+              onChange={setStep}
+              hintsUnder
+            />
+          ) : null}
+        </>
+      ) : (
+        <p className={formStyles.hint} data-testid="save-week-every">
+          {main !== null && main.steps > 1
+            ? `${t.saveWeekOnlyEvery} ${t.saveWeekOneLater}`
+            : t.saveWeekOnlyEvery}
+        </p>
+      )}
       <button type="submit" className={formStyles.main} aria-disabled={busy}>
         {t.saveWeekSave}
       </button>
@@ -256,9 +353,16 @@ export function PayScreen() {
         back={{ label: t.back, href: '/app/more/' }}
       />
       {initial === null || view === null ? (
-        <p className={screenStyles.card} role={failed ? 'alert' : undefined}>
-          {failed ? strings.errors.plan : t.loading}
-        </p>
+        failed ? (
+          // A new line, so screen readers read it out (WCAG 4.1.3).
+          <p key="failed" className={screenStyles.card} role="alert">
+            {strings.errors.plan}
+          </p>
+        ) : (
+          <p key="loading" className={screenStyles.card}>
+            {t.loading}
+          </p>
+        )
       ) : (
         <PayCalculator
           initial={initial}
