@@ -46,6 +46,36 @@ jobs:
       - name: Tests
         run: pnpm test
 
+  database:
+    # The database and its privacy rules (step 3a, D297): every migration in
+    # supabase/migrations applied to a fresh local Supabase on GitHub's
+    # machine, then the pgTAP tests in supabase/tests. Nothing here reaches
+    # the real project; the Database workflow does that, from main only.
+    name: Database and its privacy rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+
+      - name: Set up the Supabase command line (2.122.0, ARCHITECTURE.md 1.2)
+        run: npm install --global supabase@2.122.0
+
+      - name: Start a local database with every migration and the test helpers
+        # Only the database and sign-in are needed for the tests.
+        run: supabase start --exclude kong,postgrest,postgres-meta,imgproxy,supavisor
+
+      - name: Database tests (pgTAP)
+        run: supabase test db
+
+      - name: Check the database's own functions for mistakes
+        run: supabase db lint --level warning --fail-on warning
+
   end-to-end:
     # In three parts side by side, so the whole set, with a journey for each
     # of the six people (step 2h), stays well inside the time limit.
