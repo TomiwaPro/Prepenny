@@ -245,10 +245,16 @@ const SHEETS: readonly {
         .getByRole('button', { name: /^Spending money until payday/ })
         .click(),
   },
-  ...(['View', 'Switch account'] as const).map((name) => ({
+  // "Change view" opens the sheet titled View (D277).
+  ...(
+    [
+      ['Change view', 'View'],
+      ['Switch account', 'Switch account'],
+    ] as const
+  ).map(([name, title]) => ({
     path: '/app/coming-up/',
     heading: 'Coming up',
-    title: name,
+    title,
     open: (page: Page) => page.getByRole('button', { name, exact: true }).click(),
   })),
   {
