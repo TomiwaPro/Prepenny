@@ -251,9 +251,13 @@ create table public.payment_changes (
   check (series_id is null or payment_number is not null)
 );
 
+-- One change per payment: a series' payment, or a pay-later bill. A change can
+-- only be on a payment in its own plan, so nobody can take a payment's place
+-- from another plan.
 create unique index payment_changes_one_per_payment
-  on public.payment_changes (coalesce(series_id, budget_id), original_date)
-  where not deleted;
+  on public.payment_changes (series_id, original_date) where series_id is not null and not deleted;
+create unique index payment_changes_one_per_bill
+  on public.payment_changes (budget_id, original_date) where budget_id is not null and not deleted;
 
 -- A paid tick, its own record (D48). Unticking marks it deleted.
 create table public.ticks (
@@ -277,9 +281,11 @@ create table public.ticks (
   check (series_id is null or payment_number is not null)
 );
 
+-- One tick per payment, and one for its money set aside (D116).
 create unique index ticks_one_per_payment
-  on public.ticks (coalesce(series_id, budget_id), original_date, set_aside)
-  where not deleted;
+  on public.ticks (series_id, original_date, set_aside) where series_id is not null and not deleted;
+create unique index ticks_one_per_bill
+  on public.ticks (budget_id, original_date, set_aside) where budget_id is not null and not deleted;
 
 -- "I spent" (brief 4.5).
 create table public.spends (

@@ -34,6 +34,14 @@ begin
   if app.from_a_person() and not exists (select 1 from app.my_plans() p where p = new.plan_id) then
     perform app.refuse('not-found', '42501');
   end if;
+  -- The edit that saved it is in the plan, and everyone who can read this
+  -- record can read the edit too, so a shared record never names a private
+  -- edit (D291). One that doesn't exist is refused the same way.
+  if new.edit_id is not null and not exists (select 1 from public.edits e
+      where e.id = new.edit_id and e.plan_id = new.plan_id
+        and (e.private_to is null or e.private_to is not distinct from new.private_to)) then
+    perform app.refuse('not-found', '42501');
+  end if;
   if tg_op = 'INSERT' then
     new.created_at := now();
     new.created_by := auth.uid();
@@ -48,7 +56,7 @@ begin
   end if;
   new.changed_at := now();
   new.changed_by := auth.uid();
-  new.seq := app.next_seq(new.plan_id);
+  new.seq := app.next_seq(new.plan_id, new.private_to);
   return new;
 end;
 $$;
@@ -58,12 +66,19 @@ $$;
 
 -- A privacy a person chooses: shared, or private to themselves. Only their
 -- own, and only for something that's theirs (D16, D65). Sharing a record
--- that was private comes with shared plans in step 3f (D290).
-create function app.check_chosen_privacy(new_private uuid, old_private uuid, op text, belongs uuid)
-returns void language plpgsql set search_path = '' as $$
+-- that was private comes with shared plans in step 3f (D290). Who it belongs
+-- to ("From Jess") is set by that person only: nobody can say an account is
+-- someone else's.
+create function app.check_chosen_privacy(
+  new_private uuid, old_private uuid, op text, belongs uuid, old_belongs uuid
+) returns void language plpgsql set search_path = '' as $$
 begin
   if op = 'UPDATE' and new_private is distinct from old_private then
     perform app.refuse('sharing-comes-later');
+  end if;
+  if app.from_a_person() and belongs is not null and belongs <> auth.uid()
+    and (op = 'INSERT' or belongs is distinct from old_belongs) then
+    perform app.refuse('not-found', '42501');
   end if;
   if op = 'INSERT' and new_private is not null and app.from_a_person()
     and new_private <> auth.uid() then
@@ -89,17 +104,17 @@ begin
 end;
 $$;
 
--- The privacy of an account the person can see. `seen` is false when they
--- can't, exactly as when it doesn't exist.
-create function app.account_privacy(account uuid, out seen boolean, out private uuid)
+-- The privacy of an account in this plan that the person can see. `seen` is
+-- false when they can't, exactly as when it doesn't exist.
+create function app.account_privacy(account uuid, plan uuid, out seen boolean, out private uuid)
 language sql stable set search_path = '' as $$
   select coalesce(bool_or(true), false), (array_agg(a.private_to))[1]
-  from public.accounts a where a.id = account
+  from public.accounts a where a.id = account and a.plan_id = plan
 $$;
 
 grant execute on function
-  app.check_chosen_privacy(uuid, uuid, text, uuid), app.check_link(uuid, boolean, uuid),
-  app.account_privacy(uuid)
+  app.check_chosen_privacy(uuid, uuid, text, uuid, uuid), app.check_link(uuid, boolean, uuid),
+  app.account_privacy(uuid, uuid)
   to authenticated;
 
 -- Accounts, debts and pay profiles: shared, or private to their person.
@@ -107,7 +122,7 @@ create function app.check_owned_record() returns trigger
 language plpgsql set search_path = '' as $$
 begin
   perform app.check_chosen_privacy(new.private_to, case when tg_op = 'UPDATE' then old.private_to end,
-    tg_op, new.belongs_to);
+    tg_op, new.belongs_to, case when tg_op = 'UPDATE' then old.belongs_to end);
   return new;
 end;
 $$;
@@ -119,7 +134,7 @@ language plpgsql set search_path = '' as $$
 declare
   account record;
 begin
-  account := app.account_privacy(new.account_id);
+  account := app.account_privacy(new.account_id, new.plan_id);
   if account.seen is not true then
     perform app.refuse('not-found', '42501');
   end if;
@@ -130,7 +145,7 @@ begin
     perform app.refuse('sharing-comes-later');
   end if;
   perform app.check_chosen_privacy(new.private_to, case when tg_op = 'UPDATE' then old.private_to end,
-    tg_op, new.belongs_to);
+    tg_op, new.belongs_to, case when tg_op = 'UPDATE' then old.belongs_to end);
   return new;
 end;
 $$;
@@ -144,7 +159,7 @@ begin
   if tg_op = 'UPDATE' and new.account_id <> old.account_id then
     perform app.refuse('fixed-field');
   end if;
-  account := app.account_privacy(new.account_id);
+  account := app.account_privacy(new.account_id, new.plan_id);
   if account.seen is not true then
     perform app.refuse('not-found', '42501');
   end if;
@@ -153,6 +168,34 @@ begin
 end;
 $$;
 
+-- Whether a series fits the family it names (D49, D89): null when it does,
+-- or the refusal's code. It looks at every series of the family in the plan,
+-- seen or not, because a series slipped into someone's private family, or
+-- into "From Jess", would change their payments. It says only whether the
+-- series fits, never anything about the others.
+create function app.family_problem(
+  plan uuid, family uuid, self uuid, account uuid, private uuid, locked uuid, parent uuid
+) returns text
+language sql stable security definer set search_path = '' as $$
+  select case
+    when not exists (select 1 from public.series s
+        where s.plan_id = plan and s.family_id = family and s.id <> self)
+      then case when family = self and parent is null then null else 'family-mixed' end
+    when exists (select 1 from public.series s
+        where s.plan_id = plan and s.family_id = family and s.id <> self
+          and (s.account_id <> account or s.private_to is distinct from private
+            or s.locked_to is distinct from locked))
+      then 'family-mixed'
+    when parent is null and family <> self
+      then 'family-mixed'
+    when parent is not null and not exists (select 1 from public.series s
+        where s.plan_id = plan and s.family_id = family and s.id = parent)
+      then 'family-mixed'
+  end
+$$;
+
+grant execute on function app.family_problem(uuid, uuid, uuid, uuid, uuid, uuid, uuid) to authenticated;
+
 -- A series: its account's privacy, and every link checked (D16, D94, D291).
 create function app.check_series() returns trigger
 language plpgsql set search_path = '' as $$
@@ -160,15 +203,17 @@ declare
   account record;
   other record;
   week uuid;
+  problem text;
 begin
   if tg_op = 'UPDATE' and (new.account_id <> old.account_id
     or new.to_account_id is distinct from old.to_account_id
     or new.family_id <> old.family_id
+    or new.split_from is distinct from old.split_from
     or new.locked_to is distinct from old.locked_to) then
     perform app.refuse('fixed-field');
   end if;
 
-  account := app.account_privacy(new.account_id);
+  account := app.account_privacy(new.account_id, new.plan_id);
   if account.seen is not true then
     perform app.refuse('not-found', '42501');
   end if;
@@ -178,7 +223,7 @@ begin
   -- level of privacy. Between a private account and a shared one it's two
   -- linked halves instead (D16).
   if new.to_account_id is not null then
-    other := app.account_privacy(new.to_account_id);
+    other := app.account_privacy(new.to_account_id, new.plan_id);
     if other.seen is not true then
       perform app.refuse('not-found', '42501');
     end if;
@@ -187,7 +232,7 @@ begin
     end if;
   end if;
   if new.set_aside_account_id is not null then
-    other := app.account_privacy(new.set_aside_account_id);
+    other := app.account_privacy(new.set_aside_account_id, new.plan_id);
     if other.seen is not true then
       perform app.refuse('not-found', '42501');
     end if;
@@ -197,30 +242,33 @@ begin
   end if;
 
   if new.debt_id is not null then
-    select true as seen, d.private_to as private into other from public.debts d where d.id = new.debt_id;
+    select true as seen, d.private_to as private into other from public.debts d where d.id = new.debt_id and d.plan_id = new.plan_id;
     perform app.check_link(new.private_to, coalesce(other.seen, false), other.private);
   end if;
   if new.goal_id is not null then
     other := null;
-    select true as seen, g.private_to as private into other from public.goals g where g.id = new.goal_id;
+    select true as seen, g.private_to as private into other from public.goals g where g.id = new.goal_id and g.plan_id = new.plan_id;
     perform app.check_link(new.private_to, coalesce(other.seen, false), other.private);
   end if;
   if new.pay_profile_id is not null then
     other := null;
     select true as seen, p.private_to as private into other
-      from public.pay_profiles p where p.id = new.pay_profile_id;
+      from public.pay_profiles p where p.id = new.pay_profile_id and p.plan_id = new.plan_id;
     perform app.check_link(new.private_to, coalesce(other.seen, false), other.private);
   end if;
   foreach week in array coalesce(new.cycle_pay_weeks, '{}') loop
     other := null;
-    select true as seen, w.private_to as private into other from public.pay_weeks w where w.id = week;
+    select true as seen, w.private_to as private into other from public.pay_weeks w where w.id = week and w.plan_id = new.plan_id;
     perform app.check_link(new.private_to, coalesce(other.seen, false), other.private);
   end loop;
 
-  -- Every series in a family is on one account, so shares one privacy (D49).
-  if exists (select 1 from public.series s where s.family_id = new.family_id and s.id <> new.id
-    and s.private_to is distinct from new.private_to) then
-    perform app.refuse('family-mixed');
+  -- A family is a series and the series split from it (D49): on one account,
+  -- with one privacy and one lock. A series starts a family of its own, or
+  -- joins one that's already in the plan, after the series it was split from.
+  problem := app.family_problem(new.plan_id, new.family_id, new.id, new.account_id,
+    new.private_to, new.locked_to, new.split_from);
+  if problem is not null then
+    perform app.refuse(problem);
   end if;
 
   -- The shared half of a private transfer, "From Jess": on a shared account,
@@ -245,7 +293,7 @@ begin
   if new.mirrored_by is not null then
     other := null;
     select true as seen, s.private_to as private, s.locked_to as locked into other
-      from public.series s where s.id = new.mirrored_by;
+      from public.series s where s.id = new.mirrored_by and s.plan_id = new.plan_id;
     if not coalesce(other.seen, false) then
       perform app.refuse('not-found', '42501');
     end if;
@@ -271,10 +319,10 @@ begin
   end if;
   if new.series_id is not null then
     select true as seen, s.private_to as private, s.locked_to as locked into parent
-      from public.series s where s.id = new.series_id;
+      from public.series s where s.id = new.series_id and s.plan_id = new.plan_id;
   else
     select true as seen, b.private_to as private, null::uuid as locked into parent
-      from public.budgets b where b.id = new.budget_id;
+      from public.budgets b where b.id = new.budget_id and b.plan_id = new.plan_id;
   end if;
   if not coalesce(parent.seen, false) then
     perform app.refuse('not-found', '42501');
@@ -296,12 +344,12 @@ begin
     if new.in_balance_update is not null then
       other := null;
       select true as seen, u.private_to as private into other
-        from public.balance_updates u where u.id = new.in_balance_update;
+        from public.balance_updates u where u.id = new.in_balance_update and u.plan_id = new.plan_id;
       perform app.check_link(new.private_to, coalesce(other.seen, false), other.private);
     end if;
     if new.in_debt_update is not null then
       other := null;
-      select true as seen, d.private_to as private into other from public.debts d where d.id = new.in_debt_update;
+      select true as seen, d.private_to as private into other from public.debts d where d.id = new.in_debt_update and d.plan_id = new.plan_id;
       perform app.check_link(new.private_to, coalesce(other.seen, false), other.private);
     end if;
   end if;
@@ -318,7 +366,7 @@ begin
   if tg_op = 'UPDATE' and new.budget_id <> old.budget_id then
     perform app.refuse('fixed-field');
   end if;
-  select true as seen, b.private_to as private into parent from public.budgets b where b.id = new.budget_id;
+  select true as seen, b.private_to as private into parent from public.budgets b where b.id = new.budget_id and b.plan_id = new.plan_id;
   if not coalesce(parent.seen, false) then
     perform app.refuse('not-found', '42501');
   end if;
@@ -342,7 +390,7 @@ begin
     perform app.refuse('fixed-field');
   end if;
   select true as seen, p.private_to as private into parent
-    from public.pay_profiles p where p.id = new.pay_profile_id;
+    from public.pay_profiles p where p.id = new.pay_profile_id and p.plan_id = new.plan_id;
   if not coalesce(parent.seen, false) then
     perform app.refuse('not-found', '42501');
   end if;
@@ -361,7 +409,7 @@ begin
     perform app.refuse('fixed-field');
   end if;
   select true as seen, s.private_to as private into parent
-    from public.series s where s.family_id = new.family_id limit 1;
+    from public.series s where s.family_id = new.family_id and s.plan_id = new.plan_id limit 1;
   if not coalesce(parent.seen, false) then
     perform app.refuse('not-found', '42501');
   end if;
@@ -394,12 +442,12 @@ begin
     perform app.refuse('fixed-field');
   end if;
   if (new.family_id is not null
-      and not exists (select 1 from public.series s where s.family_id = new.family_id))
-    or (new.tick_id is not null and not exists (select 1 from public.ticks t where t.id = new.tick_id))
-    or (new.debt_id is not null and not exists (select 1 from public.debts d where d.id = new.debt_id))
-    or (new.goal_id is not null and not exists (select 1 from public.goals g where g.id = new.goal_id))
+      and not exists (select 1 from public.series s where s.family_id = new.family_id and s.plan_id = new.plan_id))
+    or (new.tick_id is not null and not exists (select 1 from public.ticks t where t.id = new.tick_id and t.plan_id = new.plan_id))
+    or (new.debt_id is not null and not exists (select 1 from public.debts d where d.id = new.debt_id and d.plan_id = new.plan_id))
+    or (new.goal_id is not null and not exists (select 1 from public.goals g where g.id = new.goal_id and g.plan_id = new.plan_id))
     or (new.in_debt_update is not null
-      and not exists (select 1 from public.debts d where d.id = new.in_debt_update)) then
+      and not exists (select 1 from public.debts d where d.id = new.in_debt_update and d.plan_id = new.plan_id)) then
     perform app.refuse('not-found', '42501');
   end if;
   return new;

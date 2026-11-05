@@ -89,6 +89,6 @@ revoke execute on all functions in schema app from public, anon, authenticated;
 grant execute on function
   app.session_id(), app.session_ok(), app.my_plans(), app.my_edit_plans(),
   app.my_owned_plans(), app.my_partners(), app.refuse(text, text), app.from_a_person(),
-  app.check_chosen_privacy(uuid, uuid, text, uuid), app.check_link(uuid, boolean, uuid),
-  app.account_privacy(uuid)
+  app.check_chosen_privacy(uuid, uuid, text, uuid, uuid), app.check_link(uuid, boolean, uuid),
+  app.account_privacy(uuid, uuid), app.family_problem(uuid, uuid, uuid, uuid, uuid, uuid, uuid)
   to authenticated;

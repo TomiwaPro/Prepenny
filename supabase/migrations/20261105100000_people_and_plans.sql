@@ -74,13 +74,19 @@ create table public.plans (
   edit_id uuid
 );
 
--- The plan's change number: it goes up by 1 with every save in the plan, and
--- each saved row keeps the number it got (`seq`, ARCHITECTURE.md 3.1), so a
--- phone can ask for everything after the number it has. Kept apart from the
--- plan's own row, so a tick doesn't count as a change to the plan itself.
+-- The plan's change numbers: each goes up by 1 with every save, and each
+-- saved row keeps the number it got (`seq`, ARCHITECTURE.md 3.1), so a phone
+-- can ask for everything after the numbers it has. There's one count for the
+-- plan's shared records, and one for each person's private ones, so a gap in
+-- the shared count never tells Tom that Jess changed something private, or
+-- when (brief 4.14: nothing shows when someone last used the app, D299). Kept
+-- apart from the plan's own row, so a tick isn't a change to the plan itself.
 create table app.plan_counters (
-  plan_id uuid primary key references public.plans (id) on delete cascade,
-  last_seq bigint not null
+  plan_id uuid not null references public.plans (id) on delete cascade,
+  -- Whose private records it counts, or the shared count (app.shared_count()).
+  counts_for uuid not null,
+  last_seq bigint not null,
+  primary key (plan_id, counts_for)
 );
 
 -- Who is in a plan, and what they may do: "Can edit" is editor, "Can view
@@ -184,18 +190,24 @@ begin
 end;
 $$;
 
--- The plan's next change number. Saves in one plan wait for each other here,
--- one at a time, so two phones never get the same number (ARCHITECTURE.md 7).
-create function app.next_seq(plan uuid) returns bigint
+-- The count of a plan's shared records, beside each person's own count.
+create function app.shared_count() returns uuid
+language sql immutable set search_path = '' as $$
+  select '00000000-0000-0000-0000-000000000000'::uuid
+$$;
+
+-- The next change number for a plan's shared records, or for one person's
+-- private records. Saves on one count wait for each other here, one at a
+-- time, so two phones never get the same number (ARCHITECTURE.md 7).
+create function app.next_seq(plan uuid, private uuid) returns bigint
 language plpgsql security definer set search_path = '' as $$
 declare
   number bigint;
 begin
-  update app.plan_counters set last_seq = last_seq + 1 where plan_id = plan
-    returning last_seq into number;
-  if number is null then
-    perform app.refuse('not-found', '42501');
-  end if;
+  insert into app.plan_counters as counter (plan_id, counts_for, last_seq)
+  values (plan, coalesce(private, app.shared_count()), 1)
+  on conflict (plan_id, counts_for) do update set last_seq = counter.last_seq + 1
+  returning counter.last_seq into number;
   return number;
 end;
 $$;
@@ -231,7 +243,7 @@ begin
     new.created_at := old.created_at;
     new.created_by := old.created_by;
     new.version := old.version + 1;
-    new.seq := app.next_seq(new.id);
+    new.seq := app.next_seq(new.id, null);
   end if;
   new.changed_at := now();
   new.changed_by := auth.uid();
@@ -245,7 +257,7 @@ create trigger before_write before insert or update on public.plans
 create function app.after_plan_made() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
-  insert into app.plan_counters (plan_id, last_seq) values (new.id, 1);
+  insert into app.plan_counters (plan_id, counts_for, last_seq) values (new.id, app.shared_count(), 1);
   insert into public.plan_members (plan_id, person_id, role) values (new.id, new.owner, 'owner');
   return null;
 end;

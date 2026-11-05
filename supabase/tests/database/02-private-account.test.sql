@@ -89,7 +89,7 @@ select throws_ok($$ update public.ticks set in_balance_update = tests.id('jess-b
   '42501', null, 'Tom can''t link a shared tick to her private balance update');
 
 -- Through the functions a signed-in person can use: each answers only about Tom.
-select is((select seen from app.account_privacy(tests.id('jess-current'))), false,
+select is((select seen from app.account_privacy(tests.id('jess-current'), tests.id('plan'))), false,
   'Asking about her account''s privacy says only that Tom can''t see it, the same as for one that doesn''t exist');
 select set_eq($$ select app.my_plans() $$, array[tests.id('plan')],
   'Tom''s plans are only his own');

@@ -66,7 +66,7 @@ select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
   array['session_id', 'session_ok', 'my_plans', 'my_edit_plans', 'my_owned_plans', 'my_partners',
-    'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy'],
+    'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem'],
   'A signed-in person can use only the checks the privacy rules call'
 );
 
