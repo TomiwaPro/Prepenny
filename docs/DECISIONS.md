@@ -3203,7 +3203,7 @@ Why: the owner's answer.
 
 ## Made during step 3a
 
-D288 to D298 were decided on 5 Nov 2026 while building step 3a, the database and its privacy rules. Questions for the owner are in `PLAN.md`.
+D288 to D299 were decided on 5 Nov 2026 while building step 3a, the database and its privacy rules; D299 came from an outside review. Questions for the owner are in `PLAN.md`.
 
 ### D288. How the database is laid out
 
@@ -3214,7 +3214,7 @@ Decided 5 Nov 2026 in step 3a. Builds ARCHITECTURE.md 3.1 to 3.6.
 - **Each column is a field of the engine's own record,** so a plan can come back exactly as it was left (brief Part 10). Money is whole pence, as a whole number a phone can count exactly (never floating point); rates, percentages and hours are exact text, such as "1.1612"; dates are dates. Times the engine compares, such as when a tick was made (D33), are kept exactly as the phone wrote them, such as "2026-10-30T09:14:05Z", because the engine compares them as written and a database's own way of writing a time would change their order.
 - **The sync fields** (ARCHITECTURE.md 3.1) are on every plan record. The database fills in who made it and when, who last changed it and when ("Changed by Tom", brief 4.14), its version and the plan's change number, whatever a phone sends. A phone sends the id, the plan, the record's place among its kind (`list_order`, so lists come back in the order they were made, D168), the edit that saved it and whether it's removed.
 - **Each tick and each change keeps its payment number** (PLAN.md item 4), so an undo in step 3c can check it's still the same payment.
-- **The plan's change number** is kept apart from the plan's own row, so a tick isn't a change to the plan. Saves in one plan wait for each other there, one at a time, so two phones never get the same number (ARCHITECTURE.md 7).
+- **The plan's change numbers** are kept apart from the plan's own row, so a tick isn't a change to the plan. There's one count for the plan's shared records and one for each person's private records (D299), so a phone asks for everything after the numbers it has in each. Saves on one count wait for each other, one at a time, so two phones never get the same number (ARCHITECTURE.md 7).
 - **Nothing is ever deleted by a person.** Removing a record marks it removed, which is a change like any other, so the same privacy rules apply (ARCHITECTURE.md 3.1).
 - Budgets keep the time the phone made them (`made_at`) for the same-day order (D12, D107), apart from the database's own `created_at`.
 
@@ -3315,9 +3315,24 @@ Why: the owner's instruction: the sandbox can't reach Supabase, so all database 
 
 Decided 5 Nov 2026 in step 3a. Builds brief Part 9 and 8.7 tests 2 and 3.
 
-- Eight files in `supabase/tests/database`, 193 checks, on one shared plan: Jess's, with Tom in it as "Can edit" or "Can view only", Jess's private account with every kind of record on it, Tom's private account, their joint account, and Alex, who has a sign-in but isn't in the plan.
+- Nine files in `supabase/tests/database`, 208 checks, on one shared plan: Jess's, with Tom in it as "Can edit" or "Can view only", Jess's private account with every kind of record on it, Tom's private account, their joint account, and Alex, who has a sign-in but isn't in the plan.
 - Every table is tried, not a list: someone not signed in can't read, add, change or remove anything in any of them; no row Tom can read, in any table, is or names one of Jess's private records; and every table has its rules.
 - Each list a check uses is first checked to hold every kind of record, so a check can't pass by testing nothing.
-- Each rule was broken on purpose, one at a time, to see the tests fail: private rows readable by everyone (16 checks failed), viewers allowed to change things (9), an ended session still working (5), a locked row changeable (3), a shared row allowed to name a private one (2), a person who has left still reading (2), and privacy not filled in from the account (10).
+- Each rule was broken on purpose, one at a time, to see the tests fail: private rows readable by everyone (16 checks failed), viewers allowed to change things (9), an ended session still working (5), a locked row changeable (3), a shared row allowed to name a private one (2), a person who has left still reading (2), privacy not filled in from the account (10), and each of D299's six rules (between 1 and 4 each).
 
 Why: a test that has never been seen to fail could be passing for the wrong reason. The first runs found one real problem and two weak tests, all fixed before anything reached GitHub: a check that let Tom add a balance, a payment or a budget to Jess's private account, saved as shared; a test helper that read a table's column instead of its own input, so the private-account checks covered fewer records than they said; and a session test that couldn't tell an ended session from the person's other phones.
+
+### D299. What the outside review of the database changed
+
+Decided 5 Nov 2026 in step 3a, from an outside review that tried every request Tom could make. It read nothing of Jess's private records, but found six weaker places, five now refused. Adds to D288 to D293.
+
+- **A record names only records in its own plan.** Tom, with "Can view only", could make a plan of his own and tick Jess's shared rent from there. Jess then couldn't tick it herself, because one payment has one tick, and couldn't see why. Every record's account, payment, budget, family, debt, goal, usual week and edit must now be in its own plan, and one tick and one change per payment is counted for payments and pay-later bills apart.
+- **A payment joins only its own family** (D49). An editor could add a payment to the family of "From Jess", or of Jess's private pay, which would change her payments. Now a payment starts a family of its own, or joins one in the plan on the same account, with the same privacy and lock, after the payment it was split from ("family-mixed").
+- **No gap in the shared change numbers.** Every save took the plan's next number, so Tom could see the numbers jump while Jess changed private records, and so tell when she was busy with them. Now the shared records have their own count and each person's private records theirs (D288), so nothing shows when someone was using the app (brief 4.14).
+- **A shared record never names a private edit.** The edit a record names must be in the plan and readable by everyone who can read the record (D291). The server's save step in 3c keeps the shared part of a change apart from the private part.
+- **Nobody can say an account is someone else's.** Who an account, debt, goal or pay profile belongs to ("From Jess", D16) can be set only by that person.
+- **Accepted:** someone who already knows the id of one of Jess's private records can find out that it exists, by trying to make a record with the same id. Ids are made at random on the phone (UUID version 7, with 74 random bits), so they can't be guessed, and nothing in the record shows.
+
+Test: `supabase/tests/database/08-plans-families-and-counts.test.sql`.
+
+Why: the review showed each with a request that worked when it shouldn't have.
