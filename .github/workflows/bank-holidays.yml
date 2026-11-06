@@ -4,29 +4,38 @@ name: Bank holidays
 # with a small file beside it giving the source link and the date downloaded.
 # Commits only when the list has changed, back to the branch it ran on.
 # The weekly schedule comes later with D57.
+#
+# Runs once a pull request is ready for review, not on every push, to save
+# GitHub's minutes (D300), or by hand on any branch but main. A commit made
+# here doesn't start the checks itself (GitHub's rule for its own key); they
+# run on it after merging, on main, before anything goes live.
 
 on:
-  push:
-    branches-ignore:
-      - main
+  pull_request:
+    types: [opened, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: bank-holidays-${{ github.ref }}
+  group: bank-holidays-${{ github.head_ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
   download:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Not on main, which only changes through pull requests. Not on drafts,
+    # nor on other people's copies, which can't push back.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Check out the branch
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 1
 
       - name: Download the list from GOV.UK
@@ -50,7 +59,7 @@ jobs:
 
       - name: Save it and commit if it changed
         env:
-          BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
           data=packages/engine/data

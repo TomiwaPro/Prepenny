@@ -86,11 +86,14 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase db push --dry-run
+        # --linked: the real project from the step above. The command line
+        # warns that its next version will aim at the local database unless
+        # told, so it's said every time. Its version stays pinned (D297).
+        run: supabase db push --linked --dry-run
 
       - name: Change the real database
         if: steps.supabase.outputs.ready == 'true'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: supabase db push
+        run: supabase db push --linked

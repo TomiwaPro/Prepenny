@@ -12,16 +12,21 @@ on:
     workflows: [Check]
     types: [completed]
     branches: [main]
+  # A preview once a pull request is ready for review, and after every push
+  # from then on. Drafts get none, to save GitHub's minutes (D300).
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: write
 
+# A newer push to a pull request stops its older preview. The live app is
+# never stopped half way: one goes online at a time, in order.
 concurrency:
-  group: deploy-${{ github.event.workflow_run.head_branch || github.ref }}
-  cancel-in-progress: false
+  group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'live' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -39,7 +44,7 @@ jobs:
     if: >-
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false)
     env:
       WRANGLER_SEND_METRICS: "false"
     steps:
@@ -64,7 +69,18 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
       - name: Build the app
-        run: pnpm build
+        # The real Supabase project, for signing in (step 3b). Both are
+        # public: they're in the app every phone downloads. Until they're
+        # added (README.md, "Signing in"), the app is built with signing in
+        # switched off, and says so.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_KEY" ]; then
+            echo "::warning title=Signing in is off::The SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY variables aren't set yet, so this version can't sign anyone in. Follow 'Signing in' in README.md."
+          fi
+          pnpm build
 
       - name: Check Cloudflare is set up
         id: cloudflare
