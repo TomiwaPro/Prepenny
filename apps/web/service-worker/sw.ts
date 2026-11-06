@@ -21,7 +21,9 @@ const serwist = new Serwist({
     // A screen for one record takes its id after a question mark (ARCHITECTURE.md 5),
     // and What if says where it was opened from: each is still the same file, so
     // it opens with no signal straight from a saved link or a refresh (step 2h).
-    ignoreURLParametersMatching: [/^utm_/, /^_rsc$/, /^id$/, /^from$/],
+    // The same for the sign-in page's "Sign up", and the welcome just after
+    // signing out, which may happen with no signal (step 3b).
+    ignoreURLParametersMatching: [/^utm_/, /^_rsc$/, /^id$/, /^from$/, /^to$/, /^signed-out$/],
   },
   // A new version takes over straight away, so a phone never runs an old copy for long.
   skipWaiting: true,

@@ -242,6 +242,36 @@ for (const colorScheme of ['light', 'dark'] as const) {
       ).toBeVisible();
     });
 
+    test('3, with no signal: signing out still leaves nothing of the person on the phone', async ({
+      page,
+      context,
+    }) => {
+      const address = newEmail('ali');
+      await makeAPlan(page);
+      await signUpFromMore(page, address);
+      await typeCode(page, (await signInEmail(address)).code);
+      await expectSignedInOnMore(page, address);
+      // The offline helper has every file of the app on the phone.
+      await expect
+        .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+        .toBe(true);
+
+      await context.setOffline(true);
+      await page.getByTestId('account').getByRole('button', { name: 'Sign out' }).click();
+      await page
+        .getByRole('dialog', { name: 'Sign out' })
+        .getByRole('button', { name: 'Sign out', exact: true })
+        .click();
+      await expect(
+        page.getByRole('status').filter({ hasText: strings.account.signedOut }),
+      ).toBeVisible();
+      const after = await whatThePhoneKeeps(page);
+      expect(after.localStorage).toEqual([]);
+      expect(after.sessionStorage).toEqual([]);
+      for (const [store, rows] of Object.entries(after.rows)) expect(rows, store).toBe(0);
+      await context.setOffline(false);
+    });
+
     test('4. signing in again on the same phone works', async ({ page }) => {
       const address = newEmail('tom');
       await makeAPlan(page);
