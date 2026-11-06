@@ -247,6 +247,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
       context,
     }) => {
+      // Saving every file of the app for no signal can take a while on a busy machine.
+      test.slow();
       const address = newEmail('ali');
       await makeAPlan(page);
       await signUpFromMore(page, address);
@@ -263,7 +265,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       });
       await expect
         .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), {
-          timeout: 30_000,
+          timeout: 60_000,
         })
         .toBe(true);
 

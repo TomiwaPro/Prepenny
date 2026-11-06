@@ -125,7 +125,12 @@ export async function makeAPlan(page: Page) {
     warning: '20',
   });
   await next(page);
-  for (let step = 2; step <= 7; step += 1) await skip(page);
+  // Each step is waited for before the next tap, so a tap never lands between two.
+  for (let step = 2; step <= 7; step += 1) {
+    await expect(page.getByText(`Step ${step} of 8`, { exact: true })).toBeVisible();
+    await skip(page);
+  }
+  await expect(page.getByText('Step 8 of 8', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page).toHaveURL(/\/app\/$/);
   await expect(page.getByTestId('balance')).toContainText('£267.54');
