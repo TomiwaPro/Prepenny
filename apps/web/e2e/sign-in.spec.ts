@@ -15,6 +15,7 @@
 //    account: the button starts the right steps.
 
 import { expect, type Page, test } from '@playwright/test';
+import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
 import { box, noAxeProblems, ownRecords, storedPlans } from './setup.ts';
 import {
@@ -251,9 +252,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await signUpFromMore(page, address);
       await typeCode(page, (await signInEmail(address)).code);
       await expectSignedInOnMore(page, address);
-      // The offline helper has every file of the app on the phone.
+      // The offline helper has every file of the app on the phone, as in e2e/offline.spec.ts.
+      await page.evaluate(async () => {
+        const registration = await navigator.serviceWorker.ready;
+        if (registration.active?.state !== 'activated') {
+          await new Promise<void>((resolve) =>
+            registration.active?.addEventListener('statechange', () => resolve()),
+          );
+        }
+      });
       await expect
-        .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+        .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), {
+          timeout: 30_000,
+        })
         .toBe(true);
 
       await context.setOffline(true);
@@ -300,7 +311,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noAxeProblems(page);
     });
 
-    test('5. the link in the email signs you in too, once', async ({ page }) => {
+    test('5. the link in the email signs you in too, once, and only when "Finish signing in" is tapped', async ({
+      page,
+    }) => {
       const address = newEmail('priya');
       const sent = watchSupabase(page);
       await makeAPlan(page);
@@ -310,13 +323,23 @@ for (const colorScheme of ['light', 'dark'] as const) {
         /^http:\/\/127\.0\.0\.1:4173\/sign-in\/#token_hash=[^&]+&type=email$/,
       );
 
-      // Tapping the link opens PrePenny's own sign-in page, which signs the person in.
+      // The link opens PrePenny's own sign-in page, which waits for a tap (D312).
       await page.goto(email.link);
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Finish signing in' }),
+      ).toBeVisible();
+      await expect(page.getByText(t.linkPurpose)).toBeVisible();
+      // Its one-time key is taken out of the address straight away, and nothing is sent yet.
+      expect(new URL(page.url()).hash).toBe('');
+      expect(sent.filter((request) => request.url().includes('/verify'))).toEqual([]);
+      await noAxeProblems(page);
+
+      await page.getByRole('button', { name: 'Finish signing in', exact: true }).click();
       await expect(page).toHaveURL(/\/app\/$/);
       await expect(page.getByTestId('balance')).toContainText('£267.54');
       await openMore(page);
       await expect(page.getByTestId('account').getByText(`Signed in as ${address}`)).toBeVisible();
-      // The one-time key, after the "#", was never sent to PrePenny's site.
+      // The one-time key, after the "#", was never sent to PrePenny's site: only to Supabase.
       const verify = sent.find((request) => new URL(request.url()).pathname === '/auth/v1/verify');
       expect(verify?.postDataJSON()).toMatchObject({
         token_hash: new URLSearchParams(new URL(email.link).hash.slice(1)).get('token_hash'),
@@ -325,9 +348,70 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // The same link a second time says what to do.
       await page.goto(email.link);
+      await page.getByRole('button', { name: 'Finish signing in', exact: true }).click();
       await expect(page.getByTestId('sign-in-problem')).toHaveText(t.linkRanOut);
-      await expect(page).toHaveURL(/\/sign-in\/$/);
+      await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
       await noAxeProblems(page);
+    });
+
+    test('5, checked by an email service: a link opened by something else uses nothing up', async ({
+      page,
+      browser,
+    }) => {
+      const address = newEmail('kofi');
+      await makeAPlan(page);
+      await signUpFromMore(page, address);
+      const email = await signInEmail(address);
+
+      // An email service opens the link by itself to check it, in a browser of its own.
+      const checker = await browser.newContext();
+      const checking = await checker.newPage();
+      const checkerSent = watchSupabase(checking);
+      await checking.goto(email.link);
+      await expect(
+        checking.getByRole('heading', { level: 1, name: 'Finish signing in' }),
+      ).toBeVisible();
+      await checking.waitForTimeout(500);
+      expect(checkerSent).toEqual([]);
+      await checker.close();
+
+      // The code from the same email still works.
+      await typeCode(page, email.code);
+      await expectSignedInOnMore(page, address);
+    });
+
+    test("nobody can plant a password: a stranger signs up with my address and a password, I sign in with a code, and their password doesn't work", async ({
+      page,
+    }) => {
+      const address = newEmail('jess');
+      const password = 'a-stranger-chose-this-1';
+      const api = (path: string, body: object) =>
+        fetch(`${LOCAL_SUPABASE.url}/auth/v1/${path}`, {
+          method: 'POST',
+          headers: { apikey: LOCAL_SUPABASE.key, 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+      // A stranger signs up with my address and a password of theirs.
+      const planted = await api('signup', { email: address, password });
+      expect(planted.status).toBe(200);
+      const before = await api('token?grant_type=password', { email: address, password });
+      expect(before.status).toBe(400);
+
+      // I sign up with a code, a while later.
+      makeCodeRunOut(address);
+      await makeAPlan(page);
+      await signUpFromMore(page, address);
+      const mine = await signInEmail(address, 2);
+      await typeCode(page, mine.code);
+      await expectSignedInOnMore(page, address);
+
+      // The stranger's password doesn't sign in to my account.
+      const after = await api('token?grant_type=password', { email: address, password });
+      expect(after.status).toBe(400);
+      expect(((await after.json()) as { error_code?: string }).error_code).toBe(
+        'invalid_credentials',
+      );
     });
 
     test('6. "Continue with Google" starts the right steps', async ({ page }) => {
@@ -382,6 +466,30 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // And so does a code from Google that doesn't work.
       await page.goto('/sign-in/?code=not-a-real-code');
       await expect(page.getByTestId('sign-in-problem')).toHaveText(t.googleCancelled);
+    });
+
+    test('6, before Google is set up: "Continue with Google" says so, and stays on PrePenny', async ({
+      page,
+    }) => {
+      // Supabase's public settings, as before the owner has done README.md's part C.
+      await page.route('http://127.0.0.1:54321/auth/v1/settings', async (route) => {
+        const response = await route.fetch();
+        const settings = (await response.json()) as { external: Record<string, boolean> };
+        await route.fulfill({
+          response,
+          json: { ...settings, external: { ...settings.external, google: false } },
+        });
+      });
+      let toAuthorize = false;
+      page.on('request', (request) => {
+        if (request.url().includes('/auth/v1/authorize')) toAuthorize = true;
+      });
+      await page.goto('/sign-in/');
+      await page.getByRole('button', { name: 'Continue with Google' }).click();
+      await expect(page.getByTestId('sign-in-problem')).toHaveText(t.googleOff);
+      await expect(page).toHaveURL(/\/sign-in\/$/);
+      expect(toAuthorize).toBe(false);
+      await noAxeProblems(page);
     });
   });
 }

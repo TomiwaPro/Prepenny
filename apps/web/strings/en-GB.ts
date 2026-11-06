@@ -1705,6 +1705,13 @@ export const strings = {
     sendNewCode: 'Send a new code',
     otherEmail: 'Use a different email address',
     checkingLink: 'Checking your link.',
+    /** The email's link opens this first, so a service checking links can't use it up (D312). */
+    linkHeading: 'Finish signing in',
+    linkPurpose:
+      'You opened the sign-in link from your email. Tap the button to sign in on this phone.',
+    finishLink: 'Finish signing in',
+    anotherWay: 'Sign in another way',
+    googleOff: "Google sign-in isn't switched on yet. Use your email address instead.",
     emailMissing: 'Type your email address, for example sam@example.com.',
     codeMissing: 'Type the 6 numbers from the email, for example 123456.',
     codeWrong:

@@ -6,7 +6,9 @@
 // 1. The email address, or "Continue with Google".
 // 2. "We've sent a 6-digit code to sam@example.com. It lasts 10 minutes."
 //    Typing it signs the person in. The email's link does the same, opening
-//    this page with its one-time key after a "#" (supabase/templates).
+//    this page with its one-time key after a "#" (supabase/templates), but
+//    only once "Finish signing in" is tapped: some email services open links
+//    by themselves to check them, which mustn't use the key up (D312).
 // 3. Then back to More, or to their plan. The plan made on this phone
 //    becomes theirs, and stays on the phone for now (brief 4.13 "Try first").
 //
@@ -22,6 +24,7 @@ import {
   checkLink,
   codeSent,
   finishGoogle,
+  forgetCodeSent,
   type Outcome,
   type Problem,
   sendCode,
@@ -72,6 +75,8 @@ function wordsFor(problem: Problem, sentAt: number | null): string {
       return t.emailRefused;
     case 'google-cancelled':
       return t.googleCancelled;
+    case 'google-off':
+      return t.googleOff;
     case 'someone-elses-plan':
       return t.someoneElsesPlan;
   }
@@ -118,7 +123,7 @@ export function SignInScreen() {
   const id = useId();
   const [mode, setMode] = useState<Mode>('sign-in');
   const [from, setFrom] = useState<From>('welcome');
-  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'link'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentAt, setSentAt] = useState<number | null>(null);
@@ -135,6 +140,8 @@ export function SignInScreen() {
   // The address is read once, even where React runs the first effect twice
   // (its development mode), so a link's one-time key is never used twice.
   const addressRead = useRef(false);
+  // The email link's one-time key, kept here until "Finish signing in" is tapped.
+  const linkKey = useRef<string | null>(null);
   const off = signInConfig() === null;
 
   // What the address says: who it's for, where it came from, and anything
@@ -172,7 +179,9 @@ export function SignInScreen() {
     if (off) {
       // Nothing to check: signing in is switched off in this version.
     } else if (tokenHash !== null) {
-      void finish('link', () => checkLink(tokenHash), t.linkRanOut);
+      // Used only when the person taps "Finish signing in" (D312).
+      linkKey.current = tokenHash;
+      setStep('link');
     } else if (googleCode !== null) {
       void finish('google', () => finishGoogle(googleCode), t.googleCancelled);
     } else if (googleError !== null) {
@@ -198,6 +207,16 @@ export function SignInScreen() {
         // No database on this phone: no plan to speak of.
       }
     })();
+  }, []);
+
+  // Coming back from Google with the Back button shows this page as it was
+  // left, "Opening Google." and all: it's ready to use again (D314).
+  useEffect(() => {
+    const shown = (event: PageTransitionEvent) => {
+      if (event.persisted) setBusy(null);
+    };
+    window.addEventListener('pageshow', shown);
+    return () => window.removeEventListener('pageshow', shown);
   }, []);
 
   // A new step is announced by moving to its heading (WCAG 2.4.3).
@@ -284,6 +303,24 @@ export function SignInScreen() {
     }
   }
 
+  async function finishLink() {
+    const key = linkKey.current;
+    if (busy !== null || key === null) return;
+    setProblem(null);
+    setBusy('link');
+    const outcome = await checkLink(key);
+    if (outcome.ok) {
+      router.replace(afterSignIn(from));
+      return;
+    }
+    setBusy(null);
+    linkKey.current = null;
+    setStep('email');
+    setProblem(
+      outcome.problem.kind === 'code-refused' ? t.linkRanOut : wordsFor(outcome.problem, null),
+    );
+  }
+
   async function google() {
     if (busy !== null) return;
     setProblem(null);
@@ -311,8 +348,9 @@ export function SignInScreen() {
           {step === 'code' ? (
             <button
               type="button"
-              className={screenStyles.back}
+              className={`${screenStyles.back} ${styles.textButton}`}
               onClick={() => {
+                forgetCodeSent();
                 setStep('email');
                 setProblem(null);
                 setCodeError(undefined);
@@ -320,22 +358,30 @@ export function SignInScreen() {
             >
               {t.otherEmail}
             </button>
-          ) : from === 'more' ? (
+          ) : from === 'more' && step === 'email' ? (
             <a className={screenStyles.back} href="/app/more/">
               {t.backToMore}
             </a>
           ) : null}
           <h1 ref={heading} tabIndex={-1} className={screenStyles.heading}>
-            {step === 'code' ? t.codeHeading : signUp ? t.signUpHeading : t.signInHeading}
+            {step === 'code'
+              ? t.codeHeading
+              : step === 'link'
+                ? t.linkHeading
+                : signUp
+                  ? t.signUpHeading
+                  : t.signInHeading}
           </h1>
           <p className={screenStyles.purpose}>
             {step === 'code'
               ? resent
                 ? t.newCodeSentTo(email)
                 : t.sentTo(email)
-              : signUp
-                ? t.signUpPurpose
-                : t.signInPurpose}
+              : step === 'link'
+                ? t.linkPurpose
+                : signUp
+                  ? t.signUpPurpose
+                  : t.signInPurpose}
           </p>
           {step === 'email' && hasPlan ? (
             <p className={screenStyles.purpose}>{t.planBecomesYours}</p>
@@ -345,6 +391,28 @@ export function SignInScreen() {
         {off ? (
           <section className={styles.card}>
             <p>{t.off}</p>
+          </section>
+        ) : step === 'link' ? (
+          <section className={styles.card}>
+            <button
+              type="button"
+              className={formStyles.main}
+              aria-disabled={busy !== null}
+              onClick={finishLink}
+            >
+              {t.finishLink}
+            </button>
+            <button
+              type="button"
+              className={formStyles.outlined}
+              aria-disabled={busy !== null}
+              onClick={() => {
+                linkKey.current = null;
+                setStep('email');
+              }}
+            >
+              {t.anotherWay}
+            </button>
           </section>
         ) : step === 'email' ? (
           <>
