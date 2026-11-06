@@ -38,7 +38,7 @@ pnpm typecheck
 pnpm test
 supabase start
 supabase test db
-pnpm build
+pnpm build:local
 pnpm --filter @prepenny/web exec playwright install chromium
 pnpm e2e
 ```
@@ -131,6 +131,16 @@ People sign up and sign in with a 6-digit code sent by email, or with Google (st
 
 When the step 3b pull request is merged, the **Database** workflow sends the sign-in settings to Supabase itself (`supabase/sign-in-settings.json`). If you add a secret after that, send them again: in GitHub tap **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
 
+### What to do before merging, and what can wait
+
+- **Before merging:** B (Resend) and D (the two GitHub variables), and steps 1 to 3 of A (the app at prepenny.co.uk). Then the live app is built with signing in on, the sign-in emails come from hello@prepenny.co.uk to anyone, and the email's link opens.
+- **Can wait:** C (Google). Until then, "Continue with Google" says "Google sign-in isn't switched on yet. Use your email address instead." Also the rest of A (www and prepenny.com sending people on, and replies forwarded), and E (Supabase's paid plan, before launch).
+- **If you merge first,** nothing breaks, and nobody's plan is touched: plans stay on phones until step 3c.
+  - The live app says "Signing in isn't switched on yet." until D is done and the app is put online again: **Actions**, then **Deploy**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
+  - Supabase gets PrePenny's sign-in settings at the merge. Until B, Supabase's own test sender sends the emails, only to people in your Supabase team and only two an hour; once the Resend key is added, run **Database** by hand as above.
+  - Until steps 1 to 3 of A, the email's link leads to prepenny.co.uk, which doesn't open yet. The code in the same email works.
+- **Try signing in on the live app after merging,** not on the preview: Supabase only has PrePenny's email and settings once this is merged.
+
 ### A. The web addresses, in Cloudflare
 
 prepenny.co.uk is the main address: the app, and the address sign-in emails come from. prepenny.com sends people there (D304).
@@ -184,7 +194,7 @@ Then the Google Cloud project:
 3. In the menu, open **Google Auth Platform** (it may be under **APIs & Services**, then **OAuth consent screen**) and tap **Get started**.
 4. **App name** `PrePenny`; **User support email**: your email address. Tap **Next**. **Audience**: **External**. Tap **Next**. **Contact information**: your email address. Tap **Next**, agree to the policy, and tap **Create**.
 5. Tap **Branding**. Under **Authorised domains**, add `prepenny.co.uk` and `supabase.co`. Under **App home page**, type `https://prepenny.co.uk`. Tap **Save**. Leave the privacy policy link empty for now (see question 5 in PLAN.md).
-6. Tap **Data access**, then **Add or remove scopes**. Tick only these three: `.../auth/userinfo.email`, `.../auth/userinfo.profile` and `openid`. Tap **Update**, then **Save**. PrePenny asks Google for the email address and nothing else.
+6. Tap **Data access**, then **Add or remove scopes**. Tick only these three: `.../auth/userinfo.email`, `.../auth/userinfo.profile` and `openid`. Tap **Update**, then **Save**. Supabase asks Google for these: the email address, and the name and the address of the profile picture, which Google always sends with it. Supabase keeps them with the sign-in; PrePenny doesn't use or show them.
 7. Tap **Clients**, then **Create client**. **Application type**: **Web application**. **Name** `PrePenny`. Under **Authorised JavaScript origins**, add `https://prepenny.co.uk`. Under **Authorised redirect URIs**, add the Callback URL from step 1. Tap **Create**.
 8. Copy the **Client ID** and the **Client secret** straight away (or download them): Google may show the secret only once.
 9. In GitHub's **New repository secret** (as in B7), add two secrets: name `GOOGLE_CLIENT_ID` with the Client ID, and name `GOOGLE_CLIENT_SECRET` with the Client secret.
