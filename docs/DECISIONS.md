@@ -3354,7 +3354,7 @@ The owner's instruction, 6 Nov 2026. GitHub's free minutes ran out, and extra mi
 - Decided in step 3b: the sign-in tests run in part 3, against a local Supabase started at the beginning of that job, rather than in a job of their own, which would pay for setting up a fourth machine.
 - The Database workflow says `--linked` to `supabase db push` and its dry run, and the command line stays 2.122.0.
 
-Measured on GitHub's own records: a pull request's checks took about 42 billed minutes a push before (2 for lint and tests, 2 for the database, about 38 for the end-to-end tests), twice a push once the pull request was open. Step 2h ran them 27 times, about 800 minutes; step 3a 6 times plus 3 tries on `main`, about 300. Now a draft push costs about 2 minutes, the end-to-end tests about 40 when it's ready, and `main` about 45: about 100 to 115 minutes a step, two-thirds to seven-eighths less.
+Measured on GitHub's own records: a pull request's checks took about 42 billed minutes a push before (2 for lint and tests, 2 for the database, about 38 for the end-to-end tests), twice a push once the pull request was open. Step 2h ran them 27 times, about 800 minutes; step 3a 6 times plus 3 tries on `main`, about 300. Measured on step 3b's own pull request: a draft push costs 2 minutes; marking it ready costs about 50 (the end-to-end tests 47, of which part 3, with the sign-in tests, is 22; the preview 2; the bank holidays 1); and `main` costs about 52. So a step like 3a, with 6 pushes, now takes about 115 minutes (about 60% less), and a step like 2h about 125 (about 85% less). Getting past two-thirds on every step is a question for the owner in PLAN.md.
 
 Why: the owner's instruction.
 
