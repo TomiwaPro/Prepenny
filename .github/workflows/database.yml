@@ -1,7 +1,8 @@
 name: Database
 
 # Sends the database changes in supabase/migrations to PrePenny's real
-# Supabase project in London (step 3a, D297):
+# Supabase project in London (step 3a, D297), then its sign-in settings
+# (step 3b, D305):
 # - only from main, and only after the Check workflow has passed on that exact
 #   commit, database tests included, as the live app does (D175)
 # - or by hand from main.
@@ -9,7 +10,9 @@ name: Database
 #
 # Needs three secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF and
 # SUPABASE_DB_PASSWORD. See "The database" in README.md. Until they're added,
-# it says plainly that nothing was changed.
+# it says plainly that nothing was changed. For signing in it also uses
+# RESEND_API_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET when they're there
+# (README.md, "Signing in"), and says what's still missing.
 
 on:
   workflow_run:
@@ -97,3 +100,61 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: supabase db push --linked
+
+      - name: Set the sign-in settings
+        # Every setting is in supabase/sign-in-settings.json, with the sign-in
+        # email from supabase/templates. The secrets come only from GitHub,
+        # straight to Supabase: they're never printed. Supabase's own answer
+        # is printed only when it refuses, and then only its message.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: |
+          settings=$(jq --rawfile email supabase/templates/sign-in-code.html \
+            '. + {mailer_templates_confirmation_content: $email, mailer_templates_magic_link_content: $email}' \
+            supabase/sign-in-settings.json)
+          if [ -n "$RESEND_API_KEY" ]; then
+            # Sign-in emails from hello@prepenny.co.uk, sent by Resend (D56),
+            # with Supabase's own limits: a new code for one address once a
+            # minute, and 30 emails an hour in all, which Supabase lets a
+            # project change only once it sends its own emails.
+            settings=$(jq --arg key "$RESEND_API_KEY" '. + {smtp_host: "smtp.resend.com", smtp_port: "465",
+              smtp_user: "resend", smtp_pass: $key, smtp_admin_email: "hello@prepenny.co.uk",
+              smtp_sender_name: "PrePenny", smtp_max_frequency: 60, rate_limit_email_sent: 30}' <<< "$settings")
+          else
+            echo "::warning title=Sign-in emails::RESEND_API_KEY isn't set yet, so Supabase's own test sender sends sign-in emails, only to its team. Follow 'Signing in' in README.md."
+          fi
+          if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ]; then
+            settings=$(jq --arg id "$GOOGLE_CLIENT_ID" --arg secret "$GOOGLE_CLIENT_SECRET" \
+              '. + {external_google_enabled: true, external_google_client_id: $id, external_google_secret: $secret}' \
+              <<< "$settings")
+          else
+            settings=$(jq '. + {external_google_enabled: false}' <<< "$settings")
+            echo "::warning title=Google sign-in::GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET aren't set yet, so Continue with Google is off. Follow 'Signing in' in README.md."
+          fi
+          change() {
+            curl --silent --show-error --output "$RUNNER_TEMP/answer.json" --write-out '%{http_code}' \
+              --request PATCH "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/auth" \
+              --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              --header "Content-Type: application/json" \
+              --data @-
+          }
+          status=$(change <<< "$settings")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Sign-in settings refused::Supabase answered $status: $(jq -r '.message // .msg // "no message"' "$RUNNER_TEMP/answer.json")"
+            exit 1
+          fi
+          echo "The sign-in settings are set."
+          # Signed out after 90 days without opening PrePenny (D19). Supabase
+          # allows it only on its paid plan, so until then it's refused, and
+          # it switches on by itself the first time this runs after the move.
+          status=$(change <<< '{"sessions_inactivity_timeout": 2160}')
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::notice title=90-day sign-out::Not on yet: it needs Supabase's paid plan. Supabase said: $(jq -r '.message // .msg // "no message"' "$RUNNER_TEMP/answer.json")"
+          else
+            echo "Signed out after 90 days without opening PrePenny: on."
+          fi

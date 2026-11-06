@@ -1,0 +1,18 @@
+{
+  "site_url": "https://prepenny.co.uk",
+  "uri_allow_list": "https://prepenny.co.uk/**,https://prepenny.prepenny.workers.dev/**,https://*-prepenny.prepenny.workers.dev/**",
+  "disable_signup": false,
+  "external_email_enabled": true,
+  "external_phone_enabled": false,
+  "external_anonymous_users_enabled": false,
+  "mailer_autoconfirm": false,
+  "mailer_secure_email_change_enabled": true,
+  "mailer_otp_exp": 600,
+  "mailer_otp_length": 6,
+  "mailer_subjects_confirmation": "Your PrePenny sign-in code",
+  "mailer_subjects_magic_link": "Your PrePenny sign-in code",
+  "rate_limit_otp": 30,
+  "rate_limit_verify": 30,
+  "rate_limit_token_refresh": 150,
+  "jwt_exp": 3600
+}
