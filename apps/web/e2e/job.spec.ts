@@ -51,7 +51,7 @@ const detail = (job: Locator, label: string) =>
 async function addOvertime(page: Page) {
   await page.goto('/app/');
   await expect(page.getByTestId('balance')).toBeVisible();
-  await page.getByRole('button', { name: 'I did overtime', exact: true }).click();
+  await page.getByRole('button', { name: 'Extra/Missed shift', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'I did overtime' });
   await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
   await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
@@ -222,7 +222,7 @@ test('Your job and its sheet stay readable with text at 200%', async ({ page }) 
   expect(await layoutProblems(page)).toEqual([]);
 });
 
-test('Save as a pay week asks which paydays it is for, and one week of the pattern changes only that week (D5)', async ({
+test('Save as a usual week asks which paydays it is for, and one week of the pattern changes only that week (D5)', async ({
   page,
 }) => {
   await page.goto('/app/pay/');
@@ -230,8 +230,8 @@ test('Save as a pay week asks which paydays it is for, and one week of the patte
   await page.getByRole('button', { name: 'Work out take-home pay' }).click();
   const result = page.getByTestId('pay-result');
   await expect(result).toBeVisible();
-  await result.getByRole('button', { name: 'Save as a pay week' }).click();
-  const sheet = page.getByRole('dialog', { name: 'Save as a pay week' });
+  await result.getByRole('button', { name: 'Save as a usual week' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Save as a usual week' });
   const which = sheet.getByRole('group', { name: 'Which paydays is it for?' });
   await expect(which.getByRole('radio', { name: 'Every payday' })).toBeChecked();
   await which.getByRole('radio', { name: 'One week of the pattern' }).check();
@@ -242,10 +242,10 @@ test('Save as a pay week asks which paydays it is for, and one week of the patte
   await step.getByRole('radio', { name: /^Week 2 of 4/ }).check();
   await noAxeProblems(page);
   await sheet.getByLabel('Name this week').fill('Short week');
-  await sheet.getByRole('button', { name: 'Save pay week' }).click();
+  await sheet.getByRole('button', { name: 'Save usual week' }).click();
   await expect(sheet).toBeHidden();
   await expect(undoBar(page)).toContainText(
-    'Short week saved as the pay week for week 2 of your pay pattern.',
+    'Short week saved as the usual week for week 2 of your pay pattern.',
   );
   const job = await openJob(page);
   await expect(job).toContainText('Short weekWeek 2 of 4 in your pay pattern');

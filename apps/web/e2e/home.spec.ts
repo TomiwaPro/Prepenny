@@ -124,7 +124,7 @@ async function expectEveryFigure(page: Page) {
   }
 
   // The four actions.
-  for (const name of ['Update balance', 'Add a payment', 'I spent', 'I did overtime']) {
+  for (const name of ['Update balance', 'Add a payment', 'I spent', 'Extra/Missed shift']) {
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   }
 }
@@ -182,9 +182,15 @@ test.describe('Home, with Sam’s example plan', () => {
 
   test('each action opens its own sheet, and closes', async ({ page }) => {
     await openHome(page);
-    for (const name of ['Update balance', 'Add a payment', 'I spent', 'I did overtime']) {
+    // "Extra/Missed shift" opens "What happened?", starting on extra hours (D282).
+    for (const [name, title] of [
+      ['Update balance', 'Update balance'],
+      ['Add a payment', 'Add a payment'],
+      ['I spent', 'I spent'],
+      ['Extra/Missed shift', 'I did overtime'],
+    ] as const) {
       await page.getByRole('button', { name, exact: true }).click();
-      const sheet = page.getByRole('dialog', { name });
+      const sheet = page.getByRole('dialog', { name: title });
       await expect(sheet).toBeVisible();
       // The sheets themselves are tested in actions.spec.ts (step 2d).
       await expect(sheet.getByText('This part is still being built.')).toHaveCount(0);

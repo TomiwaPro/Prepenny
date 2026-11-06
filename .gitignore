@@ -12,3 +12,6 @@ apps/web/.wrangler/
 *.tsbuildinfo
 apps/web/public/engine-worker*.js
 apps/web/.env*.local
+# The Supabase command line's own working files (step 3a).
+supabase/.temp/
+supabase/.branches/

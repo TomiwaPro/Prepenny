@@ -1,0 +1,96 @@
+name: Database
+
+# Sends the database changes in supabase/migrations to PrePenny's real
+# Supabase project in London (step 3a, D297):
+# - only from main, and only after the Check workflow has passed on that exact
+#   commit, database tests included, as the live app does (D175)
+# - or by hand from main.
+# Only the migrations go: never seed.sql, the tests or their made-up people.
+#
+# Needs three secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF and
+# SUPABASE_DB_PASSWORD. See "The database" in README.md. Until they're added,
+# it says plainly that nothing was changed.
+
+on:
+  workflow_run:
+    workflows: [Check]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database
+  cancel-in-progress: false
+
+defaults:
+  run:
+    # bash -eo pipefail: a failing command fails its step, even inside a pipe.
+    shell: bash
+
+jobs:
+  apply:
+    name: Change the real database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+        with:
+          # Exactly the commit the checks passed on.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          # This job doesn't use pnpm, so nothing of pnpm's to keep.
+          package-manager-cache: false
+
+      - name: Set up the Supabase command line (2.122.0, as in the Check workflow)
+        run: npm install --global supabase@2.122.0
+
+      - name: Check Supabase is set up
+        id: supabase
+        env:
+          HAS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+          HAS_REF: ${{ secrets.SUPABASE_PROJECT_REF != '' }}
+          HAS_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ] || [ "$HAS_REF" != "true" ] || [ "$HAS_PASSWORD" != "true" ]; then
+            echo "::warning title=Database not changed::Supabase isn't set up yet, so the real database wasn't changed. Follow 'The database' in README.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Connect to the project
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if ! supabase link --project-ref "$SUPABASE_PROJECT_REF"; then
+            echo "::error title=Couldn't reach the database::Check the three secrets in README.md, 'The database'. A free project pauses after a week without use: open it on supabase.com and choose Restore project, then run this workflow again."
+            exit 1
+          fi
+
+      - name: Show what will change
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push --dry-run
+
+      - name: Change the real database
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push

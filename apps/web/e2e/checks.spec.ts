@@ -221,10 +221,18 @@ const SHEETS: readonly {
   readonly open: (page: Page) => Promise<void>;
   readonly title: string;
 }[] = [
-  ...(['Update balance', 'I spent', 'Add a payment', 'I did overtime'] as const).map((name) => ({
+  // Each button and the title of the sheet it opens (D282).
+  ...(
+    [
+      ['Update balance', 'Update balance'],
+      ['I spent', 'I spent'],
+      ['Add a payment', 'Add a payment'],
+      ['Extra/Missed shift', 'I did overtime'],
+    ] as const
+  ).map(([name, title]) => ({
     path: '/app/',
     heading: 'Home',
-    title: name,
+    title,
     open: (page: Page) => page.getByRole('button', { name, exact: true }).click(),
   })),
   {
@@ -237,10 +245,16 @@ const SHEETS: readonly {
         .getByRole('button', { name: /^Spending money until payday/ })
         .click(),
   },
-  ...(['View', 'Switch account'] as const).map((name) => ({
+  // "Change view" opens the sheet titled View (D277).
+  ...(
+    [
+      ['Change view', 'View'],
+      ['Switch account', 'Switch account'],
+    ] as const
+  ).map(([name, title]) => ({
     path: '/app/coming-up/',
     heading: 'Coming up',
-    title: name,
+    title,
     open: (page: Page) => page.getByRole('button', { name, exact: true }).click(),
   })),
   {
@@ -301,10 +315,10 @@ const SHEETS: readonly {
   {
     path: '/app/pay/',
     heading: 'Pay calculator',
-    title: 'Save as a pay week',
+    title: 'Save as a usual week',
     open: async (page) => {
       await page.getByRole('button', { name: 'Work out take-home pay' }).click();
-      await page.getByRole('button', { name: 'Save as a pay week' }).click();
+      await page.getByRole('button', { name: 'Save as a usual week' }).click();
     },
   },
   {
@@ -313,10 +327,16 @@ const SHEETS: readonly {
     title: 'Your job details',
     open: (page) => page.getByRole('button', { name: 'Change these details' }).click(),
   },
-  ...(['Add a payment', 'I did overtime', 'Update balance'] as const).map((name) => ({
+  ...(
+    [
+      ['Add a payment', 'Add a payment'],
+      ['Extra/Missed shift', 'I did overtime'],
+      ['Update balance', 'Update balance'],
+    ] as const
+  ).map(([name, title]) => ({
     path: '/app/what-if/',
     heading: 'What if',
-    title: name,
+    title,
     open: (page: Page) => page.getByRole('button', { name, exact: true }).click(),
   })),
 ];
@@ -363,7 +383,7 @@ test('with reduced motion, nothing on screen moves', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/app/coming-up/');
   await expect(page.getByTestId('period').first()).toBeVisible();
-  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('button', { name: 'Change view', exact: true }).click();
   await expect(page.locator('dialog[open]')).toBeVisible();
   expect(
     await page.evaluate(
@@ -373,7 +393,7 @@ test('with reduced motion, nothing on screen moves', async ({ page }) => {
   // Without it, the sheet rises into place.
   await page.keyboard.press('Escape');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.getByRole('button', { name: 'View', exact: true }).click();
+  await page.getByRole('button', { name: 'Change view', exact: true }).click();
   expect(
     await page.evaluate(
       () => getComputedStyle(document.querySelector('dialog[open]') as Element).animationName,

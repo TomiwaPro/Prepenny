@@ -136,7 +136,10 @@ function JobDetailsForm({
         } catch {
           // The words about paydays are only a help; the change itself still checks everything.
         }
-        const outcome = await makeChange(command, message);
+        const outcome = await makeChange(command, {
+          full: message,
+          short: strings.undo.short.jobChanged,
+        });
         setBusy(false);
         if (outcome.ok) onDone();
         else setProblem(refusalMessage(outcome.code));

@@ -396,6 +396,9 @@ export const strings = {
     estimate: (date: string) => `${date}, estimate`,
     paid: (date: string) => `${date}, paid`,
     estimatePaid: (date: string) => `${date}, estimate, paid`,
+    /** Money coming in, once it's ticked (D278). */
+    arrived: (date: string) => `${date}, arrived`,
+    estimateArrived: (date: string) => `${date}, estimate, arrived`,
     lowestPoint: 'Lowest point ahead',
     left: (amount: string) => `${amount} left`,
   },
@@ -470,7 +473,8 @@ export const strings = {
     updateBalance: 'Update balance',
     addPayment: 'Add a payment',
     spent: 'I spent',
-    overtime: 'I did overtime',
+    /** Opens "What happened?", with extra hours or a missed shift (D282). */
+    overtime: 'Extra/Missed shift',
   },
 
   sheet: {
@@ -627,7 +631,7 @@ export const strings = {
     overtime: 'I worked extra hours',
     missed: 'I missed a shift',
     noPay:
-      'PrePenny needs your job details to work this out. Save your usual week with Save as a pay week in the Pay calculator, under More.',
+      'PrePenny needs your job details to work this out. Save your usual week with Save as a usual week in the Pay calculator, under More.',
     whichPay: 'Which pay',
     dayOvertime: 'Day of the overtime',
     dayMissed: 'Day of the shift',
@@ -656,6 +660,8 @@ export const strings = {
     changedThisAndLater: (name: string) => `${name} changed for this and all later ones.`,
     markedPaid: (name: string) => `${name} marked as paid.`,
     markedNotPaid: (name: string) => `${name} marked as not paid.`,
+    markedArrived: (name: string) => `${name} marked as arrived.`,
+    markedNotArrived: (name: string) => `${name} marked as not arrived.`,
     moved: (name: string, date: string) => `${name} moved to ${date}.`,
     skipped: (name: string) => `${name} skipped.`,
     removedJustThisOne: (name: string) => `${name} removed for just this one.`,
@@ -679,6 +685,23 @@ export const strings = {
       `${what} Your pay on ${date} goes down by ${amount}.`,
     payUpNoDay: (what: string, amount: string) => `${what} Your pay goes up by ${amount}.`,
     payDownNoDay: (what: string, amount: string) => `${what} Your pay goes down by ${amount}.`,
+    /**
+     * Shorter words for very large text, so the bar and the navigation never
+     * cover half the screen (D284). Each says what changed, without the rest.
+     */
+    short: {
+      changed: (name: string) => `${name} changed.`,
+      removed: (name: string) => `${name} removed.`,
+      updated: (name: string) => `${name} updated.`,
+      closed: (name: string) => `${name} closed.`,
+      balanceUpdated: 'Balance updated.',
+      jobChanged: 'Job details changed.',
+      usualWeekSaved: 'Usual week saved.',
+      payChanged: (date: string) => `Pay on ${date} changed.`,
+      kept: 'Kept in your plan.',
+      notKept: 'Not saved on this phone.',
+      cantUndo: "This can't be undone now.",
+    },
   },
 
   /** What the edit sheet says when the engine can't make a change (D87). Never the code itself. */
@@ -713,9 +736,9 @@ export const strings = {
     'payday-not-estimate': 'That payday already has its real pay typed in, so it stays as it is.',
     'no-payday': "There's no payday in the plan that pays for work on that day.",
     'no-pay-week':
-      "PrePenny doesn't know your usual week for that payday yet. Save one with Save as a pay week in the Pay calculator, under More.",
+      "PrePenny doesn't know your usual week for that payday yet. Save one with Save as a usual week in the Pay calculator, under More.",
     'no-pay-profile':
-      'PrePenny needs your job details to work this out. Save your usual week with Save as a pay week in the Pay calculator, under More.',
+      'PrePenny needs your job details to work this out. Save your usual week with Save as a usual week in the Pay calculator, under More.',
     'no-covered-to':
       'PrePenny needs to know which days of work each payday pays for. Add it in Your job, under More.',
     'shifts-saved':
@@ -786,7 +809,8 @@ export const strings = {
     switchAccount: 'Switch account',
     switchIntro: 'Choose which account to see.',
     showingNow: 'Showing now',
-    view: 'View',
+    /** The button that opens the View sheet (D277). */
+    view: 'Change view',
     /** "By payday, showing everything". */
     showing: (group: string, what: string) => `${group}, ${what}`,
     byPayday: 'By payday',
@@ -837,7 +861,8 @@ export const strings = {
     showingMost: 'This is as far ahead as the plan goes: 24 months.',
     /** The way into What if (brief 4.10, step 2g). */
     whatIfLine: 'Try changes in practice, then keep them or throw them away.',
-    whatIf: 'What if',
+    /** Opens What if (D277). */
+    whatIf: 'Try a change',
     loading: 'Working out your plan.',
   },
 
@@ -845,10 +870,14 @@ export const strings = {
     /** What the sheet is for, in one plain sentence (D213). */
     intro: 'Change this payment, move it or skip it.',
     introSetAside: 'Mark this as paid once the money has moved.',
+    introSetAsideIn: 'Mark this as arrived once the money has moved.',
     where: (date: string, account: string) => `${date}, ${account}`,
     whereTransfer: (date: string, from: string, to: string) => `${date}, ${from} to ${to}`,
     markAsPaid: 'Mark as paid',
     markAsNotPaid: 'Mark as not paid',
+    /** On money coming in, so it never reads as paying your own pay (D278). */
+    markAsArrived: 'Mark as arrived',
+    markAsNotArrived: 'Mark as not arrived',
     moveToNextPayday: 'Move to next payday',
     movesItTo: (date: string) => `Moves it to ${date}`,
     skipThisOne: 'Skip this one',
@@ -867,6 +896,8 @@ export const strings = {
     whichPaydays: 'Which paydays get the new amount',
     everyPayday: 'Every payday from now',
     onlyThisWeek: 'Only this week of the pattern',
+    /** For pay that isn't weekly (D280). */
+    onlyThisPayday: 'Only this payday of the pattern',
     save: 'Save',
     nothingChanged: 'Change something first, then save.',
     remove: 'Remove',
@@ -974,8 +1005,8 @@ export const strings = {
     back: 'Back to More',
     loading: 'Working out your pay details.',
     homeLink: 'PrePenny',
-    startFrom: 'Start from a saved week',
-    startFromIntro: 'Fill in the pay lines from one of your saved weeks.',
+    startFrom: 'Start from a usual week',
+    startFromIntro: 'Fill in the pay lines from one of your usual weeks.',
     weekButton: (name: string) => `Use ${name}`,
     weekFilled: (name: string) => `${name} is filled in below.`,
     payHeading: 'Pay',
@@ -1111,31 +1142,41 @@ export const strings = {
     notAPayday: (date: string) =>
       `To add it to your plan, choose one of your paydays as the payday above, such as ${date}.`,
     noPay: 'There are no paydays in your plan to add it to yet.',
-    saveWeek: 'Save as a pay week',
+    saveWeek: 'Save as a usual week',
     saveWeekIntro:
-      'Save these hours and rates as a usual week. You can start from it again here, and "I did overtime" uses it to work out your pay.',
+      'Save these hours and rates as a usual week. You can start from it again here, and "Extra/Missed shift" uses it to work out your pay.',
     saveWeekName: 'Name this week',
     saveWeekDefault: 'Usual week',
     saveWeekNameError: 'Type a name, for example 3-shift week.',
-    saveWeekSave: 'Save pay week',
-    savedWeek: (name: string) => `${name} saved as a pay week.`,
-    /** Which paydays a saved week is for (D5, step 2h). */
+    saveWeekSave: 'Save usual week',
+    savedWeek: (name: string) => `${name} saved as a usual week.`,
+    /**
+     * Which paydays a usual week is for (D5, step 2h): every payday, or one
+     * step of the pattern (D283). For pay that isn't weekly, a step is a
+     * payday, not a week (D280).
+     */
     saveWeekFor: 'Which paydays is it for?',
     saveWeekEvery: 'Every payday',
-    saveWeekEveryHint: 'Every payday uses it from now on, in place of the weeks they use now.',
-    saveWeekOne: 'One week of the pattern',
-    saveWeekOneHint: 'Only the paydays on that week of your pay pattern use it.',
+    saveWeekEveryHint:
+      'Every payday uses it from now on, in place of the usual weeks they use now.',
+    saveWeekOne: (weekly: boolean) =>
+      weekly ? 'One week of the pattern' : 'One payday of the pattern',
+    saveWeekOneHint: (weekly: boolean) =>
+      weekly
+        ? 'Only the paydays on that week of your pay pattern use it.'
+        : 'Only that payday of your pay pattern uses it, each time it comes round.',
     saveWeekOnlyEvery: "It's for every payday.",
-    saveWeekOneLater:
-      'Once every payday has a pay week, you can save one for a single week of your pay pattern.',
-    saveWeekWhich: 'Which week of the pattern?',
-    saveWeekStep: (step: number, of: number, date: string) =>
-      `Week ${step} of ${of}, next on ${date}`,
+    saveWeekOneLater: (weekly: boolean) =>
+      `Once every payday has a usual week, you can save one for a single ${weekly ? 'week' : 'payday'} of your pay pattern.`,
+    saveWeekWhich: (weekly: boolean) =>
+      weekly ? 'Which week of the pattern?' : 'Which payday of the pattern?',
+    saveWeekStep: (step: number, of: number, date: string, weekly: boolean) =>
+      `${weekly ? 'Week' : 'Payday'} ${step} of ${of}, next on ${date}`,
     saveWeekStepNow: (name: string) => `Uses ${name} now. Saving replaces it.`,
-    saveWeekStepNone: 'Has no pay week yet.',
-    savedWeekEvery: (name: string) => `${name} saved as the pay week for every payday.`,
-    savedWeekStep: (name: string, step: number) =>
-      `${name} saved as the pay week for week ${step} of your pay pattern.`,
+    saveWeekStepNone: 'Has no usual week yet.',
+    savedWeekEvery: (name: string) => `${name} saved as the usual week for every payday.`,
+    savedWeekStep: (name: string, step: number, weekly: boolean) =>
+      `${name} saved as the usual week for ${weekly ? 'week' : 'payday'} ${step} of your pay pattern.`,
     startPlan: 'Start a free plan with this pay',
     startPlanHint: (amount: string) =>
       `Opens PrePenny's setup with ${amount} filled in as your pay, an estimate.`,
@@ -1173,7 +1214,7 @@ export const strings = {
     loading: 'Working out your job details.',
     noJobTitle: 'No job details yet',
     noJob:
-      'Setup saves them when you say you work extra hours or miss shifts. Or work out your pay in the Pay calculator and tap Save as a pay week.',
+      'Setup saves them when you say you work extra hours or miss shifts. Or work out your pay in the Pay calculator and tap Save as a usual week.',
     toCalculator: 'Go to the Pay calculator',
     forPay: (names: string) => `In your plan as ${names}.`,
     often: 'Paid',
@@ -1212,8 +1253,8 @@ export const strings = {
     weeks: 'Usual weeks',
     weeksIntro: 'Overtime and missed shifts are worked out from these.',
     weekEvery: 'Every payday',
-    weekSteps: (steps: string, many: boolean, of: number) =>
-      `${many ? 'Weeks' : 'Week'} ${steps} of ${of} in your pay pattern`,
+    weekSteps: (steps: string, many: boolean, of: number, weekly: boolean) =>
+      `${weekly ? (many ? 'Weeks' : 'Week') : many ? 'Paydays' : 'Payday'} ${steps} of ${of} in your pay pattern`,
     weekKept: 'Kept to start from in the Pay calculator',
     weekUntil: (date: string) => `Used by your paydays up to ${date}, before a change you made`,
     noTaxYear:
@@ -1389,6 +1430,9 @@ export const strings = {
       if (count === 1) return 'Also remove its planned payment?';
       return `Also remove its ${count} planned payments?`;
     },
+    /** The answers say what they do (D279). */
+    removeYes: (one: boolean) => (one ? 'Yes, remove it' : 'Yes, remove them'),
+    removeNo: (one: boolean) => (one ? 'No, keep it' : 'No, keep them'),
     debtConfirm: 'Close this debt',
     goalTitle: 'Close this goal',
     goalIntro:

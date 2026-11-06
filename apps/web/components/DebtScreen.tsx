@@ -64,7 +64,10 @@ function Fix({ row, debtName }: { readonly row: DebtPaymentView; readonly debtNa
           setBusy(true);
           setProblem(null);
           const message = t.fixed(row.name, amount);
-          const outcome = await makeChanges(fix.commands, message);
+          const outcome = await makeChanges(fix.commands, {
+            full: message,
+            short: strings.undo.short.changed(row.name),
+          });
           setBusy(false);
           if (outcome.ok) focusUndoBar(message);
           else setProblem(refusalMessage(outcome.code));
@@ -325,12 +328,20 @@ function OneDebt({
             ? null
             : strings.closing.alsoRemove(planned.removing.count, planned.removing.continues)
         }
+        answers={
+          planned === null
+            ? null
+            : (() => {
+                const one = !planned.removing.continues && planned.removing.count === 1;
+                return { yes: strings.closing.removeYes(one), no: strings.closing.removeNo(one) };
+              })()
+        }
         onConfirm={(yes) =>
           yes && planned !== null
-            ? makeChanges(
-                [...planned.commands, { kind: 'close-debt', debtId: debt.id }],
-                strings.closing.debtClosedAndRemoved(debt.name),
-              )
+            ? makeChanges([...planned.commands, { kind: 'close-debt', debtId: debt.id }], {
+                full: strings.closing.debtClosedAndRemoved(debt.name),
+                short: strings.undo.short.closed(debt.name),
+              })
             : makeChange(
                 { kind: 'close-debt', debtId: debt.id },
                 strings.closing.debtClosed(debt.name),

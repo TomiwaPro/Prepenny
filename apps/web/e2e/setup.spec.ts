@@ -200,7 +200,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         'This pay, until Sun 1 Nov',
       );
       await expect(paydayButton(page, '2026-11-02')).toContainText('Mon 2 Nov');
-      await page.getByRole('button', { name: 'View', exact: true }).click();
+      await page.getByRole('button', { name: 'Change view', exact: true }).click();
       await expect(page.getByRole('dialog').getByText('Mon to Sun', { exact: true })).toBeVisible();
     });
 

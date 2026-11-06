@@ -67,7 +67,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // Sam has two accounts, so he can switch.
       await expect(account.getByRole('button', { name: 'Switch account' })).toBeVisible();
       await expect(page.getByTestId('plan-showing')).toHaveText('By payday, showing everything');
-      await expect(page.getByRole('button', { name: 'View', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Change view', exact: true })).toBeVisible();
       await expect(page.getByTestId('not-ticked-yet')).toHaveCount(0);
       await expect(page).toHaveTitle('Coming up, PrePenny');
       await noAxeProblems(page);
@@ -310,7 +310,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
     test('View shows one type, and Switch account shows the other account', async ({ page }) => {
       await openComingUp(page);
-      await page.getByRole('button', { name: 'View', exact: true }).click();
+      await page.getByRole('button', { name: 'Change view', exact: true }).click();
       const view = page.getByRole('dialog', { name: 'View' });
       await expect(
         view.getByText('Choose how payments are grouped, and which ones to show.'),

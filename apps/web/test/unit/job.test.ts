@@ -17,6 +17,7 @@ import {
   weekForWords,
 } from '../../lib/job-words.ts';
 import { workOutPayView } from '../../lib/pay-view.ts';
+import { strings } from '../../strings/en-GB.ts';
 
 const SUNDAY = '2026-10-25';
 
@@ -152,5 +153,35 @@ describe("Your job on Sam's example", () => {
 
   it('shows nothing when no job is saved', () => {
     expect(workOutJobView({ ...examplePlan, payProfiles: [] }, SUNDAY).jobs).toEqual([]);
+  });
+});
+
+// The owner's answers to step 2h (D280, D281): a step of a pattern is a payday
+// for pay that isn't weekly, and a saved week is a "usual week" everywhere.
+describe('The words for a pay pattern', () => {
+  it('says "Week 2 of 4" for weekly pay and "Payday 2 of 4" for any other', () => {
+    expect(weekForWords([2], 4)).toBe('Week 2 of 4 in your pay pattern');
+    expect(weekForWords([2], 4, null, '', false)).toBe('Payday 2 of 4 in your pay pattern');
+    expect(weekForWords([1, 3], 4, null, '', false)).toBe(
+      'Paydays 1 and 3 of 4 in your pay pattern',
+    );
+    expect(strings.pay.saveWeekStep(2, 4, 'Fri 6 Nov', true)).toBe(
+      'Week 2 of 4, next on Fri 6 Nov',
+    );
+    expect(strings.pay.saveWeekStep(2, 4, 'Fri 6 Nov', false)).toBe(
+      'Payday 2 of 4, next on Fri 6 Nov',
+    );
+    expect(strings.pay.saveWeekOne(true)).toBe('One week of the pattern');
+    expect(strings.pay.saveWeekOne(false)).toBe('One payday of the pattern');
+    expect(strings.pay.savedWeekStep('Short week', 2, false)).toBe(
+      'Short week saved as the usual week for payday 2 of your pay pattern.',
+    );
+  });
+
+  it('never says "pay week" or "saved week" to anyone', () => {
+    const words = JSON.stringify(strings, (_key, value) =>
+      typeof value === 'function' ? String(value) : value,
+    );
+    expect(words).not.toMatch(/pay week|saved week/i);
   });
 });

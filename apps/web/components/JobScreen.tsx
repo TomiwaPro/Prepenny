@@ -81,7 +81,13 @@ function Job({
               <li key={week.id}>
                 <span className={styles.weekName}>{week.name}</span>
                 <span className={screenStyles.second}>
-                  {weekForWords(week.steps, job.steps, week.until, today)}
+                  {weekForWords(
+                    week.steps,
+                    job.steps,
+                    week.until,
+                    today,
+                    job.frequency === 'weekly',
+                  )}
                 </span>
               </li>
             ))}

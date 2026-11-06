@@ -15,6 +15,7 @@ import type { EditCommand, JustThisOneEdits, Schedule, ThisAndLaterEdits } from 
 import Link from 'next/link';
 import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { amountForTyping, parseAmount } from '../lib/amount.ts';
+import type { ChangeWords } from '../lib/bar-words.ts';
 import { formatDay } from '../lib/dates.ts';
 import { holidaysFor } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
@@ -45,7 +46,9 @@ const t = strings.edit;
  */
 function introFor(row: RowView | null): string | null {
   if (row === null || row.editing === 'none') return null;
-  return row.editing === 'set-aside' ? t.introSetAside : t.intro;
+  if (row.editing === 'set-aside')
+    return row.flow === 'transfer-in' ? t.introSetAsideIn : t.introSetAside;
+  return t.intro;
 }
 
 export interface EditSheetProps {
@@ -188,6 +191,10 @@ function EditForm({
   const canTick = canChange || row.editing === 'set-aside';
   const setAside = row.editing === 'set-aside' ? ({ setAside: true } as const) : {};
   const showNameAndNote = isPayment && !row.sharedHalf;
+  // Money coming into this account is marked as arrived, not paid (D278).
+  const comingIn = row.flow === 'in' || row.flow === 'transfer-in';
+  // A pattern on pay that isn't weekly goes round by payday, not by week (D280).
+  const weeklyPay = row.repeats?.howOften === 'weekly' && row.repeats.every === 1;
 
   const amount = parseAmount(amountText);
   const amountChanged = amount !== null && amount !== row.amount;
@@ -203,7 +210,11 @@ function EditForm({
   const scheduleDate = date === row.paymentDate ? row.originalDate : date;
   const oftenOn = canChangeOften && changeOften;
 
-  async function change(command: EditCommand, message: string, at: 'actions' | 'save' | 'remove') {
+  async function change(
+    command: EditCommand,
+    message: ChangeWords,
+    at: 'actions' | 'save' | 'remove',
+  ) {
     if (busy) return;
     setBusy(true);
     setProblem(null);
@@ -262,7 +273,10 @@ function EditForm({
     if (!later) {
       change(
         { kind: 'just-this-one', ...ref, edits },
-        strings.undo.changedJustThisOne(row.name),
+        {
+          full: strings.undo.changedJustThisOne(row.name),
+          short: strings.undo.short.changed(row.name),
+        },
         'save',
       );
       return;
@@ -285,7 +299,10 @@ function EditForm({
         newSeriesId: newId(),
         newOtherHalfSeriesId: newId(),
       },
-      strings.undo.changedThisAndLater(row.name),
+      {
+        full: strings.undo.changedThisAndLater(row.name),
+        short: strings.undo.short.changed(row.name),
+      },
       'save',
     );
   }
@@ -331,7 +348,10 @@ function EditForm({
             onClick={() =>
               change(
                 { kind: 'remove-this-one', ...ref },
-                strings.undo.removedJustThisOne(row.name),
+                {
+                  full: strings.undo.removedJustThisOne(row.name),
+                  short: strings.undo.short.removed(row.name),
+                },
                 'remove',
               )
             }
@@ -346,7 +366,10 @@ function EditForm({
               onClick={() =>
                 change(
                   { kind: 'remove-this-and-later', ...ref },
-                  strings.undo.removedThisAndLater(row.name),
+                  {
+                    full: strings.undo.removedThisAndLater(row.name),
+                    short: strings.undo.short.removed(row.name),
+                  },
                   'remove',
                 )
               }
@@ -396,17 +419,27 @@ function EditForm({
               row.ticked
                 ? change(
                     { kind: 'untick', ...ref, ...setAside },
-                    strings.undo.markedNotPaid(row.name),
+                    comingIn
+                      ? strings.undo.markedNotArrived(row.name)
+                      : strings.undo.markedNotPaid(row.name),
                     'actions',
                   )
                 : change(
                     { kind: 'tick', ...ref, ...setAside, tickedAt: timeNow() },
-                    strings.undo.markedPaid(row.name),
+                    comingIn
+                      ? strings.undo.markedArrived(row.name)
+                      : strings.undo.markedPaid(row.name),
                     'actions',
                   )
             }
           >
-            {row.ticked ? t.markAsNotPaid : t.markAsPaid}
+            {row.ticked
+              ? comingIn
+                ? t.markAsNotArrived
+                : t.markAsNotPaid
+              : comingIn
+                ? t.markAsArrived
+                : t.markAsPaid}
           </button>
           {canChange && !row.ticked && row.nextPayday !== null ? (
             <div className={styles.withHint}>
@@ -597,7 +630,7 @@ function EditForm({
               value={patternScope}
               options={[
                 { value: 'every', label: t.everyPayday },
-                { value: 'step', label: t.onlyThisWeek },
+                { value: 'step', label: weeklyPay ? t.onlyThisWeek : t.onlyThisPayday },
               ]}
               onChange={setPatternScope}
             />

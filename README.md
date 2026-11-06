@@ -4,7 +4,7 @@ Plan every penny before payday.
 
 PrePenny is a money planner for people in the UK who live payday to payday. You type in what your bank shows today and every payment coming up, and it shows the balance left after each one, the lowest point ahead and when each debt is paid off.
 
-Phase 2 is done (4 Nov 2026): the money engine, and the whole app on one phone. Someone can make their own plan in eight steps, or look around Sam's example plan; see Home, Coming up and their debts; update their balance, add, change, move, tick or remove any payment and undo it; record what they spend from a budget; add overtime or a missed shift; keep savings goals; practise changes in What if; and work out take-home pay, in the app or on the free public calculator. Everything is saved on the phone only, and it works with no signal. Signing in, sharing a plan and keeping it on a server come in Phase 3. See `PLAN.md` for progress.
+Phase 2 is done (4 Nov 2026): the money engine, and the whole app on one phone. Someone can make their own plan in eight steps, or look around Sam's example plan; see Home, Coming up and their debts; update their balance, add, change, move, tick or remove any payment and undo it; record what they spend from a budget; add overtime or a missed shift; keep savings goals; practise changes in What if; and work out take-home pay, in the app or on the free public calculator. Everything is saved on the phone only, and it works with no signal. Phase 3 has started: step 3a built the database in London and its privacy rules (5 Nov 2026), though nothing in the app uses it yet. Signing in, keeping the plan on the server and sharing it come in the next steps. See `PLAN.md` for progress.
 
 ## Where the documents are
 
@@ -22,7 +22,7 @@ Phase 2 is done (4 Nov 2026): the money engine, and the whole app on one phone. 
 
 GitHub checks every change: lint, type checks and tests run on every push and pull request. To see them, open the repository on GitHub and tap **Actions**, then **Check**. A green tick means everything passed.
 
-GitHub runs two sets of checks. **Lint, type checks and tests** checks the code and runs every engine and app test. **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". All four must have a green tick.
+GitHub runs three sets of checks. **Lint, type checks and tests** checks the code and runs every engine and app test. **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". **Database and its privacy rules** builds a fresh copy of the database on GitHub's machine and tests who can see and change what (see "The database" below). All five must have a green tick.
 
 To run them on a computer, install Node 24 and pnpm 12, then run:
 
@@ -50,9 +50,9 @@ You don't need to type any commands. Everything is done on github.com, on a phon
 
 1. **Open the pull request.** Go to https://github.com/TomiwaPro/Prepenny and tap **Pull requests**, then the update's name.
 2. **Try the preview.** A few minutes after the pull request is opened, a comment appears on it from **github-actions** with a preview link, such as `https://pr-19-prepenny.prepenny.workers.dev/app/`. Open it on your phone and try the update. It's a separate copy: nothing you do there touches the live app. If no link appears after 15 minutes, see "If something goes wrong" below.
-3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are five: "Lint, type checks and tests", "Build and end-to-end tests" parts 1, 2 and 3, and "Put the app online". A yellow dot means it's still running (about 15 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong".
+3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are six: "Lint, type checks and tests", "Build and end-to-end tests" parts 1, 2 and 3, "Database and its privacy rules", and "Put the app online". A yellow dot means it's still running (about 15 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong".
 4. **Merge it.** When you're happy with the preview and every tick is green, tap **Merge pull request**, then **Confirm merge**. GitHub may say **Squash and merge** or **Create a merge commit** instead; either is fine.
-5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about 20 minutes after merging in all. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
+5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about 20 minutes after merging in all, and the Database workflow sends any database changes to the real database. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
 6. **See it on your phone.** Open the live app. If PrePenny was already open, a note at the bottom says "PrePenny has been updated. Tap to reload." Tap it. People's plans stay as they were: they're saved on their own phones, and an update never changes them.
 
 ### If something goes wrong
@@ -79,6 +79,44 @@ GitHub needs permission to put the app on your Cloudflare account. Cloudflare ch
 Until the two secrets are added, the Deploy workflow still builds the app but says "Cloudflare isn't set up yet, so nothing was put online".
 
 The first time, before anything has been merged, the Deploy workflow puts the pull request's version online once as the live app too, because Cloudflare needs a live app before it can make previews of it.
+
+## The database
+
+PrePenny's database is a Supabase project in London, on Supabase's free plan for now (D17, D19). It will hold each person's plan once they sign in (Phase 3). Its tables and privacy rules are in `supabase/migrations`, and the tests that prove who can see and change what are in `supabase/tests` (step 3a, D288 to D298).
+
+Nobody changes the real database by hand. GitHub does it, the same way it puts the app online:
+
+- On every pull request, the **Database and its privacy rules** check builds a fresh copy of the database on GitHub's own machine, with made-up people (Jess, Tom and Alex), and runs every test on it. Nothing there touches the real database.
+- When a pull request is merged into `main` and every check has passed on it, the **Database** workflow (`.github/workflows/database.yml`) sends the changes to the real database in London. The made-up people and the tests never go there.
+
+### Setting it up the first time (the owner does this once)
+
+GitHub needs permission to change your Supabase project. Supabase changes its menus now and then, so a label may be slightly different from these.
+
+1. Go to https://supabase.com/dashboard/sign-up and make an account. **Continue with GitHub** is the quickest; an email address and password works too. Confirm your email address if Supabase asks.
+2. Supabase asks you to make an **organisation**. Call it `PrePenny`, choose **Personal** if it asks what kind, and choose the **Free** plan. Tap **Create organization**.
+3. Make the project. Tap **New project** and choose the PrePenny organisation. Fill in:
+   - **Project name:** `prepenny`
+   - **Database password:** tap **Generate a password**, then copy it into your password manager straight away. You need it in step 6.
+   - **Region:** the one that says **London** (its code is `eu-west-2`).
+   - Leave everything else as it is, then tap **Create new project**. It takes a minute or two; wait until the project's page no longer says it's being set up.
+4. Copy the **Project ID**. Tap the gear icon at the bottom of the menu on the left (**Project Settings**), then **General**. The Project ID is 20 letters, such as `abcdefghijklmnopqrst`. It's also in the web address of every page of your project.
+5. Make a key for GitHub. Go to https://supabase.com/dashboard/account/tokens and tap **Generate new token**. Call it `GitHub, PrePenny`. If it asks when the token should expire, choose the longest time offered. Tap **Generate token**, and copy it straight away: Supabase shows it only once. It starts with `sbp_`.
+6. In GitHub, open the repository, then **Settings**, then **Secrets and variables**, then **Actions**, then **New repository secret**. Add three secrets, one at a time:
+   - Name `SUPABASE_ACCESS_TOKEN`, with the token from step 5.
+   - Name `SUPABASE_PROJECT_REF`, with the Project ID from step 4.
+   - Name `SUPABASE_DB_PASSWORD`, with the database password from step 3.
+7. Tell Claude Code it's done. The real database gets its tables when the step 3a pull request is merged.
+
+Until the three secrets are added, the Database workflow says "Supabase isn't set up yet, so the real database wasn't changed".
+
+Keep the token and the password only in GitHub's secrets and your password manager: anyone with the token can change your Supabase projects. PrePenny never needs Supabase's "service role" key in the app.
+
+### If something goes wrong with the database
+
+- **The Database workflow has a red cross saying it couldn't reach the database.** On the free plan, a project that hasn't been used for a week is paused, and Supabase emails you first. Open the project on supabase.com and tap **Restore project**, wait a few minutes, then open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Moving to Supabase's paid plan before launch stops the pausing (D19).
+- **It says a secret is wrong.** Make the token again (step 5) and replace `SUPABASE_ACCESS_TOKEN`, or reset the database password under **Project Settings**, then **Database**, and replace `SUPABASE_DB_PASSWORD`. Then run the workflow again as above.
+- **The "Database and its privacy rules" check has a red cross on a pull request.** Don't merge: ask Claude Code to fix it. The real database is unchanged.
 
 ## Bank holidays
 
