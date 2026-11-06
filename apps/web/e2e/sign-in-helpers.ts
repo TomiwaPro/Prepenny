@@ -21,6 +21,11 @@ export function newEmail(who: string): string {
   return `${who}-${randomUUID().slice(0, 12)}@example.com`;
 }
 
+/** Empties the local test inbox, for the screenshots, which use the owner's own example address. */
+export async function emptyInbox() {
+  await fetch(`${INBOX}/api/v1/messages`, { method: 'DELETE' });
+}
+
 interface Found {
   readonly ID: string;
   readonly Created: string;

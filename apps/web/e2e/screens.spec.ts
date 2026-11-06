@@ -15,7 +15,9 @@
 // keeping it; the pay calculator's result for test 3; and Check my payslip
 // for test 5, at 360px in light. Step 2h: each of the six people's Home at
 // 360px in light, set up through the screens, and Your job. Step 3a: the
-// screens the owner's answers to step 2h changed. Run only when asked, one
+// screens the owner's answers to step 2h changed. Step 3b: signing up, the
+// code and More when signed in, which need the local Supabase running
+// (`supabase start`), as the sign-in tests do. Run only when asked, one
 // step at a time, with the browser in British English (LANG=en_GB.UTF-8), so
 // date boxes read 30/10/2026:
 //
@@ -30,6 +32,7 @@ import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
 import { openOnExample, settingScript } from './fixtures.ts';
 import { setUpAli, setUpDee, setUpJessAndTom, setUpSam } from './people.ts';
 import { setUpKofi, setUpPriya } from './setup.ts';
+import { askForCode, emptyInbox, makeAPlan, signInEmail } from './sign-in-helpers.ts';
 
 const screens = join(import.meta.dirname, '..', '..', '..', 'docs', 'screens');
 const folder = join(screens, '2b');
@@ -734,5 +737,50 @@ test('Step 3a: undo-bar-200-percent-320-light.png', async ({ browser }) => {
   await sheet.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByTestId('undo-bar')).toContainText('Rent changed.');
   await shoot3a(page, 'undo-bar-200-percent-320-light.png');
+  await context.close();
+});
+
+// Step 3b: signing up and signing in (D306), at 360px in light, with a plan
+// made on the phone first, as someone trying PrePenny before signing up:
+// the sign-up screen, the code screen with the owner's own example address,
+// and More once signed in. Needs the local Supabase (`supabase start`).
+
+/** What's on screen now, into docs/screens/3b, as tall as the whole page. */
+async function shoot3b(page: Page, file: string) {
+  await page.evaluate(() => document.fonts.ready);
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width: 360, height: Math.max(800, height) });
+  const step = join(screens, '3b');
+  mkdirSync(step, { recursive: true });
+  await page.screenshot({ path: join(step, file) });
+  await page.setViewportSize({ width: 360, height: 800 });
+}
+
+test('Step 3b: sign-up, code and More when signed in', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 360, height: 800 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    colorScheme: 'light',
+    reducedMotion: 'reduce',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+  });
+  const page = await context.newPage();
+  await emptyInbox();
+  await makeAPlan(page);
+  await page.goto('/sign-in/?to=sign-up&from=more');
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign up' })).toBeVisible();
+  await shoot3b(page, 'sign-up-360-light.png');
+
+  await askForCode(page, 'sam@example.com');
+  await shoot3b(page, 'code-360-light.png');
+
+  const email = await signInEmail('sam@example.com');
+  await page.getByLabel('6-digit code', { exact: true }).fill(email.code);
+  await page.getByRole('button', { name: 'Sign up', exact: true }).click();
+  await expect(page.getByTestId('account').getByText('Signed in as sam@example.com')).toBeVisible();
+  await shoot3b(page, 'more-signed-in-360-light.png');
   await context.close();
 });
