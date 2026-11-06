@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, and D305 onwards were decided while building step 3b, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -3481,3 +3481,61 @@ Decided 6 Nov 2026 in step 3b.
 - Signing in on a Cloudflare preview link works with the code. The email's link opens the live app, because Supabase has one site address.
 
 Why: each follows DESIGN.md, VOICE.md and D213 where they didn't say exactly.
+
+## From the owner's reviewer, during step 3b
+
+D311 to D313 are three points from the owner's reviewer, sent by the owner on 6 Nov 2026 while step 3b was being built. Points marked "decided in step 3b" weren't in the owner's words.
+
+### D311. "Can view only" can still add and change their own pay, and overtime on it
+
+The owner's answer, 6 Nov 2026. Adds to D51, D292, D302 and D303.
+
+- Someone with "Can view only" can still add and change their own pay, and overtime and missed shifts on it, even when the pay goes into a shared account.
+- Only their own pay: they still can't touch anyone else's pay, or any other shared record. The database refuses, not only the screen.
+- Decided in step 3b:
+  - Their own pay is money coming in that says it's theirs (`paid_to`, which only they can set, D303), with no money set aside into another account and no savings goal, because either would change something else shared.
+  - With it go its one-off changes (the real amount, a moved date, skipping a payday), a change for this and all later ones, removing it, and its ticks ("Mark as arrived"). D51 keeps every other tick from someone who can view only. Ticking their own pay is part of looking after it, like typing its real amount; the owner can say otherwise.
+  - Overtime and missed shifts on it: the change to the payday, locked to them (D303), and its private details.
+
+Test: `supabase/tests/database/10-view-only-own-pay.test.sql`, 22 checks. Each new rule was broken on purpose to see it fail.
+
+Why: the owner's answer.
+
+### D312. The email's link asks for a tap first: "Finish signing in"
+
+The owner's instruction, 6 Nov 2026. Adds to D306.
+
+- The email's link opens PrePenny's sign-in page on "Finish signing in": "You opened the sign-in link from your email. Tap the button to sign in on this phone.", with "Finish signing in" and "Sign in another way". Nothing is sent to Supabase until the tap.
+- Decided in step 3b: the link's one-time key leaves the page's address as soon as it opens and is kept only while the page is open, so it isn't left in the browser's history. A link used already, or run out, says "This link has run out or has been used already. Type your email address to get a new code."
+
+Test: `apps/web/e2e/sign-in.spec.ts` test 5, and "a link opened by something else uses nothing up": the link opened in another browser, as an email service would, sends nothing, and the code from the same email still works.
+
+Why: some email services open links by themselves to check them, which would use the code up.
+
+### D313. Nobody can plant a password on someone's account
+
+The owner's instruction, 6 Nov 2026: prove that someone who signs up with my address and a password can't use that password once I sign in with a code.
+
+- Found in step 3b: on the version of Supabase's sign-in service PrePenny runs (2.197.0), they can. The stranger's sign-up keeps their password; when the address's owner signs in with a code, the address is confirmed and the stranger's password starts to work.
+- Decided in step 3b: the database keeps no password on an account until its email address is confirmed, and removes any password at the moment it's confirmed (`app.no_planted_password()`, a trigger on Supabase's own `auth.users`). Whoever set it hadn't shown they own the address. PrePenny signs people in with codes and Google only (D20), so nobody loses anything. When "add a password" comes (brief 4.13), it's set by someone signed in, on a confirmed account, and kept.
+
+Test: `apps/web/e2e/sign-in.spec.ts` ("nobody can plant a password"), against Supabase's own sign-in service, and `supabase/tests/database/11-no-planted-passwords.test.sql`, 5 checks. Without the trigger, both fail.
+
+Why: the owner's instruction. Supabase's note that it clears such passwords didn't hold on the version PrePenny runs.
+
+## From the outside review of step 3b
+
+### D314. What the outside review of step 3b changed
+
+Decided 6 Nov 2026 in step 3b, from an outside review of the whole step. Adds to D305 to D310.
+
+- **Whose plan it is stays on it.** Saving the plan, as it was loaded before the person signed in, took the mark off. Now every save keeps it.
+- **"Sign out" is always there.** With no signal, or a sign-in Supabase can't renew for the moment, More showed "Sign up or sign in". Now it shows who's signed in and "Sign out", from what the phone keeps, and checks with Supabase next time.
+- **Signing out is quick.** It waited for Supabase as long as the signal let it. Now it waits 3 seconds at most, and not at all with no signal, then removes everything.
+- **"Continue with Google" asks first.** Before Google is set up (README.md, part C), it sent people to Supabase's bare error page. Now it asks Supabase's public settings first and says "Google sign-in isn't switched on yet. Use your email address instead."
+- **Other tabs.** PrePenny open in another tab when someone signs out starts afresh too, so it can't show or save the plan from memory.
+- **Smaller:** a sign-in that finds someone else's plan on the phone also ends when PrePenny opens; "Use a different email address" looks like a link and forgets the code sent; the lines read out while signing in stay where screen readers listen; coming back from Google with Back works; Google's one-time code is answered from the phone, not sent to PrePenny's site; the email says "Nobody can sign in without it", since the link works too; a build with no Supabase address has signing in off, and the tests build with the local one (`pnpm build:local`); and the test browser is kept as soon as it's downloaded, even when a test then fails.
+- **A correction to D309 and README.md.** Google shares the person's name and the address of their profile picture as well as their email address: Supabase asks Google for "email" and "profile" and keeps them with the sign-in. PrePenny doesn't use or show them.
+- **Accepted for now:** shared pay that someone else added can't later become a person's own pay (`paid_to` is set when the pay is added, D303). Step 3c, which sends pay to the server, decides how the phone sets it (PLAN.md item 28).
+
+Why: each was shown by the review with a case that went wrong.
