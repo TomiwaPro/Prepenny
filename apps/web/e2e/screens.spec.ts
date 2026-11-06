@@ -748,6 +748,8 @@ test('Step 3a: undo-bar-200-percent-320-light.png', async ({ browser }) => {
 /** What's on screen now, into docs/screens/3b, as tall as the whole page. */
 async function shoot3b(page: Page, file: string) {
   await page.evaluate(() => document.fonts.ready);
+  // Away from every link, so none is drawn as if pointed at.
+  await page.mouse.move(0, 0);
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
   await page.setViewportSize({ width: 360, height: Math.max(800, height) });
   const step = join(screens, '3b');
