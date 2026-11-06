@@ -8,6 +8,7 @@
 import { defineConfig } from '@playwright/test';
 
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
+const SIGN_IN_TESTS = /sign-in\.spec\.ts$/;
 const port = 4173;
 
 const phone = (width: number, height: number) => ({
@@ -35,9 +36,14 @@ export default defineConfig({
       ...(executablePath === undefined ? {} : { executablePath }),
     },
   },
+  // The sign-in tests need the local Supabase (`supabase start`), so they're
+  // projects of their own (step 3b). GitHub runs them in part 3, once it has
+  // started.
   projects: [
-    { name: 'phone-320', use: phone(320, 640) },
-    { name: 'phone-360', use: phone(360, 780) },
+    { name: 'phone-320', use: phone(320, 640), testIgnore: SIGN_IN_TESTS },
+    { name: 'phone-360', use: phone(360, 780), testIgnore: SIGN_IN_TESTS },
+    { name: 'sign-in-320', use: phone(320, 640), testMatch: SIGN_IN_TESTS },
+    { name: 'sign-in-360', use: phone(360, 780), testMatch: SIGN_IN_TESTS },
   ],
   webServer: {
     command: `wrangler dev --port ${port} --ip 127.0.0.1 --log-level warn`,
