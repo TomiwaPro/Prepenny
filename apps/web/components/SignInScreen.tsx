@@ -128,17 +128,21 @@ export function SignInScreen() {
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
   const [hasPlan, setHasPlan] = useState(false);
-  const [ready, setReady] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const emailBox = useRef<HTMLInputElement>(null);
   const codeBox = useRef<HTMLInputElement>(null);
   const firstStep = useRef(true);
+  // The address is read once, even where React runs the first effect twice
+  // (its development mode), so a link's one-time key is never used twice.
+  const addressRead = useRef(false);
   const off = signInConfig() === null;
 
   // What the address says: who it's for, where it came from, and anything
   // coming back from the email's link or from Google.
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, when the page opens
   useEffect(() => {
+    if (addressRead.current) return;
+    addressRead.current = true;
     const search = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.slice(1));
     const opened: Mode = search.get('to') === 'sign-up' ? 'sign-up' : 'sign-in';
@@ -193,7 +197,6 @@ export function SignInScreen() {
       } catch {
         // No database on this phone: no plan to speak of.
       }
-      setReady(true);
     })();
   }, []);
 
@@ -362,11 +365,7 @@ export function SignInScreen() {
                   aria-describedby={describedBy(`${id}-email`, emailError, [`${id}-email-hint`])}
                 />
               </Field>
-              <button
-                type="submit"
-                className={formStyles.main}
-                aria-disabled={busy !== null || !ready}
-              >
+              <button type="submit" className={formStyles.main} aria-disabled={busy !== null}>
                 {t.sendCode}
               </button>
             </form>
@@ -377,7 +376,7 @@ export function SignInScreen() {
               <button
                 type="button"
                 className={`${formStyles.outlined} ${styles.google}`}
-                aria-disabled={busy !== null || !ready}
+                aria-disabled={busy !== null}
                 aria-describedby={`${id}-google-hint`}
                 onClick={google}
               >

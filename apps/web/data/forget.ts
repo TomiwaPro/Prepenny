@@ -13,9 +13,19 @@ import { Dexie } from 'dexie';
 /** The phone database's name (data/db.ts). */
 const DATABASE = 'prepenny';
 
+/**
+ * How long to wait for the database to go. PrePenny open in another tab can
+ * hold it for a moment; that tab lets go as soon as it's asked, and the
+ * removal finishes then, even after this page has moved on.
+ */
+const WAIT_MS = 3000;
+
 export async function forgetEverything(): Promise<void> {
   try {
-    await Dexie.delete(DATABASE);
+    await Promise.race([
+      Dexie.delete(DATABASE),
+      new Promise((resolve) => setTimeout(resolve, WAIT_MS)),
+    ]);
   } catch {
     // No database on this phone, as in some private windows: nothing was kept.
   }
