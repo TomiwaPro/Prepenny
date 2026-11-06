@@ -112,5 +112,5 @@ A rule for every screen from now on, agreed by the owner on 4 Nov 2026.
 
 - Gradients, glowing blobs, glass effects, stock illustrations, rows of three icon cards, emoji.
 - A component library's default look. If a library is used for behaviour (sheets, dialogs), restyle it fully with these tokens.
-- Decorative icons. Icons only in navigation and a few actions.
+- Decorative icons. Icons only in navigation and a few actions. One mark isn't PrePenny's own: Google's "G", in Google's colours, on "Continue with Google", as Google's rules ask (D307).
 - Red, amber or green for anything except money states, with one exception: red for Short, and for mistakes in what was typed, such as "Type an amount, for example 25." beside its box (D276).
