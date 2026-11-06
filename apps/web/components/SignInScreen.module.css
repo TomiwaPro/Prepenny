@@ -1,0 +1,91 @@
+/* Sign up and sign in (step 3b): the same column, cards and buttons as the
+   public pay calculator and setup (DESIGN.md), on the paper. */
+
+.page {
+  max-width: var(--column);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: var(--tap);
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  min-width: 0;
+}
+
+.code {
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+  letter-spacing: 4px;
+}
+
+.line {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+/* "Or", between the email and Google. A line each side, in the divider colour. */
+.or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--size-label);
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.or::before,
+.or::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--card-edge);
+}
+
+.google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.mark {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+.busy {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.busy:empty,
+.alert:empty {
+  display: none;
+}

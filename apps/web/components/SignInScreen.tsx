@@ -1,0 +1,434 @@
+'use client';
+
+// Sign up and sign in (brief 4.13, D20, step 3b), at /sign-in/, outside the
+// app's own frame, so it works for someone with no plan on this phone too.
+//
+// 1. The email address, or "Continue with Google".
+// 2. "We've sent a 6-digit code to sam@example.com. It lasts 10 minutes."
+//    Typing it signs the person in. The email's link does the same, opening
+//    this page with its one-time key after a "#" (supabase/templates).
+// 3. Then back to More, or to their plan. The plan made on this phone
+//    becomes theirs, and stays on the phone for now (brief 4.13 "Try first").
+//
+// Every mistake says what to do (VOICE.md). Nothing about money is sent,
+// and nothing is written to the console (PLAN.md item 20).
+
+import { useRouter } from 'next/navigation';
+import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { openDb, ownPlanOnPhone } from '../data/db.ts';
+import {
+  CODE_LASTS_MS,
+  checkCode,
+  checkLink,
+  codeSent,
+  finishGoogle,
+  type Outcome,
+  type Problem,
+  sendCode,
+  startGoogle,
+} from '../lib/account.ts';
+import { signInConfig } from '../lib/sign-in-config.ts';
+import { strings } from '../strings/en-GB.ts';
+import { describedBy, Field } from './Fields.tsx';
+import formStyles from './Form.module.css';
+import screenStyles from './Screens.module.css';
+import styles from './SignInScreen.module.css';
+
+const t = strings.signIn;
+
+type Mode = 'sign-in' | 'sign-up';
+type From = 'more' | 'welcome';
+type Busy = 'sending' | 'checking' | 'google' | 'link' | null;
+
+/** What's happening while the person waits, read out as it changes. */
+const BUSY_WORDS: Record<Exclude<Busy, null>, string> = {
+  sending: t.sending,
+  checking: t.checking,
+  link: t.checkingLink,
+  google: t.openingGoogle,
+};
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CODE = /^\d{6}$/;
+
+/** A problem in words. A refused code ran out when it's more than 10 minutes old. */
+function wordsFor(problem: Problem, sentAt: number | null): string {
+  switch (problem.kind) {
+    case 'offline':
+      return t.offline;
+    case 'server':
+      return t.server;
+    case 'off':
+      return t.off;
+    case 'wait':
+      return t.wait(problem.seconds);
+    case 'too-many-emails':
+      return t.tooManyEmails;
+    case 'too-many-tries':
+      return t.tooManyTries;
+    case 'code-refused':
+      return sentAt !== null && Date.now() - sentAt > CODE_LASTS_MS ? t.codeRanOut : t.codeWrong;
+    case 'email-refused':
+      return t.emailRefused;
+    case 'google-cancelled':
+      return t.googleCancelled;
+    case 'someone-elses-plan':
+      return t.someoneElsesPlan;
+  }
+}
+
+/** Where to go once signed in. */
+const afterSignIn = (from: From) => (from === 'more' ? '/app/more/' : '/app/');
+
+/** This page's own address, keeping only who it's for and where it was opened from. */
+function pageAddress(mode: Mode, from: From): string {
+  const query = new URLSearchParams();
+  if (mode === 'sign-up') query.set('to', 'sign-up');
+  if (from === 'more') query.set('from', 'more');
+  const text = query.toString();
+  return `/sign-in/${text === '' ? '' : `?${text}`}`;
+}
+
+/** Google's "G", drawn in Google's own colours, as Google's rules for the button ask (D307). */
+function GoogleMark() {
+  return (
+    <svg className={styles.mark} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+  );
+}
+
+export function SignInScreen() {
+  const router = useRouter();
+  const id = useId();
+  const [mode, setMode] = useState<Mode>('sign-in');
+  const [from, setFrom] = useState<From>('welcome');
+  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [sentAt, setSentAt] = useState<number | null>(null);
+  const [resent, setResent] = useState(false);
+  const [emailError, setEmailError] = useState<string | undefined>();
+  const [codeError, setCodeError] = useState<string | undefined>();
+  const [problem, setProblem] = useState<string | null>(null);
+  const [busy, setBusy] = useState<Busy>(null);
+  const [hasPlan, setHasPlan] = useState(false);
+  const [ready, setReady] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const emailBox = useRef<HTMLInputElement>(null);
+  const codeBox = useRef<HTMLInputElement>(null);
+  const firstStep = useRef(true);
+  const off = signInConfig() === null;
+
+  // What the address says: who it's for, where it came from, and anything
+  // coming back from the email's link or from Google.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, when the page opens
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const opened: Mode = search.get('to') === 'sign-up' ? 'sign-up' : 'sign-in';
+    const cameFrom: From = search.get('from') === 'more' ? 'more' : 'welcome';
+    setMode(opened);
+    setFrom(cameFrom);
+    const tokenHash = hash.get('token_hash');
+    const googleCode = search.get('code');
+    const googleError = search.get('error');
+    // The one-time key or code is used once, then taken out of the address,
+    // so it isn't kept in the browser's history.
+    if (tokenHash !== null || googleCode !== null || googleError !== null) {
+      window.history.replaceState(null, '', pageAddress(opened, cameFrom));
+    }
+    const finish = async (busyWith: Busy, attempt: () => Promise<Outcome>, refused: string) => {
+      setBusy(busyWith);
+      const outcome = await attempt();
+      if (outcome.ok) {
+        router.replace(afterSignIn(cameFrom));
+        return;
+      }
+      setBusy(null);
+      setProblem(
+        outcome.problem.kind === 'code-refused' ? refused : wordsFor(outcome.problem, null),
+      );
+    };
+    if (off) {
+      // Nothing to check: signing in is switched off in this version.
+    } else if (tokenHash !== null) {
+      void finish('link', () => checkLink(tokenHash), t.linkRanOut);
+    } else if (googleCode !== null) {
+      void finish('google', () => finishGoogle(googleCode), t.googleCancelled);
+    } else if (googleError !== null) {
+      setProblem(t.googleCancelled);
+    } else {
+      const sent = codeSent();
+      if (sent !== null) {
+        setEmail(sent.email);
+        setSentAt(sent.at);
+        setStep('code');
+      }
+    }
+    (async () => {
+      try {
+        const db = openDb();
+        try {
+          const own = await ownPlanOnPhone(db);
+          setHasPlan(own !== undefined);
+        } finally {
+          db.close();
+        }
+      } catch {
+        // No database on this phone: no plan to speak of.
+      }
+      setReady(true);
+    })();
+  }, []);
+
+  // A new step is announced by moving to its heading (WCAG 2.4.3).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the step changes
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    heading.current?.focus();
+  }, [step]);
+
+  async function send(event: FormEvent) {
+    event.preventDefault();
+    if (busy !== null) return;
+    setProblem(null);
+    const typed = email.trim();
+    if (!EMAIL.test(typed)) {
+      setEmailError(t.emailMissing);
+      emailBox.current?.focus();
+      return;
+    }
+    setEmailError(undefined);
+    setBusy('sending');
+    const outcome = await sendCode(typed);
+    setBusy(null);
+    if (!outcome.ok) {
+      if (outcome.problem.kind === 'email-refused') {
+        setEmailError(wordsFor(outcome.problem, null));
+        emailBox.current?.focus();
+      } else {
+        setProblem(wordsFor(outcome.problem, null));
+      }
+      return;
+    }
+    setEmail(typed);
+    setSentAt(Date.now());
+    setResent(false);
+    setCode('');
+    setCodeError(undefined);
+    setStep('code');
+  }
+
+  async function sendAgain() {
+    if (busy !== null) return;
+    setProblem(null);
+    setCodeError(undefined);
+    setBusy('sending');
+    const outcome = await sendCode(email);
+    setBusy(null);
+    if (!outcome.ok) {
+      setProblem(wordsFor(outcome.problem, null));
+      return;
+    }
+    setSentAt(Date.now());
+    setResent(true);
+    setCode('');
+    codeBox.current?.focus();
+  }
+
+  async function check(event: FormEvent) {
+    event.preventDefault();
+    if (busy !== null) return;
+    setProblem(null);
+    const typed = code.replace(/\s/g, '');
+    if (!CODE.test(typed)) {
+      setCodeError(t.codeMissing);
+      codeBox.current?.focus();
+      return;
+    }
+    setCodeError(undefined);
+    setBusy('checking');
+    const outcome = await checkCode(email, typed);
+    if (outcome.ok) {
+      router.replace(afterSignIn(from));
+      return;
+    }
+    setBusy(null);
+    if (outcome.problem.kind === 'code-refused') {
+      setCodeError(wordsFor(outcome.problem, sentAt));
+      codeBox.current?.focus();
+    } else {
+      setProblem(wordsFor(outcome.problem, sentAt));
+    }
+  }
+
+  async function google() {
+    if (busy !== null) return;
+    setProblem(null);
+    setBusy('google');
+    const back = new URL(pageAddress(mode, from), window.location.origin).href;
+    const outcome = await startGoogle(back);
+    // When it works, the browser is on its way to Google.
+    if (!outcome.ok) {
+      setBusy(null);
+      setProblem(wordsFor(outcome.problem, null));
+    }
+  }
+
+  const busyWords = busy === null ? '' : BUSY_WORDS[busy];
+  const signUp = mode === 'sign-up';
+
+  return (
+    <div className={styles.page}>
+      {/* Plain links, so nothing is fetched ahead of a tap. */}
+      <a className={styles.wordmark} href="/">
+        {strings.app.name}
+      </a>
+      <main className={styles.main}>
+        <header className={screenStyles.header}>
+          {step === 'code' ? (
+            <button
+              type="button"
+              className={screenStyles.back}
+              onClick={() => {
+                setStep('email');
+                setProblem(null);
+                setCodeError(undefined);
+              }}
+            >
+              {t.otherEmail}
+            </button>
+          ) : from === 'more' ? (
+            <a className={screenStyles.back} href="/app/more/">
+              {t.backToMore}
+            </a>
+          ) : null}
+          <h1 ref={heading} tabIndex={-1} className={screenStyles.heading}>
+            {step === 'code' ? t.codeHeading : signUp ? t.signUpHeading : t.signInHeading}
+          </h1>
+          <p className={screenStyles.purpose}>
+            {step === 'code'
+              ? resent
+                ? t.newCodeSentTo(email)
+                : t.sentTo(email)
+              : signUp
+                ? t.signUpPurpose
+                : t.signInPurpose}
+          </p>
+          {step === 'email' && hasPlan ? (
+            <p className={screenStyles.purpose}>{t.planBecomesYours}</p>
+          ) : null}
+        </header>
+
+        {off ? (
+          <section className={styles.card}>
+            <p>{t.off}</p>
+          </section>
+        ) : step === 'email' ? (
+          <>
+            <form className={styles.card} onSubmit={send} noValidate>
+              <Field id={`${id}-email`} label={t.emailLabel} error={emailError} hint={t.emailHint}>
+                <input
+                  ref={emailBox}
+                  id={`${id}-email`}
+                  className={formStyles.input}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  aria-invalid={emailError !== undefined}
+                  aria-describedby={describedBy(`${id}-email`, emailError, [`${id}-email-hint`])}
+                />
+              </Field>
+              <button
+                type="submit"
+                className={formStyles.main}
+                aria-disabled={busy !== null || !ready}
+              >
+                {t.sendCode}
+              </button>
+            </form>
+            <p className={styles.or} aria-hidden="true">
+              {t.or}
+            </p>
+            <div className={formStyles.withHint}>
+              <button
+                type="button"
+                className={`${formStyles.outlined} ${styles.google}`}
+                aria-disabled={busy !== null || !ready}
+                aria-describedby={`${id}-google-hint`}
+                onClick={google}
+              >
+                <GoogleMark />
+                <span>{t.google}</span>
+              </button>
+              <p id={`${id}-google-hint`} className={formStyles.hint}>
+                {t.googleHint}
+              </p>
+            </div>
+          </>
+        ) : (
+          <form className={styles.card} onSubmit={check} noValidate>
+            <Field id={`${id}-code`} label={t.codeLabel} error={codeError} hint={t.codeHint}>
+              <input
+                ref={codeBox}
+                id={`${id}-code`}
+                className={`${formStyles.input} ${styles.code} num`}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                aria-invalid={codeError !== undefined}
+                aria-describedby={describedBy(`${id}-code`, codeError, [`${id}-code-hint`])}
+              />
+            </Field>
+            <button type="submit" className={formStyles.main} aria-disabled={busy !== null}>
+              {signUp ? t.finishSignUp : t.finishSignIn}
+            </button>
+            <p className={styles.line}>{t.linkHint}</p>
+            <button
+              type="button"
+              className={formStyles.outlined}
+              aria-disabled={busy !== null}
+              onClick={sendAgain}
+            >
+              {t.sendNewCode}
+            </button>
+          </form>
+        )}
+
+        {/* What's happening, and what went wrong, read out as it changes. */}
+        <p className={styles.busy} role="status">
+          {busyWords}
+        </p>
+        <div role="alert" className={styles.alert} data-testid="sign-in-problem">
+          {problem === null ? null : <p className={formStyles.problem}>{problem}</p>}
+        </div>
+      </main>
+    </div>
+  );
+}

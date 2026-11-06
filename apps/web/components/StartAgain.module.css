@@ -52,3 +52,25 @@
   background: var(--card);
   color: var(--accent-text);
 }
+
+/* "Your account" on More (AccountCard.tsx, step 3b) uses these cards too. */
+
+.who {
+  font-size: var(--size-name);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.warning {
+  font-size: var(--size-body);
+  font-weight: 600;
+}
+
+/* "Sign up or sign in" is a link that looks like the other buttons. */
+a.outlined {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}

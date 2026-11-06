@@ -6,6 +6,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { checkSignIn } from '../lib/account.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './AppShell.module.css';
@@ -34,6 +35,18 @@ function Notes() {
       <OfflineNote />
     </div>
   );
+}
+
+/**
+ * Renews this phone's sign-in when PrePenny opens, if it has one, so it lasts
+ * until the person signs out, or 90 days without opening PrePenny (D19). A
+ * phone that has never signed in loads and sends nothing (step 3b).
+ */
+function KeepSignedIn() {
+  useEffect(() => {
+    void checkSignIn();
+  }, []);
+  return null;
 }
 
 /** Goes to setup when the person's own plan isn't set up yet (brief 4.1, step 2e). */
@@ -131,6 +144,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
   return (
     <PlanProvider>
       <ToSetup />
+      <KeepSignedIn />
       <Column>{children}</Column>
       {/* Above the navigation: the update note, then the undo bar (D186, D202). */}
       <div className={styles.bottom} data-bottom-notes>

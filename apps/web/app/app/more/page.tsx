@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AccountCard } from '../../../components/AccountCard.tsx';
 import { ColourChoice } from '../../../components/ColourChoice.tsx';
 import { MoreLinks } from '../../../components/MoreLinks.tsx';
 import { SimplePage } from '../../../components/SimplePage.tsx';
@@ -15,6 +16,7 @@ export default function MorePage() {
       line={strings.more.stillBeingBuilt}
     >
       <MoreLinks />
+      <AccountCard />
       <ColourChoice />
       <StartAgain />
     </SimplePage>

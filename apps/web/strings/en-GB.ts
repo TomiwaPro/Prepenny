@@ -1619,7 +1619,7 @@ export const strings = {
     heading: 'More',
     purpose:
       'Your accounts, budgets, savings goals and pay, and settings for PrePenny on this phone.',
-    stillBeingBuilt: 'Help and your account are still being built.',
+    stillBeingBuilt: 'Help is still being built.',
     yourPlan: 'Your plan',
     accounts: 'Accounts',
     accountsLine: 'Balances, overdrafts and bank holidays',
@@ -1648,6 +1648,85 @@ export const strings = {
     startAgainConfirm: 'Start again',
     keepChanges: 'Keep my changes',
     startedAgain: 'The example is back to how it started.',
+  },
+
+  /** "Your account" on More, and signing out (brief 4.13, step 3b). */
+  account: {
+    heading: 'Your account',
+    checking: "Checking whether you're signed in.",
+    signedOutLine: 'Sign up so your plan is yours. No password needed.',
+    signUp: 'Sign up or sign in',
+    signedInAs: (email: string) => `Signed in as ${email}`,
+    onPhoneOnly: 'For now your plan is on this phone only.',
+    off: "Signing in isn't switched on yet. Your plan stays on this phone.",
+    signOut: 'Sign out',
+    signOutIntro:
+      'Signing out removes your plan, and everything else PrePenny keeps, from this phone.',
+    signOutWarning: "Your plan isn't kept anywhere else yet, so it can't be brought back.",
+    signOutConfirm: 'Sign out',
+    staySignedIn: 'Stay signed in',
+    signingOut: 'Signing out.',
+    /** On the welcome, after signing out. */
+    signedOut: "You're signed out. Nothing of yours is left on this phone.",
+    /** On the welcome. */
+    haveAccount: 'Already have an account?',
+    signIn: 'Sign in',
+    signedInWelcome: (email: string) => `Signed in as ${email}.`,
+  },
+
+  /** Signing up and signing in (brief 4.13, D20, step 3b). */
+  signIn: {
+    signInHeading: 'Sign in',
+    signUpHeading: 'Sign up',
+    signInPurpose: 'Sign in with your email address or Google. No password needed.',
+    signUpPurpose:
+      'Make an account with your email address or Google. No password needed. If you already have one, this signs you in.',
+    planBecomesYours:
+      'The plan you made on this phone becomes yours. For now it stays on this phone only.',
+    backToMore: 'Back to More',
+    emailLabel: 'Email address',
+    emailHint: "We'll email you a 6-digit code.",
+    sendCode: 'Send me a code',
+    sending: 'Sending your code.',
+    or: 'Or',
+    google: 'Continue with Google',
+    googleHint: 'Opens Google to choose your account, then comes back here.',
+    openingGoogle: 'Opening Google.',
+    codeHeading: 'Type your code',
+    sentTo: (email: string) => `We've sent a 6-digit code to ${email}. It lasts 10 minutes.`,
+    newCodeSentTo: (email: string) => `We've sent a new code to ${email}. It lasts 10 minutes.`,
+    codeLabel: '6-digit code',
+    codeHint:
+      "It's in an email from PrePenny. If it isn't there, look in your junk or spam folder.",
+    linkHint: 'Or tap the link in the email, on this phone.',
+    finishSignIn: 'Sign in',
+    finishSignUp: 'Sign up',
+    checking: 'Signing you in.',
+    sendNewCode: 'Send a new code',
+    otherEmail: 'Use a different email address',
+    checkingLink: 'Checking your link.',
+    emailMissing: 'Type your email address, for example sam@example.com.',
+    codeMissing: 'Type the 6 numbers from the email, for example 123456.',
+    codeWrong:
+      "That code doesn't match. Check the 6 numbers in the email from PrePenny, or tap Send a new code.",
+    codeRanOut: "This code has run out. Tap Send a new code and we'll email you another.",
+    linkRanOut:
+      'This link has run out or has been used already. Type your email address to get a new code.',
+    wait: (seconds: number) =>
+      seconds === 1
+        ? 'You can ask for a new code in 1 second.'
+        : `You can ask for a new code in ${seconds} seconds.`,
+    tooManyEmails:
+      'Too many codes have been sent in the last hour. Try again in an hour, or continue with Google.',
+    tooManyTries: 'Too many tries from this phone. Wait 5 minutes, then try again.',
+    emailRefused:
+      "That email address can't get emails from PrePenny. Check it, or use another one.",
+    offline: "You're offline. Connect to the internet, then try again.",
+    server: "PrePenny couldn't reach its server. Try again in a minute.",
+    off: "Signing in isn't switched on yet. Your plan stays on this phone.",
+    googleCancelled: "Google sign-in didn't finish. Try again, or use your email address instead.",
+    someoneElsesPlan:
+      'This phone has a plan that belongs to another account. Sign in with that account and sign out first, then sign in with yours.',
   },
 
   parts: {
