@@ -4,7 +4,7 @@
 
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { claimOwnPlan, openDb, type PrePennyDb, savePlan } from '../../data/db.ts';
+import { claimOwnPlan, openDb, type PrePennyDb, saveChange, savePlan } from '../../data/db.ts';
 import { EXAMPLE_PLAN_ID, examplePlan } from '../../data/example-plan.ts';
 import { forgetEverything } from '../../data/forget.ts';
 import { problemOf } from '../../lib/account.ts';
@@ -56,6 +56,10 @@ describe("Supabase's refusals, in PrePenny's words", () => {
     expect(problemOf(refusal('flow_state_not_found', 'invalid flow state', 404))).toEqual({
       kind: 'code-refused',
     });
+    // Google came back in another browser, without this one's secret.
+    expect(
+      problemOf(refusal('pkce_code_verifier_not_found', 'PKCE code verifier not found', 400)),
+    ).toEqual({ kind: 'code-refused' });
   });
 
   it('an address that can get no email', () => {
@@ -95,9 +99,15 @@ describe('Which Supabase project the app signs in with', () => {
     process.env = { ...saved };
   });
 
-  it('with nothing given, the local one that `supabase start` runs', () => {
+  it('with nothing given, signing in is off, so no build points at a local address by mistake', () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.NEXT_PUBLIC_SUPABASE_KEY;
+    expect(signInConfig()).toBeNull();
+  });
+
+  it('the local one that `supabase start` runs, when the tests give it', () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = LOCAL_SUPABASE.url;
+    process.env.NEXT_PUBLIC_SUPABASE_KEY = LOCAL_SUPABASE.key;
     expect(signInConfig()).toEqual(LOCAL_SUPABASE);
   });
 
@@ -144,6 +154,17 @@ describe('The plan made on this phone becomes the person who signs in (brief 4.1
     expect(await claimOwnPlan(db, 'sam')).toBe('mine');
     expect((await db.plans.get('own'))?.owner).toBe('sam');
     expect(await claimOwnPlan(db, 'sam')).toBe('mine');
+  });
+
+  it('saving the plan again, as loaded before signing in, keeps it theirs (outside review)', async () => {
+    const loadedBefore = { id: 'own', isExample: false } as const;
+    await savePlan(db, loadedBefore, examplePlan);
+    expect(await claimOwnPlan(db, 'sam')).toBe('mine');
+    const saved = await saveChange(db, loadedBefore, []);
+    expect(saved.owner).toBe('sam');
+    expect((await db.plans.get('own'))?.owner).toBe('sam');
+    await savePlan(db, loadedBefore, examplePlan);
+    expect((await db.plans.get('own'))?.owner).toBe('sam');
   });
 
   it("a plan that's someone else's stays theirs", async () => {

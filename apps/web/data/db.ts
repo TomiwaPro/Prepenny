@@ -158,12 +158,24 @@ export function recordsOf(rows: readonly StoredRecord[]): PlanRecords {
   };
 }
 
+/**
+ * The plan as it's to be saved, keeping whose it is from the phone: the plan
+ * in memory may have been loaded before the person signed in, and saving it
+ * must never take their mark off it (D306, D314).
+ */
+async function keepingOwner(db: PrePennyDb, plan: StoredPlan): Promise<StoredPlan> {
+  if (plan.owner !== undefined) return plan;
+  const owner = (await db.plans.get(plan.id))?.owner;
+  return owner === undefined ? plan : { ...plan, owner };
+}
+
 /** Replaces everything stored for a plan with these records, in one go. */
 export async function savePlan(db: PrePennyDb, plan: StoredPlan, records: PlanRecords) {
   await db.transaction('rw', db.plans, db.records, async () => {
+    const kept = await keepingOwner(db, plan);
     await db.records.where('planId').equals(plan.id).delete();
     await db.records.bulkPut(rowsOf(plan.id, records));
-    await db.plans.put(plan);
+    await db.plans.put(kept);
   });
 }
 
@@ -222,8 +234,9 @@ export async function saveChange(
   plan: StoredPlan,
   writes: readonly RecordWrite[],
 ): Promise<StoredPlan> {
-  const saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
+  let saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
   await db.transaction('rw', db.plans, db.records, async () => {
+    saved = await keepingOwner(db, saved);
     await saveWrites(db, plan.id, writes);
     await db.plans.put(saved);
   });

@@ -51,6 +51,8 @@ export type Problem =
   | { readonly kind: 'code-refused' }
   | { readonly kind: 'email-refused' }
   | { readonly kind: 'google-cancelled' }
+  /** Google isn't set up on the Supabase project yet (README.md, "Signing in", part C). */
+  | { readonly kind: 'google-off' }
   | { readonly kind: 'someone-elses-plan' };
 
 export type Outcome = { readonly ok: true } | { readonly ok: false; readonly problem: Problem };
@@ -154,14 +156,48 @@ export async function checkSignIn(): Promise<void> {
     setAccount({ status: 'signed-out' });
     return;
   }
+  // With no signal the kept sign-in still counts, so "Sign out" is always
+  // there; it's checked with Supabase next time.
+  if (offline()) {
+    setAccount(keptAccount());
+    return;
+  }
   try {
     const { data } = await (await supabase()).auth.getSession();
+    if (data.session === null) {
+      // Supabase's client removes a sign-in that has ended; one it couldn't
+      // renew for now, with a weak signal, is still kept.
+      setAccount(hasStoredSignIn() ? keptAccount() : { status: 'signed-out' });
+      return;
+    }
+    if ((await claimPlan(data.session.user.id)) === 'someone-else') {
+      await (await supabase()).auth.signOut({ scope: 'local' }).catch(() => undefined);
+      setAccount({ status: 'signed-out' });
+      return;
+    }
     setAccount(accountOf(data.session));
-    if (data.session !== null) await claimPlan(data.session.user.id);
   } catch {
-    // With no signal the kept sign-in still counts; it's checked next time.
     setAccount(keptAccount());
   }
+}
+
+/** True when the phone says it has no signal. */
+function offline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+
+/**
+ * When PrePenny is signed out in another tab, which removes everything it
+ * keeps, this tab starts afresh too, so it never shows or saves the plan
+ * from memory (D314). Returns how to stop listening.
+ */
+export function followSignOutInOtherTabs(): () => void {
+  const listener = (event: StorageEvent) => {
+    // Only signing out empties the small store all at once.
+    if (event.key === null && event.storageArea === localStorage) window.location.replace('/');
+  };
+  window.addEventListener('storage', listener);
+  return () => window.removeEventListener('storage', listener);
 }
 
 /** The sign-in kept on this phone, read as it is, for when Supabase can't be asked. */
@@ -211,6 +247,8 @@ export function problemOf(error: unknown): Problem {
     case 'otp_expired':
     case 'otp_disabled':
     case 'bad_code_verifier':
+    // Google came back in another browser, which doesn't hold this one's secret (PKCE).
+    case 'pkce_code_verifier_not_found':
     case 'flow_state_expired':
     case 'flow_state_not_found':
       return { kind: 'code-refused' };
@@ -264,7 +302,14 @@ export async function sendCode(email: string): Promise<Outcome> {
       email,
       options: { shouldCreateUser: true },
     });
-    if (error !== null) return { ok: false, problem: problemOf(error) };
+    if (error !== null) {
+      // The only thing sent is the address, so a refusal of what was sent is about it.
+      const problem =
+        (error as { code?: unknown }).code === 'validation_failed'
+          ? ({ kind: 'email-refused' } as const)
+          : problemOf(error);
+      return { ok: false, problem };
+    }
     rememberCodeSent(email);
     return { ok: true };
   } catch (error) {
@@ -306,6 +351,21 @@ export async function checkLink(tokenHash: string): Promise<Outcome> {
  * sends it back to `back` with a one-time code (finishGoogle).
  */
 export async function startGoogle(back: string): Promise<Outcome> {
+  const config = signInConfig();
+  if (config === null) return { ok: false, problem: { kind: 'off' } };
+  try {
+    // Asked first, so nobody is sent to a bare error page when Google isn't
+    // set up yet. Only Supabase's public settings come back: nothing is sent.
+    const response = await fetch(`${config.url}/auth/v1/settings`, {
+      headers: { apikey: config.key },
+    });
+    const settings = (await response.json()) as { external?: { google?: unknown } };
+    if (settings.external?.google !== true) {
+      return { ok: false, problem: { kind: 'google-off' } };
+    }
+  } catch (error) {
+    return { ok: false, problem: problemOf(error) };
+  }
   try {
     const { error } = await (await supabase()).auth.signInWithOAuth({
       provider: 'google',
@@ -335,16 +395,22 @@ export async function finishGoogle(code: string): Promise<Outcome> {
  * there's a signal; without one, the sign-in on the phone is removed all the same.
  */
 export async function signOutAndForget(): Promise<void> {
-  if (signInConfig() !== null && hasStoredSignIn()) {
-    try {
-      await (await supabase()).auth.signOut({ scope: 'local' });
-    } catch {
-      // No signal: the phone forgets the sign-in below anyway.
-    }
+  if (signInConfig() !== null && hasStoredSignIn() && !offline()) {
+    // Supabase is given a few seconds at most: with a weak signal the phone
+    // forgets the sign-in all the same, straight after (D314).
+    await Promise.race([
+      supabase()
+        .then((made) => made.auth.signOut({ scope: 'local' }))
+        .catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
+    ]);
   }
   await forgetEverything();
   setAccount({ status: 'signed-out' });
 }
+
+/** How long signing out waits for Supabase before forgetting everything anyway. */
+const SIGN_OUT_WAIT_MS = 3000;
 
 // ---------------------------------------------------------------------------
 // The code that was sent, for this tab: the email address and when, so the
@@ -365,7 +431,8 @@ function rememberCodeSent(email: string, at = Date.now()) {
   }
 }
 
-function forgetCodeSent() {
+/** Forgets the code sent from this tab, as when the person uses a different address. */
+export function forgetCodeSent() {
   try {
     sessionStorage.removeItem(CODE_SENT_KEY);
   } catch {

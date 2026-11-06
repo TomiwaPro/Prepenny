@@ -6,7 +6,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { checkSignIn } from '../lib/account.ts';
+import { checkSignIn, followSignOutInOtherTabs } from '../lib/account.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './AppShell.module.css';
@@ -45,6 +45,7 @@ function Notes() {
 function KeepSignedIn() {
   useEffect(() => {
     void checkSignIn();
+    return followSignOutInOtherTabs();
   }, []);
   return null;
 }

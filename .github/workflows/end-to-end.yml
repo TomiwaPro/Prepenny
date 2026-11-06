@@ -56,29 +56,38 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
       - name: Build the app
-        # With no Supabase address given, the build uses the local one
-        # (apps/web/lib/sign-in-config.ts), which only part 3 starts. The
-        # other tests never contact it.
-        run: pnpm build
+        # With the local Supabase's address (apps/web/lib/sign-in-config.ts),
+        # which only part 3 starts. The other tests never contact it.
+        id: build
+        run: pnpm build:local
 
       - name: Find the test browser's version
         id: playwright
         run: echo "version=$(node -p "require('./apps/web/node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Keep the test browser between runs
+      - name: Bring back the test browser kept from an earlier run
         # Restored from GitHub's own store in seconds, so a slow download from
         # Playwright's site can't eat the job's time. Downloaded only when
         # Playwright's version changes.
         id: browser
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ steps.playwright.outputs.version }}-chromium-shell-${{ runner.os }}-${{ runner.arch }}
 
       - name: Download the test browser (only when it isn't kept yet)
+        id: download
         if: steps.browser.outputs.cache-hit != 'true'
         timeout-minutes: 15
         run: pnpm --filter @prepenny/web exec playwright install --only-shell chromium
+
+      - name: Keep the test browser for later runs
+        # Straight after the download, so it's kept even if a test then fails.
+        if: steps.download.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ steps.playwright.outputs.version }}-chromium-shell-${{ runner.os }}-${{ runner.arch }}
 
       - name: Install what the test browser needs from Ubuntu
         timeout-minutes: 10
@@ -88,8 +97,9 @@ jobs:
         run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3
 
       - name: Wait for the local Supabase
-        # Still run when an earlier test failed, so every failure shows at once.
-        if: ${{ !cancelled() && matrix.part == 3 }}
+        # Still run when an earlier test failed, so every failure shows at
+        # once, but not when the app couldn't be built.
+        if: ${{ !cancelled() && matrix.part == 3 && steps.build.outcome == 'success' }}
         timeout-minutes: 10
         run: |
           until [ -f "$RUNNER_TEMP/supabase-start.exit" ]; do sleep 2; done
@@ -97,7 +107,7 @@ jobs:
           exit "$(cat "$RUNNER_TEMP/supabase-start.exit")"
 
       - name: Sign-in tests at 320px and 360px, against the local Supabase
-        if: ${{ !cancelled() && matrix.part == 3 }}
+        if: ${{ !cancelled() && matrix.part == 3 && steps.build.outcome == 'success' }}
         run: pnpm --filter @prepenny/web exec playwright test --project=sign-in-320 --project=sign-in-360
 
       - name: Keep the test report when something fails
