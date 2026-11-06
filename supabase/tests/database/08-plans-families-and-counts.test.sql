@@ -27,10 +27,8 @@ select throws_ok($$ insert into public.spends (id, plan_id, budget_id, amount, s
 select throws_ok($$ insert into public.balance_updates (id, plan_id, account_id, balance, checked_on, checked_at)
   values (gen_random_uuid(), tests.id('tom-plan'), tests.id('joint'), 1, '2026-10-26', '2026-10-26T09:00:00Z') $$,
   '42501', null, 'Nor update the joint account''s balance from there');
-select throws_ok($$ insert into public.pay_adjustments (id, plan_id, family_id, payment_number, kind, worked_on, hours,
-    rate, change, tax_year)
-  values (gen_random_uuid(), tests.id('tom-plan'), tests.id('rent'), 1, 'overtime', '2026-11-02', '2', '19.07', 1,
-    '2026-27') $$,
+select throws_ok($$ insert into public.pay_adjustments (id, plan_id, family_id, payment_number, change)
+  values (gen_random_uuid(), tests.id('tom-plan'), tests.id('rent'), 1, 1) $$,
   '42501', null, 'Nor add overtime to a payment of Jess''s plan from there');
 
 -- So Jess can still tick and change her rent, as the owner.

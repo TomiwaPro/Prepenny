@@ -10,9 +10,10 @@ select plan(17);
 select tests.make_jess_and_tom('viewer');
 
 select ok(tests.shared_ids() @> array[tests.id('joint'), tests.id('joint-balance'), tests.id('rent'),
-    tests.id('rent-change'), tests.id('rent-tick'), tests.id('joint-food'), tests.id('from-jess')]::text[]
-  and cardinality(tests.shared_ids()) = 11,
-  'The list of shared records has all 11, of every kind');
+    tests.id('rent-change'), tests.id('rent-tick'), tests.id('joint-food'), tests.id('from-jess'),
+    tests.id('jess-cafe-pay'), tests.id('jess-cafe-overtime')]::text[]
+  and cardinality(tests.shared_ids()) = 13,
+  'The list of shared records has all 13, of every kind');
 
 select tests.as_person('tom');
 

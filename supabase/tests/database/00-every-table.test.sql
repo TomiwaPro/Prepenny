@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(10);
 
 select is_empty(
   $$ select tablename from pg_tables where schemaname = 'public' and not rowsecurity $$,
@@ -49,6 +49,10 @@ select is_empty(
      where (select count(*) from pg_policies p where p.schemaname = 'public' and p.tablename = t) <> 3 $$,
   'Every plan record table has exactly three rules: read, add and change'
 );
+
+-- What if's practice changes stay on the phone only (D264, D301).
+select hasnt_table('public', 'practice_changes',
+  'Practice changes have no table: they stay on the phone');
 
 select is_empty(
   $$ select 'ticks and changes' where not exists (

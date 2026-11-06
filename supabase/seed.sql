@@ -69,17 +69,19 @@ end;
 $$;
 
 -- A series with only what every series needs; the rest is null.
+-- `paid_to` is whose pay it is (D303), for money coming in.
 create function tests.add_series(
   name text, account text, direction text default 'out', type text default 'other',
-  amount bigint default 1000
+  amount bigint default 1000, paid_to text default null
 ) returns void
 language plpgsql as $$
 begin
   insert into public.series (id, plan_id, account_id, name, direction, type, amount, start_date,
-    schedule, end_rule, holiday_rule, family_id, family_created_at)
+    schedule, end_rule, holiday_rule, family_id, family_created_at, paid_to)
   values (tests.id(name), tests.id('plan'), tests.id(account), initcap(replace(name, '-', ' ')),
     direction, type, amount, date '2026-11-01', '{"kind":"monthly","every":1,"on":{"kind":"day","day":1}}',
-    '{"kind":"never"}', 'keep', tests.id(name), '2026-10-25T08:31:00Z');
+    '{"kind":"never"}', 'keep', tests.id(name), '2026-10-25T08:31:00Z',
+    case when paid_to is not null then tests.id(paid_to) end);
 end;
 $$;
 
@@ -118,8 +120,12 @@ begin
   insert into public.pay_weeks (id, plan_id, pay_profile_id, name, lines)
   values (tests.id('jess-week'), tests.id('plan'), tests.id('jess-job'), 'Usual week',
     '[{"name":"Basic","kind":"basic","hours":"37.5","rate":"12.71"}]');
-  insert into public.pay_adjustments (id, plan_id, family_id, payment_number, kind, worked_on, hours, rate, change, tax_year)
-  values (tests.id('jess-overtime'), tests.id('plan'), tests.id('jess-pay'), 0, 'overtime', '2026-10-27', '3', '19.07', 4500, '2026-27');
+  -- Overtime on her pay: the change to the payday, and its details (D303).
+  insert into public.pay_adjustments (id, plan_id, family_id, payment_number, change)
+  values (tests.id('jess-overtime'), tests.id('plan'), tests.id('jess-pay'), 0, 4500);
+  insert into public.pay_adjustment_details (id, plan_id, adjustment_id, kind, worked_on, hours, rate, tax_year)
+  values (tests.id('jess-overtime-details'), tests.id('plan'), tests.id('jess-overtime'), 'overtime', '2026-10-27',
+    '3', '19.07', '2026-27');
   insert into public.debts (id, plan_id, private_to, belongs_to, name, kind, balance, balance_on, balance_at, starting_balance)
   values (tests.id('jess-card'), tests.id('plan'), tests.id('jess'), tests.id('jess'), 'Jess card', 'credit-card',
     42099, '2026-10-25', '2026-10-25T09:00:00Z', 42099);
@@ -174,11 +180,29 @@ begin
   insert into public.private_links (id, plan_id, family_id, goal_id)
   values (tests.id('jess-surprise-link'), tests.id('plan'), tests.id('joint-saving'), tests.id('jess-surprise'));
 
-  -- Jess's own settings and a practice change, always private to her.
+  -- Jess's second job pays into the joint account (D303). Tom sees the pay
+  -- and the change overtime makes to it, as amounts. Her job, its usual week,
+  -- and the hours and rate of the overtime are hers alone.
+  insert into public.pay_profiles (id, plan_id, name, frequency, tax_code, basis, pension_percent, pension_when,
+    overtime_rate)
+  values (tests.id('jess-cafe-job'), tests.id('plan'), 'Cafe job', 'weekly', 'BR', 'cumulative', '5', 'before-tax',
+    '14.50');
+  insert into public.pay_weeks (id, plan_id, pay_profile_id, name, lines)
+  values (tests.id('jess-cafe-week'), tests.id('plan'), tests.id('jess-cafe-job'), 'Saturday',
+    '[{"name":"Basic","kind":"basic","hours":"8","rate":"12.71"}]');
+  perform tests.add_series('jess-cafe-pay', 'joint', 'in', 'pay', 9000, 'jess');
+  insert into public.private_links (id, plan_id, series_id, pay_profile_id, cycle_pay_weeks)
+  values (tests.id('jess-cafe-pay-job'), tests.id('plan'), tests.id('jess-cafe-pay'), tests.id('jess-cafe-job'),
+    array[tests.id('jess-cafe-week')]);
+  insert into public.pay_adjustments (id, plan_id, family_id, payment_number, change)
+  values (tests.id('jess-cafe-overtime'), tests.id('plan'), tests.id('jess-cafe-pay'), 1, 2175);
+  insert into public.pay_adjustment_details (id, plan_id, adjustment_id, kind, worked_on, hours, rate, tax_year)
+  values (tests.id('jess-cafe-overtime-details'), tests.id('plan'), tests.id('jess-cafe-overtime'), 'overtime',
+    '2026-11-21', '1.5', '14.50', '2026-27');
+
+  -- Jess's own settings, always private to her.
   insert into public.settings (id, plan_id, main_pay_family_id)
   values (tests.id('jess-settings'), tests.id('plan'), tests.id('jess-pay'));
-  insert into public.practice_changes (id, plan_id, commands, message)
-  values (tests.id('jess-practice'), tests.id('plan'), '[{"kind":"skip"}]', 'Rent skipped.');
 
   -- Tom's own private account, and his settings.
   perform tests.writing_as('tom');
@@ -248,8 +272,8 @@ language sql stable security definer set search_path = '' as $$
     union all select id from public.ticks where private_to = tests.id(person)
     union all select id from public.spends where private_to = tests.id(person)
     union all select id from public.pay_adjustments where private_to = tests.id(person)
+    union all select id from public.pay_adjustment_details where private_to = tests.id(person)
     union all select id from public.settings where private_to = tests.id(person)
-    union all select id from public.practice_changes where private_to = tests.id(person)
     union all select id from public.private_links where private_to = tests.id(person)
   ) ids
 $$;
