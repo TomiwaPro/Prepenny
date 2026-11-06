@@ -175,6 +175,28 @@ export function wordsInScreens(code: string, fileName = 'file.tsx'): Found[] {
   return found;
 }
 
+/**
+ * The words people read in an email template (supabase/templates, step 3b):
+ * each line of text between its tags, without the comments, styles or
+ * Supabase's own {{ .Token }} places.
+ */
+export function wordsInEmail(html: string): Found[] {
+  const found: Found[] = [];
+  const text = html
+    .replace(/<!--[\s\S]*?-->/g, (comment) => comment.replace(/[^\n]/g, ''))
+    .replace(/<(style|title)[\s\S]*?<\/\1>/gi, (block) => block.replace(/[^\n]/g, ''))
+    .replace(/<!doctype[^>]*>/gi, '')
+    .replace(/\{\{[^}]*\}\}/g, '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;/g, ' ');
+  text.split('\n').forEach((line, index) => {
+    const words = line.replace(/\s+/g, ' ').trim();
+    if (words !== '') found.push({ text: words, line: index + 1 });
+  });
+  return found;
+}
+
 function filesIn(folder: string, pattern: RegExp): string[] {
   const files: string[] = [];
   for (const name of readdirSync(folder).sort()) {
@@ -196,6 +218,16 @@ function main(): void {
   let checked = 0;
   for (const file of readFiles) {
     for (const found of stringsIn(readFileSync(file, 'utf8'), file)) {
+      checked += 1;
+      for (const problem of voiceProblems(found.text, rules)) {
+        problems.push(`${where(file, found.line)} has ${problem}: "${found.text}"`);
+      }
+    }
+  }
+
+  // The emails Supabase sends for PrePenny (step 3b): VOICE.md covers emails too.
+  for (const file of filesIn(join(root, 'supabase', 'templates'), /\.html$/)) {
+    for (const found of wordsInEmail(readFileSync(file, 'utf8'))) {
       checked += 1;
       for (const problem of voiceProblems(found.text, rules)) {
         problems.push(`${where(file, found.line)} has ${problem}: "${found.text}"`);
