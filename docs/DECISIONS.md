@@ -3849,17 +3849,16 @@ Test: `12-save-edit.test.sql`.
 Why: without it, nobody's first copy could go up.
 
 
-### D343. Back to one end-to-end test at a time
+### D343. Two end-to-end tests at a time: measured, and kept
 
-Decided 7 Nov 2026 in step 3c, from the measurements D320 asked for. Replaces D329's first point.
+Decided 7 Nov 2026 in step 3c, from the measurements D320 asked for. Adds to D329.
 
-Two at a time was tried on this step's pull request. Every test passed, with no retries, but nothing was saved: with another test beside it, each test took about twice as long. The phone tests in parts 1 and 2 took 7.8 and 12.9 minutes two at a time, against 6.9 and 12.1 minutes one at a time in step 3b, for about the same tests. A test this step didn't change, "Continue with Google" before it's set up, took 3.3 seconds instead of 1.4. GitHub's machines for a private repository have 2 processors, and one test already keeps both busy: the browser, the app's background worker that works out the plan, the local web server, and in part 3 the local Supabase.
+- Measured on this step's pull request, on the same code, as GitHub bills them (each part rounded up to a whole minute):
+  - One at a time: 11 + 15 + 21 = 47 minutes for the end-to-end tests.
+  - Two at a time: 9 + 14 + 18 = 41 minutes, about an eighth fewer. Part 3, the longest, finished 3 minutes sooner.
+  - For comparison, step 3b on `main`, one at a time, with 28 fewer tests: 8 + 14 + 14 = 36 minutes. The quick checks take 2 minutes on every push, as before.
+- The saving is much smaller than D320 hoped for (two-thirds). GitHub's machines for a private repository have 2 processors, and one test keeps them mostly busy: the browser, the app's background worker that works out the plan, the local web server, and in part 3 the local Supabase. With another test beside it, each test takes about twice as long, so two at a time gains only from the moments a test waits, most of all in the sign-in tests.
+- GitHub's machines also vary from run to run: a test this step didn't change, Home's "keeps the actions 2 by 2", took 1.7 seconds on step 3b's run and 2.6 seconds on this step's, one at a time both times. The app itself is no slower than in step 3b: Home opens again in 0.56 seconds on both, on a phone slowed 4 times, measured side by side on the building computer.
+- Every test passed with no retries on each GitHub run two at a time, listed with its minutes in step 3c's pull request, and on a full run on the building computer.
 
-- Each part runs one test at a time again (`--workers=1`, written out so it doesn't depend on the machine). The speed test runs with the others, as before.
-- Minutes, counted as GitHub bills them (each part rounded up to a whole minute):
-  - Before, step 3b on `main`, one at a time: 8 + 14 + 14 = 36 minutes for the end-to-end tests, and 2 for the quick checks.
-  - Two at a time, step 3c: 9 + 14 + 18 = 41 minutes, and 2 for the quick checks.
-  - After, step 3c one at a time: given in the step's pull request and report, measured on its last run, so no extra run is needed only to write them down.
-- Step 3c adds 28 end-to-end tests that sign in on two phones (part 3), so its minutes are a little higher than step 3b's whatever the setting.
-
-Why: D320 keeps two at a time only if it saves minutes without making a test unreliable. It made every test slower and saved nothing, so the extra risk of a test failing on timing bought nothing.
+Why: D320 keeps two at a time if it saves minutes and every test stays reliable. It saves a little, and nothing failed.
