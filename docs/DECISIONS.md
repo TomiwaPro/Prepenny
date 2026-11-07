@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -3539,3 +3539,55 @@ Decided 6 Nov 2026 in step 3b, from an outside review of the whole step. Adds to
 - **Accepted for now:** shared pay that someone else added can't later become a person's own pay (`paid_to` is set when the pay is added, D303). Step 3c, which sends pay to the server, decides how the phone sets it (PLAN.md item 28).
 
 Why: each was shown by the review with a case that went wrong.
+
+## From the owner's answers to step 3b's questions
+
+D315 to D320 were agreed by the owner on 7 Nov 2026, answering the six questions left at the end of step 3b. Each is the answer that was suggested.
+
+### D315. Sign out stays on the live app until step 3c, with its warning
+
+Agreed 7 Nov 2026. Confirms D308.
+
+Until step 3c keeps a copy of the plan on the server, "Sign out" stays on the live app, and signing out removes the plan for good. The sign-out sheet says so: "Your plan isn't kept anywhere else yet, so it can't be brought back." Nothing changes.
+
+Why: the owner's answer. Only the owner and testers use the live app before launch, the warning is plain, and step 3c ends the problem.
+
+### D316. Google's page and Supabase's custom domain: decided at launch
+
+Agreed 7 Nov 2026.
+
+Google's page keeps saying "to continue to" the Supabase project's own address for now. Whether to add Supabase's custom domain add-on (about US$10 a month, on the paid plan), so it says a PrePenny address such as auth.prepenny.co.uk, is decided at launch, with the move to the paid plan. It's on the launch checklist.
+
+Why: the owner's answer. Sign-in works either way, and the add-on needs the paid plan.
+
+### D317. Google sign-in stays with named test users until Phase 5
+
+Agreed 7 Nov 2026.
+
+"Continue with Google" stays in Google's "Testing" state, open only to the test users the owner lists (up to 100), until PrePenny's privacy notice is written and reviewed in Phase 5. Then it's published to everyone, with the privacy notice's link. Everyone else signs in with the email code. No holding privacy page is put up. It's on the launch checklist.
+
+Why: the owner's answer. No unreviewed legal text goes online, and the email code works for everyone.
+
+### D318. Light or Dark goes at sign-out too: confirmed
+
+Agreed 7 Nov 2026. Confirms D308.
+
+Signing out removes the Light or Dark choice with everything else, so the next person starts on "Match this phone", and "Nothing of yours is left on this phone." stays exactly true.
+
+Why: the owner's answer.
+
+### D319. "Can view only" can mark their own pay as arrived: confirmed
+
+Agreed 7 Nov 2026. Confirms D311.
+
+Someone with "Can view only" can tick their own pay as arrived, as well as add and change it and the overtime on it. Every other tick stays refused for them (D51).
+
+Why: the owner's answer. It's part of looking after your own pay, like typing its real amount.
+
+### D320. Two end-to-end tests at a time, tried in step 3c
+
+Agreed 7 Nov 2026. Adds to D300.
+
+In step 3c's pull request, the end-to-end tests run two at a time on each of GitHub's machines, which have 2 processors each. It's kept only if every test passes several runs in a row; a test that can't share a machine, such as the speed test, runs on its own. The aim is two-thirds fewer minutes on every step, not just the busy ones. Step 3c's report gives the minutes before and after.
+
+Why: the owner's answer. A step like 3a used about 60% fewer minutes after D300; the end-to-end tests are almost all of what's left.

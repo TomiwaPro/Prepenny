@@ -193,12 +193,12 @@ Then the Google Cloud project:
 2. Go to https://console.cloud.google.com and sign in with the Google account you want to own it. At the top, tap the project list, then **New project**. Call it `PrePenny` and tap **Create**. Make sure PrePenny is the project shown at the top.
 3. In the menu, open **Google Auth Platform** (it may be under **APIs & Services**, then **OAuth consent screen**) and tap **Get started**.
 4. **App name** `PrePenny`; **User support email**: your email address. Tap **Next**. **Audience**: **External**. Tap **Next**. **Contact information**: your email address. Tap **Next**, agree to the policy, and tap **Create**.
-5. Tap **Branding**. Under **Authorised domains**, add `prepenny.co.uk` and `supabase.co`. Under **App home page**, type `https://prepenny.co.uk`. Tap **Save**. Leave the privacy policy link empty for now (see question 5 in PLAN.md).
+5. Tap **Branding**. Under **Authorised domains**, add `prepenny.co.uk` and `supabase.co`. Under **App home page**, type `https://prepenny.co.uk`. Tap **Save**. Leave the privacy policy link empty for now: it's added once the privacy notice is reviewed in Phase 5 (D317).
 6. Tap **Data access**, then **Add or remove scopes**. Tick only these three: `.../auth/userinfo.email`, `.../auth/userinfo.profile` and `openid`. Tap **Update**, then **Save**. Supabase asks Google for these: the email address, and the name and the address of the profile picture, which Google always sends with it. Supabase keeps them with the sign-in; PrePenny doesn't use or show them.
 7. Tap **Clients**, then **Create client**. **Application type**: **Web application**. **Name** `PrePenny`. Under **Authorised JavaScript origins**, add `https://prepenny.co.uk`. Under **Authorised redirect URIs**, add the Callback URL from step 1. Tap **Create**.
 8. Copy the **Client ID** and the **Client secret** straight away (or download them): Google may show the secret only once.
 9. In GitHub's **New repository secret** (as in B7), add two secrets: name `GOOGLE_CLIENT_ID` with the Client ID, and name `GOOGLE_CLIENT_SECRET` with the Client secret.
-10. Back in Google, tap **Audience**. While it says **Testing**, only the people you list under **Test users** (up to 100) can use Google sign-in: add your own Google address there to try it. Opening it to everyone (**Publish app**) is question 5 in PLAN.md.
+10. Back in Google, tap **Audience**. While it says **Testing**, only the people you list under **Test users** (up to 100) can use Google sign-in: add your own Google address there to try it. It stays that way until Phase 5, when the privacy notice is ready and you tap **Publish app** (D317).
 
 ### D. Telling the app which Supabase project to use
 
@@ -214,7 +214,7 @@ These two aren't secret: they're in the app every phone downloads.
 Nothing else to change by hand: the Database workflow sets the sign-in settings with the key it already has. Two things only you can do, later:
 
 - **Move to the paid plan before launch** (D19, about £20 a month). That also switches on "signed out after 90 days without opening PrePenny": the Database workflow asks for it every time, Supabase refuses it on the free plan, and it comes on by itself the next time the workflow runs.
-- **Supabase's custom domain add-on**, if you want Google's page to say prepenny.co.uk (question 4 in PLAN.md).
+- **Supabase's custom domain add-on**, if you want Google's page to say a PrePenny address. Decided at launch, with the paid plan (D316).
 
 To check it worked, once the step 3b pull request is merged: open https://prepenny.co.uk/app/ on your phone, tap **More**, then **Sign up or sign in**, type your email address and tap **Send me a code**. The email comes from PrePenny, hello@prepenny.co.uk, with a 6-digit code.
 
