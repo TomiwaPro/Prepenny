@@ -2,6 +2,7 @@
    public pay calculator and setup (DESIGN.md), on the paper. */
 
 .page {
+  width: 100%;
   max-width: var(--column);
   min-height: 100dvh;
   margin: 0 auto;

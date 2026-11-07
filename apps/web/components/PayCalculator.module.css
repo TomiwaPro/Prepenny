@@ -126,6 +126,7 @@
 
 /* The public page: PrePenny's name, then the calculator in the centred column. */
 .page {
+  width: 100%;
   max-width: var(--column);
   margin: 0 auto;
   padding: var(--space-4) var(--gutter) var(--space-6);

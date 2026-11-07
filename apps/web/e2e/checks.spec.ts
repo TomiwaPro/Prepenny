@@ -12,7 +12,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page, type Request } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
 import { AXE_TAGS, layoutProblems, openPeriod, period } from './coming-up.ts';
-import { test } from './fixtures.ts';
+import { openOnExample, test } from './fixtures.ts';
 
 async function noAxeProblems(page: Page, where?: string) {
   const builder = new AxeBuilder({ page }).withTags(AXE_TAGS);
@@ -554,4 +554,52 @@ test.describe("what's kept on the phone", () => {
       .click();
     await gone();
   });
+});
+
+// On a laptop: the same app in a centred column (brief Part 6). The owner saw
+// the welcome sit right of the middle at about 1150 to 1330px wide (step 3c),
+// so every screen is checked once, at 1280px in light: its column is in the
+// middle, to the pixel, and nothing makes the page scroll sideways.
+const LAPTOP_SCREENS = [
+  { path: '/', heading: 'PrePenny' },
+  { path: '/setup/', heading: 'PrePenny' },
+  { path: '/sign-in/', heading: 'Sign in' },
+  { path: '/pay-calculator/', heading: 'Take-home pay calculator' },
+  { path: '/app/', heading: 'Home' },
+  { path: '/app/coming-up/', heading: 'Coming up' },
+  { path: '/app/debts/', heading: 'Debts' },
+  { path: '/app/debt/#id=family-loan', heading: 'Family loan' },
+  { path: '/app/more/', heading: 'More' },
+  { path: '/app/accounts/', heading: 'Accounts' },
+  { path: '/app/what-if/', heading: 'What if' },
+] as const;
+
+test('on a laptop, 1280px wide, every screen sits in the middle', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'phone-360', 'One width, once.');
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    colorScheme: 'light',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+    ...(info.project.use.baseURL === undefined ? {} : { baseURL: info.project.use.baseURL }),
+  });
+  await openOnExample(context);
+  const page = await context.newPage();
+  for (const { path, heading } of LAPTOP_SCREENS) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+    const placed = await page.evaluate(() => {
+      const main = document.querySelector('main') as HTMLElement;
+      const box = main.getBoundingClientRect();
+      const page = document.documentElement;
+      return {
+        left: Math.round(box.left),
+        right: Math.round(page.clientWidth - box.right),
+        sideways: page.scrollWidth - page.clientWidth,
+      };
+    });
+    expect(Math.abs(placed.left - placed.right), `${path} is in the middle`).toBeLessThanOrEqual(1);
+    expect(placed.sideways, `${path} doesn't scroll sideways`).toBe(0);
+  }
+  await context.close();
 });
