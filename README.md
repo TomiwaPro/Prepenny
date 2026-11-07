@@ -77,7 +77,7 @@ GitHub needs permission to put the app on your Cloudflare account. Cloudflare ch
 2. In the menu on the left, open **Workers & Pages** (it may be under **Compute**). The first time, Cloudflare asks you to choose a **workers.dev subdomain**: a short name that becomes part of the app's web address, such as `prepenny-yourname`. Choose one and confirm it.
 3. Copy your **Account ID**. On the **Workers & Pages** page it's on the right, under **Account details**, with a copy button. Keep it somewhere for step 6.
 4. Make a key for GitHub. Tap the person icon at the top right, then **My Profile**, then **API Tokens**, then **Create Token**. Beside **Edit Cloudflare Workers**, tap **Use template**.
-5. Under **Account Resources**, choose **Include** and your account. Under **Zone Resources**, choose **Include** and **All zones**. Tap **Continue to summary**, then **Create Token**. Copy the token straight away: Cloudflare shows it only once.
+5. Under **Account Resources**, choose **Include** and your account. Under **Zone Resources**, choose **Include** and **All zones**. Under **Permissions**, check there's a line for **Zone**, **Zone**, **Read**, and add it with **+ Add more** if not: the live app needs it to keep its own address (D322). Tap **Continue to summary**, then **Create Token**. Copy the token straight away: Cloudflare shows it only once.
 6. In GitHub, open the repository, then **Settings**, then **Secrets and variables**, then **Actions**, then **New repository secret**. Add two secrets, one at a time:
    - Name `CLOUDFLARE_API_TOKEN`, with the token from step 5.
    - Name `CLOUDFLARE_ACCOUNT_ID`, with the Account ID from step 3.
@@ -133,40 +133,49 @@ When the step 3b pull request is merged, the **Database** workflow sends the sig
 
 ### What to do before merging, and what can wait
 
-- **Before merging:** B (Resend) and D (the two GitHub variables), and steps 1 to 3 of A (the app at prepenny.co.uk). Then the live app is built with signing in on, the sign-in emails come from hello@prepenny.co.uk to anyone, and the email's link opens.
-- **Can wait:** C (Google). Until then, "Continue with Google" says "Google sign-in isn't switched on yet. Use your email address instead." Also the rest of A (www and prepenny.com sending people on, and replies forwarded), and E (Supabase's paid plan, before launch).
+- **Before merging:** B (Resend), D (the two GitHub variables), and steps 1 to 4 of A (the Cloudflare key's permissions). Then the live app is built with signing in on and put online at prepenny.co.uk too, the sign-in emails come from hello@prepenny.co.uk to anyone, and the email's link opens.
+- **Can wait:** C (Google). Until then, "Continue with Google" says "Google sign-in isn't switched on yet. Use your email address instead." Also the rest of A (www and prepenny.com sending people on, and replies forwarded), and E (Supabase's paid plan and its custom domain, before launch).
 - **If you merge first,** nothing breaks, and nobody's plan is touched: plans stay on phones until step 3c.
   - The live app says "Signing in isn't switched on yet." until D is done and the app is put online again: **Actions**, then **Deploy**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
   - Supabase gets PrePenny's sign-in settings at the merge. Until B, Supabase's own test sender sends the emails, only to people in your Supabase team and only two an hour; once the Resend key is added, run **Database** by hand as above.
-  - Until steps 1 to 3 of A, the email's link leads to prepenny.co.uk, which doesn't open yet. The code in the same email works.
+  - Until steps 1 to 4 of A, the live app can't be put online at prepenny.co.uk: the **Deploy** run on `main` gets a red cross saying the Cloudflare key isn't allowed to, although the new version is online at the old workers.dev address. The email's link leads to prepenny.co.uk, which doesn't open yet; the code in the same email works. Once the key can do it, run **Deploy** by hand as above.
 - **Try signing in on the live app after merging,** not on the preview: Supabase only has PrePenny's email and settings once this is merged.
 
 ### A. The web addresses, in Cloudflare
 
 prepenny.co.uk is the main address: the app, and the address sign-in emails come from. prepenny.com sends people there (D304).
 
-The app at prepenny.co.uk:
+The app at prepenny.co.uk. You don't add it yourself: it's written into the app's hosting settings (`apps/web/wrangler.jsonc`), so each time GitHub puts the live app online it adds prepenny.co.uk if it's missing and keeps it (D322). GitHub's Cloudflare key needs permission to do that. The key made from the **Edit Cloudflare Workers** template (in "Putting PrePenny online") should have all of it except possibly the last one below:
 
-1. Go to https://dash.cloudflare.com and sign in. Tap **Workers & Pages** (it may be under **Compute**), then **prepenny**.
-2. Tap **Settings**, then under **Domains & Routes**, tap **Add**, then **Custom domain**.
-3. Type `prepenny.co.uk` and tap **Add domain**. After a minute or two, https://prepenny.co.uk/app/ opens PrePenny.
+1. Go to https://dash.cloudflare.com and sign in. Tap the person icon at the top right, then **My Profile**, then **API Tokens**.
+2. Find the key you made for GitHub (it may be called **Edit Cloudflare Workers**). Tap the three dots beside it, then **Edit**.
+3. Under **Permissions**, check these three lines are there. Add any that's missing with **+ Add more**, choosing the three boxes in this order:
+   - **Account**, **Workers Scripts**, **Edit**
+   - **Zone**, **Workers Routes**, **Edit**
+   - **Zone**, **Zone**, **Read**
+
+   Under **Zone Resources**, keep **Include**, **All zones** (or choose **Specific zone**, `prepenny.co.uk`). No permission to change DNS records is needed.
+4. Tap **Continue to summary**, then **Update token**. The key itself stays the same, so nothing changes in GitHub.
+5. After this pull request is merged and GitHub has put the live app online (**Actions**, then **Deploy**, a green tick), open https://prepenny.co.uk/app/. The first time, it can take a few minutes while Cloudflare makes its certificate.
+
+Don't add prepenny.co.uk by hand under the app's **Domains & Routes** as well: it does no harm, but the app's hosting settings are what keep it. Any other address added there by hand would be taken off at the next deploy, because the settings list them all.
 
 www.prepenny.co.uk sends people to prepenny.co.uk:
 
-4. Go back to the start of the dashboard (**Account home**) and tap **prepenny.co.uk**. Tap **DNS**, then **Records**, then **Add record**.
-5. Choose **Type** `AAAA`, **Name** `www`, **IPv6 address** `100::`, and leave **Proxy status** on (an orange cloud). Tap **Save**.
-6. Tap **Rules**, then **Overview** (or **Templates**). Find **Redirect from WWW to root** and tap it, then **Deploy** (or **Save**).
+6. Go back to the start of the dashboard (**Account home**) and tap **prepenny.co.uk**. Tap **DNS**, then **Records**, then **Add record**.
+7. Choose **Type** `AAAA`, **Name** `www`, **IPv6 address** `100::`, and leave **Proxy status** on (an orange cloud). Tap **Save**.
+8. Tap **Rules**, then **Overview** (or **Templates**). Find **Redirect from WWW to root** and tap it, then **Deploy** (or **Save**).
 
 prepenny.com, and www.prepenny.com, send people to prepenny.co.uk:
 
-7. Go back to **Account home** and tap **prepenny.com**. Tap **DNS**, then **Records**, and add two records, as in step 5: **Type** `AAAA`, **Name** `@`, **IPv6 address** `100::`, proxied; then **Type** `AAAA`, **Name** `www`, **IPv6 address** `100::`, proxied.
-8. Tap **Rules**, then **Redirect Rules** (it may be under **Rules**, **Overview**), then **Create rule**. Call it `To prepenny.co.uk`. Under **If incoming requests match**, choose **All incoming requests**.
-9. Under **Then**, choose **Dynamic**, and in **Expression** type `concat("https://prepenny.co.uk", http.request.uri.path)`. Choose **Status code** `301` and tick **Preserve query string**. Tap **Deploy**.
-10. Try it: open https://prepenny.com/app/ and https://www.prepenny.co.uk/app/ on your phone. Both should end up at https://prepenny.co.uk/app/.
+9. Go back to **Account home** and tap **prepenny.com**. Tap **DNS**, then **Records**, and add two records, as in step 7: **Type** `AAAA`, **Name** `@`, **IPv6 address** `100::`, proxied; then **Type** `AAAA`, **Name** `www`, **IPv6 address** `100::`, proxied.
+10. Tap **Rules**, then **Redirect Rules** (it may be under **Rules**, **Overview**), then **Create rule**. Call it `To prepenny.co.uk`. Under **If incoming requests match**, choose **All incoming requests**.
+11. Under **Then**, choose **Dynamic**, and in **Expression** type `concat("https://prepenny.co.uk", http.request.uri.path)`. Choose **Status code** `301` and tick **Preserve query string**. Tap **Deploy**.
+12. Try it: open https://prepenny.com/app/ and https://www.prepenny.co.uk/app/ on your phone. Both should end up at https://prepenny.co.uk/app/.
 
 Replies to sign-in emails (optional, free):
 
-11. In **prepenny.co.uk**, tap **Email**, then **Email Routing**, then **Get started**. Make the address `hello`, send it to your own email address, and confirm that address from the email Cloudflare sends. Cloudflare adds the records it needs. Anyone who replies to a sign-in email then reaches you.
+13. In **prepenny.co.uk**, tap **Email**, then **Email Routing**, then **Get started**. Make the address `hello`, send it to your own email address, and confirm that address from the email Cloudflare sends. Cloudflare adds the records it needs. Anyone who replies to a sign-in email then reaches you.
 
 The old address, https://prepenny.prepenny.workers.dev/app/, keeps working. A browser keeps a plan for each address on its own, so a plan you made at the old address stays there.
 
@@ -214,7 +223,7 @@ These two aren't secret: they're in the app every phone downloads.
 Nothing else to change by hand: the Database workflow sets the sign-in settings with the key it already has. Two things only you can do, later:
 
 - **Move to the paid plan before launch** (D19, about £20 a month). That also switches on "signed out after 90 days without opening PrePenny": the Database workflow asks for it every time, Supabase refuses it on the free plan, and it comes on by itself the next time the workflow runs.
-- **Supabase's custom domain add-on**, if you want Google's page to say a PrePenny address. Decided at launch, with the paid plan (D316).
+- **Supabase's custom domain add-on, just before launch** (D321, about US$10 a month, on the paid plan), so Google's page says a PrePenny address such as auth.prepenny.co.uk instead of the project's supabase.co one. The steps come with it.
 
 To check it worked, once the step 3b pull request is merged: open https://prepenny.co.uk/app/ on your phone, tap **More**, then **Sign up or sign in**, type your email address and tap **Send me a code**. The email comes from PrePenny, hello@prepenny.co.uk, with a 6-digit code.
 
