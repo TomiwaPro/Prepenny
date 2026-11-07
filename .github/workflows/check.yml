@@ -1,22 +1,35 @@
 name: Check
 
-# Lint, type checks and unit tests, then the app's build and the end-to-end
-# tests on phone-sized screens, on every push and pull request (brief 7.1).
+# Every check, run once for each commit (step 3b, D300):
+# - on a pull request, every push: lint, type checks, unit tests and the
+#   database tests. While the pull request is a draft, that's all.
+# - once the pull request is ready for review: the end-to-end tests too, on
+#   every push from then on. "Ready for review" itself starts them in the
+#   "End-to-end when ready" workflow (ready.yml), so they never wait for a push.
+# - on main, always everything, before the app and the database are updated
+#   (deploy.yml and database.yml wait for this workflow).
+# Pushes to other branches start nothing: the pull request runs the checks.
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
   contents: read
 
+# A newer push to a pull request stops the older run. Runs on main are never
+# stopped: each commit on main has a group of its own.
 concurrency:
-  group: check-${{ github.ref }}
-  cancel-in-progress: true
+  group: check-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
-    name: Lint, type checks and tests
+    # One job, so a push costs about 2 minutes rather than 4: the local
+    # database starts in the background while lint, type checks and the unit
+    # tests run (GitHub rounds each job up to a whole minute).
+    name: Lint, type checks, tests and the database
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -31,6 +44,17 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+
+      - name: Set up the Supabase command line (2.122.0, ARCHITECTURE.md 1.2)
+        run: npm install --global supabase@2.122.0
+
+      - name: Start a local database with every migration and the test helpers, in the background
+        # The database tests and step 3b's sign-in rules need only the
+        # database and sign-in. Nothing here reaches the real project; the
+        # Database workflow does that, from main only (D297).
+        run: |
+          nohup bash -c 'supabase start --exclude kong,postgrest,postgres-meta,imgproxy,supavisor,studio,mailpit,realtime,storage-api,edge-runtime,logflare,vector \
+            > "$RUNNER_TEMP/supabase-start.log" 2>&1; echo $? > "$RUNNER_TEMP/supabase-start.exit"' > /dev/null 2>&1 &
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -46,31 +70,12 @@ jobs:
       - name: Tests
         run: pnpm test
 
-  database:
-    # The database and its privacy rules (step 3a, D297): every migration in
-    # supabase/migrations applied to a fresh local Supabase on GitHub's
-    # machine, then the pgTAP tests in supabase/tests. Nothing here reaches
-    # the real project; the Database workflow does that, from main only.
-    name: Database and its privacy rules
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v5
-
-      - name: Set up Node (the version in .node-version)
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: .node-version
-          # This job doesn't use pnpm, so nothing of pnpm's to keep.
-          package-manager-cache: false
-
-      - name: Set up the Supabase command line (2.122.0, ARCHITECTURE.md 1.2)
-        run: npm install --global supabase@2.122.0
-
-      - name: Start a local database with every migration and the test helpers
-        # Only the database and sign-in are needed for the tests.
-        run: supabase start --exclude kong,postgrest,postgres-meta,imgproxy,supavisor
+      - name: Wait for the local database
+        timeout-minutes: 10
+        run: |
+          until [ -f "$RUNNER_TEMP/supabase-start.exit" ]; do sleep 2; done
+          cat "$RUNNER_TEMP/supabase-start.log"
+          exit "$(cat "$RUNNER_TEMP/supabase-start.exit")"
 
       - name: Database tests (pgTAP)
         run: supabase test db
@@ -79,46 +84,11 @@ jobs:
         run: supabase db lint --level warning --fail-on warning
 
   end-to-end:
-    # In three parts side by side, so the whole set, with a journey for each
-    # of the six people (step 2h), stays well inside the time limit.
-    name: Build and end-to-end tests (part ${{ matrix.part }} of 3)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        part: [1, 2, 3]
-    steps:
-      - name: Check out the code
-        uses: actions/checkout@v5
-
-      - name: Set up pnpm (the version in package.json)
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node (the version in .node-version)
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
-
-      - name: Build the app
-        run: pnpm build
-
-      - name: Install the test browser
-        run: pnpm --filter @prepenny/web exec playwright install --with-deps chromium
-
-      - name: End-to-end tests at 320px and 360px
-        run: pnpm --filter @prepenny/web exec playwright test --shard=${{ matrix.part }}/3
-
-      - name: Keep the test report when something fails
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-part-${{ matrix.part }}
-          path: apps/web/playwright-report
-          retention-days: 7
+    # Drafts skip these. On main and on a pull request that's ready, they run
+    # on every push; a newer push stops the older ones, here or in ready.yml.
+    name: End-to-end
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    concurrency:
+      group: end-to-end-${{ github.event.pull_request.number || github.sha }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/end-to-end.yml

@@ -2,12 +2,19 @@
 // it is, with no code of our own running on Cloudflare. A preview link for
 // each pull request comes from `wrangler versions upload` in
 // .github/workflows/deploy.yml.
+//
+// prepenny.co.uk is the app's own address (D304). It's listed here, so every
+// `wrangler deploy` of the live app adds it if it's missing and keeps it
+// (D322). Wrangler then treats this list as the whole list: a custom domain
+// added by hand in Cloudflare's dashboard for this app, and not listed here,
+// would be taken off at the next deploy. The old workers.dev address stays.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "prepenny",
   "compatibility_date": "2026-10-19",
   "workers_dev": true,
   "preview_urls": true,
+  "routes": [{ "pattern": "prepenny.co.uk", "custom_domain": true }],
   "assets": {
     "directory": "./out",
     "html_handling": "auto-trailing-slash",

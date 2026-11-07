@@ -6,13 +6,14 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/build-worker.ts && NEXT_TELEMETRY_DISABLED=1 next dev",
-    "build": "node scripts/build-worker.ts && NEXT_TELEMETRY_DISABLED=1 next build && NO_UPDATE_NOTIFIER=1 serwist build serwist.config.js",
+    "build": "node scripts/build-worker.ts && NEXT_TELEMETRY_DISABLED=1 next build && NO_UPDATE_NOTIFIER=1 serwist build serwist.config.js && node scripts/write-headers.ts",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --project tsconfig.json && tsc --project service-worker/tsconfig.json",
     "e2e": "playwright test"
   },
   "dependencies": {
     "@prepenny/engine": "workspace:*",
+    "@supabase/supabase-js": "2.118.0",
     "dexie": "4.4.7",
     "next": "16.4.3",
     "react": "19.3.1",

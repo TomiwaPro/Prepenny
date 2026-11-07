@@ -15,9 +15,11 @@ select ok(tests.private_ids('jess') @> array[
     tests.id('jess-current'), tests.id('jess-balance'), tests.id('jess-pay'), tests.id('jess-pay-change'),
     tests.id('jess-pay-tick'), tests.id('jess-food'), tests.id('jess-spend'), tests.id('jess-job'),
     tests.id('jess-week'), tests.id('jess-overtime'), tests.id('jess-card'), tests.id('jess-goal'),
-    tests.id('jess-to-joint'), tests.id('jess-settings'), tests.id('jess-practice'), tests.id('jess-card-link')
-  ]::text[] and cardinality(tests.private_ids('jess')) = 20,
-  'The list of Jess''s private records has all 20, of every kind');
+    tests.id('jess-to-joint'), tests.id('jess-settings'), tests.id('jess-card-link'),
+    tests.id('jess-overtime-details'), tests.id('jess-cafe-job'), tests.id('jess-cafe-week'),
+    tests.id('jess-cafe-pay-job'), tests.id('jess-cafe-overtime-details')
+  ]::text[] and cardinality(tests.private_ids('jess')) = 24,
+  'The list of Jess''s private records has all 24, of every kind');
 
 -- As Tom, who can edit the shared plan.
 select tests.as_person('tom');
@@ -43,8 +45,8 @@ select is_empty($$ select id from public.pay_adjustments where family_id = tests
   'Tom can''t read the overtime on her pay');
 select is_empty($$ select id from public.settings where private_to = tests.id('jess') $$,
   'Tom can''t read her settings, such as her main pay');
-select is_empty($$ select id from public.practice_changes $$,
-  'Tom can''t read her practice changes');
+select is_empty($$ select id from public.pay_adjustment_details $$,
+  'Tom can''t read the details of any overtime of hers: the day, the hours or the rate');
 
 select is(tests.change_rows(tests.private_ids('jess')), 0::bigint,
   'Tom can''t change any of Jess''s private records');
@@ -72,10 +74,8 @@ select throws_ok($$ insert into public.budgets (id, plan_id, account_id, name, a
   values (gen_random_uuid(), tests.id('plan'), tests.id('jess-current'), 'Mine', 100, 'week', 'at-start',
     '2026-10-26', '2026-10-26T09:00:00Z') $$,
   '42501', null, 'Tom can''t add a budget to it');
-select throws_ok($$ insert into public.pay_adjustments (id, plan_id, family_id, payment_number, kind, worked_on, hours,
-    rate, change, tax_year)
-  values (gen_random_uuid(), tests.id('plan'), tests.id('jess-pay'), 1, 'overtime', '2026-11-02', '2', '19.07', 3000,
-    '2026-27') $$,
+select throws_ok($$ insert into public.pay_adjustments (id, plan_id, family_id, payment_number, change)
+  values (gen_random_uuid(), tests.id('plan'), tests.id('jess-pay'), 1, 3000) $$,
   '42501', null, 'Tom can''t add overtime to her pay');
 
 -- Through the joint account, too.

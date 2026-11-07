@@ -196,6 +196,39 @@
   color: var(--ink-muted);
 }
 
+/* The welcome's sign-in line, and what it says after signing out (step 3b). */
+.signInLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.signedIn {
+  margin-top: var(--space-2);
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.signedOut {
+  padding: var(--space-3);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  font-size: var(--size-body);
+  font-weight: 600;
+}
+
+.signedOut:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
 /* Here's your plan. */
 
 .figures {

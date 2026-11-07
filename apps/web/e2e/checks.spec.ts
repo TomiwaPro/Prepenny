@@ -119,6 +119,12 @@ const SCREENS = [
     heading: 'Take-home pay calculator',
     purpose: strings.pay.publicPurpose,
   },
+  { path: '/sign-in/', heading: 'Sign in', purpose: strings.signIn.signInPurpose },
+  {
+    path: '/sign-in/?to=sign-up&from=more',
+    heading: 'Sign up',
+    purpose: strings.signIn.signUpPurpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

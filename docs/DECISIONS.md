@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 onwards were decided while building step 3a, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -3336,3 +3336,296 @@ Decided 5 Nov 2026 in step 3a, from an outside review that tried every request T
 Test: `supabase/tests/database/08-plans-families-and-counts.test.sql`.
 
 Why: the review showed each with a request that worked when it shouldn't have.
+
+## From the owner's instructions for step 3b
+
+D300 and D304 are the owner's instructions for step 3b, on 6 Nov 2026, and D301 to D303 answer step 3a's three questions. They were built in step 3b. Points marked "decided in step 3b" weren't in the owner's words.
+
+### D300. GitHub's checks cost less: once per commit, and the end-to-end tests once a pull request is ready
+
+The owner's instruction, 6 Nov 2026. GitHub's free minutes ran out, and extra minutes are capped at $10 a month. Adds to D175 and D297, and replaces ARCHITECTURE.md 1.2's "the slower end-to-end tests run only on pull requests if minutes run short".
+
+- Each commit runs the checks once: the Check workflow runs on pull requests and on `main`, no longer on the push as well.
+- A newer push to a pull request stops the older run. Runs on `main` are never stopped: each commit on `main` has a group of its own.
+- On a pull request, every push runs lint, type checks, the unit tests and the database tests. Decided in step 3b: in one job, "Lint, type checks, tests and the database", with the local database starting while lint and the tests run, because GitHub rounds each job up to a whole minute (about 2 minutes a push, not 4).
+- The end-to-end tests (light and dark, 320px and 360px) run only once the pull request is ready. Decided in step 3b: GitHub's draft pull requests. Claude Code opens each step's pull request as a draft and marks it "Ready for review" when the step is done; that starts the end-to-end tests at once (`ready.yml`), and every push after it runs everything. Chosen over a label or a button because it needs no setting up, is part of every pull request already, and the owner's tick list stays the same. The preview link and the bank holiday download wait for ready too.
+- `main` always runs everything before the app and the database are updated.
+- The test browser is kept in GitHub's own cache between runs, and downloaded only when Playwright's version changes, so a slow download can't time a job out again (it took 9 minutes on 6 Nov and the job ran out of time). Each end-to-end job has 35 minutes, where the longest takes about 22. Decided in step 3b: installing the parts the browser needs from Ubuntu is given 3 minutes at most and never stops a job, because GitHub's machines already have them: on 6 Nov Ubuntu's download hung for 10 minutes and stopped two parts, while the sign-in tests ran straight after it and passed.
+- Decided in step 3b: the sign-in tests run in part 3, against a local Supabase started at the beginning of that job, rather than in a job of their own, which would pay for setting up a fourth machine.
+- The Database workflow says `--linked` to `supabase db push` and its dry run, and the command line stays 2.122.0.
+
+Measured on GitHub's own records: a pull request's checks took about 42 billed minutes a push before (2 for lint and tests, 2 for the database, about 38 for the end-to-end tests), twice a push once the pull request was open. Step 2h ran them 27 times, about 800 minutes; step 3a 6 times plus 3 tries on `main`, about 300. Measured on step 3b's own pull request: a draft push costs 2 minutes; marking it ready costs about 50 (the end-to-end tests 47, of which part 3, with the sign-in tests, is 22; the preview 2; the bank holidays 1); and `main` costs about 52. So a step like 3a, with 6 pushes, now takes about 115 minutes (about 60% less), and a step like 2h about 125 (about 85% less). Getting past two-thirds on every step is a question for the owner in PLAN.md.
+
+Why: the owner's instruction.
+
+### D301. What if's practice changes stay on the phone only
+
+Agreed 6 Nov 2026, the owner's answer to step 3a's question 3. Replaces D294. Confirms D264 and ARCHITECTURE.md 3.8.
+
+Practice changes never leave the phone. The `practice_changes` table is taken out of the database.
+
+Test: `supabase/tests/database/00-every-table.test.sql` checks there's no such table.
+
+Why: the owner's answer.
+
+### D302. "Can view only" still changes their own private accounts: confirmed
+
+Agreed 6 Nov 2026, the owner's answer to step 3a's question 4. Confirms D292.
+
+Someone with "Can view only" in a shared plan can still change their own private accounts and everything on them, such as updating their balance. Nothing changes: it's how step 3a built it.
+
+Why: the owner's answer.
+
+### D303. Job details stay private, even when the pay lands in a shared account
+
+Agreed 6 Nov 2026, the owner's answer to step 3a's question 5. Replaces the question in D291.
+
+- Job details stay private to their person, even when their pay goes into a shared account. The partner sees the pay, and any change from overtime or a missed shift, as amounts only: never the tax code, pension, usual week, hours or rate.
+- Only the person can add overtime or a missed shift to their own pay.
+- The database rules change now, so a shared record never has to name a private one (D291).
+- Decided in step 3b:
+  - A job (pay profile), and so its usual weeks, is always private to the person it belongs to. The database fills that in, whatever a phone sends.
+  - A payment can say whose pay it is (`paid_to`). Only that person can say so, and a split keeps it ("this and all later ones" from a partner stays the person's pay). On a private account it can only be that account's person.
+  - Pay in a shared account finds its job and usual weeks through a private link (`private_links`, as a private debt does, D291), which only its person reads. One link per payment series, made only by the person whose pay it is.
+  - "I did overtime" and "I missed a shift" are two records: the change to the payday (`pay_adjustments`: which payday and by how much), which everyone who reads the pay reads, locked to its person so only they can change or remove it; and its details (`pay_adjustment_details`: what happened, the day, the hours, the rate, any change to the extras and the tax year), which only its person reads. The same for pay on a private account, so there's one way to keep them.
+  - A partner with "Can edit" can still change the shared pay itself, or mark it as arrived, as with anything shared.
+
+Test: `supabase/tests/database/09-job-details.test.sql`, 25 checks. Each new rule was broken on purpose to see it fail.
+
+Why: the owner's answer. Step 3c's phone joins the private links and details back on, as for D291 (PLAN.md items 24 and 28).
+
+### D304. The web addresses: prepenny.co.uk, with prepenny.com sending people there
+
+The owner's instruction, 6 Nov 2026, while step 3b was being built. Adds to D56.
+
+- The owner bought prepenny.co.uk and prepenny.com through Cloudflare, in the account the app uses.
+- prepenny.co.uk is the main address: the app, and the address sign-in emails come from.
+- prepenny.com, and the www. of both, send people to prepenny.co.uk.
+- Decided in step 3b: sign-in emails come from hello@prepenny.co.uk, as "PrePenny". The owner can have replies forwarded to their own email for free with Cloudflare's Email Routing (README.md, "Signing in").
+- Decided in step 3b: the address is added to the app in Cloudflare's dashboard rather than in `wrangler.jsonc`, so the Deploy workflow's key needs no more permissions than it has. The old address, prepenny.prepenny.workers.dev, keeps working. A browser keeps a plan for each address on its own, so a plan made at the old one stays there.
+
+Why: the owner's instruction.
+
+## Made during step 3b
+
+D305 to D310 were decided on 6 Nov 2026 while building step 3b, signing up, signing in and signing out.
+
+### D305. How sign-in is set up on Supabase
+
+Decided 6 Nov 2026 in step 3b. Builds D19, D20 and D56.
+
+- Every sign-in setting of the real project is in `supabase/sign-in-settings.json`, with the email in `supabase/templates/sign-in-code.html`. The Database workflow sends them from `main` to Supabase's settings service after the database changes, with the Supabase key it already has. Secrets come only from GitHub's secrets: `RESEND_API_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Until each is added, the workflow says what's missing and leaves that part off.
+- A code lasts 10 minutes and has 6 digits. A new code for the same address can be asked for once a minute. Supabase's own limits stay as they are: 30 emails an hour in all, and 30 sign-in requests and 30 code checks from one connection in 5 minutes. The local Supabase allows more emails and requests, because every sign-in test asks from one machine within minutes; its once-a-minute limit stays, and a test checks the message when it's hit.
+- Someone new gets the "confirmation" email, someone signing in again the "magic link" one: both are the same PrePenny email, with the code first and the link as a backup.
+- The app is told the project's address and its publishable key by two GitHub variables, `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. Both are public: they're in the app every phone downloads, and the database's rules decide what each person can do. Until they're set, the app is built with signing in off and says "Signing in isn't switched on yet. Your plan stays on this phone."
+- Signed out after 90 days without opening PrePenny needs Supabase's paid plan (D19). The workflow asks for it every time; Supabase refuses it on the free plan, and the workflow notes that and carries on, so it switches on by itself the first time the workflow runs after the move. Until then, a phone stays signed in until the person signs out. Each time PrePenny opens on a phone that's signed in, the sign-in is renewed in the background, which is what the 90 days count from.
+
+Why: so the owner sets things up once, nothing in Supabase is changed by hand, and the settings can be read and checked in one file.
+
+### D306. Signing up and signing in
+
+Decided 6 Nov 2026 in step 3b. Builds brief 4.13, D20 and ARCHITECTURE.md 4.1.
+
+- One page, `/sign-in/`, outside the app's own frame, so it works for someone with no plan on the phone. From More it's "Sign up", from the welcome's "Already have an account? Sign in" it's "Sign in". Both work the same way: a new email address gets an account, a known one signs in. Asking "is there an account?" first would tell anyone which addresses have one.
+- First the email address or "Continue with Google". Then "We've sent a 6-digit code to sam@example.com. It lasts 10 minutes.", the box for the code and "Sign up" or "Sign in", "Or tap the link in the email, on this phone.", "Send a new code" and "Use a different email address".
+- The email's link opens PrePenny's own sign-in page, with its one-time key after a "#", so it's never sent to PrePenny's site or written in its logs, and it works in any browser. It works once.
+- Supabase answers a wrong code and a code that has run out the same way. PrePenny knows when it sent the code, so it says "That code doesn't match. Check the 6 numbers in the email from PrePenny, or tap Send a new code." before 10 minutes and "This code has run out. Tap Send a new code and we'll email you another." after.
+- Supabase's limits, in words: "You can ask for a new code in 47 seconds.", "Too many codes have been sent in the last hour. Try again in an hour, or continue with Google." and "Too many tries from this phone. Wait 5 minutes, then try again."
+- The email address and when the code was sent are kept for the tab only, so the code step comes back if the phone reloads PrePenny while the person reads their email.
+- Once signed in, the plan on the phone becomes the person's (brief 4.13 "Try first"): the phone notes their sign-in id on it. It stays on the phone: nothing of the plan is sent in this step. A plan made after signing in becomes theirs when PrePenny next opens.
+- A plan that's already someone else's stays theirs. That can only happen if someone signs in on a phone whose last person never signed out, as when a sign-in ends by itself. Signing in is then refused with "This phone has a plan that belongs to another account. Sign in with that account and sign out first, then sign in with yours." When a sign-in ends by itself, the plan stays on the phone, because in step 3b it isn't kept anywhere else yet. Steps 3c and 3e decide what the phone does then (PLAN.md item 29).
+- After signing in from More, the person is back on More, which says "Signed in as sam@example.com" and "For now your plan is on this phone only." From the welcome, they go to their plan, or to the welcome again with "Signed in as sam@example.com." if they have none.
+
+Test: `apps/web/e2e/sign-in.spec.ts` tests 1, 2, 4 and 5, and `apps/web/test/unit/account.test.ts`.
+
+Why: D20 puts the code first, because a link opened from email on an iPhone opens Safari, not the app on the home screen. The rest follows VOICE.md: every mistake says what to do.
+
+### D307. Google's "G" on its button
+
+Decided 6 Nov 2026 in step 3b. An exception to DESIGN.md's rules on icons and colours.
+
+"Continue with Google" has Google's "G" in Google's own four colours before the words, as Google's rules for its sign-in button ask. It's the only mark in Google's colours, and it isn't a money state. The button is otherwise PrePenny's own outlined button, with a line under it: "Opens Google to choose your account, then comes back here."
+
+Why: Google asks for its mark, and people look for it.
+
+### D308. Signing out
+
+Decided 6 Nov 2026 in step 3b. Builds brief 4.13 and PLAN.md item 20.
+
+- Two taps: "Sign out" in Your account on More, then "Sign out" in the sheet it opens, which says "Signing out removes your plan, and everything else PrePenny keeps, from this phone." and, while the person has a plan of their own, "Your plan isn't kept anywhere else yet, so it can't be brought back." Its other button is "Stay signed in".
+- It ends this phone's sign-in on Supabase too when there's a signal ("this device" only; "Sign out everywhere" is step 3e). With no signal, the phone forgets the sign-in all the same.
+- Then it removes everything PrePenny keeps on the phone: the phone's database (every plan, the example included, What if's practice changes and which plan was showing) and the browser's small stores (the sign-in itself, Light or Dark, how Coming up is grouped, "How to read this", and pay from the calculator). Only the app's own files stay, which hold nothing of anyone's, so PrePenny still opens with no signal. The page is then loaded afresh, so nothing is left in memory either, and the welcome says "You're signed out. Nothing of yours is left on this phone."
+
+Test: `apps/web/e2e/sign-in.spec.ts` test 3, and `apps/web/test/unit/account.test.ts`.
+
+Why: the brief: a shared or borrowed phone keeps nothing behind. Light or Dark goes too, because it says something about the person who chose it.
+
+### D309. Nothing is loaded or sent until someone signs in
+
+Decided 6 Nov 2026 in step 3b. Builds PLAN.md item 20.
+
+- Supabase's own code is loaded only on the sign-in page when it's used, or when PrePenny opens on a phone that's signed in. A phone that never signs in loads none of it and sends nothing anywhere, as before (`e2e/checks.spec.ts`).
+- At sign-in, only the email address, the code, the link's one-time key or Google's answer go to Supabase: nothing about money (test 1 checks every request).
+- Nothing writes an email address, a code or a message to the console, and there are no error reports yet. When error reports come (Sentry, D56), they send only the kind of error (PLAN.md item 20).
+- The security policy allows connections to PrePenny's own site and exactly one other address: the Supabase project the app was built with (`scripts/write-headers.ts`). Listing each of Next.js's small page scripts in it is still to do (PLAN.md item 10).
+
+Why: PLAN.md item 20 and CLAUDE.md's privacy rules.
+
+### D310. Smaller choices in step 3b
+
+Decided 6 Nov 2026 in step 3b.
+
+- Your account sits on More after Your plan and before Colours. More's last line says "Help is still being built.", since the account part is here.
+- The code box takes numbers only, from the phone's number keys, and the phone can fill it in from the email itself (`one-time-code`). Spaces are ignored.
+- Each sign-in step moves focus to its heading, so a screen reader starts there (WCAG 2.4.3). Mistakes in what was typed sit under their box in red, and other problems under the buttons, in red too (D276).
+- Signing in on a Cloudflare preview link works with the code. The email's link opens the live app, because Supabase has one site address.
+
+Why: each follows DESIGN.md, VOICE.md and D213 where they didn't say exactly.
+
+## From the owner's reviewer, during step 3b
+
+D311 to D313 are three points from the owner's reviewer, sent by the owner on 6 Nov 2026 while step 3b was being built. Points marked "decided in step 3b" weren't in the owner's words.
+
+### D311. "Can view only" can still add and change their own pay, and overtime on it
+
+The owner's answer, 6 Nov 2026. Adds to D51, D292, D302 and D303.
+
+- Someone with "Can view only" can still add and change their own pay, and overtime and missed shifts on it, even when the pay goes into a shared account.
+- Only their own pay: they still can't touch anyone else's pay, or any other shared record. The database refuses, not only the screen.
+- Decided in step 3b:
+  - Their own pay is money coming in that says it's theirs (`paid_to`, which only they can set, D303), with no money set aside into another account and no savings goal, because either would change something else shared.
+  - With it go its one-off changes (the real amount, a moved date, skipping a payday), a change for this and all later ones, removing it, and its ticks ("Mark as arrived"). D51 keeps every other tick from someone who can view only. Ticking their own pay is part of looking after it, like typing its real amount; the owner can say otherwise.
+  - Overtime and missed shifts on it: the change to the payday, locked to them (D303), and its private details.
+
+Test: `supabase/tests/database/10-view-only-own-pay.test.sql`, 22 checks. Each new rule was broken on purpose to see it fail.
+
+Why: the owner's answer.
+
+### D312. The email's link asks for a tap first: "Finish signing in"
+
+The owner's instruction, 6 Nov 2026. Adds to D306.
+
+- The email's link opens PrePenny's sign-in page on "Finish signing in": "You opened the sign-in link from your email. Tap the button to sign in on this phone.", with "Finish signing in" and "Sign in another way". Nothing is sent to Supabase until the tap.
+- Decided in step 3b: the link's one-time key leaves the page's address as soon as it opens and is kept only while the page is open, so it isn't left in the browser's history. A link used already, or run out, says "This link has run out or has been used already. Type your email address to get a new code."
+
+Test: `apps/web/e2e/sign-in.spec.ts` test 5, and "a link opened by something else uses nothing up": the link opened in another browser, as an email service would, sends nothing, and the code from the same email still works.
+
+Why: some email services open links by themselves to check them, which would use the code up.
+
+### D313. Nobody can plant a password on someone's account
+
+The owner's instruction, 6 Nov 2026: prove that someone who signs up with my address and a password can't use that password once I sign in with a code.
+
+- Found in step 3b: on the version of Supabase's sign-in service PrePenny runs (2.197.0), they can. The stranger's sign-up keeps their password; when the address's owner signs in with a code, the address is confirmed and the stranger's password starts to work.
+- Decided in step 3b: the database keeps no password on an account until its email address is confirmed, and removes any password at the moment it's confirmed (`app.no_planted_password()`, a trigger on Supabase's own `auth.users`). Whoever set it hadn't shown they own the address. PrePenny signs people in with codes and Google only (D20), so nobody loses anything. When "add a password" comes (brief 4.13), it's set by someone signed in, on a confirmed account, and kept.
+
+Test: `apps/web/e2e/sign-in.spec.ts` ("nobody can plant a password"), against Supabase's own sign-in service, and `supabase/tests/database/11-no-planted-passwords.test.sql`, 5 checks. Without the trigger, both fail.
+
+Why: the owner's instruction. Supabase's note that it clears such passwords didn't hold on the version PrePenny runs.
+
+## From the outside review of step 3b
+
+### D314. What the outside review of step 3b changed
+
+Decided 6 Nov 2026 in step 3b, from an outside review of the whole step. Adds to D305 to D310.
+
+- **Whose plan it is stays on it.** Saving the plan, as it was loaded before the person signed in, took the mark off. Now every save keeps it.
+- **"Sign out" is always there.** With no signal, or a sign-in Supabase can't renew for the moment, More showed "Sign up or sign in". Now it shows who's signed in and "Sign out", from what the phone keeps, and checks with Supabase next time.
+- **Signing out is quick.** It waited for Supabase as long as the signal let it. Now it waits 3 seconds at most, and not at all with no signal, then removes everything.
+- **"Continue with Google" asks first.** Before Google is set up (README.md, part C), it sent people to Supabase's bare error page. Now it asks Supabase's public settings first and says "Google sign-in isn't switched on yet. Use your email address instead."
+- **Other tabs.** PrePenny open in another tab when someone signs out starts afresh too, so it can't show or save the plan from memory.
+- **Smaller:** a sign-in that finds someone else's plan on the phone also ends when PrePenny opens; "Use a different email address" looks like a link and forgets the code sent; the lines read out while signing in stay where screen readers listen; coming back from Google with Back works; Google's one-time code is answered from the phone, not sent to PrePenny's site; the email says "Nobody can sign in without it", since the link works too; a build with no Supabase address has signing in off, and the tests build with the local one (`pnpm build:local`); and the test browser is kept as soon as it's downloaded, even when a test then fails.
+- **A correction to D309 and README.md.** Google shares the person's name and the address of their profile picture as well as their email address: Supabase asks Google for "email" and "profile" and keeps them with the sign-in. PrePenny doesn't use or show them.
+- **Accepted for now:** shared pay that someone else added can't later become a person's own pay (`paid_to` is set when the pay is added, D303). Step 3c, which sends pay to the server, decides how the phone sets it (PLAN.md item 28).
+
+Why: each was shown by the review with a case that went wrong.
+
+## From the owner's answers to step 3b's questions
+
+D315 to D320 were agreed by the owner on 7 Nov 2026, answering the six questions left at the end of step 3b. Each is the answer that was suggested.
+
+### D315. Sign out stays on the live app until step 3c, with its warning
+
+Agreed 7 Nov 2026. Confirms D308.
+
+Until step 3c keeps a copy of the plan on the server, "Sign out" stays on the live app, and signing out removes the plan for good. The sign-out sheet says so: "Your plan isn't kept anywhere else yet, so it can't be brought back." Nothing changes.
+
+Why: the owner's answer. Only the owner and testers use the live app before launch, the warning is plain, and step 3c ends the problem.
+
+### D316. Google's page and Supabase's custom domain: decided at launch
+
+Agreed 7 Nov 2026.
+
+Google's page keeps saying "to continue to" the Supabase project's own address for now. Whether to add Supabase's custom domain add-on (about US$10 a month, on the paid plan), so it says a PrePenny address such as auth.prepenny.co.uk, is decided at launch, with the move to the paid plan. It's on the launch checklist.
+
+Why: the owner's answer. Sign-in works either way, and the add-on needs the paid plan.
+
+### D317. Google sign-in stays with named test users until Phase 5
+
+Agreed 7 Nov 2026.
+
+"Continue with Google" stays in Google's "Testing" state, open only to the test users the owner lists (up to 100), until PrePenny's privacy notice is written and reviewed in Phase 5. Then it's published to everyone, with the privacy notice's link. Everyone else signs in with the email code. No holding privacy page is put up. It's on the launch checklist.
+
+Why: the owner's answer. No unreviewed legal text goes online, and the email code works for everyone.
+
+### D318. Light or Dark goes at sign-out too: confirmed
+
+Agreed 7 Nov 2026. Confirms D308.
+
+Signing out removes the Light or Dark choice with everything else, so the next person starts on "Match this phone", and "Nothing of yours is left on this phone." stays exactly true.
+
+Why: the owner's answer.
+
+### D319. "Can view only" can mark their own pay as arrived: confirmed
+
+Agreed 7 Nov 2026. Confirms D311.
+
+Someone with "Can view only" can tick their own pay as arrived, as well as add and change it and the overtime on it. Every other tick stays refused for them (D51).
+
+Why: the owner's answer. It's part of looking after your own pay, like typing its real amount.
+
+### D320. Two end-to-end tests at a time, tried in step 3c
+
+Agreed 7 Nov 2026. Adds to D300.
+
+In step 3c's pull request, the end-to-end tests run two at a time on each of GitHub's machines, which have 2 processors each. It's kept only if every test passes several runs in a row; a test that can't share a machine, such as the speed test, runs on its own. The aim is two-thirds fewer minutes on every step, not just the busy ones. Step 3c's report gives the minutes before and after.
+
+Why: the owner's answer. A step like 3a used about 60% fewer minutes after D300; the end-to-end tests are almost all of what's left.
+
+## From the owner's second round of answers on step 3b
+
+D321 to D323 come from the owner's message of 7 Nov 2026, which also confirmed D315 and D317 to D320 in writing: signing in is switched on now (the owner sets up README.md, "Signing in"), with the sign-out warning staying until step 3c (D315).
+
+### D321. Supabase's custom domain add-on goes on just before launch
+
+Agreed 7 Nov 2026. Replaces the second half of D316.
+
+Supabase's custom domain add-on (about US$10 a month, on the paid plan) is added just before launch, so Google's page says a PrePenny address such as auth.prepenny.co.uk instead of the project's supabase.co one. It's on the launch checklist, next to the move to the paid plan. Until then, Google's page keeps saying the project's own address.
+
+Why: the owner's answer. It's no longer a question for launch: it's a task for just before it.
+
+### D322. prepenny.co.uk is written into the app's hosting settings
+
+The owner's instruction, 7 Nov 2026. Replaces the last point of D304.
+
+prepenny.co.uk is listed in `apps/web/wrangler.jsonc` as the app's custom domain, so every `wrangler deploy` of the live app adds it if it's missing and keeps it. It isn't added by hand in Cloudflare's dashboard.
+
+What was checked, in Wrangler 4.151.3's own code:
+
+- With no custom domain in `wrangler.jsonc`, `wrangler deploy` leaves the app's custom domains alone, so one added by hand would have stayed. Doing it by hand was safe, but the owner asked for the deploy to keep it.
+- With one listed, Wrangler sends Cloudflare the whole list each time and asks it to match exactly, so any custom domain added by hand and not listed is taken off at the next deploy. README.md says not to add others by hand.
+- If Cloudflare refuses, the new version is already online at the workers.dev address and the Deploy run gets a red cross.
+- Cloudflare makes the DNS record for the address itself; the key needs no DNS permission.
+- Preview links (`wrangler versions upload`) ignore the list, so a pull request never touches prepenny.co.uk.
+
+GitHub's Cloudflare key needs three permissions for this: Account, Workers Scripts, Edit; Zone, Workers Routes, Edit; and Zone, Zone, Read, for the prepenny.co.uk zone or all zones. These are the ones Wrangler asks for when it signs in by itself. The **Edit Cloudflare Workers** template has the first two; whether it has Zone, Zone, Read couldn't be checked from here (Cloudflare's documentation was out of reach), so README.md, "Signing in", part A, has the owner check all three and add any that's missing. Adding a permission keeps the key the same, so nothing changes in GitHub.
+
+Why: the owner's instruction, so every deploy keeps the address.
+
+### D323. Nothing is installed from Ubuntu for the end-to-end tests
+
+The owner's instruction, 7 Nov 2026. Replaces D300's point about Ubuntu's download being given 3 minutes at most.
+
+The end-to-end workflow no longer installs anything from Ubuntu for the test browser. GitHub's machines already have every library it needs: the step only ever said "already the newest version", and on 6 Nov 2026 its download hung for 10 minutes and stopped parts 1 and 3, while the tests ran straight after it and passed. If a library ever goes missing, the browser says which when it starts, and the step can come back then.
+
+Why: the owner's instruction, to remove the step or make it unable to hold up a job. Removing it also saves the minute or so it took.

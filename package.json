@@ -12,7 +12,8 @@
     "typecheck": "tsc --project tsconfig.json && pnpm --recursive typecheck",
     "format": "biome check --write .",
     "build": "pnpm --filter @prepenny/web build",
-    "e2e": "pnpm --filter @prepenny/web e2e"
+    "e2e": "pnpm --filter @prepenny/web e2e",
+    "build:local": "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH pnpm --filter @prepenny/web build"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.3",

@@ -28,6 +28,12 @@ export interface StoredPlan {
    * Leaving part-way keeps it, and PrePenny carries on from there.
    */
   readonly setup?: SetupProgress;
+  /**
+   * The person's own plan only: whose it is, once they've signed up or
+   * signed in on this phone (brief 4.13 "Try first", step 3b). Their sign-in
+   * id. It stays on the phone until step 3c sends it to the server.
+   */
+  readonly owner?: string;
 }
 
 /** Which plan the app shows: the person's own, or the example (step 2e). */
@@ -152,12 +158,24 @@ export function recordsOf(rows: readonly StoredRecord[]): PlanRecords {
   };
 }
 
+/**
+ * The plan as it's to be saved, keeping whose it is from the phone: the plan
+ * in memory may have been loaded before the person signed in, and saving it
+ * must never take their mark off it (D306, D314).
+ */
+async function keepingOwner(db: PrePennyDb, plan: StoredPlan): Promise<StoredPlan> {
+  if (plan.owner !== undefined) return plan;
+  const owner = (await db.plans.get(plan.id))?.owner;
+  return owner === undefined ? plan : { ...plan, owner };
+}
+
 /** Replaces everything stored for a plan with these records, in one go. */
 export async function savePlan(db: PrePennyDb, plan: StoredPlan, records: PlanRecords) {
   await db.transaction('rw', db.plans, db.records, async () => {
+    const kept = await keepingOwner(db, plan);
     await db.records.where('planId').equals(plan.id).delete();
     await db.records.bulkPut(rowsOf(plan.id, records));
-    await db.plans.put(plan);
+    await db.plans.put(kept);
   });
 }
 
@@ -216,8 +234,9 @@ export async function saveChange(
   plan: StoredPlan,
   writes: readonly RecordWrite[],
 ): Promise<StoredPlan> {
-  const saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
+  let saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
   await db.transaction('rw', db.plans, db.records, async () => {
+    saved = await keepingOwner(db, saved);
     await saveWrites(db, plan.id, writes);
     await db.plans.put(saved);
   });
@@ -253,4 +272,24 @@ export async function setShowing(db: PrePennyDb, showing: Showing): Promise<void
 export async function ownPlanOnPhone(db: PrePennyDb): Promise<StoredPlan | undefined> {
   const plans = await db.plans.toArray();
   return plans.find((plan) => !plan.isExample);
+}
+
+/**
+ * Makes the person's own plan on this phone theirs, once they've signed up or
+ * signed in (brief 4.13 "Try first", step 3b). A plan already someone else's
+ * stays theirs: it can only be left by someone signing in on a phone whose
+ * last person never signed out, as when a sign-in ends by itself (D306).
+ */
+export async function claimOwnPlan(
+  db: PrePennyDb,
+  personId: string,
+): Promise<'mine' | 'no-plan' | 'someone-else'> {
+  return db.transaction('rw', db.plans, async () => {
+    const own = await ownPlanOnPhone(db);
+    if (own === undefined) return 'no-plan';
+    if (own.owner === personId) return 'mine';
+    if (own.owner !== undefined) return 'someone-else';
+    await db.plans.put({ ...own, owner: personId });
+    return 'mine';
+  });
 }

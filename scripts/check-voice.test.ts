@@ -4,7 +4,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { rulesFromVoice, stringsIn, voiceProblems, wordsInScreens } from './check-voice.ts';
+import {
+  rulesFromVoice,
+  stringsIn,
+  voiceProblems,
+  wordsInEmail,
+  wordsInScreens,
+} from './check-voice.ts';
 
 const voice = readFileSync(join(import.meta.dirname, '..', 'docs', 'VOICE.md'), 'utf8');
 const rules = rulesFromVoice(voice);
@@ -131,5 +137,26 @@ describe('wordsInScreens', () => {
         ['Coming in', 6],
       ],
     );
+  });
+});
+
+describe('wordsInEmail', () => {
+  it('reads the words people read in an email, not its comments, styles or Supabase places', () => {
+    const found = wordsInEmail(
+      '<!doctype html>\n<!-- a note, unlock -->\n<head><title>Code</title><style>p{}</style></head>\n<p>Your code is</p>\n<p>{{ .Token }}</p>\n<a href="{{ .SiteURL }}">Sign in to PrePenny</a>',
+    );
+    assert.deepEqual(
+      found.map((one) => one.text),
+      ['Your code is', 'Sign in to PrePenny'],
+    );
+  });
+
+  it('finds a banned word in an email', () => {
+    const rules = rulesFromVoice(
+      readFileSync(join(import.meta.dirname, '..', 'docs', 'VOICE.md'), 'utf8'),
+    );
+    const [found] = wordsInEmail('<p>Sign in to unlock your plan!</p>');
+    assert.ok(found);
+    assert.ok(voiceProblems(found.text, rules).length >= 2);
   });
 });

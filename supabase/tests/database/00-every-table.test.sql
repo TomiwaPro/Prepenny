@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(10);
 
 select is_empty(
   $$ select tablename from pg_tables where schemaname = 'public' and not rowsecurity $$,
@@ -50,6 +50,10 @@ select is_empty(
   'Every plan record table has exactly three rules: read, add and change'
 );
 
+-- What if's practice changes stay on the phone only (D264, D301).
+select hasnt_table('public', 'practice_changes',
+  'Practice changes have no table: they stay on the phone');
+
 select is_empty(
   $$ select 'ticks and changes' where not exists (
        select 1 from information_schema.columns
@@ -65,7 +69,7 @@ select is_empty(
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
-  array['session_id', 'session_ok', 'my_plans', 'my_edit_plans', 'my_owned_plans', 'my_partners',
+  array['session_id', 'session_ok', 'my_plans', 'my_edit_plans', 'my_owned_plans', 'my_partners', 'my_own_pay',
     'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem'],
   'A signed-in person can use only the checks the privacy rules call'
 );

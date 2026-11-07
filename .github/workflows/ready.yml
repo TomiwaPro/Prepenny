@@ -1,0 +1,24 @@
+name: End-to-end when ready
+
+# When a draft pull request is marked "Ready for review", the end-to-end tests
+# run straight away, once (step 3b, D300). Lint, type checks, the unit tests
+# and the database tests have already run on that commit in the Check
+# workflow, so they aren't run again. Every later push to the pull request
+# runs everything in the Check workflow.
+
+on:
+  pull_request:
+    types: [ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  end-to-end:
+    name: End-to-end
+    # The same group as the Check workflow's end-to-end tests, so a newer
+    # push stops these.
+    concurrency:
+      group: end-to-end-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    uses: ./.github/workflows/end-to-end.yml

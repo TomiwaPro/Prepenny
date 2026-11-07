@@ -42,6 +42,12 @@ const SCREENS = [
   { path: '/app/what-if/', heading: 'What if', shows: 'Your real plan and practice' },
   { path: '/app/what-if/?from=coming-up', heading: 'What if', shows: 'Back to Coming up' },
   { path: '/pay-calculator/', heading: 'Take-home pay calculator', shows: '1257L' },
+  { path: '/sign-in/', heading: 'Sign in', shows: strings.signIn.signInPurpose },
+  {
+    path: '/sign-in/?to=sign-up&from=more',
+    heading: 'Sign up',
+    shows: strings.signIn.signUpPurpose,
+  },
 ] as const;
 
 test('after one visit, every screen opens with no signal, with the plan in it', async ({
