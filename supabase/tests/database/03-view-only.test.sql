@@ -15,7 +15,7 @@ select ok(tests.shared_ids() @> array[tests.id('joint'), tests.id('joint-balance
   and cardinality(tests.shared_ids()) = 13,
   'The list of shared records has all 13, of every kind');
 
-select tests.as_person('tom');
+select tests.in_an_edit('tom');
 
 select isnt_empty($$ select id from public.series where id = tests.id('rent') $$,
   'Tom can read the shared rent');
@@ -60,7 +60,7 @@ select is(tests.change_rows(array[tests.id('tom-current')::text]), 1::bigint,
   'Tom can still change his own private account');
 
 -- Jess, the owner, can still change the shared plan.
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 select is(tests.change_rows(array[tests.id('rent')::text]), 1::bigint,
   'Jess can still change the shared rent');
 

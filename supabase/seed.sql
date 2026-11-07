@@ -22,6 +22,7 @@ $$;
 create function tests.as_person(name text) returns void
 language plpgsql as $$
 begin
+  perform set_config('prepenny.edit', '', true);
   perform set_config('request.jwt.claims', json_build_object(
     'sub', tests.id(name), 'session_id', tests.id(name || '-session'), 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
@@ -32,6 +33,7 @@ $$;
 create function tests.as_nobody() returns void
 language plpgsql as $$
 begin
+  perform set_config('prepenny.edit', '', true);
   perform set_config('request.jwt.claims', '', true);
   perform set_config('role', 'anon', true);
 end;
@@ -41,6 +43,7 @@ $$;
 create function tests.as_test() returns void
 language plpgsql as $$
 begin
+  perform set_config('prepenny.edit', '', true);
   perform set_config('role', 'postgres', true);
   perform set_config('request.jwt.claims', '', true);
 end;
@@ -50,9 +53,26 @@ $$;
 create function tests.writing_as(name text) returns void
 language plpgsql as $$
 begin
+  perform set_config('prepenny.edit', '', true);
   perform set_config('role', 'postgres', true);
   perform set_config('request.jwt.claims', json_build_object(
     'sub', tests.id(name), 'session_id', tests.id(name || '-session'), 'role', 'authenticated')::text, true);
+end;
+$$;
+
+-- Acts as a person inside an edit of a plan (the shared one unless named),
+-- as save_edit does before it writes anything: the edit is in the history,
+-- and every record written from now on names it. A person's change outside
+-- save_edit is refused (D345), so the tests of the privacy rules write this
+-- way, and the rules decide every record as they do inside save_edit.
+create function tests.in_an_edit(name text, plan text default 'plan') returns void
+language plpgsql as $$
+declare
+  edit uuid := gen_random_uuid();
+begin
+  perform tests.as_person(name);
+  perform app.begin_edit(tests.id(plan), edit, '2026-11-07T10:00:00Z', 'test');
+  perform set_config('prepenny.edit', edit::text, true);
 end;
 $$;
 

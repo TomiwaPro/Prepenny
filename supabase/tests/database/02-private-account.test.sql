@@ -22,7 +22,7 @@ select ok(tests.private_ids('jess') @> array[
   'The list of Jess''s private records has all 24, of every kind');
 
 -- As Tom, who can edit the shared plan.
-select tests.as_person('tom');
+select tests.in_an_edit('tom');
 
 select is_empty($$ select * from tests.rows_naming(tests.private_ids('jess')) $$,
   'No row Tom can read, in any table, is one of Jess''s private records or names one');
@@ -103,7 +103,7 @@ select is(tests.change_rows(array[tests.id('rent')::text]), 1::bigint,
   'Tom can change the shared rent');
 
 -- And Jess still reads everything of her own.
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 select is((select count(*) from public.series where account_id = tests.id('jess-current')), 3::bigint,
   'Jess reads every payment on her own account');
 

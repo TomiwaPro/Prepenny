@@ -10,7 +10,7 @@ select plan(16);
 select tests.make_jess_and_tom('editor');
 
 -- "From Jess", the £600 arriving in the joint account, is locked to Jess.
-select tests.as_person('tom');
+select tests.in_an_edit('tom');
 
 select is(tests.change_rows(array[tests.id('from-jess')::text]), 0::bigint,
   'Tom can''t change "From Jess", which is locked to Jess');
@@ -41,7 +41,7 @@ select is((select created_by from public.series where id = tests.id('rent')), te
   'Who made it stays as it was');
 
 -- Privacy is filled in from the account, whatever a phone sends.
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 insert into public.ticks (id, plan_id, private_to, series_id, original_date, payment_number, paid_on, ticked_at)
   values (tests.id('jess-new-tick'), tests.id('plan'), null, tests.id('jess-pay'), '2026-12-01', 1, '2026-12-01',
     '2026-12-01T09:00:00Z');
