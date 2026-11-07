@@ -43,8 +43,11 @@ import {
   fingerprint,
 } from '../data/example-plan.ts';
 import { forgetPractice } from '../data/practice.ts';
+import { onPlanBroughtDown, syncSoon } from '../data/sync.ts';
 import { type BarWords, barWords, type ChangeWords } from '../lib/bar-words.ts';
+import type { PaymentNumbers } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
+import { newId, timeNow } from '../lib/ids.ts';
 import { setupDone } from '../lib/setup-progress.ts';
 import { testSetting } from '../lib/test-setting.ts';
 import { todayFor } from '../lib/today.ts';
@@ -84,6 +87,8 @@ export interface LastChange {
   readonly short: string;
   /** The edit Undo puts back, or null when there's nothing to undo, such as just after an undo. */
   readonly edit: Edit | null;
+  /** The payments the edit's changes and ticks were on, so Undo can check they still are (PLAN.md item 4). */
+  readonly numbers?: PaymentNumbers;
 }
 
 /**
@@ -235,6 +240,12 @@ async function planOnPhone(): Promise<OnPhone> {
 
 const codeOf = (error: unknown) => (error instanceof EngineError ? error.code : 'unexpected');
 
+/** What kind of change it is, as the server keeps it: the command's own kind (save_edit). */
+function kindOf(command: EditCommand | readonly EditCommand[]): string {
+  const kinds = new Set((Array.isArray(command) ? command : [command]).map((one) => one.kind));
+  return kinds.size === 1 ? ([...kinds][0] as string) : 'changes';
+}
+
 export function PlanProvider({ children }: { readonly children: ReactNode }) {
   const [state, setState] = useState<PlanState>({ status: 'loading', plan: null });
   const [loaded, setLoaded] = useState<LoadedPlan | null>(null);
@@ -257,13 +268,25 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     setLoaded(next);
   }, []);
 
-  const showChange = useCallback((words: ChangeWords, edit: Edit | null) => {
-    changeCount.current += 1;
-    const { full, short } = barWords(words);
-    const change = full === '' ? null : { id: changeCount.current, message: full, short, edit };
-    lastChangeRef.current = change;
-    setLastChange(change);
-  }, []);
+  const showChange = useCallback(
+    (words: ChangeWords, edit: Edit | null, numbers?: PaymentNumbers) => {
+      changeCount.current += 1;
+      const { full, short } = barWords(words);
+      const change =
+        full === ''
+          ? null
+          : {
+              id: changeCount.current,
+              message: full,
+              short,
+              edit,
+              ...(numbers === undefined ? {} : { numbers }),
+            };
+      lastChangeRef.current = change;
+      setLastChange(change);
+    },
+    [],
+  );
 
   // `loadCount` goes up to load the plan again after choosing another one to show.
   // biome-ignore lint/correctness/useExhaustiveDependencies: loadCount is the reason to run again
@@ -325,12 +348,48 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     return next;
   }, []);
 
-  /** Makes one edit, saves it on the phone and works the plan out again. */
+  // When the plan has been brought up to date from the server (step 3c), the
+  // screens show it, in turn with the changes made here.
+  useEffect(
+    () =>
+      onPlanBroughtDown(() => {
+        void inTurn(async () => {
+          const now = loadedRef.current;
+          if (now === null || now.plan.isExample) return;
+          try {
+            const db = openDb();
+            try {
+              const plan = await db.plans.get(now.plan.id);
+              if (plan === undefined) return;
+              keepLoaded({
+                ...now,
+                plan,
+                records: await loadRecords(db, plan.id),
+                version: now.version + 1,
+              });
+            } finally {
+              db.close();
+            }
+          } catch {
+            // The plan on screen stays as it is.
+          }
+        });
+      }),
+    [inTurn, keepLoaded],
+  );
+
+  /**
+   * Makes one edit, saves it on the phone and works the plan out again. When
+   * the plan is kept in an account, the change joins the queue to send in
+   * the same go, and is sent straight after (step 3c).
+   */
   const apply = useCallback(
     async (
       command: EditCommand | readonly EditCommand[],
+      numbers?: PaymentNumbers,
     ): Promise<
-      { ok: true; edit: Edit; kept: boolean; version: number } | { ok: false; code: string }
+      | { ok: true; edit: Edit; numbers: PaymentNumbers; kept: boolean; version: number }
+      | { ok: false; code: string }
     > => {
       const now = loadedRef.current;
       if (now === null) return { ok: false, code: 'not-ready' };
@@ -338,7 +397,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       try {
         result = Array.isArray(command)
           ? await editsInBackground(now.records, now.today, command)
-          : await editInBackground(now.records, now.today, command as EditCommand);
+          : await editInBackground(now.records, now.today, command as EditCommand, numbers);
       } catch (error) {
         return { ok: false, code: codeOf(error) };
       }
@@ -348,7 +407,11 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
         try {
           const db = openDb();
           try {
-            plan = await saveChange(db, now.plan, result.edit.writes);
+            plan = await saveChange(db, now.plan, result.edit.writes, {
+              editId: newId(),
+              madeAt: timeNow(),
+              kind: kindOf(command),
+            });
           } finally {
             db.close();
           }
@@ -360,7 +423,8 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       }
       const version = now.version + 1;
       keepLoaded({ ...now, plan, records: result.records, version });
-      return { ok: true, edit: result.edit, kept, version };
+      if (kept && !now.plan.isExample) syncSoon();
+      return { ok: true, edit: result.edit, numbers: result.numbers, kept, version };
     },
     [keepLoaded],
   );
@@ -370,7 +434,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       inTurn(async (): Promise<ChangeOutcome> => {
         const outcome = await apply(command);
         if (!outcome.ok) return outcome;
-        showChange(outcome.kept ? message : notKept(message), outcome.edit);
+        showChange(outcome.kept ? message : notKept(message), outcome.edit, outcome.numbers);
         return { ok: true, version: outcome.version };
       }),
     [apply, inTurn, showChange],
@@ -381,7 +445,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       inTurn(async (): Promise<ChangeOutcome> => {
         const outcome = await apply(commands);
         if (!outcome.ok) return outcome;
-        showChange(outcome.kept ? message : notKept(message), outcome.edit);
+        showChange(outcome.kept ? message : notKept(message), outcome.edit, outcome.numbers);
         return { ok: true, version: outcome.version };
       }),
     [apply, inTurn, showChange],
@@ -393,7 +457,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
         const last = lastChangeRef.current;
         if (last === null || last.id !== id) return { ok: false, code: 'not-last-change' };
         if (last.edit === null) return { ok: false, code: 'nothing-to-undo' };
-        const outcome = await apply({ kind: 'undo', edit: last.edit });
+        const outcome = await apply({ kind: 'undo', edit: last.edit }, last.numbers);
         if (!outcome.ok) return outcome;
         showChange(strings.undo.undone, null);
         return { ok: true, version: outcome.version };

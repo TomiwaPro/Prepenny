@@ -6,7 +6,8 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { checkSignIn, followSignOutInOtherTabs } from '../lib/account.ts';
+import { keepInStep, onNeedToChoose } from '../data/sync.ts';
+import { checkSignIn, followSignOutInOtherTabs, useAccount } from '../lib/account.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './AppShell.module.css';
@@ -40,13 +41,27 @@ function Notes() {
 /**
  * Renews this phone's sign-in when PrePenny opens, if it has one, so it lasts
  * until the person signs out, or 90 days without opening PrePenny (D19). A
- * phone that has never signed in loads and sends nothing (step 3b).
+ * phone that has never signed in loads and sends nothing (step 3b). Signed
+ * in, the plan is kept in step with the account while PrePenny is open
+ * (step 3c), and a plan of the phone's own beside the account's goes to the
+ * sign-in page to choose which to keep (D324).
  */
 function KeepSignedIn() {
+  const account = useAccount();
+  const router = useRouter();
   useEffect(() => {
     void checkSignIn();
     return followSignOutInOtherTabs();
   }, []);
+  useEffect(() => {
+    if (account.status !== 'signed-in') return;
+    const stopChoosing = onNeedToChoose(() => router.push('/sign-in/?choose'));
+    const stop = keepInStep();
+    return () => {
+      stop();
+      stopChoosing();
+    };
+  }, [account.status, router]);
   return null;
 }
 

@@ -9,6 +9,7 @@
 // loaded afresh, straight after.
 
 import { Dexie } from 'dexie';
+import { openDb, ownPlanOnPhone } from './db.ts';
 
 /** The phone database's name (data/db.ts). */
 const DATABASE = 'prepenny';
@@ -19,6 +20,29 @@ const DATABASE = 'prepenny';
  * removal finishes then, even after this page has moved on.
  */
 const WAIT_MS = 3000;
+
+/**
+ * True when the person's own plan on this phone is safely in their account:
+ * kept there, with nothing left to send, or there's no plan of their own at
+ * all (step 3c). Only then does a sign-in that ends by itself remove it from
+ * the phone (PLAN.md item 29); otherwise it stays, so nothing is lost.
+ */
+export async function planSafelyKept(): Promise<boolean> {
+  try {
+    const db = openDb();
+    try {
+      const own = await ownPlanOnPhone(db);
+      if (own === undefined) return true;
+      if ((await db.links.get(own.id)) === undefined) return false;
+      return (await db.unsent.where('planId').equals(own.id).count()) === 0;
+    } finally {
+      db.close();
+    }
+  } catch {
+    // No database on this phone, as in some private windows: nothing is kept.
+    return true;
+  }
+}
 
 export async function forgetEverything(): Promise<void> {
   try {

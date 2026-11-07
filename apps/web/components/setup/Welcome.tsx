@@ -19,12 +19,19 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
   const { state, start, show } = useSetup();
   const router = useRouter();
   const account = useAccount();
-  const [signedOut, setSignedOut] = useState(false);
+  const [signedOut, setSignedOut] = useState<string | null>(null);
   useEffect(() => {
     void checkSignIn();
-    // Just signed out from More (step 3b): say so once, then tidy the address.
-    if (new URLSearchParams(window.location.search).has('signed-out')) {
-      setSignedOut(true);
+    // Just signed out from More (step 3b), or a sign-in that ended by itself
+    // (step 3c): say so once, then tidy the address.
+    const search = new URLSearchParams(window.location.search);
+    const words = search.has('signed-out')
+      ? strings.account.signedOut
+      : search.has('sign-in-ended')
+        ? strings.account.signInEnded
+        : null;
+    if (words !== null) {
+      setSignedOut(words);
       window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
@@ -41,7 +48,7 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
   return (
     <main className={`${styles.page} ${styles.welcome}`}>
       <p className={styles.signedOut} role="status">
-        {signedOut ? strings.account.signedOut : null}
+        {signedOut}
       </p>
       <h1 className={styles.name}>{strings.app.name}</h1>
       <p className={styles.tagline}>{strings.app.tagline}</p>

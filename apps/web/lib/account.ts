@@ -17,7 +17,7 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import { claimOwnPlan, openDb } from '../data/db.ts';
-import { forgetEverything } from '../data/forget.ts';
+import { forgetEverything, planSafelyKept } from '../data/forget.ts';
 import { signInConfig } from './sign-in-config.ts';
 
 /** Where Supabase keeps the sign-in on this phone, in the browser's small store. */
@@ -134,12 +134,37 @@ function supabase(): Promise<SupabaseClient> {
         storageKey: SIGN_IN_KEY,
       },
     });
-    made.auth.onAuthStateChange((_event, session) => {
+    made.auth.onAuthStateChange((event, session) => {
+      // Supabase couldn't renew a sign-in that has ended, as after "Sign out
+      // everywhere" or 90 days without opening PrePenny (PLAN.md item 29).
+      if (event === 'SIGNED_OUT' && !signingOutOnPurpose) {
+        void signInEnded();
+        return;
+      }
       setAccount(accountOf(session));
     });
     return made;
   });
   return client;
+}
+
+/**
+ * Supabase's client for the plan's own requests (step 3c, data/sync.ts):
+ * saving changes, bringing the plan down and the live nudges. Only on a
+ * phone that's signed in; null otherwise, so nothing is loaded or sent.
+ */
+export async function signedInClient(): Promise<SupabaseClient | null> {
+  if (signInConfig() === null || !hasStoredSignIn()) return null;
+  try {
+    return await supabase();
+  } catch {
+    return null;
+  }
+}
+
+/** Who's signed in on this phone, as far as it knows now. */
+export function accountNow(): Account {
+  return currentAccount();
 }
 
 /**
@@ -167,11 +192,12 @@ export async function checkSignIn(): Promise<void> {
     if (data.session === null) {
       // Supabase's client removes a sign-in that has ended; one it couldn't
       // renew for now, with a weak signal, is still kept.
-      setAccount(hasStoredSignIn() ? keptAccount() : { status: 'signed-out' });
+      if (hasStoredSignIn()) setAccount(keptAccount());
+      else await signInEnded();
       return;
     }
     if ((await claimPlan(data.session.user.id)) === 'someone-else') {
-      await (await supabase()).auth.signOut({ scope: 'local' }).catch(() => undefined);
+      await signOutHere();
       setAccount({ status: 'signed-out' });
       return;
     }
@@ -179,6 +205,34 @@ export async function checkSignIn(): Promise<void> {
   } catch {
     setAccount(keptAccount());
   }
+}
+
+/** True while PrePenny itself is signing this phone out, so it isn't taken for a sign-in that ended. */
+let signingOutOnPurpose = false;
+
+/** Ends this phone's sign-in on purpose, for PrePenny's own reasons. */
+async function signOutHere(): Promise<void> {
+  signingOutOnPurpose = true;
+  try {
+    await (await supabase()).auth.signOut({ scope: 'local' });
+  } catch {
+    // The sign-in on the phone goes all the same.
+  } finally {
+    signingOutOnPurpose = false;
+  }
+}
+
+/**
+ * A sign-in that ended by itself (PLAN.md item 29, step 3c): the plan is
+ * removed from the phone, as signing out does, once it's safely in the
+ * account. A plan with something not sent yet stays, so nothing is lost, and
+ * whoever signs in next is asked first (D306). Then the welcome says so.
+ */
+async function signInEnded(): Promise<void> {
+  setAccount({ status: 'signed-out' });
+  if (!(await planSafelyKept())) return;
+  await forgetEverything();
+  window.location.replace('/?sign-in-ended');
 }
 
 /** True when the phone says it has no signal. */
@@ -286,7 +340,7 @@ async function claimPlan(personId: string): Promise<'mine' | 'no-plan' | 'someon
 async function signedIn(session: Session | null): Promise<Outcome> {
   if (session === null) return { ok: false, problem: { kind: 'server' } };
   if ((await claimPlan(session.user.id)) === 'someone-else') {
-    await (await supabase()).auth.signOut({ scope: 'local' }).catch(() => undefined);
+    await signOutHere();
     setAccount({ status: 'signed-out' });
     return { ok: false, problem: { kind: 'someone-elses-plan' } };
   }
@@ -398,6 +452,7 @@ export async function signOutAndForget(): Promise<void> {
   if (signInConfig() !== null && hasStoredSignIn() && !offline()) {
     // Supabase is given a few seconds at most: with a weak signal the phone
     // forgets the sign-in all the same, straight after (D314).
+    signingOutOnPurpose = true;
     await Promise.race([
       supabase()
         .then((made) => made.auth.signOut({ scope: 'local' }))
