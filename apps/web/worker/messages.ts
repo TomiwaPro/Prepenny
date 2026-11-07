@@ -2,17 +2,19 @@
 // figures cross; a refusal comes back as the engine's code alone, never its
 // message, so no name or note can leak into an error report later (CLAUDE.md).
 
-import type { CardComparison, EditCommand, PlanRecords } from '@prepenny/engine';
+import type { CardComparison, EditCommand, PlanRecords, RecordWrite } from '@prepenny/engine';
 import type { ActionsView } from '../lib/actions-view.ts';
 import type { CompareAsk as CompareRequest, DebtsView } from '../lib/debts-view.ts';
-import type { EditResult } from '../lib/edit.ts';
+import type { EditResult, PaymentNumbers } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
 import type { JobPreview, JobView } from '../lib/job-view.ts';
 import type { AccountsView, BudgetsView, GoalsView } from '../lib/money-views.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PayView } from '../lib/pay-view.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
+import type { SetupProgress } from '../lib/setup-progress.ts';
 import type { SetupView } from '../lib/setup-view.ts';
+import type { DbWrite, FromRows, MirrorRow, SyncPlan } from '../lib/sync-rows.ts';
 import type { WhatIfView } from '../lib/what-if-view.ts';
 
 /** Everything Home shows. */
@@ -36,6 +38,8 @@ export interface EditAsk {
   readonly records: PlanRecords;
   readonly today: string;
   readonly command: EditCommand;
+  /** For an undo: the payment numbers its edit was made with (PLAN.md item 4). */
+  readonly numbers?: PaymentNumbers;
 }
 
 /** What the four actions on Home need (D197 to D200). */
@@ -113,7 +117,29 @@ export interface JobPreviewAsk {
   readonly commands: readonly EditCommand[];
 }
 
+/**
+ * What to send the server (step 3c): for one unsent change (`writes`), or for
+ * a whole plan, the first time (`records`), against the rows it has.
+ */
+export interface SyncWritesAsk {
+  readonly kind: 'sync-writes';
+  readonly plan: SyncPlan;
+  readonly rows: readonly MirrorRow[];
+  readonly records?: PlanRecords;
+  readonly writes?: readonly RecordWrite[];
+  readonly setup?: SetupProgress;
+}
+
+/** The plan from the server's rows, with the changes not sent yet on top (step 3c). */
+export interface SyncRecordsAsk {
+  readonly kind: 'sync-records';
+  readonly rows: readonly MirrorRow[];
+  readonly unsent: readonly (readonly RecordWrite[])[];
+}
+
 export type Ask =
+  | SyncWritesAsk
+  | SyncRecordsAsk
   | HomeAsk
   | JobPreviewAsk
   | WhatIfAsk
@@ -145,6 +171,8 @@ export interface Answers {
   readonly pay: PayView;
   readonly job: JobView;
   readonly 'job-preview': JobPreview;
+  readonly 'sync-writes': readonly DbWrite[];
+  readonly 'sync-records': FromRows;
 }
 
 export type WorkRequest = Ask & { readonly id: number };
