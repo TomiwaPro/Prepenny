@@ -507,7 +507,8 @@ $$;
 
 -- Makes a plan for the first copy from a phone, with the phone's own id, or
 -- does nothing when this person has made it already. Runs as the person:
--- anyone signed in can make a plan, and becomes its owner (step 3a).
+-- anyone signed in can make a plan, and becomes its owner (step 3a). Someone
+-- signing up for the first time is added to `people` too.
 create function public.start_plan(plan uuid, nation text) returns void
 language plpgsql security invoker set search_path = '' as $$
 begin
@@ -517,6 +518,9 @@ begin
   if exists (select 1 from app.my_owned_plans() p where p = plan) then
     return;
   end if;
+  -- Someone who has just signed up is a person in PrePenny from now on: a
+  -- nickname is all that's kept, empty until they choose one (brief 7.2).
+  insert into public.people (id) values (auth.uid()) on conflict (id) do nothing;
   insert into public.plans (id, nation) values (plan, coalesce(nation, 'england-and-wales'));
 exception when unique_violation then
   -- Someone else's plan has this id: as if not found.

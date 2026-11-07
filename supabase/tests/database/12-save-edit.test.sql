@@ -12,7 +12,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(54);
+select plan(56);
 
 select tests.make_jess_and_tom('editor');
 
@@ -193,6 +193,16 @@ select is(app.may_hear('plan:' || tests.id('alex-plan') || ':' || tests.id('alex
   'He hears his own plan''s private nudges');
 select lives_ok($$ select public.remove_plan(tests.id('alex-plan')) $$, 'He removes his plan');
 select is((select count(*) from public.plans where id = tests.id('alex-plan')), 0::bigint, 'and it''s gone');
+
+-- Someone who has only just signed up, with no row in people yet, makes their first plan.
+select tests.as_test();
+insert into auth.users (id, email) values (tests.id('newcomer'), 'newcomer@example.test');
+insert into auth.sessions (id, user_id) values (tests.id('newcomer-session'), tests.id('newcomer'));
+select tests.as_person('newcomer');
+select lives_ok($$ select public.start_plan(tests.id('newcomer-plan'), null) $$,
+  'Someone who has just signed up makes their first plan');
+select is((select nickname from public.people where id = tests.id('newcomer')), '',
+  'and is a person in PrePenny now, with no name kept');
 
 -- The owner can't remove a plan someone else is in, and nobody else can remove it.
 select tests.as_person('tom');
