@@ -5,8 +5,8 @@
 // coming-up.spec.ts. Every change is saved on the phone, the plan updates,
 // and one tap of Undo puts it all back.
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
+import { axeOnceStill } from './axe.ts';
 import {
   goToComingUp,
   leftAtEnd,
@@ -214,7 +214,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet.getByText('Sun 1 Nov, Current account')).toBeVisible();
       await expect(sheet.getByText(`${MINUS}£600.00`, { exact: true })).toBeVisible();
       await expect(sheet.getByText('£4.53 left', { exact: true })).toBeVisible();
-      expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+      expect((await (await axeOnceStill(page)).withTags(tags).analyze()).violations).toEqual([]);
 
       // A mistake is explained with words, beside the box.
       await sheet.getByLabel('Amount').fill('six hundred');
@@ -222,7 +222,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet.getByText('Type an amount, for example 25.')).toBeVisible();
       await expect(sheet.getByLabel('Amount')).toBeFocused();
       await expect(sheet.getByLabel('Amount')).toHaveAttribute('aria-invalid', 'true');
-      expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+      expect((await (await axeOnceStill(page)).withTags(tags).analyze()).violations).toEqual([]);
       await sheet.getByRole('button', { name: 'Close' }).click();
 
       // After a change, focus comes back to the row.
@@ -233,7 +233,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         .click();
       await expect(undoBar(page)).toContainText('Family loan marked as paid.');
       await expect(rowIn(page, '2026-10-25', 'Family loan')).toBeFocused();
-      expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+      expect((await (await axeOnceStill(page)).withTags(tags).analyze()).violations).toEqual([]);
     });
   });
 }

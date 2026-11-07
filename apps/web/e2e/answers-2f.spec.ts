@@ -3,11 +3,11 @@
 // Sam's example. The move before closing an account (answer 2) is in the
 // step 2f test 7, in money-screens.spec.ts.
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { type PlanRecords, parsePounds } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, MINUS, openComingUp, period } from './coming-up.ts';
 import { expect, settingScript, test } from './fixtures.ts';
 
@@ -16,7 +16,7 @@ async function useSetting(page: Page, setting: TestSetting) {
 }
 
 async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
 }
 
 const undoBar = (page: Page) => page.getByTestId('undo-bar');

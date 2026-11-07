@@ -5,8 +5,8 @@
 // week" asking which paydays the week is for (D5). "Today" is Sun 25 Oct
 // 2026 on Sam's example.
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, layoutProblems, openPeriod, rowIn } from './coming-up.ts';
 import { expect, test } from './fixtures.ts';
 
@@ -14,7 +14,7 @@ const NB = ' ';
 const day = (text: string) => text.replaceAll(' ', NB);
 
 async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
 }
 
 async function noSidewaysScroll(page: Page) {

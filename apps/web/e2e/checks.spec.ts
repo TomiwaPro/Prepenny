@@ -8,14 +8,14 @@
 // amount, payment name or note is written to the browser's console. With
 // reduced motion on, nothing moves.
 
-import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page, type Request } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, layoutProblems, openPeriod, period } from './coming-up.ts';
 import { openOnExample, test } from './fixtures.ts';
 
 async function noAxeProblems(page: Page, where?: string) {
-  const builder = new AxeBuilder({ page }).withTags(AXE_TAGS);
+  const builder = (await axeOnceStill(page)).withTags(AXE_TAGS);
   const found = (await (where === undefined ? builder : builder.include(where)).analyze())
     .violations;
   expect(
@@ -87,6 +87,10 @@ function watch(page: Page) {
         !line.startsWith('log: ') &&
         !line.startsWith('debug: ') &&
         !(notFound && line.includes('status of 404')) &&
+        // The browser's own note that the computer's network changed, as when
+        // GitHub's part 3 starts the local Supabase beside its first tests
+        // (D344). It names nothing of PrePenny's and holds no data.
+        line !== 'error: Failed to load resource: net::ERR_NETWORK_CHANGED' &&
         // The browser's own note when Next.js preloads a later screen's style sheet: no data in it.
         !/^warning: The resource \S+\/_next\/static\/\S+\.css was preloaded using link preload but not used/.test(
           line,

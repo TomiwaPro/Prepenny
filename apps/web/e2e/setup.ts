@@ -2,17 +2,17 @@
 // welcome on a phone with nothing on it, filling in each step's boxes, and
 // reading back the plan setup saved on the phone.
 
-import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { PlanRecords } from '@prepenny/engine';
 import { recordsOf, type StoredRecord } from '../data/db.ts';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS } from './coming-up.ts';
 import { settingScript } from './fixtures.ts';
 import { KOFI_ALREADY_SPENT, KOFI_TODAY, PRIYA_TODAY } from './setup-answers.ts';
 
 export async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
 }
 
 /** Opens PrePenny on a phone with nothing on it, with the test-only today (D201). */

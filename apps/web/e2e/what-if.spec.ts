@@ -4,11 +4,11 @@
 // "Today" is Sun 25 Oct 2026 on Sam's example; Kofi's test plan is his
 // fixture from step 1g, with his today, Wed 28 Oct 2026 (D201).
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
 import { fixtureRecords } from '../../../packages/engine/test/fixtures/from-empty.ts';
 import { kofiPlan } from '../../../packages/engine/test/fixtures/people.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, layoutProblems, MINUS, named, openPeriod, period } from './coming-up.ts';
 import { expect, settingScript, test } from './fixtures.ts';
 
@@ -17,7 +17,7 @@ async function useSetting(page: Page, setting: TestSetting) {
 }
 
 async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
 }
 
 async function noSidewaysScroll(page: Page) {

@@ -3,14 +3,14 @@
 // checked by axe: the owner's step 2g tests 3 to 6. "Today" is Sun 25 Oct
 // 2026 on Sam's example. Brief 8.6's payslips were paid on Fridays (D6).
 
-import AxeBuilder from '@axe-core/playwright';
 import { test as fresh, type Locator, type Page } from '@playwright/test';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, layoutProblems, MINUS } from './coming-up.ts';
 import { expect, test } from './fixtures.ts';
 import { box, expectStep, fillAccount, lastForm, next, radio } from './setup.ts';
 
 async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
 }
 
 async function noSidewaysScroll(page: Page) {

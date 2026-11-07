@@ -3,8 +3,8 @@
 // the owner's step 2d-2 tests 1 to 8. Also what's shown, the accounts, the
 // old address, no sideways scrolling, text at 200% and tap targets.
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
+import { axeOnceStill } from './axe.ts';
 import {
   AXE_TAGS,
   chooseView,
@@ -20,7 +20,7 @@ import {
 import { expect, test } from './fixtures.ts';
 
 async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
 }
 
 const undoBar = (page: Page) => page.getByTestId('undo-bar');
