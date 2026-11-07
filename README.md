@@ -25,7 +25,7 @@ GitHub checks every change, once for each commit, on its pull request and again 
 GitHub runs two sets of checks:
 
 - **Lint, type checks, tests and the database** checks the code, runs every engine and app test, and builds a fresh copy of the database on GitHub's machine to test who can see and change what (see "The database" below). About 2 minutes, on every push.
-- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Part 3 also signs up, signs in and signs out against a copy of Supabase on GitHub's machine, which catches the emails instead of sending them. About 12 minutes for parts 1 and 2, and about 21 for part 3.
+- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Part 3 also signs up, signs in and signs out, and sends plans up and brings them down on second phones, against a copy of Supabase on GitHub's machine, which catches the emails instead of sending them. Each part runs two tests at a time (D320).
 
 GitHub's minutes cost money once the free ones are used, so the end-to-end tests wait until a pull request is ready. Claude Code opens each step's pull request as a **draft**, which gets the first set on every push, and marks it **Ready for review** when the step is done, which starts the end-to-end tests and the preview link. Every push after that runs both, and so does `main`, always, before anything goes live. A newer push stops the older checks on a pull request, never on `main`.
 
@@ -89,12 +89,13 @@ The first time, before anything has been merged, the Deploy workflow puts the pu
 
 ## The database
 
-PrePenny's database is a Supabase project in London, on Supabase's free plan for now (D17, D19). It will hold each person's plan once they sign in (Phase 3). Its tables and privacy rules are in `supabase/migrations`, and the tests that prove who can see and change what are in `supabase/tests` (step 3a, D288 to D298).
+PrePenny's database is a Supabase project in London, on Supabase's free plan for now (D17, D19). From step 3c it holds each person's plan once they sign in: the phone sends every change there, and brings the plan down on another phone. Its tables and privacy rules are in `supabase/migrations`, and the tests that prove who can see and change what are in `supabase/tests` (step 3a, D288 to D298).
 
 Nobody changes the real database by hand. GitHub does it, the same way it puts the app online:
 
 - On every pull request, the **Lint, type checks, tests and the database** check builds a fresh copy of the database on GitHub's own machine, with made-up people (Jess, Tom and Alex), and runs every test on it. Nothing there touches the real database.
-- When a pull request is merged into `main` and every check has passed on it, the **Database** workflow (`.github/workflows/database.yml`) sends the changes to the real database in London. The made-up people and the tests never go there.
+- When a pull request is merged into `main` and every check has passed on it, the **Database** workflow (`.github/workflows/database.yml`) sends the changes to the real database in London. The made-up people and the tests never go there. Then it checks the project's **Data API** shows PrePenny's public part only, never its private checks (`app`), and says exactly what to do if it ever does (D341).
+- A pull request's preview link uses the real project too, so a change to the database can only be tried once it's merged. On a preview of step 3c, signing in works and the plan stays on the phone, with "Changes can't be sent right now. They're saved on this phone." Once merged, it goes up the next time PrePenny opens (D340).
 
 ### Setting it up the first time (the owner does this once)
 
@@ -124,6 +125,7 @@ Keep the token and the password only in GitHub's secrets and your password manag
 - **The Database workflow has a red cross saying it couldn't reach the database.** On the free plan, a project that hasn't been used for a week is paused, and Supabase emails you first. Open the project on supabase.com and tap **Restore project**, wait a few minutes, then open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Moving to Supabase's paid plan before launch stops the pausing (D19).
 - **It says a secret is wrong.** Make the token again (step 5) and replace `SUPABASE_ACCESS_TOKEN`, or reset the database password under **Project Settings**, then **Database**, and replace `SUPABASE_DB_PASSWORD`. Then run the workflow again as above.
 - **The "Lint, type checks, tests and the database" check has a red cross on a pull request.** Don't merge: ask Claude Code to fix it. The real database is unchanged.
+- **The Database workflow says "The Data API shows app".** On supabase.com, open the **prepenny** project, then **Project Settings** (the gear), then **Data API**. Under **Exposed schemas**, remove `app`, keep `public` and `graphql_public`, and tap **Save**. Then run the workflow again as above. To check by hand at any time, look at the same list: it should show `public` and `graphql_public` only.
 
 ## Signing in
 
