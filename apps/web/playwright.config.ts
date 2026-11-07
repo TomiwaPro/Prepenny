@@ -8,7 +8,8 @@
 import { defineConfig } from '@playwright/test';
 
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
-const SIGN_IN_TESTS = /sign-in\.spec\.ts$/;
+/** The tests that need the local Supabase: signing in (step 3b), and the plan on the server (step 3c). */
+const SIGN_IN_TESTS = /(sign-in|your-plan)\.spec\.ts$/;
 const port = 4173;
 
 const phone = (width: number, height: number) => ({
