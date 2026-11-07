@@ -47,7 +47,8 @@ async function timeHome(page: Page, open: () => Promise<unknown>): Promise<numbe
 const middle = (times: readonly number[]) =>
   [...times].sort((a, b) => a - b)[Math.floor(times.length / 2)] ?? 0;
 
-test('Home shows its real figures quickly on a phone 4 times slower, and never a spinner', async ({
+// Timed, so it runs on its own on GitHub's machine, never beside another test (D320).
+test('Home shows its real figures quickly on a phone 4 times slower, and never a spinner', { tag: '@alone' }, async ({
   page,
 }, info) => {
   test.skip(info.project.name !== 'phone-360', 'Timed once, at 360px.');
@@ -105,7 +106,7 @@ test('Home shows its real figures quickly on a phone 4 times slower, and never a
   expect(middle(change)).toBeLessThan(2000);
 });
 
-test('Home shows a skeleton while the plan is worked out, never a spinner', async ({ page }) => {
+test('Home shows a skeleton while the plan is worked out, never a spinner', { tag: '@alone' }, async ({ page }) => {
   await page.addInitScript(WATCH_FOR_SPINNERS);
   await slowDown(page);
   await page.goto('/app/');

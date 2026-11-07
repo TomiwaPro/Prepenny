@@ -2,8 +2,10 @@ name: End-to-end tests
 
 # The app built and used in a real browser at 320px and 360px wide, in light
 # and dark, as a phone would (brief 7.1, D37), in three parts side by side.
-# Part 3 also runs the sign-in tests against a local Supabase on GitHub's
-# machine, with its test inbox catching the emails (step 3b).
+# Part 3 also runs the sign-in tests and the plan-on-the-server tests against
+# a local Supabase on GitHub's machine, with its test inbox catching the
+# emails (steps 3b and 3c). Each machine runs two tests at a time, as it has
+# two processors, except the timed speed test, which runs on its own (D320).
 #
 # Called by check.yml (main, and pull requests that are ready for review) and
 # ready.yml (the moment a pull request is marked ready). Never on its own.
@@ -33,16 +35,17 @@ jobs:
         run: npm install --global supabase@2.122.0
 
       - name: Start a local Supabase for the sign-in tests, in the background
-        # The database, sign-in, its web address (kong) and the test inbox
-        # (mailpit). Started first, so it's ready by the time the other tests
-        # finish.
+        # The database, sign-in, its web address (kong), the test inbox
+        # (mailpit), and from step 3c the Data API (postgrest) and the live
+        # nudges (realtime). Started first, so it's ready by the time the
+        # other tests finish.
         if: matrix.part == 3
         run: |
-          nohup bash -c 'supabase start --exclude postgrest,postgres-meta,imgproxy,supavisor,studio,realtime,storage-api,edge-runtime,logflare,vector \
+          nohup bash -c 'supabase start --exclude postgres-meta,imgproxy,supavisor,studio,storage-api,edge-runtime,logflare,vector \
             > "$RUNNER_TEMP/supabase-start.log" 2>&1; echo $? > "$RUNNER_TEMP/supabase-start.exit"' > /dev/null 2>&1 &
 
       - name: Set up pnpm (the version in package.json)
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0, 13 Mar 2026: runs on Node 24
 
       - name: Set up Node (the version in .node-version)
         uses: actions/setup-node@v5
@@ -70,7 +73,7 @@ jobs:
         # Playwright's site can't eat the job's time. Downloaded only when
         # Playwright's version changes.
         id: browser
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0, 26 Jun 2026: runs on Node 24
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ steps.playwright.outputs.version }}-chromium-shell-${{ runner.os }}-${{ runner.arch }}
@@ -84,7 +87,7 @@ jobs:
       - name: Keep the test browser for later runs
         # Straight after the download, so it's kept even if a test then fails.
         if: steps.download.outcome == 'success'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0, 26 Jun 2026: runs on Node 24
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ steps.playwright.outputs.version }}-chromium-shell-${{ runner.os }}-${{ runner.arch }}
@@ -93,8 +96,13 @@ jobs:
       # library the test browser needs ("already the newest version"), and
       # Ubuntu's download hung for 10 minutes on 6 Nov 2026 and stopped two
       # parts (D323). If a library ever goes missing, the browser says so.
-      - name: End-to-end tests at 320px and 360px
-        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3
+      - name: End-to-end tests at 320px and 360px, two at a time
+        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3 --grep-invert @alone --workers=2
+
+      - name: The timed speed test, on its own
+        # Timed, so nothing else runs beside it (D320).
+        if: ${{ !cancelled() && matrix.part == 1 && steps.build.outcome == 'success' }}
+        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --grep @alone --workers=1
 
       - name: Wait for the local Supabase
         # Still run when an earlier test failed, so every failure shows at
@@ -106,13 +114,13 @@ jobs:
           cat "$RUNNER_TEMP/supabase-start.log"
           exit "$(cat "$RUNNER_TEMP/supabase-start.exit")"
 
-      - name: Sign-in tests at 320px and 360px, against the local Supabase
+      - name: Sign-in and plan-on-the-server tests at 320px and 360px, against the local Supabase, two at a time
         if: ${{ !cancelled() && matrix.part == 3 && steps.build.outcome == 'success' }}
-        run: pnpm --filter @prepenny/web exec playwright test --project=sign-in-320 --project=sign-in-360
+        run: pnpm --filter @prepenny/web exec playwright test --project=sign-in-320 --project=sign-in-360 --workers=2
 
       - name: Keep the test report when something fails
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0, 12 Dec 2025: runs on Node 24
         with:
           name: playwright-report-part-${{ matrix.part }}
           path: apps/web/playwright-report

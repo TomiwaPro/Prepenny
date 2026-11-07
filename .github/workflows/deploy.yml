@@ -55,7 +55,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up pnpm (the version in package.json)
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0, 13 Mar 2026: runs on Node 24
 
       - name: Set up Node (the version in .node-version)
         uses: actions/setup-node@v5

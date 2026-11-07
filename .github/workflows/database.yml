@@ -101,6 +101,43 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: supabase db push --linked
 
+      - name: Check the Data API shows PrePenny's public part only
+        # The Data API (PostgREST) answers for the schemas listed in the
+        # project's Data API settings. PrePenny's checks live in `app`, which
+        # must never be on that list: only `public`, where every table has its
+        # privacy rules, and Supabase's own `graphql_public` (step 3c). The key
+        # can read these settings; it tries to take `app` off if it's ever
+        # there, and says exactly what to do by hand when Supabase refuses.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          status=$(curl --silent --show-error --output "$RUNNER_TEMP/data-api.json" --write-out '%{http_code}' \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/postgrest" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Data API settings::Supabase answered $status when asked for them: $(jq -r '.message // .msg // "no message"' "$RUNNER_TEMP/data-api.json")"
+            exit 1
+          fi
+          schemas=$(jq -r '.db_schema' "$RUNNER_TEMP/data-api.json")
+          echo "The Data API shows: $schemas"
+          if tr ',' '\n' <<< "$schemas" | tr -d ' ' | grep -qx 'app'; then
+            fixed=$(tr ',' '\n' <<< "$schemas" | tr -d ' ' | grep -vx 'app' | paste -sd, -)
+            status=$(jq -n --arg schemas "$fixed" '{db_schema: $schemas}' | curl --silent --show-error \
+              --output "$RUNNER_TEMP/answer.json" --write-out '%{http_code}' --request PATCH \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/postgrest" \
+              --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+            if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+              echo "::error title=The Data API shows app::Take it off by hand: on supabase.com open the project, then Project Settings, Data API, and under Exposed schemas remove app, keeping public and graphql_public. Then run this workflow again."
+              exit 1
+            fi
+            echo "The Data API showed app, and it has been taken off. It now shows: $fixed"
+          fi
+          if ! tr ',' '\n' <<< "$schemas" | tr -d ' ' | grep -qx 'public'; then
+            echo "::warning title=Data API settings::public isn't on the Data API's list, so the app can't save plans. On supabase.com: Project Settings, Data API, Exposed schemas: add public."
+          fi
+
       - name: Set the sign-in settings
         # Every setting is in supabase/sign-in-settings.json, with the sign-in
         # email from supabase/templates. The secrets come only from GitHub,
