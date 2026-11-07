@@ -235,7 +235,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openDebt(page, 'Family loan');
-      await expect(page).toHaveURL(/\/app\/debt\/\?id=family-loan$/);
+      await expect(page).toHaveURL(/\/app\/debt\/#id=family-loan$/);
       await expect(nav(page, 'Debts')).toHaveAttribute('aria-current', 'location');
       const left = page.getByTestId('left-now');
       await expect(left).toContainText('€1,400.57');

@@ -105,8 +105,8 @@ const SCREENS = [
   { path: '/app/', heading: 'Home', purpose: strings.home.purpose },
   { path: '/app/coming-up/', heading: 'Coming up', purpose: strings.comingUp.purpose },
   { path: '/app/debts/', heading: 'Debts', purpose: strings.debts.purpose },
-  { path: '/app/debt/?id=family-loan', heading: 'Family loan', purpose: strings.debt.purpose },
-  { path: '/app/debt/?id=credit-card', heading: 'Credit card', purpose: strings.debt.purpose },
+  { path: '/app/debt/#id=family-loan', heading: 'Family loan', purpose: strings.debt.purpose },
+  { path: '/app/debt/#id=credit-card', heading: 'Credit card', purpose: strings.debt.purpose },
   { path: '/app/more/', heading: 'More', purpose: strings.more.purpose },
   { path: '/app/accounts/', heading: 'Accounts', purpose: strings.accounts.purpose },
   { path: '/app/budgets/', heading: 'Budgets', purpose: strings.budgets.purpose },
@@ -283,7 +283,7 @@ const SHEETS: readonly {
       ['Close this debt', 'Close this debt'],
     ] as const
   ).map(([name, title]) => ({
-    path: '/app/debt/?id=family-loan',
+    path: '/app/debt/#id=family-loan',
     heading: 'Family loan',
     title,
     open: (page: Page) => page.getByRole('button', { name, exact: true }).click(),
@@ -435,7 +435,7 @@ test('making changes sends nothing anywhere', async ({ page }) => {
 test("every page is sent with its security rules: only PrePenny's own files, and no referrer", async ({
   request,
 }) => {
-  for (const path of ['/', '/setup/', '/app/', '/app/debt/?id=family-loan', '/pay-calculator/']) {
+  for (const path of ['/', '/setup/', '/app/', '/app/debt/#id=family-loan', '/pay-calculator/']) {
     const response = await request.get(path);
     const headers = response.headers();
     expect(headers['content-security-policy'], path).toContain("default-src 'self'");

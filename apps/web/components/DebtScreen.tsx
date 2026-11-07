@@ -1,7 +1,7 @@
 'use client';
 
 // One debt (brief 4.6, the "One debt" sketch in ARCHITECTURE.md 4.6), at
-// /app/debt/?id=… (ARCHITECTURE.md 5): what's left now, in both currencies
+// /app/debt/#id=… (ARCHITECTURE.md 5, step 3c): what's left now, in both currencies
 // for a debt in another one (D99), "Paid off on" and its progress, a credit
 // card's interest and minimum as estimates (D101, D104, D106), every linked
 // payment with what's left after it, and the actions: Update from statement
@@ -14,11 +14,11 @@
 // sheet as on Coming up; the fix says first which later payments it also
 // removes; and closing the debt asks whether to remove its planned payments.
 
-import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { dateTile, formatDay } from '../lib/dates.ts';
 import type { DebtPaymentView, DebtRowView, DebtsView, DebtView } from '../lib/debts-view.ts';
 import { formatIn, formatMoney, perPoundWords } from '../lib/money.ts';
+import { useRecordId } from '../lib/record-id.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -364,7 +364,7 @@ function OneDebt({
 }
 
 export function DebtScreen() {
-  const id = useSearchParams()?.get('id') ?? '';
+  const id = useRecordId();
   const { view, version, failed } = useScreenView('debts');
   const debt =
     view === null ? null : ([...view.debts, ...view.closed].find((one) => one.id === id) ?? null);
