@@ -154,13 +154,16 @@ async function threeScreens(page: Page) {
     page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name, exact: true });
   await nav('Home').click();
   await expect(page.getByTestId('balance')).toBeVisible();
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright's own innerText, the words as shown on screen
   const home = await page.locator('main').innerText();
   await nav('Coming up').click();
   await expect(page.getByTestId('plan-lowest')).toBeVisible();
   await expect(page.getByTestId('plan-skeleton')).toHaveCount(0);
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright's own innerText, the words as shown on screen
   const comingUp = await page.locator('main').innerText();
   await nav('Debts').click();
   await expect(page.getByTestId('owed-now').or(page.getByTestId('no-debts'))).toBeVisible();
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright's own innerText, the words as shown on screen
   const debts = await page.locator('main').innerText();
   return { home, comingUp, debts };
 }
