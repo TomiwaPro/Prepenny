@@ -162,22 +162,28 @@ $$;
 -- 3.5): "plan:<id>" for shared records, which everyone in the plan hears,
 -- and "plan:<id>:<person>" for a person's private ones, which only their own
 -- phones hear (D299). The nudge says nothing at all: each phone then asks
--- for what's new. Only a current member nudges, and only their own plan. A
--- nudge that can't be sent never stops a change being saved: the phones
--- also look for changes when they open and every minute or so.
+-- for what's new. Only a current member nudges, and only their own plan.
 create function app.nudge(plan uuid, shared boolean) returns void
 language plpgsql security definer set search_path = '' as $$
 begin
   if not exists (select 1 from app.my_plans() p where p = plan) then
     perform app.refuse('not-found', '42501');
   end if;
-  begin
-    perform realtime.send('{}'::jsonb, 'changed',
-      case when shared then 'plan:' || plan else 'plan:' || plan || ':' || auth.uid() end, true);
-  exception when undefined_function or undefined_table or insufficient_privilege then
-    -- No live updates here: the phones still find the change themselves.
-    null;
-  end;
+  perform app.send_nudge(case when shared then 'plan:' || plan else 'plan:' || plan || ':' || auth.uid() end);
+end;
+$$;
+
+-- Sends one nudge through Supabase Realtime, on a private channel, with
+-- nothing in it. A nudge that can't be sent never stops a change being
+-- saved: the phones also look for changes when they open, when they come
+-- back on screen and every minute or so.
+create function app.send_nudge(topic text) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform realtime.send('{}'::jsonb, 'changed', topic, true);
+exception when others then
+  -- No live updates here: the phones still find the change themselves.
+  null;
 end;
 $$;
 
@@ -569,7 +575,7 @@ grant execute on function
   app.check_link(uuid, boolean, uuid), app.account_privacy(uuid, uuid),
   app.family_problem(uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid),
   app.record_tables(), app.begin_edit(uuid, uuid, text, text), app.nudge(uuid, boolean),
-  app.family_rules_problem(uuid, uuid[]), app.sent_columns(text), app.may_hear(text)
+  app.send_nudge(text), app.family_rules_problem(uuid, uuid[]), app.sent_columns(text), app.may_hear(text)
   to authenticated;
 grant execute on function public.save_edit(uuid, uuid, text, text, jsonb),
   public.plan_changes(uuid, bigint, bigint), public.start_plan(uuid, text), public.remove_plan(uuid)

@@ -10,9 +10,22 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(26);
 
 select tests.make_jess_and_tom('viewer');
+
+select matches(pg_get_functiondef('app.send_nudge(text)'::regprocedure),
+  'realtime\.send\(''\{\}''::jsonb, ''changed'', topic, true\)',
+  'A nudge goes to Realtime on a private channel with nothing in it');
+
+-- What save_edit nudges, caught here instead of sent, for this test only
+-- (it's put back when the test ends). Realtime itself is tried end to end.
+create table tests.nudges (topic text);
+grant insert, select on tests.nudges to authenticated;
+create or replace function app.send_nudge(topic text) returns void
+language sql security definer set search_path = '' as $$
+  insert into tests.nudges (topic) values (topic)
+$$;
 
 create function tests.save_as(edit text, writes jsonb) returns jsonb language sql as $$
   select public.save_edit(tests.id('plan'), tests.id(edit), '2026-11-07T10:00:00Z', 'just-this-one', writes)
@@ -121,11 +134,11 @@ select is(app.may_hear('plan:' || tests.id('plan')), true, 'Jess hears her plan'
 select is(app.may_hear('plan:' || tests.id('plan') || ':' || tests.id('tom')), false,
   'but not Tom''s private ones');
 select tests.as_test();
-select is((select count(*) from realtime.messages where topic = 'plan:' || tests.id('plan')
-    and payload = '{}'::jsonb and event = 'changed'), 4::bigint,
-  'Each of Tom''s four edits of shared records nudged the plan once, with nothing in the nudge');
-select is((select count(*) from realtime.messages where topic = 'plan:' || tests.id('plan') || ':' || tests.id('tom')),
+select is((select count(*) from tests.nudges where topic = 'plan:' || tests.id('plan')), 4::bigint,
+  'Each of Tom''s four saved edits of shared records nudged the plan once');
+select is((select count(*) from tests.nudges where topic = 'plan:' || tests.id('plan') || ':' || tests.id('tom')),
   2::bigint, 'and the edits with something private to him (the overtime''s details, his own account) nudged only him');
+select is((select count(*) from tests.nudges), 6::bigint, 'and no refused edit nudged anyone');
 
 -- What Realtime asks before it passes a nudge on: Tom, signed in again, reads
 -- his plan's nudges and his own; Alex, in no plan, reads none.

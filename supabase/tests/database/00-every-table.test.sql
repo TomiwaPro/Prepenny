@@ -72,7 +72,7 @@ select set_eq(
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
   array['session_id', 'session_ok', 'my_plans', 'my_edit_plans', 'my_owned_plans', 'my_partners', 'my_own_pay',
     'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem',
-    'record_tables', 'begin_edit', 'nudge', 'family_rules_problem', 'sent_columns', 'may_hear',
+    'record_tables', 'begin_edit', 'nudge', 'send_nudge', 'family_rules_problem', 'sent_columns', 'may_hear',
     'save_edit', 'plan_changes', 'start_plan', 'remove_plan'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
