@@ -95,7 +95,10 @@ allowed_cidrs_v6 = ["::/0"]
 # enabled = true
 
 [realtime]
-enabled = false
+# On from step 3c: the plan's live nudges (D295). With it on, `supabase start`
+# sets up Realtime's own tables even when its service is left out, so the
+# database tests can check their rules.
+enabled = true
 # Bind realtime via either IPv4 or IPv6. (default: IPv4)
 # ip_version = "IPv6"
 # The maximum length in bytes of HTTP request headers. (default: 4096)

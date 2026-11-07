@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(11);
 
 select is_empty(
   $$ select tablename from pg_tables where schemaname = 'public' and not rowsecurity $$,
@@ -65,13 +65,24 @@ select is_empty(
 );
 
 -- The only functions a signed-in person can use are the checks the rules
--- call, and each answers only about the person asking.
+-- call, each answering only about the person asking, and from step 3c the
+-- four steps the phone calls and what they call in turn (D324).
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
   array['session_id', 'session_ok', 'my_plans', 'my_edit_plans', 'my_owned_plans', 'my_partners', 'my_own_pay',
-    'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem'],
-  'A signed-in person can use only the checks the privacy rules call'
+    'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem',
+    'record_tables', 'begin_edit', 'nudge', 'family_rules_problem', 'sent_columns', 'may_hear',
+    'save_edit', 'plan_changes', 'start_plan', 'remove_plan'],
+  'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
+);
+
+-- Of those, only the four steps are in the part the Data API shows.
+select set_eq(
+  $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute') $$,
+  array['save_edit', 'plan_changes', 'start_plan', 'remove_plan'],
+  'The Data API''s part holds only the four steps the phone calls'
 );
 
 select is_empty(
