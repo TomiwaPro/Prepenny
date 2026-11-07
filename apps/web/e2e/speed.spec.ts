@@ -47,65 +47,70 @@ async function timeHome(page: Page, open: () => Promise<unknown>): Promise<numbe
 const middle = (times: readonly number[]) =>
   [...times].sort((a, b) => a - b)[Math.floor(times.length / 2)] ?? 0;
 
-test('Home shows its real figures quickly on a phone 4 times slower, and never a spinner', async ({
-  page,
-}, info) => {
-  test.skip(info.project.name !== 'phone-360', 'Timed once, at 360px.');
-  await page.addInitScript(WATCH_FOR_SPINNERS);
-  await slowDown(page);
+// Timed, so it runs on its own on GitHub's machine, never beside another test (D320).
+test(
+  'Home shows its real figures quickly on a phone 4 times slower, and never a spinner',
+  { tag: '@alone' },
+  async ({ page }, info) => {
+    test.skip(info.project.name !== 'phone-360', 'Timed once, at 360px.');
+    await page.addInitScript(WATCH_FOR_SPINNERS);
+    await slowDown(page);
 
-  // The first visit: nothing on the phone yet but the example plan.
-  const first = await timeHome(page, () => page.goto('/app/'));
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
+    // The first visit: nothing on the phone yet but the example plan.
+    const first = await timeHome(page, () => page.goto('/app/'));
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await expect
+      .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+      .toBe(true);
 
-  // Opening it again, as from the home screen: its files come from the phone.
-  const again: number[] = [];
-  for (let run = 0; run < RUNS; run += 1) again.push(await timeHome(page, () => page.reload()));
+    // Opening it again, as from the home screen: its files come from the phone.
+    const again: number[] = [];
+    for (let run = 0; run < RUNS; run += 1) again.push(await timeHome(page, () => page.reload()));
 
-  // A change: Mark as paid on a payment in Next due, until Home shows the new figures.
-  const change: number[] = [];
-  for (let run = 0; run < RUNS; run += 1) {
-    const due = page.getByTestId('next-due').getByRole('button', { name: /^Family loan/ });
-    const started = Date.now();
-    await due.click();
-    await page
-      .getByRole('dialog', { name: 'Family loan' })
-      .getByRole('button', { name: 'Mark as paid' })
-      .click();
-    await expect(page.getByTestId('undo-bar')).toContainText('Family loan marked as paid.');
-    await expect(page.getByTestId('next-due')).not.toContainText('Family loan');
-    change.push(Date.now() - started);
-    await page.getByTestId('undo-bar').getByRole('button', { name: 'Undo' }).click();
-    await expect(page.getByTestId('next-due')).toContainText('Family loan');
-  }
+    // A change: Mark as paid on a payment in Next due, until Home shows the new figures.
+    const change: number[] = [];
+    for (let run = 0; run < RUNS; run += 1) {
+      const due = page.getByTestId('next-due').getByRole('button', { name: /^Family loan/ });
+      const started = Date.now();
+      await due.click();
+      await page
+        .getByRole('dialog', { name: 'Family loan' })
+        .getByRole('button', { name: 'Mark as paid' })
+        .click();
+      await expect(page.getByTestId('undo-bar')).toContainText('Family loan marked as paid.');
+      await expect(page.getByTestId('next-due')).not.toContainText('Family loan');
+      change.push(Date.now() - started);
+      await page.getByTestId('undo-bar').getByRole('button', { name: 'Undo' }).click();
+      await expect(page.getByTestId('next-due')).toContainText('Family loan');
+    }
 
-  const spinners = (await page.evaluate(() => Reflect.get(window, '__spinners'))) as string[];
-  expect(spinners).toEqual([]);
+    const spinners = (await page.evaluate(() => Reflect.get(window, '__spinners'))) as string[];
+    expect(spinners).toEqual([]);
 
-  const report = {
-    cpuSlower: SLOWER,
-    firstVisitMs: first,
-    openAgainMs: again,
-    openAgainMiddleMs: middle(again),
-    changeMs: change,
-    changeMiddleMs: middle(change),
-  };
-  info.annotations.push({ type: 'speed', description: JSON.stringify(report) });
-  writeFileSync(info.outputPath('speed.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`Speed, CPU ${SLOWER} times slower: ${JSON.stringify(report)}`);
+    const report = {
+      cpuSlower: SLOWER,
+      firstVisitMs: first,
+      openAgainMs: again,
+      openAgainMiddleMs: middle(again),
+      changeMs: change,
+      changeMiddleMs: middle(change),
+    };
+    info.annotations.push({ type: 'speed', description: JSON.stringify(report) });
+    writeFileSync(info.outputPath('speed.json'), `${JSON.stringify(report, null, 2)}\n`);
+    console.log(`Speed, CPU ${SLOWER} times slower: ${JSON.stringify(report)}`);
 
-  // Bounds with room to spare on GitHub's machines, which are slower than a laptop.
-  expect(first).toBeLessThan(6000);
-  expect(middle(again)).toBeLessThan(3000);
-  expect(middle(change)).toBeLessThan(2000);
-});
+    // Bounds with room to spare on GitHub's machines, which are slower than a laptop.
+    expect(first).toBeLessThan(6000);
+    expect(middle(again)).toBeLessThan(3000);
+    expect(middle(change)).toBeLessThan(2000);
+  },
+);
 
-test('Home shows a skeleton while the plan is worked out, never a spinner', async ({ page }) => {
+test('Home shows a skeleton while the plan is worked out, never a spinner', {
+  tag: '@alone',
+}, async ({ page }) => {
   await page.addInitScript(WATCH_FOR_SPINNERS);
   await slowDown(page);
   await page.goto('/app/');

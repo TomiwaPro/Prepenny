@@ -4,9 +4,9 @@ name: End-to-end tests
 # and dark, as a phone would (brief 7.1, D37), in three parts side by side.
 # Part 3 also runs the sign-in tests and the plan-on-the-server tests against
 # a local Supabase on GitHub's machine, with its test inbox catching the
-# emails (steps 3b and 3c). Each machine runs one test at a time: with two
-# at a time, each test took more than twice as long, so it saved nothing
-# (D320, D343).
+# emails (steps 3b and 3c). Each machine runs two tests at a time, which
+# used about an eighth fewer minutes when measured, except the timed speed
+# test, which runs on its own (D320, D343).
 #
 # Called by check.yml (main, and pull requests that are ready for review) and
 # ready.yml (the moment a pull request is marked ready). Never on its own.
@@ -97,8 +97,13 @@ jobs:
       # library the test browser needs ("already the newest version"), and
       # Ubuntu's download hung for 10 minutes on 6 Nov 2026 and stopped two
       # parts (D323). If a library ever goes missing, the browser says so.
-      - name: End-to-end tests at 320px and 360px
-        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3 --workers=1
+      - name: End-to-end tests at 320px and 360px, two at a time
+        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3 --grep-invert @alone --workers=2
+
+      - name: The timed speed test, on its own
+        # Timed, so nothing else runs beside it (D320).
+        if: ${{ !cancelled() && matrix.part == 1 && steps.build.outcome == 'success' }}
+        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --grep @alone --workers=1
 
       - name: Wait for the local Supabase
         # Still run when an earlier test failed, so every failure shows at
@@ -110,9 +115,9 @@ jobs:
           cat "$RUNNER_TEMP/supabase-start.log"
           exit "$(cat "$RUNNER_TEMP/supabase-start.exit")"
 
-      - name: Sign-in and plan-on-the-server tests at 320px and 360px, against the local Supabase
+      - name: Sign-in and plan-on-the-server tests at 320px and 360px, against the local Supabase, two at a time
         if: ${{ !cancelled() && matrix.part == 3 && steps.build.outcome == 'success' }}
-        run: pnpm --filter @prepenny/web exec playwright test --project=sign-in-320 --project=sign-in-360 --workers=1
+        run: pnpm --filter @prepenny/web exec playwright test --project=sign-in-320 --project=sign-in-360 --workers=2
 
       - name: Keep the test report when something fails
         if: failure()
