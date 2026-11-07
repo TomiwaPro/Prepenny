@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -3874,3 +3874,63 @@ Decided 7 Nov 2026 in step 3c, found on GitHub. Each failed once and passed on i
 - A third check that needed a second try, the Pay sheet's layout at 200% text, two at a time while Supabase was starting, can't be explained from the log, and passed on every other run. It's left as it is, and PLAN.md item 35 says to look at it if it happens again.
 
 Why: a check that sometimes measures a screen mid-movement, or counts the computer's own network change, fails at random, and a person only reads a sheet once it's open.
+
+## From the owner's review of step 3c
+
+D345 comes from the owner's reviewer, and D346 to D350 are the owner's answers to the questions step 3c left in `PLAN.md`, all on 7 Nov 2026.
+
+### D345. Every change a person makes goes through save_edit
+
+From the owner's reviewer, 7 Nov 2026. Builds D296 and D330.
+
+- Signed-in people had insert and update on the record tables and on the plan's own row, so a change could still be made straight through the Data API (REST or GraphQL). The privacy rules held, but such a change skipped `save_edit`: no edit in the history, no family rules, no nudge. A partner who can edit could change shared records and leave no history, which matters for Activity in step 3g.
+- Now the first check on every record table and on the plan's own row refuses a person's insert or update with "use-save-edit", unless `save_edit` is saving it. `start_plan` still makes a plan: it marks the one plan it's making, for that one insert.
+- Decided in step 3c: `save_edit` marks its writes with a setting that lasts to the end of the request, so it now takes the mark off as soon as its records are written. Otherwise one GraphQL request with two steps, `save_edit` then a change of its own, could pass the second off as part of the first.
+- A person is a request with a person's own rights, the Data API's roles. The database's own helpers, the migrations and the tests' set-up aren't refused. Nothing a person can reach can set either mark.
+- The check runs as the person writing and reads its marks itself, so nobody is given a right to any new function.
+- The older tests of the privacy rules now write inside an edit, as `save_edit` does (`tests.in_an_edit`), so the rules are still tested as they apply there. Test 08's check that a shared record never names a private edit is now made as the database writing for Jess, since a person's change always names the edit `save_edit` is saving.
+- A plan can't be renamed for now: `save_edit` changes only the plan's nation, and no screen renames a plan yet. Renaming will go through `save_edit` when a screen needs it.
+
+Test: `14-only-through-save-edit.test.sql` (31 checks): a direct insert and a direct update on every record table, and on the plan's nation, are refused for the owner, someone who can edit and someone who can only view, and the same changes through `save_edit` still work; `start_plan` makes a plan and nothing else; neither mark lasts beyond its step; the database itself isn't refused. `00-every-table.test.sql` checks the guard comes first on every table. Each rule was broken on purpose to see the tests fail, apart from `start_plan` taking its mark off, which can only ever let in the plan it has just made.
+
+Why: the reviewer's finding. Every change needs its history (Activity, step 3g), its family rules and its nudge.
+
+### D346. A second Supabase project for previews: a small step of its own, just before step 3f
+
+The owner's answer to `PLAN.md`'s question about D340, 7 Nov 2026.
+
+Not now. It's its own small setup step, 3e-2 in `PLAN.md`, just before step 3f, when previews of shared plans will need a database of their own to try.
+
+Why: the owner's answer.
+
+### D347. The welcome screen on a laptop: the owner checks after merging
+
+The owner's answer about D327, 7 Nov 2026.
+
+The owner checks the welcome screen on their own laptop once step 3c is merged. Nothing more changes until then.
+
+Why: the owner's answer.
+
+### D348. A sign-in that ends by itself with a change not sent yet keeps the plan on the phone
+
+The owner's answer about D326, 7 Nov 2026. Confirms D326.
+
+The plan stays on the phone, so nothing is lost, and whoever signs in next is offered to remove it, being told whether anything would be lost.
+
+Why: the owner's answer, as suggested.
+
+### D349. Shared pay someone else added can't be claimed until step 3f
+
+The owner's answer about D334, 7 Nov 2026. Confirms D334's point.
+
+Until step 3f, when sharing is on screen, the person removes such pay and adds it again as theirs.
+
+Why: the owner's answer, as suggested.
+
+### D350. GitHub's minutes stay as they are
+
+The owner's answer about D343, 7 Nov 2026.
+
+The end-to-end tests stay as they are: one at a time, at 320px and 360px, on every push to a ready pull request and on `main`. The repository stays private.
+
+Why: the owner's answer.
