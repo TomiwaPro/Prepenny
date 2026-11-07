@@ -89,15 +89,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ steps.playwright.outputs.version }}-chromium-shell-${{ runner.os }}-${{ runner.arch }}
 
-      - name: Install what the test browser needs from Ubuntu, if it can
-        # GitHub's machines already have it: on 6 Nov 2026 Ubuntu's download
-        # hung for 10 minutes and the sign-in tests ran and passed without it.
-        # So it's given 3 minutes at most, and never stops the job; if the
-        # browser really needed it, the tests would say so.
-        timeout-minutes: 3
-        continue-on-error: true
-        run: pnpm --filter @prepenny/web exec playwright install-deps chromium
-
+      # Nothing is installed from Ubuntu: GitHub's machines already have every
+      # library the test browser needs ("already the newest version"), and
+      # Ubuntu's download hung for 10 minutes on 6 Nov 2026 and stopped two
+      # parts (D323). If a library ever goes missing, the browser says so.
       - name: End-to-end tests at 320px and 360px
         run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3
 
