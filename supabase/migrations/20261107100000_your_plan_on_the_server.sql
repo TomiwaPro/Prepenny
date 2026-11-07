@@ -292,11 +292,14 @@ declare
   base integer;
   new_row jsonb;
   column_list text;
-  saved record;
+  saved_version integer;
+  saved_seq bigint;
+  saved_private uuid;
+  saved_deleted boolean;
   seen integer;
   results jsonb := '[]'::jsonb;
   changed jsonb := '[]'::jsonb;
-  families uuid[] := '{}';
+  families uuid[] := '{}'::uuid[];
   shared boolean := false;
   mine boolean := false;
   problem text;
@@ -315,20 +318,19 @@ begin
     -- version as it is now, as far as it can read it.
     for write in select * from jsonb_array_elements(writes) loop
       t := write ->> 'table';
-      select null::integer as version, null::bigint as seq, null::uuid as private_to,
-        null::boolean as deleted into saved;
+      saved_version := null;
       if t = 'plans' then
-        select p.version, p.seq, null::uuid as private_to, false as deleted into saved
+        select p.version, p.seq, null::uuid, false into saved_version, saved_seq, saved_private, saved_deleted
           from public.plans p where p.id = plan;
       elsif t = any (app.record_tables()) then
         execute format('select version, seq, private_to, deleted from public.%I where id = $1 and plan_id = $2', t)
-          into saved using (write ->> 'id')::uuid, plan;
+          into saved_version, saved_seq, saved_private, saved_deleted using (write ->> 'id')::uuid, plan;
       else
         perform app.refuse('bad-edit');
       end if;
-      if saved.version is not null then
-        results := results || jsonb_build_object('table', t, 'id', write ->> 'id', 'version', saved.version,
-          'seq', saved.seq, 'private_to', saved.private_to, 'deleted', saved.deleted);
+      if saved_version is not null then
+        results := results || jsonb_build_object('table', t, 'id', write ->> 'id', 'version', saved_version,
+          'seq', saved_seq, 'private_to', saved_private, 'deleted', saved_deleted);
       end if;
     end loop;
     return jsonb_build_object('saved', 'already', 'rows', results);
@@ -350,8 +352,7 @@ begin
         or (new_row is null and base is null) then
         perform app.refuse('bad-edit');
       end if;
-      select null::integer as version, null::bigint as seq, null::uuid as private_to,
-        null::boolean as deleted into saved;
+      saved_version := null;
 
       if t = 'plans' then
         -- Only the plan's bank holidays change through an edit (D155, D289).
@@ -360,12 +361,12 @@ begin
         end if;
         update public.plans p set nation = new_row ->> 'nation'
           where p.id = plan and p.version = base
-          returning p.version, p.seq, null::uuid as private_to, false as deleted into saved;
+          returning p.version, p.seq, null::uuid, false into saved_version, saved_seq, saved_private, saved_deleted;
       elsif t = any (app.record_tables()) then
         if new_row is null then
           execute format('update public.%I set deleted = true where id = $1 and plan_id = $2 and version = $3
               returning version, seq, private_to, deleted', t)
-            into saved using record_id, plan, base;
+            into saved_version, saved_seq, saved_private, saved_deleted using record_id, plan, base;
         else
           -- The columns sent, of those a phone may send. The phone sends every
           -- one, null where empty; one left out keeps its default or its value.
@@ -383,21 +384,21 @@ begin
               execute format('insert into public.%1$I (id, plan_id, %2$s)
                   select $1, $2, %2$s from jsonb_populate_record(null::public.%1$I, $3)
                   returning version, seq, private_to, deleted', t, column_list)
-                into saved using record_id, plan, new_row;
+                into saved_version, saved_seq, saved_private, saved_deleted using record_id, plan, new_row;
             end if;
           else
             execute format('update public.%1$I set (%2$s, deleted) =
                   (select %2$s, false from jsonb_populate_record(null::public.%1$I, $2))
                 where id = $1 and plan_id = $3 and version = $4
                 returning version, seq, private_to, deleted', t, column_list)
-              into saved using record_id, new_row, plan, base;
+              into saved_version, saved_seq, saved_private, saved_deleted using record_id, new_row, plan, base;
           end if;
         end if;
       else
         perform app.refuse('bad-edit');
       end if;
 
-      if saved.version is null then
+      if saved_version is null then
         -- Nothing was saved. Either it isn't at the version the phone saw
         -- (changed since), or the person may read it but not change it ("Can
         -- view only", or locked to someone else), or they can't see it at
@@ -421,13 +422,13 @@ begin
       if t = 'series' then
         families := families || (select s.family_id from public.series s where s.id = record_id);
       end if;
-      if saved.private_to is null then
+      if saved_private is null then
         shared := true;
       else
         mine := true;
       end if;
-      results := results || jsonb_build_object('table', t, 'id', record_id, 'version', saved.version,
-        'seq', saved.seq, 'private_to', saved.private_to, 'deleted', saved.deleted);
+      results := results || jsonb_build_object('table', t, 'id', record_id, 'version', saved_version,
+        'seq', saved_seq, 'private_to', saved_private, 'deleted', saved_deleted);
     end loop;
   exception
     -- PrePenny's own refusals and the privacy rules' own say no more than a code.
@@ -473,7 +474,7 @@ $$;
 -- every row, so a partner never gets anything private (D16, D303).
 create function public.plan_changes(plan uuid, shared_after bigint, mine_after bigint)
 returns jsonb
-language plpgsql stable security invoker set search_path = '' as $$
+language plpgsql security invoker set search_path = '' as $$
 declare
   t text;
   found_rows jsonb;
@@ -486,7 +487,7 @@ begin
   select jsonb_build_object('id', p.id, 'nation', p.nation, 'owner', p.owner, 'version', p.version,
       'seq', p.seq, 'changed_at', p.changed_at)
     into the_plan from public.plans p where p.id = plan;
-  foreach t in array app.record_tables() loop
+  for t in select unnest(app.record_tables()) loop
     execute format($q$
       select coalesce(jsonb_agg(jsonb_build_object('table', %L, 'row',
           to_jsonb(r) - 'plan_id' - 'created_at' - 'created_by' - 'edit_id') order by r.seq), '[]'::jsonb)
