@@ -1,8 +1,9 @@
 'use client';
 
 // Add or change a savings goal (brief 4.7, D114, D153). A new goal asks the
-// same as setup's step 7, with the money moved into it each payday or
-// another way (D226). Changing it asks for its own details: what it's for,
+// same as setup's old step 7 did, with the money moved into it each payday
+// or another way (D226). Setup's "Here's your plan" opens it too, with
+// setup's own plan put under it (D356). Changing it asks for its own details: what it's for,
 // the target, the date, the account it's kept in and what was already
 // saved. Each save is one change with one Undo.
 
@@ -34,15 +35,27 @@ import { useWhenRefs } from './WhenFields.tsx';
 
 const t = strings.goalSheet;
 
+/** Where a new goal's boxes start: the account it's kept in, and the one money moves from. */
+export interface GoalStart {
+  readonly keptIn: string;
+  readonly from: string;
+}
+
 export function GoalSheet({
   open,
   goal,
   onClose,
+  madeAt = timeNow,
+  start,
 }: {
   readonly open: boolean;
   /** The goal to change, or null to add one. */
   readonly goal: GoalCard | null;
   readonly onClose: () => void;
+  /** When a new goal's records are made. Setup gives each a moment after the last (D229). */
+  readonly madeAt?: () => string;
+  /** Where a new goal's boxes start, when not the usual accounts. */
+  readonly start?: GoalStart;
 }) {
   const opened = useOpenCount(open);
   // The boxes start from the plan, so they wait for it: a tap before it has
@@ -55,7 +68,15 @@ export function GoalSheet({
       intro={goal === null ? t.addIntro : t.changeIntro}
       onClose={onClose}
     >
-      {opened === 0 || !ready ? null : <GoalSheetForm key={opened} goal={goal} onDone={onClose} />}
+      {opened === 0 || !ready ? null : (
+        <GoalSheetForm
+          key={opened}
+          goal={goal}
+          onDone={onClose}
+          madeAt={madeAt}
+          {...(start === undefined ? {} : { start })}
+        />
+      )}
     </Sheet>
   );
 }
@@ -94,9 +115,13 @@ function changeOf(
 function GoalSheetForm({
   goal,
   onDone,
+  madeAt,
+  start,
 }: {
   readonly goal: GoalCard | null;
   readonly onDone: () => void;
+  readonly madeAt: () => string;
+  readonly start?: GoalStart;
 }) {
   const { loaded, makeChange, makeChanges } = usePlanActions();
   const id = useId();
@@ -126,6 +151,7 @@ function GoalSheetForm({
         saved: goal.goal.startingAmount === 0 ? '' : amountForTyping(goal.goal.startingAmount),
       };
     }
+    if (start !== undefined) return blankGoal(start.keptIn, start.from, eachPayday !== null);
     const keptIn =
       open.find((one) => one.kind === 'savings')?.id ?? open[1]?.id ?? open[0]?.id ?? '';
     const from = open.find((one) => one.id !== keptIn)?.id ?? open[0]?.id ?? '';
@@ -167,7 +193,7 @@ function GoalSheetForm({
         today,
         holidays,
         { goalId: newId(), seriesId: newId(), accountId: newId(), balanceId: newId() },
-        timeNow(),
+        madeAt(),
         eachPayday,
         strings.setup.savings.moveName,
       );
