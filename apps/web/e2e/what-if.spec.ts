@@ -151,6 +151,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('what-if-note')).toBeFocused();
       await expect(current.getByTestId('practice')).toContainText('£4.53');
       await page.getByRole('link', { name: 'Back to Coming up' }).click();
+      // What if shows a practice copy of Coming up, with the same lowest point
+      // and the same paydays, Fri 30 Oct open. So wait for Coming up itself
+      // before reading them: reading the old page found Fri 30 Oct open, so
+      // it wasn't tapped, and the new page then showed it closed (D364).
+      await expect(page.getByRole('heading', { level: 1, name: 'Coming up' })).toBeVisible();
+      await expect(page.getByTestId('side-by-side')).toHaveCount(0);
       await expect(page.getByTestId('plan-lowest')).toContainText(
         'Lowest point: £4.53 on Sun 1 Nov, after Rent',
       );
