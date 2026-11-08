@@ -12,6 +12,20 @@
 // 5. Sign out with a change not yet sent: the warning appears.
 // 6. A partner's phone gets shared records only (the database tests try every
 //    role; this one is end to end).
+//
+// And the owner's four tests for the step 3c fix (D351 to D354), on every
+// screen, the welcome and setup included:
+// 7. The owner's own case: a phone signed in part-way through setup before
+//    the account had a plan; a second phone saves a finished plan; the first
+//    phone opens and asks "which one to keep"; keeping the saved plan shows
+//    Home with the same figures; a change on either phone reaches the other.
+// 8. A phone part-way through setup, not signed in, signs in from the
+//    welcome's "Already have an account? Sign in" and is asked which to keep.
+// 9. A fresh phone signs in from the welcome, and the saved plan comes down.
+// 10. Signing out from the welcome screen, and from a setup step.
+// With two more, run once: an account that already has two plans of its own
+// asks which to keep (11), and two phones sending their first copy at the
+// same moment leave one plan (12).
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -22,10 +36,20 @@ import { strings } from '../strings/en-GB.ts';
 import { settingScript } from './fixtures.ts';
 import { openHome, updateBalance } from './journeys.ts';
 import { SAM_TODAY, setUpSam } from './people.ts';
-import { box, fillAccount, lastForm, next, noAxeProblems, skip, startSetup } from './setup.ts';
+import {
+  back,
+  box,
+  fillAccount,
+  lastForm,
+  next,
+  noAxeProblems,
+  skip,
+  startSetup,
+} from './setup.ts';
 import {
   askForCode,
   makeAPlan,
+  makeCodeRunOut,
   newEmail,
   signInEmail,
   TODAY,
@@ -201,6 +225,54 @@ async function everythingKept(page: Page): Promise<string> {
   });
 }
 
+/** The local Supabase's Data API: everything about plans, but not signing in. */
+const DATA_API = `${LOCAL_SUPABASE.url}/rest/v1/**`;
+
+/**
+ * A plan part-way through setup, as the owner's phone had: one account with
+ * this balance today, a look at step 2, then Back to the welcome, which says
+ * "Carry on making my plan".
+ */
+async function startAPlan(page: Page, balance: string) {
+  await startSetup(page, TODAY);
+  await fillAccount(lastForm(page, 'account'), { name: 'Current account', balance, warning: '20' });
+  await next(page);
+  await expect(page.getByText('Step 2 of 8', { exact: true })).toBeVisible();
+  await back(page);
+  await expect(page.getByText('Step 1 of 8', { exact: true })).toBeVisible();
+  await back(page);
+  await expect(page.getByRole('button', { name: strings.welcome.carryOn })).toBeVisible();
+}
+
+/** The welcome's "Already have an account? Sign in", then the code from the email. */
+async function signInFromWelcome(page: Page, address: string) {
+  await page.getByRole('link', { name: `${t.haveAccount} ${t.signIn}` }).click();
+  await expect(page.getByRole('heading', { level: 1, name: s.signInHeading })).toBeVisible();
+  await askForCode(page, address);
+  await box(page, '6-digit code').fill((await signInEmail(address)).code);
+  await page.getByRole('button', { name: s.finishSignIn, exact: true }).click();
+}
+
+/** A second phone with a plan of its own, finished and saved in the account. */
+async function phoneWithSavedPlan(
+  browser: Browser,
+  info: TestInfo,
+  colorScheme: 'light' | 'dark',
+  address: string,
+) {
+  const phone = await secondPhone(browser, info, colorScheme);
+  await makeAPlan(phone.page);
+  await signIn(phone.page, address);
+  await expect(phone.page).toHaveURL(/\/app\/$/);
+  await openMore(phone.page);
+  await expect(phone.page.getByTestId('where-kept')).toHaveText(t.savedInAccount);
+  return phone;
+}
+
+/** How many plans the person owns in the database. */
+const plansOwnedBy = (person: string) =>
+  Number(sql(`select count(*) from public.plans where owner = ${quoted(person)}`));
+
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Your plan on the server, in ${colorScheme} mode`, () => {
     test.beforeEach(async ({ page }) => {
@@ -323,13 +395,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
         const third = await secondPhone(browser, info, colorScheme);
         await signIn(third.page, address);
         await expect(third.page.getByTestId('balance')).toContainText(wanted);
-        expect(
-          Number(
-            sql(
-              `select count(*) from public.plans where owner = ${quoted(await personOn(third.page))}`,
-            ),
-          ),
-        ).toBe(1);
+        expect(plansOwnedBy(await personOn(third.page))).toBe(1);
+
+        // The first phone, opened again, has the plan that was kept too, even
+        // when its own was the one removed (D352).
+        await page.goto('/app/');
+        await expect(page.getByTestId('balance')).toContainText(wanted);
         await second.context.close();
         await third.context.close();
       });
@@ -472,5 +543,305 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(kept).not.toContain('26754');
       await tom.context.close();
     });
+
+    test("7. the owner's case: a phone signed in part-way through setup before the account had a plan is asked which to keep, and keeping the saved plan keeps both phones in step", async ({
+      page,
+      browser,
+    }, info) => {
+      test.slow();
+      const address = newEmail('owner');
+      // The first phone, part-way through setup, signs in as it did in step
+      // 3b, when nothing of the plan was sent: here the server answers
+      // signing in, and nothing else.
+      await startAPlan(page, '111.11');
+      await page.context().route(DATA_API, (route) => route.abort());
+      await signIn(page, address);
+      // Supabase's own code tries a few times before it gives up on the server.
+      await expect(page).toHaveURL(/\/setup\/$/, { timeout: 30_000 });
+      await expect(page.getByTestId('signed-in')).toContainText(t.signedInWelcome(address));
+      await expect(page.getByRole('button', { name: strings.welcome.carryOn })).toBeVisible();
+
+      // A second phone finishes its plan and saves it in the account.
+      const second = await phoneWithSavedPlan(browser, info, colorScheme, address);
+      const saved = await threeScreens(second.page);
+
+      // The first phone opens PrePenny again, and its server answers now: it
+      // goes to setup, looks at the account, and asks.
+      await page.context().unroute(DATA_API);
+      await page.goto('/app/');
+      await expect(page.getByRole('heading', { level: 1, name: s.chooseHeading })).toBeVisible();
+      const choose = page.getByTestId('choose-plan');
+      await expect(choose.getByRole('radio', { name: s.savedPlan(s.today) })).not.toBeChecked();
+      await expect(choose.getByRole('radio', { name: s.phonePlan(s.today) })).not.toBeChecked();
+      await expect(choose.getByText(s.phonePlanUnfinishedHint)).toBeVisible();
+      await noAxeProblems(page);
+      if (colorScheme === 'light' && info.project.name === 'sign-in-360') {
+        await page.screenshot({
+          path: '../../docs/screens/3c-fix/which-plan-to-keep-unfinished-360-light.png',
+          fullPage: true,
+        });
+      }
+      await choose.getByRole('radio', { name: s.savedPlan(s.today) }).check();
+      await choose.getByRole('button', { name: s.keepThisPlan }).click();
+      await page
+        .getByRole('dialog', { name: s.keepSavedTitle })
+        .getByRole('button', { name: s.removeIt })
+        .click();
+
+      // Home, with the same figures as the second phone, and one plan in the account.
+      await expect(page).toHaveURL(/\/app\/$/);
+      await expect(page.getByTestId('balance')).toContainText('£267.54');
+      expect(await threeScreens(page)).toEqual(saved);
+      expect(plansOwnedBy(await personOn(page))).toBe(1);
+      await noAxeProblems(page);
+
+      // A change on either phone reaches the other, left open on Home.
+      await openHome(second.page);
+      await updateBalance(page, {
+        account: null,
+        balance: '301.25',
+        expected: '£267.54',
+        difference: "That's £33.71 more.",
+        toTick: 0,
+      });
+      await expect(second.page.getByTestId('balance')).toContainText('£301.25', {
+        timeout: 20_000,
+      });
+      await updateBalance(second.page, {
+        account: null,
+        balance: '299.00',
+        expected: '£301.25',
+        difference: "That's £2.25 less.",
+        toTick: 0,
+      });
+      await expect(page.getByTestId('balance')).toContainText('£299.00', { timeout: 20_000 });
+      await second.context.close();
+    });
+
+    test('8. a phone part-way through setup, not signed in, signs in from the welcome and is asked which plan to keep', async ({
+      page,
+      browser,
+    }, info) => {
+      const address = newEmail('priya');
+      const second = await phoneWithSavedPlan(browser, info, colorScheme, address);
+
+      await startAPlan(page, '111.11');
+      // The second phone signed in a moment ago: Supabase leaves a minute between emails (D305).
+      makeCodeRunOut(address);
+      await signInFromWelcome(page, address);
+      await expect(page.getByRole('heading', { level: 1, name: s.chooseHeading })).toBeVisible();
+      const choose = page.getByTestId('choose-plan');
+      await expect(choose.getByRole('radio', { name: s.savedPlan(s.today) })).not.toBeChecked();
+      await expect(choose.getByRole('radio', { name: s.phonePlan(s.today) })).not.toBeChecked();
+      await noAxeProblems(page);
+
+      // Keeping the plan on this phone: setup carries on where it was, and
+      // it's the account's only plan.
+      await choose.getByRole('radio', { name: s.phonePlan(s.today) }).check();
+      await choose.getByRole('button', { name: s.keepThisPlan }).click();
+      await page
+        .getByRole('dialog', { name: s.keepPhoneTitle })
+        .getByRole('button', { name: s.removeIt })
+        .click();
+      await expect(page).toHaveURL(/\/setup\/$/);
+      await expect(page.getByRole('button', { name: strings.welcome.carryOn })).toBeVisible();
+      const person = await personOn(page);
+      expect(plansOwnedBy(person)).toBe(1);
+      expect(
+        sql(
+          `select string_agg(b.balance::text, ',') from public.balance_updates b
+             join public.plans p on p.id = b.plan_id where p.owner = ${quoted(person)}`,
+        ),
+      ).toBe('11111');
+
+      // The second phone, whose plan was removed from the account, has the
+      // kept one once it opens PrePenny again, part-way through setup.
+      await second.page.reload();
+      await expect(second.page).toHaveURL(/\/setup\/$/);
+      await second.page.getByRole('button', { name: strings.welcome.carryOn }).click();
+      await expect(second.page.getByTestId('added')).toContainText('£111.11');
+      await noAxeProblems(second.page);
+      await second.context.close();
+    });
+
+    test('9. a fresh phone signs in from the welcome, and the saved plan comes down', async ({
+      page,
+      browser,
+    }, info) => {
+      const address = newEmail('kofi');
+      const second = await phoneWithSavedPlan(browser, info, colorScheme, address);
+      const saved = await threeScreens(second.page);
+
+      await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today: TODAY }] as const);
+      await page.goto('/');
+      await expect(page.getByRole('button', { name: strings.welcome.makeMyPlan })).toBeVisible();
+      makeCodeRunOut(address);
+      await signInFromWelcome(page, address);
+      await expect(page).toHaveURL(/\/app\/$/);
+      await expect(page.getByTestId('balance')).toContainText('£267.54');
+      expect(await threeScreens(page)).toEqual(saved);
+      await noAxeProblems(page);
+
+      // And a fresh phone signed in before its account has a plan: left open
+      // on the welcome, it brings the plan down once another phone has saved one.
+      const later = newEmail('kofi-later');
+      const third = await secondPhone(browser, info, colorScheme);
+      await signIn(third.page, later);
+      await expect(third.page).toHaveURL(/\/setup\/$/);
+      await expect(third.page.getByTestId('signed-in')).toContainText(t.signedInWelcome(later));
+      await expect(
+        third.page.getByRole('button', { name: strings.welcome.makeMyPlan }),
+      ).toBeVisible();
+      const fourth = await phoneWithSavedPlan(browser, info, colorScheme, later);
+      // The signal comes back on the third phone, which looks at the account.
+      await third.page.evaluate(() => window.dispatchEvent(new Event('online')));
+      await expect(third.page).toHaveURL(/\/app\/$/);
+      await expect(third.page.getByTestId('balance')).toContainText('£267.54');
+      await second.context.close();
+      await third.context.close();
+      await fourth.context.close();
+    });
+
+    test('10. signing out from the welcome screen, and from a setup step', async ({
+      page,
+    }, info) => {
+      const address = newEmail('dee');
+      await startAPlan(page, '111.11');
+      await signInFromWelcome(page, address);
+      // The account had no plan, so the one on this phone went up, unfinished.
+      await expect(page).toHaveURL(/\/setup\/$/);
+      const person = await personOn(page);
+      await expect.poll(() => plansOwnedBy(person)).toBe(1);
+
+      const who = page.getByTestId('signed-in');
+      await expect(who).toContainText(t.signedInWelcome(address));
+      await expect(who.getByRole('button', { name: t.signOut })).toBeVisible();
+      await noAxeProblems(page);
+      if (colorScheme === 'light' && info.project.name === 'sign-in-360') {
+        await page.screenshot({
+          path: '../../docs/screens/3c-fix/welcome-signed-in-360-light.png',
+          fullPage: true,
+        });
+      }
+
+      // On a setup step too, under the step.
+      await page.getByRole('button', { name: strings.welcome.carryOn }).click();
+      await expect(page.getByText('Step 1 of 8', { exact: true })).toBeVisible();
+      await expect(page.getByTestId('signed-in')).toContainText(t.signedInWelcome(address));
+      await page.getByTestId('signed-in').getByRole('button', { name: t.signOut }).click();
+      const onStep = page.getByRole('dialog', { name: t.signOut });
+      await expect(onStep.getByText(t.signOutIntro)).toBeVisible();
+      await noAxeProblems(page);
+      await onStep.getByRole('button', { name: t.staySignedIn }).click();
+      await expect(onStep).toBeHidden();
+      await back(page);
+      await expect(page.getByRole('button', { name: strings.welcome.carryOn })).toBeVisible();
+
+      // The same sheet as on More: nothing waits to be sent, so no warning.
+      await who.getByRole('button', { name: t.signOut }).click();
+      const sheet = page.getByRole('dialog', { name: t.signOut });
+      await expect(sheet.getByText(t.signOutIntro)).toBeVisible();
+      await expect(sheet.getByTestId('unsent-warning')).toHaveCount(0);
+      await noAxeProblems(page);
+      if (colorScheme === 'light' && info.project.name === 'sign-in-360') {
+        await page.screenshot({ path: '../../docs/screens/3c-fix/welcome-sign-out-360-light.png' });
+      }
+      await sheet.getByRole('button', { name: t.signOutConfirm, exact: true }).click();
+      await expect(page.getByRole('status').filter({ hasText: t.signedOut })).toBeVisible();
+      const left = await whatThePhoneKeeps(page);
+      expect(left.localStorage).toEqual([]);
+      expect(left.sessionStorage).toEqual([]);
+      for (const [store, rows] of Object.entries(left.rows)) expect(rows, store).toBe(0);
+
+      // Signing in again brings the unfinished plan back, still in setup.
+      await signIn(page, address);
+      await expect(page).toHaveURL(/\/setup\/$/);
+      await page.getByRole('button', { name: strings.welcome.carryOn }).click();
+      await expect(page.getByTestId('added')).toContainText('£111.11');
+    });
   });
 }
+
+test('11. an account that already has two plans of its own: the phone asks which to keep, and the other is removed', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'sign-in-360', 'Once, at 360px.');
+  const address = newEmail('ali');
+  await makeAPlan(page);
+  await signUpFromMore(page, address);
+  const person = await personOn(page);
+
+  // A second plan of the same person's, as two phones could leave before the
+  // database refused it (D352): one account with £800.00.
+  const other = randomUUID();
+  const account = randomUUID();
+  sql(`
+    begin;
+    alter table public.plans disable trigger one_plan_each;
+    select set_config('request.jwt.claims', json_build_object('sub', ${quoted(person)}, 'role', 'authenticated',
+      'session_id', (select id from auth.sessions where user_id = ${quoted(person)} order by created_at desc limit 1))::text, true);
+    insert into public.plans (id) values (${quoted(other)});
+    alter table public.plans enable trigger one_plan_each;
+    insert into public.accounts (id, plan_id, private_to, name, kind, warning_level, belongs_to, list_order)
+      values (${quoted(account)}, ${quoted(other)}, ${quoted(person)}, 'Older account', 'current', 2000, ${quoted(person)}, 0);
+    insert into public.balance_updates (id, plan_id, account_id, balance, checked_on, checked_at, list_order)
+      values (${quoted(randomUUID())}, ${quoted(other)}, ${quoted(account)}, 80000, '2026-10-25', '2026-10-25T09:00:00Z', 0);
+    commit;`);
+  expect(plansOwnedBy(person)).toBe(2);
+
+  // Opened again, the phone asks: its own plan, or the other saved one.
+  await page.goto('/app/');
+  await expect(page.getByRole('heading', { level: 1, name: s.chooseHeading })).toBeVisible();
+  const choose = page.getByTestId('choose-plan');
+  await expect(choose.getByRole('radio', { name: s.phonePlan(s.today) })).toBeVisible();
+  await choose.getByRole('radio', { name: s.savedPlan(s.today) }).check();
+  await choose.getByRole('button', { name: s.keepThisPlan }).click();
+  await page
+    .getByRole('dialog', { name: s.keepSavedTitle })
+    .getByRole('button', { name: s.removeIt })
+    .click();
+  await expect(page).toHaveURL(/\/app\/$/);
+  await expect(page.getByTestId('balance')).toContainText('£800.00');
+  // The plan that was on the phone is gone from the account too: one plan is left, the one kept.
+  expect(
+    sql(`select string_agg(id::text, ',') from public.plans where owner = ${quoted(person)}`),
+  ).toBe(other);
+});
+
+test('12. two phones sending their first copy at the same moment leave one plan in the account', async ({
+  browserName: _browser,
+}, info) => {
+  test.skip(info.project.name !== 'sign-in-360', 'Once, at 360px.');
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const address = newEmail('race');
+    const { hashed_token: key } = await signInLink(address);
+    const verified = await fetch(`${LOCAL_SUPABASE.url}/auth/v1/verify`, {
+      method: 'POST',
+      headers: { apikey: LOCAL_SUPABASE.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'email', token_hash: key }),
+    });
+    expect(verified.ok, 'the local Supabase signs the person in').toBe(true);
+    const { access_token: token, user } = (await verified.json()) as {
+      access_token: string;
+      user: { id: string };
+    };
+    const startPlan = () =>
+      fetch(`${LOCAL_SUPABASE.url}/rest/v1/rpc/start_plan`, {
+        method: 'POST',
+        headers: {
+          apikey: LOCAL_SUPABASE.key,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ plan: randomUUID(), nation: null }),
+      });
+    const answers = await Promise.all([startPlan(), startPlan()]);
+    const made = answers.filter((answer) => answer.ok);
+    expect(made, 'one phone gets its plan').toHaveLength(1);
+    const refused = answers.find((answer) => !answer.ok);
+    expect(((await refused?.json()) as { message?: string } | undefined)?.message).toBe(
+      'has-a-plan',
+    );
+    expect(plansOwnedBy(user.id)).toBe(1);
+  }
+});
