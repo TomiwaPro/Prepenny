@@ -976,6 +976,9 @@ test('13. a first copy cut off part-way is sent again from where it stopped, and
   await page.context().route(saving, (route) => route.abort());
   await openMore(page);
   await page.getByTestId('account').getByRole('link', { name: 'Sign up or sign in' }).click();
+  // The page has read the phone before a tap, as signUpFromMore waits for too:
+  // a tap before then sends nothing (D359).
+  await expect(page.getByText(s.planBecomesYours)).toBeVisible();
   await askForCode(page, address);
   await box(page, '6-digit code').fill((await signInEmail(address)).code);
   await page.getByRole('button', { name: 'Sign up', exact: true }).click();
