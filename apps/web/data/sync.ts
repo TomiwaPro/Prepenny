@@ -520,6 +520,7 @@ async function lookOnce(
           id: own.id,
           onlyIfEmpty: false,
         });
+        if (swapped === 'changed-here') return AGAIN;
         return swapped === 'done' ? BROUGHT_DOWN : NOT_NOW;
       }
       const other = inAccount.find((one) => one.owned && one.id !== own.id);
@@ -551,7 +552,7 @@ async function lookOnce(
         own === undefined ? null : { id: own.id, onlyIfEmpty: true },
       );
       // Something was put in this phone's plan meanwhile: look again, and ask.
-      if (swapped === 'not-empty') return AGAIN;
+      if (swapped === 'changed-here') return AGAIN;
       return swapped === 'done' ? BROUGHT_DOWN : NOT_NOW;
     }
     return askToChoose(client, db, own, saved.id);
@@ -618,23 +619,38 @@ async function sendFirstCopy(
     nation: records.settings?.nation ?? 'england-and-wales',
   });
   if (!started.ok) return refusedWith(started.failure, 'has-a-plan') ? 'has-a-plan' : false;
-  const link: PlanLink = { planId: own.id, personId: person, shared: 0, mine: 0 };
-  // Kept first, so a change made while the first copy goes up joins the queue.
-  await db.links.put(link);
-  const sent = await sendWhole(client, db, link);
-  if (sent !== true) {
-    setState({
-      ...state,
-      kept: true,
-      cantSend: sent.kind === 'unreachable',
-      refused: sent.kind === 'refused',
-    });
-    return true;
-  }
+  // Kept first, so a change made while the first copy goes up joins the
+  // queue, and marked as still going up until all of it has arrived: one
+  // cut off part-way is sent again, from where it stopped, at the next look.
+  await db.links.put({ planId: own.id, personId: person, shared: 0, mine: 0, sending: true });
+  const link = await sendRest(client, db, own.id);
+  if (!('planId' in link)) return true;
   await bringDown(client, db, link);
   await publish(db, own.id);
   startListening(client, link);
   return true;
+}
+
+/**
+ * Sends what's left of a first copy that's still going up, if any, and gives
+ * how the plan is kept now, or why it couldn't all be sent, with the screens told.
+ */
+async function sendRest(
+  client: SupabaseClient,
+  db: PrePennyDb,
+  planId: string,
+): Promise<PlanLink | Failure> {
+  const link = await db.links.get(planId);
+  if (link === undefined) return { kind: 'unreachable' };
+  if (link.sending !== true) return link;
+  const sent = await sendWhole(client, db, link);
+  if (sent !== true) {
+    await publish(db, planId, sent.kind === 'unreachable');
+    return sent;
+  }
+  const { sending: _sent, ...done } = (await db.links.get(planId)) ?? link;
+  await db.links.put(done);
+  return done;
 }
 
 /**
@@ -650,7 +666,7 @@ async function bringDownInstead(
   person: string,
   rows: MirrorRow[] | null,
   instead: { readonly id: string; readonly onlyIfEmpty: boolean } | null,
-): Promise<'done' | 'not-empty' | 'not-now'> {
+): Promise<'done' | 'changed-here' | 'not-now'> {
   let all = rows;
   if (all === null) {
     const answer = await rpc<PlanChanges>(client, 'plan_changes', {
@@ -674,6 +690,9 @@ async function bringDownInstead(
     'rw',
     [db.plans, db.records, db.rows, db.unsent, db.links],
     async () => {
+      // A plan started here meanwhile, as with "Make my plan" tapped while
+      // this one was on its way: look again rather than keep two.
+      if (((await ownPlanOnPhone(db))?.id ?? null) !== (instead?.id ?? null)) return false;
       if (instead !== null) {
         if (instead.onlyIfEmpty && (await hasSomething(db, instead.id))) return false;
         await removeFromPhone(db, instead.id);
@@ -684,7 +703,7 @@ async function bringDownInstead(
       return true;
     },
   );
-  if (!swapped) return 'not-empty';
+  if (!swapped) return 'changed-here';
   await rebuild(db, link);
   await setShowing(db, 'own');
   await publish(db, planId);
@@ -751,14 +770,16 @@ export function keepPhonePlan(): Promise<boolean> {
     if (!removed.ok && !refusedWith(removed.failure, 'not-found')) return false;
     waitingChoice = null;
     accountLooked = false;
-    return withDb(async (db) => {
+    // The saved plan is gone, so the choice is made, whether or not this
+    // phone's plan can go up straight away: if not, it goes up at the next
+    // look, and More says it hasn't been saved yet. Refused only when the
+    // account still has another plan of its own, which the next screen asks about (D352).
+    await withDb(async (db) => {
       const own = await ownPlanOnPhone(db);
-      if (own === undefined) return false;
-      if ((await db.links.get(own.id)) !== undefined) return true;
-      // Refused only when the account still has another plan of its own:
-      // the next screen asks about that one (D352).
-      return (await sendFirstCopy(client, db, own, person)) !== false;
+      if (own === undefined || (await db.links.get(own.id)) !== undefined) return;
+      await sendFirstCopy(client, db, own, person);
     });
+    return true;
   });
 }
 
@@ -770,7 +791,9 @@ async function publish(db: PrePennyDb, planId: string | null, cantSend = false) 
     setState(NOTHING);
     return;
   }
-  const kept = (await db.links.get(planId)) !== undefined;
+  const link = await db.links.get(planId);
+  // A first copy still going up isn't safely kept yet (D352).
+  const kept = link !== undefined && link.sending !== true;
   const unsent = await db.unsent.where('planId').equals(planId).toArray();
   setState({
     kept,
@@ -895,10 +918,15 @@ async function keepInStepOnce(client: SupabaseClient, person: string): Promise<b
   return withDb(async (db) => {
     const own = await ownPlanOnPhone(db);
     if (own === undefined) return false;
-    let link = await db.links.get(own.id);
-    if (link === undefined || link.personId !== person) return false;
+    const kept = await db.links.get(own.id);
+    if (kept === undefined || kept.personId !== person) return false;
+    const rest = await sendRest(client, db, own.id);
+    // The plan itself not found means it has left the account.
+    if (!('planId' in rest)) return refusedWith(rest, 'not-found');
+    let link = rest;
+    // A refused change waits in the queue (step 3d); only the plan itself
+    // not being found below means it has left the account.
     const sent = await sendQueue(client, db, link);
-    if (sent !== true && refusedWith(sent, 'not-found')) return true;
     link = (await db.links.get(own.id)) ?? link;
     const down = await bringDown(client, db, link);
     if (typeof down === 'object' && refusedWith(down, 'not-found')) return true;
@@ -973,7 +1001,8 @@ export async function allSent(): Promise<boolean> {
   return withDb(async (db) => {
     const own = await ownPlanOnPhone(db);
     if (own === undefined) return true;
-    if ((await db.links.get(own.id)) === undefined) return false;
+    const link = await db.links.get(own.id);
+    if (link === undefined || link.sending === true) return false;
     return (await db.unsent.where('planId').equals(own.id).count()) === 0;
   });
 }

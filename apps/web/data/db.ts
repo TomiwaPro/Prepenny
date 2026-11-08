@@ -102,6 +102,11 @@ export interface PlanLink {
   readonly personId: string;
   readonly shared: number;
   readonly mine: number;
+  /**
+   * The first copy is still going up: one cut off part-way is sent again
+   * from where it stopped (step 3c fix). Gone once all of it has arrived.
+   */
+  readonly sending?: true;
 }
 
 export type PrePennyDb = Dexie & {
@@ -276,7 +281,7 @@ export async function askToKeepData(): Promise<boolean> {
   }
 }
 
-/** The plan a change was for isn't on this phone any more (D351). */
+/** The plan a change was for isn't this phone's own plan any more (D351). */
 export class PlanGone extends Error {
   constructor() {
     super('plan-gone');
@@ -313,6 +318,8 @@ export async function saveChange(
     if (!plan.isExample && !isNew && (await db.plans.get(plan.id)) === undefined) {
       throw new PlanGone();
     }
+    // Nor is a new plan started beside one that has just come down.
+    if (isNew && ((await ownPlanOnPhone(db))?.id ?? plan.id) !== plan.id) throw new PlanGone();
     saved = await keepingOwner(db, saved);
     await saveWrites(db, plan.id, writes);
     await db.plans.put(saved);
