@@ -778,7 +778,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('added')).toContainText('£111.11');
     });
 
-    test('14. setting up while signed in: each screen goes to the account, a second phone opens at the same screen, and the finished plan is the same on both', async ({
+    test('14. setting up while signed in: every screen reaches the account, a second phone opens at the same screen, and a third has the finished plan with the same figures', async ({
       page,
       browser,
     }, info) => {

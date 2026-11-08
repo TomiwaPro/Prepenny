@@ -42,7 +42,7 @@ function oldProgress(step: number | 'done') {
       ...item,
       edit: edit(item.id),
     })),
-    answers: { noDebts: true, extraHours: 'no' },
+    answers: { noRent: true, noDebts: true, extraHours: 'no' },
   };
 }
 
@@ -120,6 +120,17 @@ describe('Progress from the old 8 steps (D356)', () => {
     expect(upgradeSetup(null)).toBeUndefined();
     expect(upgradeSetup({ step: 12, items: [], answers: {} })?.step).toBe(1);
     expect(upgradeSetup({ layout: SETUP_LAYOUT, step: 9, items: [], answers: {} })?.step).toBe(1);
+    // A phone still running the old 8 steps could save 7 or 8 beside the new layout: the plan.
+    expect(upgradeSetup({ layout: SETUP_LAYOUT, step: 7, items: [], answers: {} })?.step).toBe(6);
+    expect(upgradeSetup({ layout: SETUP_LAYOUT, step: 8, items: [], answers: {} })?.step).toBe(6);
+    // Damaged items are left out, so setup still opens.
+    expect(
+      upgradeSetup({
+        step: 2,
+        items: [null, 'rent', { id: 'pay', kind: 'income', step: 2, edit: edit('pay') }],
+        answers: {},
+      })?.items.map((item) => item.id),
+    ).toEqual(['pay']);
     expect(upgradeSetup({ step: 3 })).toEqual({
       layout: SETUP_LAYOUT,
       step: 3,

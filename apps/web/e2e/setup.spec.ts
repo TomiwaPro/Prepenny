@@ -326,6 +326,27 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // Its row and button have gone, so focus moves to "Add another bill" (WCAG 2.4.3).
       await expect(again.getByRole('button', { name: 'Add another bill' })).toBeFocused();
       expect((await ownRecords(again)).series.map((one) => one.name)).toEqual(['Pay']);
+
+      // Rent can still be left out on its own, as Skip on the old rent step
+      // did, while the bills are added (D356).
+      await radio(rentForm(again), "I'll add it later").check();
+      await expect(box(rentForm(again), 'Amount')).toHaveCount(0);
+      const water = billOn(again, 'water');
+      await water.getByRole('checkbox', { name: 'Water', exact: true }).check();
+      await box(water, 'Amount').fill('32');
+      await fillWhen(water, { date: '2026-11-10' });
+      await next(again);
+      await expectStep(again, 4, 'Debts');
+      expect((await ownRecords(again)).series.map((one) => one.name)).toEqual(['Pay', 'Water']);
+      // And it's asked again on the way back, with nothing chosen for them.
+      await back(again);
+      await expect(radio(rentForm(again), 'Rent')).toBeChecked();
+      await radio(rentForm(again), "I don't pay rent or a mortgage").check();
+      await next(again);
+      await expectStep(again, 4, 'Debts');
+      await back(again);
+      // "I don't pay rent or a mortgage" is kept when coming back.
+      await expect(radio(rentForm(again), "I don't pay rent or a mortgage")).toBeChecked();
       // …except something a later step uses: the pay arrives in the account.
       await back(again);
       await expectStep(again, 2, "How you're paid");
@@ -443,10 +464,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(rent, 'Amount').fill('');
       await next(page);
       await expect(
-        rent.getByText(
-          "Type the amount, for example 550, or choose I don't pay rent or a mortgage.",
-          { exact: true },
-        ),
+        rent.getByText("Type the amount, for example 550. Or choose I'll add it later.", {
+          exact: true,
+        }),
       ).toBeVisible();
       await expect(box(rent, 'Amount')).toBeFocused();
       await box(rent, 'Amount').fill('550');
@@ -564,19 +584,46 @@ for (const colorScheme of ['light', 'dark'] as const) {
       }
       await noAxeProblems(page);
 
+      // An old "I don't pay rent" answer is still chosen (D358).
+      await writeSetup(page, {
+        step: 4,
+        items: oldItems.filter((item) => item.kind !== 'rent'),
+        answers: { ...saved.answers, noRent: true },
+      });
+      await page.goto('/app/');
+      await expectStep(page, 3, 'Home and bills');
+      await expect(radio(rentForm(page), "I don't pay rent or a mortgage")).toBeChecked();
+
+      // A goal from the old savings step is on the plan's card, and Remove takes it back.
+      await writeSetup(page, { step: 7, items: oldItems, answers: saved.answers });
+      await page.goto('/app/');
+      await expectStep(page, 6, "Here's your plan");
+      await page.getByRole('button', { name: 'Remove Holiday' }).click();
+      await expect(page.getByTestId('add-goal').getByRole('status')).toHaveText('Holiday removed.');
+      expect((await ownRecords(page)).goals ?? []).toEqual([]);
+      const goalGone = await ownRecords(page);
+
       // Every screen still lists what it added, and Remove still takes it back.
-      await writeSetup(page, { step: 4, items: oldItems, answers: saved.answers });
+      await writeSetup(page, {
+        step: 4,
+        items: oldItems.filter((item) => item.kind !== 'goal'),
+        answers: saved.answers,
+      });
       await page.goto('/app/');
       await expectStep(page, 3, 'Home and bills');
       await page.getByRole('button', { name: 'Remove Phone' }).click();
       await expect(page.getByTestId('added').getByRole('listitem')).toHaveCount(1);
-      expect((await ownRecords(page)).series.map((one) => one.name)).not.toContain('Phone');
+      expect((await ownRecords(page)).series.map((one) => one.name)).toEqual(
+        goalGone.series.map((one) => one.name).filter((name) => name !== 'Phone'),
+      );
       // Saving again saves the new layout, with every item on its new screen.
       const after = await ownSetup(page);
       expect(after.layout).toBe(2);
       expect(after.step).toBe(3);
       expect(after.items.map((item) => [item.kind, item.step])).toEqual(
-        saved.items.filter((item) => item.kind !== 'bill').map((item) => [item.kind, item.step]),
+        saved.items
+          .filter((item) => item.kind !== 'bill' && item.kind !== 'goal')
+          .map((item) => [item.kind, item.step]),
       );
     });
 
@@ -631,6 +678,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await card.getByRole('button', { name: 'Remove New phone' }).click();
       await expect(card.getByRole('status')).toHaveText('New phone removed.');
       await expect(card.getByTestId('added')).toHaveCount(0);
+      // Its row has gone, so focus moves to "Add a goal" (WCAG 2.4.3).
+      await expect(card.getByRole('button', { name: 'Add a goal', exact: true })).toBeFocused();
       await expect(page.getByTestId('setup-first-goal')).toHaveCount(0);
       const after = await ownRecords(page);
       expect(after.goals ?? []).toEqual([]);
