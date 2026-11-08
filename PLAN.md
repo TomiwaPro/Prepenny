@@ -106,6 +106,10 @@ Found in step 3c:
 34. **Sharing an account** (step 3f): everything a person makes is private to them for now (D334); sharing one in step 3f changes its privacy and everything on it on the server (item 26).
 35. **A layout check that needed a second try once** (D344): the Pay sheet from Coming up, at 360px with text at 200%, found its sheet and the tab bar wider than the screen in part 3's first minutes on GitHub, while the local Supabase was starting and two tests ran at a time. It passed on its second try and on every other run. If it ever fails on both tries, the run fails and GitHub keeps the report with the test's trace: look at what moved.
 
+Found in the shorter setup:
+
+36. **What if test 1 sometimes misses a tap** (`apps/web/e2e/what-if.spec.ts`): after "Back to Coming up", its tap to open Fri 30 Oct is sometimes lost and the payday stays closed. On the computer this was built on, it failed 9 runs in 20 on `main` and 13 in 20 on this branch, and never with the browser slowed down by tracing, so it's timing: most likely something on Coming up moves the page just as the tap lands. GitHub runs it again once when it fails. Worth its own small step: find what moves, and whether a person's tap can miss in the same way.
+
 ## Waiting for the owner
 
 Questions that need an answer before the step that uses them. Move each one to `docs/DECISIONS.md` once it's answered.
