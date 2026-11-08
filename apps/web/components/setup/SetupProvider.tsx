@@ -174,17 +174,24 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
 
   /** Saves the plan, its progress and an edit's writes on the phone, in one go. */
   const store = useCallback(
-    async (plan: StoredPlan, writes: Parameters<typeof saveChange>[2], showOwn: boolean) => {
+    async (
+      plan: StoredPlan,
+      writes: Parameters<typeof saveChange>[2],
+      showOwn: boolean,
+      isNew = false,
+    ) => {
       if (!canSave.current) return;
       try {
         const db = openDb();
         try {
           // Kept in an account, each step's change is sent too (step 3c).
-          await saveChange(db, plan, writes, {
-            editId: newId(),
-            madeAt: timeNow(),
-            kind: 'setup',
-          });
+          await saveChange(
+            db,
+            plan,
+            writes,
+            { editId: newId(), madeAt: timeNow(), kind: 'setup' },
+            isNew,
+          );
           if (showOwn) await setShowing(db, 'own');
         } finally {
           db.close();
@@ -209,7 +216,7 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
             ? { ...now.progress, step: 1 }
             : now.progress;
         const saved: StoredPlan = { ...plan, setup: progress };
-        await store(saved, [], true);
+        await store(saved, [], true, now.plan === null);
         if (now.plan === null && canSave.current) {
           try {
             await askToKeepData();

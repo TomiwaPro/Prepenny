@@ -4,14 +4,15 @@
 // sentence on what PrePenny does, then "Make my plan" and "Look at an example
 // plan". Someone part-way through setup carries on from it; someone with a
 // plan goes to it. Then "Already have an account? Sign in", or who's signed
-// in (step 3b).
+// in with "Sign out" (step 3b, D353).
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { checkSignIn, useAccount } from '../../lib/account.ts';
+import { useAccount } from '../../lib/account.ts';
 import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
 import formStyles from '../Form.module.css';
+import { SignedInLine } from '../SignedInLine.tsx';
 import styles from './Setup.module.css';
 import { useSetup } from './SetupProvider.tsx';
 
@@ -21,7 +22,6 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
   const account = useAccount();
   const [signedOut, setSignedOut] = useState<string | null>(null);
   useEffect(() => {
-    void checkSignIn();
     // Just signed out from More (step 3b), or a sign-in that ended by itself
     // (step 3c): say so once, then tidy the address.
     const search = new URLSearchParams(window.location.search);
@@ -91,9 +91,8 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
           {strings.account.haveAccount} {strings.account.signIn}
         </a>
       ) : null}
-      {account.status === 'signed-in' ? (
-        <p className={styles.signedIn}>{strings.account.signedInWelcome(account.email)}</p>
-      ) : null}
+      {/* Who's signed in, with "Sign out", since the welcome can't reach More (D353). */}
+      <SignedInLine />
     </main>
   );
 }

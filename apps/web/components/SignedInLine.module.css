@@ -1,0 +1,21 @@
+/* "Signed in as sam@example.com." with "Sign out" under it (D353), centred
+   under the welcome's buttons or a setup step's. */
+
+.line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  text-align: center;
+}
+
+.who {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.signOut {
+  min-width: var(--tap);
+}

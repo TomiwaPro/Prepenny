@@ -1727,7 +1727,9 @@ export const strings = {
     savedPlan: (changed: string) => `Your saved plan, last changed ${changed}`,
     savedPlanHint: 'The one in your account, as you last left it.',
     phonePlan: (started: string) => `The plan on this phone, started ${started}`,
-    phonePlanHint: 'The one you made on this phone before signing in.',
+    phonePlanHint: 'The one on this phone now, as you left it.',
+    /** The plan on this phone is still part-way through setup (D351). */
+    phonePlanUnfinishedHint: "The one on this phone now. It isn't finished yet.",
     /** "started today", "last changed today". */
     today: 'today',
     keepThisPlan: 'Keep this plan',

@@ -33,7 +33,9 @@ export async function planSafelyKept(): Promise<boolean> {
     try {
       const own = await ownPlanOnPhone(db);
       if (own === undefined) return true;
-      if ((await db.links.get(own.id)) === undefined) return false;
+      const link = await db.links.get(own.id);
+      // A first copy still going up isn't safely kept yet.
+      if (link === undefined || link.sending === true) return false;
       return (await db.unsent.where('planId').equals(own.id).count()) === 0;
     } finally {
       db.close();
