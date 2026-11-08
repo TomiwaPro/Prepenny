@@ -18,6 +18,8 @@ export const strings = {
     lookAtExample: 'Look at an example plan',
     /** The welcome's buttons (step 2e). */
     makeMyPlan: 'Make my plan',
+    /** Said before setup starts (D356). */
+    once: 'Set it up once, about 5 minutes. After that, just keep it up to date.',
     carryOn: 'Carry on making my plan',
     goToMyPlan: 'Go to my plan',
     loading: 'Getting PrePenny ready.',
@@ -26,7 +28,13 @@ export const strings = {
   /** First-time setup (brief 4.1, D163, step 2e). */
   setup: {
     pageTitle: 'Make your plan',
-    stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
+    /** The top of each screen: "Part 2 of 3: Money out" (D356). */
+    partOf: (part: number, of: number, name: string) => `Part ${part} of ${of}: ${name}`,
+    parts: {
+      'money-in': 'Money in',
+      'money-out': 'Money out',
+      'your-plan': 'Your plan',
+    },
     skip: 'Skip this step',
     next: 'Next',
     back: 'Back',
@@ -161,16 +169,21 @@ export const strings = {
       details: 'Extra hours and missed shifts',
       detailsCard: (pay: string, rate: string) => `${pay}, overtime at ${rate} an hour`,
     },
+    /** Screen 3: rent or mortgage at the top, then the bills, on one screen (D356). */
+    homeBills: {
+      title: 'Home and bills',
+      intro:
+        'Start with your rent or mortgage, then tick the bills you pay, so none of them comes as a surprise.',
+    },
     rent: {
-      title: 'Rent or mortgage',
-      intro: 'Your home is usually the biggest payment, so it comes first.',
+      heading: 'Rent or mortgage',
       which: 'Which do you pay',
       rent: 'Rent',
       mortgage: 'Mortgage',
+      none: "I don't pay rent or a mortgage",
       amount: 'Amount',
-      amountError: "Type the amount, for example 550, or choose I don't pay rent.",
+      amountError: "Type the amount, for example 550, or choose I don't pay rent or a mortgage.",
       from: 'From',
-      none: "I don't pay rent",
       card: (amount: string, often: string) => `${amount}, ${often}`,
     },
     bills: {
@@ -328,6 +341,17 @@ export const strings = {
       reachedOn: (date: string) => `Reached on ${date}`,
       goToMyPlan: 'Go to my plan',
       working: 'Working out your plan.',
+      /** The plan's last words (D356). */
+      fromNow:
+        'From now on: update your balance when you check your bank, and tick payments as they go out.',
+      /** Savings left setup: this card opens the savings goal form (D356). */
+      goalAsk: 'Saving for something?',
+      goalLine:
+        "Set a target and see the date you'll get there. You can also add one later from More, under Savings goals.",
+      addGoal: 'Add a goal',
+      addAnotherGoal: 'Add another goal',
+      goalAdded: (name: string) => `${name} added.`,
+      goalRemoved: (name: string) => `${name} removed.`,
     },
     often: {
       once: (date: string) => `once, on ${date}`,
