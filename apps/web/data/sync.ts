@@ -27,7 +27,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import { signedInClient } from '../lib/account.ts';
 import { newId, timeNow } from '../lib/ids.ts';
-import { type SetupProgress, setupDone } from '../lib/setup-progress.ts';
+import { SETUP_LAYOUT, type SetupProgress, setupDone } from '../lib/setup-progress.ts';
 import {
   type DbWrite,
   type MirrorRow,
@@ -232,7 +232,7 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
 }
 
 /** A plan brought down from someone's account is ready to use, even one they never set up themselves. */
-const DONE: SetupProgress = { step: 'done', items: [], answers: {} };
+const DONE: SetupProgress = { layout: SETUP_LAYOUT, step: 'done', items: [], answers: {} };
 
 /** Brings down what's new on the server, and says whether anything was. */
 async function bringDown(
