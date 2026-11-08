@@ -187,8 +187,6 @@ export const strings = {
       card: (amount: string, often: string) => `${amount}, ${often}`,
     },
     bills: {
-      title: 'Bills',
-      intro: 'Tick the bills you pay, so none of them comes as a surprise.',
       tick: 'Tick the ones you pay',
       names: {
         'council-tax': 'Council tax',
@@ -294,9 +292,8 @@ export const strings = {
       aWeek: 'a week',
       aMonth: 'a month',
     },
+    /** A savings goal's boxes, in the goal sheet that "Add a goal" and More open (D356). */
     savings: {
-      title: 'Savings',
-      intro: "Save towards something, and see the date you'll get there.",
       name: 'What are you saving for?',
       nameError: 'Type a name, for example Holiday.',
       target: 'Target',
@@ -319,9 +316,7 @@ export const strings = {
       ownWhen: 'Another way',
       from: 'From',
       moveName: (goal: string) => `Saving for ${goal}`,
-      anotherHeading: 'Another goal',
       card: (target: string, account: string) => `${target} target, kept in ${account}`,
-      addAnother: 'Add another goal',
     },
     plan: {
       title: "Here's your plan",
