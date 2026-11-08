@@ -3934,3 +3934,66 @@ The owner's answer about D343, 7 Nov 2026.
 The end-to-end tests stay as they are: one at a time, at 320px and 360px, on every push to a ready pull request and on `main`. The repository stays private.
 
 Why: the owner's answer.
+
+## From the owner's instructions for the step 3c fix
+
+D351 to D354 come from the owner's message of 8 Nov 2026, after step 3c went live: their phone, signed in during step 3b with a plan part-way through setup, went straight to setup, never brought down the plan their laptop had saved, never asked which plan to keep, and had no way to sign out. Points marked "decided in the fix" weren't in the owner's words.
+
+### D351. Every screen of a signed-in phone looks at the account, the welcome and setup included
+
+The owner's instruction, 8 Nov 2026. Builds D324 and D333.
+
+- **What was wrong.** In step 3c, only the app's own screens (Home, Coming up, Debts and More) looked at the account. A phone whose plan isn't set up to the end is sent from `/app/` to setup straight away, as soon as it has read the plan from the phone, which is quicker than checking the sign-in with Supabase. So the look at the account never started, and the welcome and setup never looked at all. Setup did try to send each step's change, but on finding a saved plan in the account it asked for "which one to keep" through a hook only the app's screens had, so nothing happened. A fresh phone worked because the sign-in page looks at the account itself, straight after signing in; the owner's phone was signed in already, so it never went through that page again.
+- **Now.** Every screen looks: the welcome, setup and the app, when PrePenny opens, when it comes back on screen, when the signal returns and every minute (`components/KeepInStep.tsx`).
+  - The phone has a plan with something in it, finished or not, and the account has another: it goes to "Choose which plan to keep" (D324).
+  - The phone has no plan, or one with nothing in it yet: the saved plan comes down, and the phone shows Home (or setup, where the saved plan isn't set up yet).
+  - Only the phone has a plan, with something in it: it goes up as the first copy.
+- Decided in the fix:
+  - A plan with nothing in it yet, as when "Make my plan" has just been tapped, isn't sent up: it waits until something is put in it. Otherwise another phone with a real plan would be asked to choose against an empty one.
+  - A phone whose plan is kept in the account looks once each time PrePenny opens, then keeps it in step as before. One that hasn't sent its plan yet, or has none, looks every time.
+  - Once the saved plan has come down in place of the one showing, the screen loads afresh, and a screen that still had the old plan open can never save it back (`PlanGone` in `data/db.ts`).
+  - On "Choose which plan to keep", the line under "The plan on this phone" says "The one on this phone now, as you left it.", or "The one on this phone now. It isn't finished yet." when its setup isn't finished, so it's clear which is the half-made one. The old line, "The one you made on this phone before signing in.", wasn't true for a plan made after signing in.
+
+Test: `apps/web/e2e/your-plan.spec.ts` tests 7 (the owner's own case, which failed in exactly the owner's way before the fix), 8 and 9, and `apps/web/test/unit/db.test.ts` ("A plan removed from this phone").
+
+Why: the owner's instruction, and D324 asks for "which one to keep" whenever the phone finds two plans, not only at sign-in.
+
+### D352. An account holds one plan of the person's own
+
+The owner's instruction, 8 Nov 2026: make two plans of one's own impossible, and decide what happens to an account that already has two.
+
+- **How two could happen.** Two phones that each found the account empty at the same moment could both send their own plan up, and nothing in the database stopped a second plan. Each phone then kept its own plan in step and never saw the other's changes. From the code, the owner's phone could only have sent its plan up if a setup change was made on it after step 3c went live and before the laptop's plan reached the account; the laptop would then have asked which plan to keep when it opened, which it didn't, so the owner's account most likely has the laptop's plan only. Nothing here reads the live database.
+- **Now the database refuses a second plan** of a person's own ("has-a-plan"), whoever asks. Two phones asking at the same moment are taken one at a time: the second waits for the first, then is refused. Being in someone else's plan doesn't count. The phone that's refused looks at the account again and asks which plan to keep.
+- Decided in the fix, for an account that already has two:
+  - Nothing is removed by itself. The next phone signed in to it asks "Choose which plan to keep": the plan on this phone against the other saved plan, with the same words and confirm as D324. Keeping the saved plan removes this phone's plan from the account too; keeping this phone's removes the other. Either way, one plan is left.
+  - A phone with no plan of its own brings down the newest of the two first, then asks about the other.
+  - Another phone that was keeping the removed plan in step takes the kept plan in its place the next time it looks. Anything on it not sent yet goes with it, as the confirm said ("This can't be undone."). This also covers D324's "Keep the plan on this phone", which left the other phone keeping a plan that was no longer in the account.
+- Step 3g, which can change who owns a plan (D53), must keep this rule.
+
+Test: `supabase/tests/database/15-one-plan-each.test.sql` (14 checks; turning the rule off makes 5 fail), and `apps/web/e2e/your-plan.spec.ts` tests 3, 11 (an account with two) and 12 (two at the same moment, 5 times, through Supabase's own Data API). Two requests at once were also tried by hand on two database connections: the second waited 2 seconds for the first, then was refused.
+
+Why: the owner's instruction. Nothing is removed without the person choosing, because only they know which plan is the right one.
+
+### D353. "Sign out" on the welcome, every setup step and "Choose which plan to keep"
+
+The owner's instruction, 8 Nov 2026.
+
+- Next to "Signed in as sam@example.com.", "Sign out" opens the same sheet as on More (`components/SignOutSheet.tsx`, which More uses too), with the same warning when something hasn't been sent.
+- Decided in the fix:
+  - It's on every setup step too, under Next and Back, and on "Choose which plan to keep", since none of them can reach More. Setup and the welcome send a person with two plans back to the choice until they choose, so signing out is the other way out.
+  - The words sit centred under the buttons, "Sign out" as a link-style button with its 44px tap area.
+  - A plan with nothing in it has nothing to lose, so the sheet doesn't warn about it.
+
+Test: `apps/web/e2e/your-plan.spec.ts` test 10. Screenshots are in `docs/screens/3c-fix`.
+
+Why: the owner's instruction.
+
+### D354. The engine's speed test is timed in up to 5 rounds
+
+The owner's instruction, 8 Nov 2026. Adds to D72 and D134.
+
+- On a busy GitHub machine the speed test once measured 12.25 milliseconds against its 12 millisecond limit.
+- Now it's timed in rounds: each round warms up, then takes the middle of 20 runs, as before. It stops at the first round under 12 milliseconds, and fails if none of 5 rounds is. The limit and the plan timed are the same, so an engine that's slower for real is slower in every round and still fails. Each round's time is shown in the test's output.
+- Tried on purpose: with the building computer's 4 processors kept busy by 8 other programs, rounds 1 to 3 took 17.69, 22.46 and 12.23 milliseconds and round 4 took 5.41, so it passed. With the limit lowered to 3 milliseconds, all 5 rounds were over it and the test failed.
+
+Why: the owner's instruction: sturdy on a busy machine, without loosening what it checks.
