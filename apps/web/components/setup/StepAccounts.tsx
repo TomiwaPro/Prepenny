@@ -1,9 +1,9 @@
 'use client';
 
-// Step 1, your account (brief 4.1 and 4.2, D47, D163, step 2e): its name,
+// Screen 1, your account (brief 4.1 and 4.2, D47, D163, step 2e): its name,
 // what the bank shows today, any overdraft limit and "Warn me when it goes
 // under" (£20.00 suggested), with "Add another account", and which part of
-// the UK the person lives in, for bank holidays. This step can't be
+// the UK the person lives in, for bank holidays. This screen can't be
 // skipped: every plan starts from a balance.
 
 import { type AccountKind, NATIONS, type Nation } from '@prepenny/engine';

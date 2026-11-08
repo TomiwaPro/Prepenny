@@ -1,9 +1,12 @@
 'use client';
 
-// Step 4, bills (brief 4.1, step 2e): the UK checklist, council tax, energy,
-// water, phone, broadband, TV licence, insurance and subscriptions. Each one
-// ticked asks for its amount, next payment and how often. Council tax offers
-// "10 payments, April to January". And "Add another bill".
+// Screen 3, home and bills (brief 4.1, D86, D231, D356): rent or mortgage at
+// the top, with its amount, next payment, how often and from which account,
+// or "I don't pay rent or a mortgage"; then the UK bills checklist, council
+// tax, energy, water, phone, broadband, TV licence, insurance and
+// subscriptions, each one ticked asking for its amount, next payment and how
+// often, with council tax's "10 payments, April to January"; and "Add
+// another bill". It asks everything the two steps it replaces asked.
 
 import type { NewSeries } from '@prepenny/engine';
 import { useId, useState } from 'react';
@@ -19,6 +22,7 @@ import {
 } from '../../lib/setup-forms.ts';
 import { BILLS, type BillKey } from '../../lib/setup-progress.ts';
 import { strings } from '../../strings/en-GB.ts';
+import { ChoiceList } from '../ChoiceList.tsx';
 import { CheckOption, describedBy, Field } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
 import { focusFirst } from './focus.ts';
@@ -27,6 +31,9 @@ import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.ts
 import { useStep } from './useStep.ts';
 
 const t = strings.setup.bills;
+const r = strings.setup.rent;
+
+type Which = 'rent' | 'mortgage' | 'none';
 
 interface BillDraft {
   readonly key: string;
@@ -69,12 +76,28 @@ function formFor(draft: BillDraft): OutgoingForm {
   };
 }
 
-export function StepBills() {
-  const step = useStep(4);
+export function StepHomeBills() {
+  const step = useStep(3);
   const id = useId();
-  const saved = step.items('bill');
-  const savedKeys = new Set(saved.flatMap((item) => (item.bill === undefined ? [] : [item.bill])));
+  const rentId = `${id}-rent`;
+  const savedRent = step.items('rent');
+  const savedBills = step.items('bill');
+  const savedKeys = new Set(
+    savedBills.flatMap((item) => (item.bill === undefined ? [] : [item.bill])),
+  );
   const firstAccount = step.accounts[0]?.id ?? '';
+  const [which, setWhich] = useState<Which>(() =>
+    step.progress.answers.noRent === true ? 'none' : 'rent',
+  );
+  const [rent, setRentState] = useState<OutgoingForm>(() => ({
+    ...blankWhen('monthly'),
+    name: r.rent,
+    amount: '',
+    accountId: firstAccount,
+    isEstimate: false,
+  }));
+  const [rentErrors, setRentErrors] = useState<PaymentErrors>({});
+  const setRent = (change: Partial<OutgoingForm>) => setRentState((now) => ({ ...now, ...change }));
   const [drafts, setDrafts] = useState<readonly BillDraft[]>(() =>
     BILLS.filter((bill) => !savedKeys.has(bill)).map((bill) => blankBill(bill, firstAccount)),
   );
@@ -91,21 +114,37 @@ export function StepBills() {
   const formId = (key: string) => `${id}-${key}`;
   const inUse = (draft: BillDraft) =>
     draft.bill === null ? outgoingTyped(draft.form) || draft.form.name.trim() !== '' : draft.ticked;
+  const asksRent = savedRent.length === 0;
 
   async function next() {
     step.setProblem(null);
+    // Rent first, as it shows: a home payment, or "I don't pay rent or a mortgage".
+    let rentSeries: Omit<NewSeries, 'id'> | null = null;
+    let foundRent: PaymentErrors = {};
+    if (asksRent && which !== 'none') {
+      const built = buildOutgoing(
+        { ...rent, name: which === 'rent' ? r.rent : r.mortgage },
+        'rent',
+        step.today,
+        step.holidays,
+      );
+      if (built.ok) rentSeries = built.series;
+      else foundRent = built.errors;
+    }
     const found: Record<string, PaymentErrors> = {};
-    const built: { draft: BillDraft; series: Omit<NewSeries, 'id'> }[] = [];
+    const bills: { draft: BillDraft; series: Omit<NewSeries, 'id'> }[] = [];
     for (const draft of drafts) {
       if (!inUse(draft)) continue;
       const result = buildOutgoing(formFor(draft), 'bills', step.today, step.holidays);
-      if (result.ok) built.push({ draft, series: result.series });
+      if (result.ok) bills.push({ draft, series: result.series });
       else found[draft.key] = result.errors;
     }
+    setRentErrors(foundRent);
     setErrors(found);
-    if (Object.keys(found).length > 0) {
-      focusFirst(
-        drafts.flatMap((draft) => {
+    if (Object.keys(foundRent).length > 0 || Object.keys(found).length > 0) {
+      focusFirst([
+        ...outgoingFieldIds(rentId, foundRent),
+        ...drafts.flatMap((draft) => {
           const mistakes = found[draft.key];
           if (mistakes === undefined) return [];
           return [
@@ -113,11 +152,26 @@ export function StepBills() {
             ...outgoingFieldIds(formId(draft.key), mistakes),
           ];
         }),
-      );
+      ]);
       return;
     }
     step.setBusy(true);
-    for (const one of built) {
+    if (rentSeries !== null) {
+      const seriesId = newId();
+      const outcome = await step.save({
+        commands: [
+          { kind: 'add-payment', series: { ...rentSeries, id: seriesId }, madeAt: timeInOrder() },
+        ],
+        item: { kind: 'rent', id: seriesId },
+        answers: { noRent: false },
+      });
+      if (!outcome.ok) {
+        step.setBusy(false);
+        step.setProblem(strings.setup.problem);
+        return;
+      }
+    }
+    for (const one of bills) {
       const seriesId = newId();
       const outcome = await step.save({
         commands: [
@@ -136,7 +190,11 @@ export function StepBills() {
       }
       setDrafts((now) => now.filter((draft) => draft.key !== one.draft.key));
     }
-    const outcome = await step.save({ commands: [], step: 5 });
+    const outcome = await step.save({
+      commands: [],
+      ...(asksRent && which === 'none' ? { answers: { noRent: true } } : {}),
+      step: 4,
+    });
     step.setBusy(false);
     if (!outcome.ok) step.setProblem(strings.setup.problem);
   }
@@ -203,35 +261,69 @@ export function StepBills() {
     );
   };
 
+  const added = [...savedRent, ...savedBills].flatMap((item) => {
+    const series = step.records.series.find((one) => one.id === item.id);
+    if (series === undefined) return [];
+    return [
+      {
+        id: item.id,
+        name: series.name,
+        line: t.card(formatMoney(series.amount), seriesWords(series, step.today)),
+        onRemove: () => step.removeItem(item.id),
+        problem: step.removeProblem(item.id),
+      },
+    ];
+  });
+
   return (
     <StepFrame
-      step={4}
-      title={t.title}
-      intro={t.intro}
-      onSkip={() => step.go(5)}
+      step={3}
+      title={strings.setup.homeBills.title}
+      intro={strings.setup.homeBills.intro}
+      onSkip={() => step.go(4)}
       onNext={next}
-      onBack={() => step.go(3)}
+      onBack={() => step.go(2)}
       busy={step.busy}
       problem={step.problem}
     >
-      <AddedList
-        items={saved.flatMap((item) => {
-          const series = step.records.series.find((one) => one.id === item.id);
-          if (series === undefined) return [];
-          return [
-            {
-              id: item.id,
-              name: series.name,
-              line: t.card(formatMoney(series.amount), seriesWords(series, step.today)),
-              onRemove: () => step.removeItem(item.id),
-              problem: step.removeProblem(item.id),
-            },
-          ];
-        })}
-      />
+      <AddedList items={added} />
+
+      {asksRent ? (
+        <SetupCard heading={r.heading} testId="rent-form">
+          <ChoiceList<Which>
+            legend={r.which}
+            name={`${id}-which`}
+            value={which}
+            options={[
+              { value: 'rent', label: r.rent },
+              { value: 'mortgage', label: r.mortgage },
+              { value: 'none', label: r.none },
+            ]}
+            onChange={(value) => {
+              setWhich(value);
+              setRentErrors({});
+            }}
+          />
+          {which === 'none' ? null : (
+            <OutgoingFields
+              id={rentId}
+              form={rent}
+              set={setRent}
+              errors={rentErrors}
+              today={step.today}
+              holidays={step.holidays}
+              accounts={accounts}
+              howOften={['monthly', 'weekly', 'dates']}
+              amountLabel={r.amount}
+              amountError={r.amountError}
+              showEstimate={false}
+            />
+          )}
+        </SetupCard>
+      ) : null}
 
       {checklist.length === 0 ? null : (
-        <SetupCard heading={t.tick}>
+        <SetupCard heading={t.tick} testId="bills-checklist">
           {checklist.map((draft) => (
             <div key={draft.key} className={formStyles.stack} data-bill={draft.bill}>
               <CheckOption

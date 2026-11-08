@@ -1,7 +1,8 @@
 'use client';
 
-// First-time setup (brief 4.1, step 2e): the welcome, then eight steps, one
-// screen each. Where the person got to is kept on the phone, so opening
+// First-time setup (brief 4.1, step 2e, D356): the welcome, then 6 screens
+// in 3 parts: money in (your account, how you're paid), money out (home and
+// bills, debts, spending money) and your plan. Where the person got to is kept on the phone, so opening
 // PrePenny again carries on from there. Once "Go to my plan" is tapped, the
 // app shows their plan.
 
@@ -15,12 +16,10 @@ import { UpdateNote } from '../UpdateNote.tsx';
 import styles from './Setup.module.css';
 import { SetupProvider, useSetup } from './SetupProvider.tsx';
 import { StepAccounts } from './StepAccounts.tsx';
-import { StepBills } from './StepBills.tsx';
 import { StepDebts } from './StepDebts.tsx';
+import { StepHomeBills } from './StepHomeBills.tsx';
 import { StepPay } from './StepPay.tsx';
 import { StepPlan } from './StepPlan.tsx';
-import { StepRent } from './StepRent.tsx';
-import { StepSavings } from './StepSavings.tsx';
 import { StepSpending } from './StepSpending.tsx';
 import { Welcome } from './Welcome.tsx';
 
@@ -52,16 +51,12 @@ function Steps() {
       case 2:
         return <StepPay />;
       case 3:
-        return <StepRent />;
+        return <StepHomeBills />;
       case 4:
-        return <StepBills />;
-      case 5:
         return <StepDebts />;
-      case 6:
+      case 5:
         return <StepSpending />;
-      case 7:
-        return <StepSavings />;
-      case 8:
+      case 6:
         return <StepPlan />;
     }
   })();

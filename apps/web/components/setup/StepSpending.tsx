@@ -1,6 +1,6 @@
 'use client';
 
-// Step 6, spending money (brief 4.1 and 4.5, D29, D31, D32, D152, step 2e):
+// Screen 5, spending money (brief 4.1 and 4.5, D29, D31, D32, D152, D356):
 // budgets such as Food and Travel, weekly or monthly, and how each leaves the
 // account: all at the start, spread across the days, or as a pay-later bill.
 // Each starts this week or month (D230), with one optional box for what's
@@ -36,7 +36,7 @@ interface Draft {
 }
 
 export function StepSpending() {
-  const step = useStep(6);
+  const step = useStep(5);
   const id = useId();
   const saved = step.items('budget');
   const firstAccount = step.accounts[0]?.id ?? '';
@@ -99,7 +99,7 @@ export function StepSpending() {
       }
       setDrafts((now) => now.filter((draft) => draft.key !== one.key));
     }
-    const outcome = await step.save({ commands: [], step: 7 });
+    const outcome = await step.save({ commands: [], step: 6 });
     step.setBusy(false);
     if (!outcome.ok) step.setProblem(strings.setup.problem);
   }
@@ -108,12 +108,12 @@ export function StepSpending() {
 
   return (
     <StepFrame
-      step={6}
+      step={5}
       title={t.title}
       intro={t.intro}
-      onSkip={() => step.go(7)}
+      onSkip={() => step.go(6)}
       onNext={next}
-      onBack={() => step.go(5)}
+      onBack={() => step.go(4)}
       busy={step.busy}
       problem={step.problem}
     >

@@ -1,6 +1,6 @@
 'use client';
 
-// Step 5, debts (brief 4.1 and 4.6, D98, D153, step 2e): any debt, of each
+// Screen 4, debts (brief 4.1 and 4.6, D98, D153, step 2e, D356): any debt, of each
 // kind in brief 4.6, with what's owed now and its payments, or "I have no
 // debts". Money owed to a person can be in another currency, at the rate
 // the person sets.
@@ -35,7 +35,7 @@ interface Draft {
 }
 
 export function StepDebts() {
-  const step = useStep(5);
+  const step = useStep(4);
   const id = useId();
   const saved = step.items('debt');
   const firstAccount = step.accounts[0]?.id ?? '';
@@ -96,7 +96,7 @@ export function StepDebts() {
       }
       setDrafts((now) => now.filter((draft) => draft.key !== one.key));
     }
-    const outcome = await step.save({ commands: [], step: 6 });
+    const outcome = await step.save({ commands: [], step: 5 });
     step.setBusy(false);
     if (!outcome.ok) step.setProblem(strings.setup.problem);
   }
@@ -105,12 +105,12 @@ export function StepDebts() {
 
   return (
     <StepFrame
-      step={5}
+      step={4}
       title={t.title}
       intro={t.intro}
-      onSkip={() => step.go(6)}
+      onSkip={() => step.go(5)}
       onNext={next}
-      onBack={() => step.go(4)}
+      onBack={() => step.go(3)}
       busy={step.busy}
       problem={step.problem}
     >
@@ -209,7 +209,7 @@ export function StepDebts() {
           type="button"
           className={formStyles.outlined}
           onClick={async () => {
-            await step.save({ commands: [], answers: { noDebts: true }, step: 6 });
+            await step.save({ commands: [], answers: { noDebts: true }, step: 5 });
           }}
         >
           {t.none}
