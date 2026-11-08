@@ -47,7 +47,8 @@ import { onPlanBroughtDown, syncSoon } from '../data/sync.ts';
 import { type BarWords, barWords, type ChangeWords } from '../lib/bar-words.ts';
 import type { PaymentNumbers } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
-import { newId, timeNow } from '../lib/ids.ts';
+import { newId } from '../lib/ids.ts';
+import type { PaymentAt } from '../lib/payment-at.ts';
 import { setupDone } from '../lib/setup-progress.ts';
 import { testSetting } from '../lib/test-setting.ts';
 import { todayFor } from '../lib/today.ts';
@@ -117,6 +118,16 @@ export interface PlanActions {
    * (D63).
    */
   makeChanges(commands: readonly EditCommand[], message: ChangeWords): Promise<ChangeOutcome>;
+  /**
+   * "Put mine back" after a clash (step 3d): makes a change's commands
+   * again, now, on the plan as it is, each payment found again by its
+   * family and number, as one change with one undo.
+   */
+  makeChangesAgain(
+    commands: readonly EditCommand[],
+    madeOn: readonly PaymentAt[],
+    message: ChangeWords,
+  ): Promise<ChangeOutcome>;
   /** Undoes the change the bar showed, and refuses when a newer one has been made since. */
   undoLastChange(id: number): Promise<ChangeOutcome>;
   dismissLastChange(): void;
@@ -155,6 +166,7 @@ const ActionsContext = createContext<PlanActions>({
   lastChange: null,
   makeChange: noPlan,
   makeChanges: noPlan,
+  makeChangesAgain: noPlan,
   undoLastChange: noPlan,
   dismissLastChange: () => {},
   startAgainWithExample: noPlan,
@@ -387,6 +399,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     async (
       command: EditCommand | readonly EditCommand[],
       numbers?: PaymentNumbers,
+      madeOn?: readonly PaymentAt[],
     ): Promise<
       | { ok: true; edit: Edit; numbers: PaymentNumbers; kept: boolean; version: number }
       | { ok: false; code: string }
@@ -396,7 +409,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       let result: Awaited<ReturnType<typeof editInBackground>>;
       try {
         result = Array.isArray(command)
-          ? await editsInBackground(now.records, now.today, command)
+          ? await editsInBackground(now.records, now.today, command, madeOn)
           : await editInBackground(now.records, now.today, command as EditCommand, numbers);
       } catch (error) {
         return { ok: false, code: codeOf(error) };
@@ -407,10 +420,19 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
         try {
           const db = openDb();
           try {
+            const commands: readonly EditCommand[] = Array.isArray(command)
+              ? command
+              : [command as EditCommand];
             plan = await saveChange(db, now.plan, result.edit.writes, {
               editId: newId(),
-              madeAt: timeNow(),
+              madeOnPhone: Date.now(),
               kind: kindOf(command),
+              // To make it again on newer records after a clash (step 3d).
+              commands,
+              today: now.today,
+              ...(numbers === undefined ? {} : { numbers }),
+              before: result.edit.undo,
+              payments: result.payments,
             });
           } finally {
             db.close();
@@ -444,6 +466,17 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
     (commands: readonly EditCommand[], message: ChangeWords) =>
       inTurn(async (): Promise<ChangeOutcome> => {
         const outcome = await apply(commands);
+        if (!outcome.ok) return outcome;
+        showChange(outcome.kept ? message : notKept(message), outcome.edit, outcome.numbers);
+        return { ok: true, version: outcome.version };
+      }),
+    [apply, inTurn, showChange],
+  );
+
+  const makeChangesAgain = useCallback(
+    (commands: readonly EditCommand[], madeOn: readonly PaymentAt[], message: ChangeWords) =>
+      inTurn(async (): Promise<ChangeOutcome> => {
+        const outcome = await apply(commands, undefined, madeOn);
         if (!outcome.ok) return outcome;
         showChange(outcome.kept ? message : notKept(message), outcome.edit, outcome.numbers);
         return { ok: true, version: outcome.version };
@@ -525,6 +558,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       lastChange,
       makeChange,
       makeChanges,
+      makeChangesAgain,
       undoLastChange,
       dismissLastChange,
       startAgainWithExample,
@@ -537,6 +571,7 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       lastChange,
       makeChange,
       makeChanges,
+      makeChangesAgain,
       undoLastChange,
       dismissLastChange,
       startAgainWithExample,

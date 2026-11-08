@@ -28,7 +28,8 @@ import {
   setShowing,
 } from '../../data/db.ts';
 import { syncSoon } from '../../data/sync.ts';
-import { newId, timeNow } from '../../lib/ids.ts';
+import type { EditResult } from '../../lib/edit.ts';
+import { newId } from '../../lib/ids.ts';
 import {
   NEW_SETUP,
   SCREEN_OF_KIND,
@@ -184,6 +185,12 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
       writes: Parameters<typeof saveChange>[2],
       showOwn: boolean,
       isNew = false,
+      /** The commands that made it, to make it again after a clash (step 3d). */
+      made?: {
+        readonly commands: readonly EditCommand[];
+        readonly today: string;
+        readonly result: EditResult;
+      },
     ) => {
       if (!canSave.current) return;
       try {
@@ -194,7 +201,19 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
             db,
             plan,
             writes,
-            { editId: newId(), madeAt: timeNow(), kind: 'setup' },
+            {
+              editId: newId(),
+              madeOnPhone: Date.now(),
+              kind: 'setup',
+              ...(made === undefined
+                ? {}
+                : {
+                    commands: made.commands,
+                    today: made.today,
+                    before: made.result.edit.undo,
+                    payments: made.result.payments,
+                  }),
+            },
             isNew,
           );
           if (showOwn) await setShowing(db, 'own');
@@ -279,7 +298,13 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
           answers: { ...now.progress.answers, ...change.answers },
         };
         const saved: StoredPlan = { ...now.plan, setup: progress };
-        await store(saved, result?.edit.writes ?? [], change.step === 'done');
+        await store(
+          saved,
+          result?.edit.writes ?? [],
+          change.step === 'done',
+          false,
+          result === null ? undefined : { commands: change.commands, today: now.today, result },
+        );
         keep({
           ...now,
           plan: saved,
@@ -312,7 +337,11 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
           items: now.progress.items.filter((one) => one.id !== itemId),
         };
         const saved: StoredPlan = { ...now.plan, setup: progress };
-        await store(saved, result.edit.writes, false);
+        await store(saved, result.edit.writes, false, false, {
+          commands: [{ kind: 'undo', edit: item.edit }],
+          today: now.today,
+          result,
+        });
         keep({
           ...now,
           plan: saved,

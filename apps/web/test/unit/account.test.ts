@@ -258,7 +258,7 @@ describe('A sign-in that ends by itself removes the plan only once it is safely 
     await db.links.put(link);
     await saveChange(db, own, writes, {
       editId: 'edit-1',
-      madeAt: '2026-11-07T10:00:00.000Z',
+      madeOnPhone: Date.parse('2026-11-07T10:00:00.000Z'),
       kind: 'add-account',
     });
     expect(await db.unsent.count()).toBe(1);
@@ -269,7 +269,7 @@ describe('A sign-in that ends by itself removes the plan only once it is safely 
     await savePlan(db, own, { accounts: [], balanceUpdates: [], series: [] });
     await saveChange(db, own, writes, {
       editId: 'edit-1',
-      madeAt: '2026-11-07T10:00:00.000Z',
+      madeOnPhone: Date.parse('2026-11-07T10:00:00.000Z'),
       kind: 'add-account',
     });
     const example = { id: EXAMPLE_PLAN_ID, isExample: true } as const;
@@ -277,7 +277,7 @@ describe('A sign-in that ends by itself removes the plan only once it is safely 
     await db.links.put({ ...link, planId: EXAMPLE_PLAN_ID });
     await saveChange(db, example, writes, {
       editId: 'edit-2',
-      madeAt: '2026-11-07T10:00:00.000Z',
+      madeOnPhone: Date.parse('2026-11-07T10:00:00.000Z'),
       kind: 'add-account',
     });
     expect(await db.unsent.count()).toBe(0);

@@ -124,6 +124,7 @@ function useSetupGoalActions(onAdded: (name: string) => void): PlanActions | nul
       lastChange: null,
       makeChange: (command) => add([command]),
       makeChanges: (commands) => add(commands),
+      makeChangesAgain: notHere,
       undoLastChange: notHere,
       dismissLastChange: () => {},
       startAgainWithExample: notHere,

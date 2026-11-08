@@ -19,7 +19,6 @@ const t = strings.account;
 function whereKept(ownPlan: OwnPlan, sync: SyncState): string | null {
   if (ownPlan === 'none') return null;
   if (!sync.kept) return t.notSavedYet;
-  if (sync.refused) return t.refused;
   if (sync.unsent > 0) return t.unsent(sync.unsent);
   return t.savedInAccount;
 }

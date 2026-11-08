@@ -6,6 +6,7 @@ import type { ActionsView } from '../lib/actions-view.ts';
 import type { EditResult, PaymentNumbers } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
+import type { PaymentAt } from '../lib/payment-at.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 import type { SetupView } from '../lib/setup-view.ts';
 import type { Answers, Ask, WorkResponse } from './messages.ts';
@@ -144,13 +145,38 @@ export function previewPayInBackground(
   return ask({ kind: 'pay-preview', records, today, command });
 }
 
-/** Several changes made in turn by the engine, as one edit (step 2e). */
+/**
+ * Several changes made in turn by the engine, as one edit (step 2e). With
+ * `madeOn`, each payment the commands name is found again on these records
+ * by its family and number first, as for "Put mine back" (step 3d).
+ */
 export function editsInBackground(
   records: PlanRecords,
   today: string,
   commands: readonly EditCommand[],
+  madeOn?: readonly PaymentAt[],
 ): Promise<EditResult> {
-  return ask({ kind: 'edits', records, today, commands });
+  return ask({
+    kind: 'edits',
+    records,
+    today,
+    commands,
+    ...(madeOn === undefined ? {} : { madeOn }),
+  });
+}
+
+/** What to do with one waiting change, against the newest records, in the background (step 3d). */
+export function settleInBackground(
+  question: Omit<Extract<Ask, { kind: 'settle' }>, 'kind'>,
+): Promise<Answers['settle']> {
+  return ask({ kind: 'settle', ...question });
+}
+
+/** The words' facts for a change of this phone's that wasn't kept, in the background (step 3d). */
+export function clashFactsInBackground(
+  question: Omit<Extract<Ask, { kind: 'clash-facts' }>, 'kind'>,
+): Promise<Answers['clash-facts']> {
+  return ask({ kind: 'clash-facts', ...question });
 }
 
 /** What setup shows that only the engine can work out, in the background (step 2e). */

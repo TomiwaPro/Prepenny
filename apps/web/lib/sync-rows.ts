@@ -75,6 +75,10 @@ export interface MirrorRow {
   readonly deleted: boolean;
   /** When it was last changed, as the server says: for "Your saved plan, last changed Tue 3 Nov". */
   readonly changedAt?: string;
+  /** The edit that last saved it, when it was made and by whom (step 3d): for clashes. */
+  readonly editId?: string;
+  readonly editMadeAt?: string;
+  readonly editBy?: string;
   /** Its own columns: everything but the sync fields. */
   readonly values: Readonly<Record<string, unknown>>;
 }
@@ -954,9 +958,21 @@ function withoutSyncFields(row: Readonly<Record<string, unknown>>): Record<strin
   return values;
 }
 
-/** A row as plan_changes gives it, kept on the phone. */
-export function mirrorRowOf(table: Table, row: Readonly<Record<string, unknown>>): MirrorRow {
+/** The edit that saved a row, as save_edit or plan_changes says. */
+export interface SavedBy {
+  readonly id?: unknown;
+  readonly madeAt?: unknown;
+  readonly by?: unknown;
+}
+
+/** A row as plan_changes gives it, kept on the phone, with the edit that last saved it (step 3d). */
+export function mirrorRowOf(
+  table: Table,
+  row: Readonly<Record<string, unknown>>,
+  edit: SavedBy = {},
+): MirrorRow {
   const values = withoutSyncFields(row);
+  const editId = edit.id ?? row.edit_id;
   return {
     table,
     id: text(row.id),
@@ -965,6 +981,9 @@ export function mirrorRowOf(table: Table, row: Readonly<Record<string, unknown>>
     privateTo: (row.private_to as string | null | undefined) ?? null,
     deleted: row.deleted === true,
     ...(typeof row.changed_at === 'string' ? { changedAt: row.changed_at } : {}),
+    ...(typeof editId === 'string' ? { editId } : {}),
+    ...(typeof edit.madeAt === 'string' ? { editMadeAt: edit.madeAt } : {}),
+    ...(typeof edit.by === 'string' ? { editBy: edit.by } : {}),
     values,
   };
 }
@@ -981,6 +1000,8 @@ export function savedRows(
     readonly deleted: boolean;
   }[],
   mirrorRows: readonly MirrorRow[],
+  /** The edit that saved them: this phone's own (step 3d). */
+  edit?: { readonly id: string; readonly madeAt: string; readonly by: string },
 ): MirrorRow[] {
   const mirror = mirrorMap(mirrorRows);
   const answers = new Map(saved.map((one) => [keyOf(one.table, one.id), one]));
@@ -997,6 +1018,15 @@ export function savedRows(
       seq: answer.seq,
       privateTo: answer.private_to,
       deleted: answer.deleted,
+      ...(edit === undefined
+        ? before?.editId === undefined
+          ? {}
+          : {
+              editId: before.editId,
+              ...(before.editMadeAt === undefined ? {} : { editMadeAt: before.editMadeAt }),
+              ...(before.editBy === undefined ? {} : { editBy: before.editBy }),
+            }
+        : { editId: edit.id, editMadeAt: edit.madeAt, editBy: edit.by }),
       values: withoutSyncFields({ ...(before?.values ?? {}), ...(write.row ?? {}) }),
     });
   }

@@ -1676,6 +1676,71 @@ export const strings = {
     startedAgain: 'The example is back to how it started.',
   },
 
+  /**
+   * The same thing changed on two phones, or a change the account couldn't
+   * take (step 3d, D59, PLAN.md item 32). One at a time, oldest first.
+   */
+  clash: {
+    title: 'Changed on two phones',
+    purpose:
+      "The same thing was changed on two phones. PrePenny keeps the newest change, and tells you when yours wasn't kept.",
+    refusedTitle: "A change wasn't saved",
+    refusedPurpose:
+      "Your account couldn't take a change made on this phone, so it was taken off. Changes made after it are still sent.",
+    /** Who made the other change. */
+    otherPhone: 'Your other phone',
+    partner: 'Your partner',
+    /** "Tom's", "Your other phone's". */
+    whose: (who: string) => `${who}'s`,
+    /** What the other change did, with what it was about. */
+    theirs: {
+      amount: (name: string, on: string | null, amount: string) =>
+        on === null ? `changed ${name} to ${amount}` : `changed ${name} on ${on} to ${amount}`,
+      moved: (name: string, on: string | null, to: string) =>
+        on === null ? `moved ${name} to ${to}` : `moved ${name} on ${on} to ${to}`,
+      removed: (name: string, on: string | null) =>
+        on === null ? `removed ${name}` : `removed ${name} on ${on}`,
+      paid: (name: string, on: string | null) =>
+        on === null ? `marked ${name} as paid` : `marked ${name} on ${on} as paid`,
+      notPaid: (name: string, on: string | null) =>
+        on === null ? `marked ${name} as not paid` : `marked ${name} on ${on} as not paid`,
+      changed: (name: string, on: string | null) =>
+        on === null ? `changed ${name}` : `changed ${name} on ${on}`,
+    },
+    /** What this person's change did. */
+    ours: {
+      amount: (amount: string) => `changed it to ${amount}`,
+      moved: (to: string) => `moved it to ${to}`,
+      removed: 'removed it',
+      paid: 'marked it as paid',
+      notPaid: 'marked it as not paid',
+      changed: 'changed it',
+    },
+    /** "Tom changed Rent on Tue 1 Dec to £650 after you changed it to £640." */
+    sentence: (who: string, theirs: string, ours: string, here: boolean) =>
+      `${who} ${theirs} after you ${ours}${here ? ' on this phone' : ''}.`,
+    kept: (whose: string) => `${whose} change is kept.`,
+    cant: "Yours can't be made on the plan as it is now, so it wasn't saved.",
+    /** The other phone removed the payment: it can't be changed, whichever came first. */
+    cantRemoved: (who: string, what: string) =>
+      `${who} removed ${what}, so your change to it can't be made. Make it again if you still want it.`,
+    /** When a record has no name of its own. */
+    unnamed: 'your plan',
+    putBack: 'Put mine back',
+    /** "Keep Tom's change", "Keep your other phone's change". */
+    keepTheirs: (whose: string) => `Keep ${whose} change`,
+    gotIt: 'Got it',
+    putBackDone: 'Your change is back.',
+    putBackFailed:
+      "Your change can't be put back on the plan as it is now. Make it again if you still want it.",
+    refused: (what: string) =>
+      `Your change to ${what} wasn't saved in your account, so it has been taken off this phone.`,
+    refusedOn: (name: string, on: string) => `${name} on ${on}`,
+    /** Why, when the server's code says. */
+    notAllowed: 'You can look at this plan but not change it.',
+    makeAgain: 'Make it again if you still want it.',
+  },
+
   /** "Your account" on More, and signing out (brief 4.13, step 3b). */
   account: {
     heading: 'Your account',
@@ -1687,12 +1752,11 @@ export const strings = {
     savedInAccount: 'Your plan is saved in your account.',
     notSavedYet:
       "Your plan hasn't been saved in your account yet. It's on this phone, and will be sent when PrePenny can reach its server.",
+    /** How many changes are waiting to be sent (step 3d). */
     unsent: (count: number) =>
       count === 1
-        ? "1 change hasn't been sent yet. It's saved on this phone."
-        : `${count} changes haven't been sent yet. They're saved on this phone.`,
-    refused:
-      "A change couldn't be saved in your account, so it and the changes after it are kept on this phone for now.",
+        ? "1 change is waiting to be sent to your account. It's saved on this phone, and goes when there's a signal."
+        : `${count} changes are waiting to be sent to your account. They're saved on this phone, and go when there's a signal.`,
     off: "Signing in isn't switched on yet. Your plan stays on this phone.",
     signOut: 'Sign out',
     signOutIntro:

@@ -10,6 +10,7 @@ import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
+import { ClashSheet } from './ClashSheet.tsx';
 import { KeepInStep } from './KeepInStep.tsx';
 import { ExampleBanner, OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlan, usePlanActions } from './PlanProvider.tsx';
@@ -133,6 +134,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
     <PlanProvider>
       <ToSetup />
       <KeepInStep />
+      <ClashSheet />
       <Column>{children}</Column>
       {/* Above the navigation: the update note, then the undo bar (D186, D202). */}
       <div className={styles.bottom} data-bottom-notes>

@@ -16,8 +16,15 @@
 //   welcome and setup included (D351): a plan of the phone's own beside the
 //   account's asks which to keep (D324), and a phone with none brings the
 //   account's down. The account holds one plan of the person's own (D352).
-// - A change the server refuses stays queued, and nothing after it is sent:
-//   what the phone does then is step 3d.
+// - Changes made with no signal wait in the queue, in order, and go when the
+//   signal is back (step 3d). Before each is sent, the phone looks at what's
+//   new, and when another phone has changed the same thing since, the newest
+//   change wins (D59, lib/clash.ts): this phone's is sent and the other
+//   person is told, or theirs is kept and this person is told, with "Put
+//   mine back". Times are this phone's clock corrected against the
+//   server's (data/clock.ts).
+// - A change the server refuses for another reason is taken off the queue,
+//   so nothing after it waits for ever, and the person is told (PLAN.md item 32).
 // - Only a phone that's signed in sends anything; the example plan is never
 //   sent (D182). Nothing here writes an amount, a name, a note or an email
 //   address to the console or anywhere else (CLAUDE.md).
@@ -26,7 +33,8 @@ import type { RecordWrite } from '@prepenny/engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import { finishBeforeSigningOut, signedInClient } from '../lib/account.ts';
-import { newId, timeNow } from '../lib/ids.ts';
+import type { ClashFacts, QueuedChange } from '../lib/clash.ts';
+import { newId } from '../lib/ids.ts';
 import { SETUP_LAYOUT, type SetupProgress, setupDone } from '../lib/setup-progress.ts';
 import {
   type DbWrite,
@@ -35,17 +43,27 @@ import {
   savedRows,
   type Table,
 } from '../lib/sync-rows.ts';
-import { syncRecordsInBackground, syncWritesInBackground } from '../worker/client.ts';
+import {
+  clashFactsInBackground,
+  settleInBackground,
+  syncRecordsInBackground,
+  syncWritesInBackground,
+} from '../worker/client.ts';
+import { clashesChanged } from './clashes.ts';
+import { clockFrom, clockOn, correctedTime, rememberClock } from './clock.ts';
 import {
   loadRecords,
+  type MadeChange,
   openDb,
   ownPlanOnPhone,
   type PlanLink,
   type PrePennyDb,
+  type StoredClash,
   type StoredPlan,
   type StoredRow,
   savePlan,
   setShowing,
+  type UnsentEdit,
 } from './db.ts';
 
 // ---------------------------------------------------------------------------
@@ -58,11 +76,9 @@ export interface SyncState {
   readonly unsent: number;
   /** The last try to send didn't reach the server, or the server couldn't take it. */
   readonly cantSend: boolean;
-  /** The server refused a change, so it and the ones after it wait (step 3d). */
-  readonly refused: boolean;
 }
 
-const NOTHING: SyncState = { kept: false, unsent: 0, cantSend: false, refused: false };
+const NOTHING: SyncState = { kept: false, unsent: 0, cantSend: false };
 let state: SyncState = NOTHING;
 const stateListeners = new Set<() => void>();
 
@@ -70,8 +86,7 @@ function setState(next: SyncState) {
   if (
     next.kept === state.kept &&
     next.unsent === state.unsent &&
-    next.cantSend === state.cantSend &&
-    next.refused === state.refused
+    next.cantSend === state.cantSend
   ) {
     return;
   }
@@ -133,20 +148,33 @@ const REFUSALS = new Set([
 function failureOf(error: { code?: unknown; message?: unknown } | null): Failure {
   const message = typeof error?.message === 'string' ? error.message : '';
   if (REFUSALS.has(message)) return { kind: 'refused', code: message };
-  // The privacy rules' own refusal (D290): not theirs to change.
-  if (error?.code === '42501') return { kind: 'refused', code: 'not-found' };
+  // The privacy rules' own refusal: a record they can read but not change,
+  // as for "Can view only" (D51). Anything they can't see is refused as
+  // "not-found" by PrePenny's own checks first (D290).
+  if (error?.code === '42501') return { kind: 'refused', code: 'not-allowed' };
   // A server whose database hasn't had step 3c yet, a weak signal, or none.
   return { kind: 'unreachable' };
 }
 
+/**
+ * Calls one of the server's steps. With the phone's database, the server's
+ * time in its answer corrects this phone's clock (step 3d, data/clock.ts).
+ */
 async function rpc<T>(
   client: SupabaseClient,
   name: string,
   args: Record<string, unknown>,
+  db?: PrePennyDb,
 ): Promise<{ ok: true; data: T } | { ok: false; failure: Failure }> {
   try {
+    const sentAt = Date.now();
     const { data, error } = await client.rpc(name, args);
+    const receivedAt = Date.now();
     if (error !== null) return { ok: false, failure: failureOf(error) };
+    if (db !== undefined && typeof data === 'object' && data !== null) {
+      const clock = clockFrom((data as { now?: unknown }).now, sentAt, receivedAt);
+      if (clock !== null) await rememberClock(db, clock);
+    }
     return { ok: true, data: data as T };
   } catch {
     return { ok: false, failure: { kind: 'unreachable' } };
@@ -187,15 +215,41 @@ async function keepRows(db: PrePennyDb, planId: string, rows: readonly MirrorRow
 
 interface PlanChanges {
   readonly plan: Record<string, unknown>;
-  readonly rows: readonly { readonly table: Table; readonly row: Record<string, unknown> }[];
+  readonly rows: readonly {
+    readonly table: Table;
+    readonly row: Record<string, unknown>;
+    /** When the edit that last saved it was made, and by whom (step 3d). */
+    readonly edit_made_at?: string | null;
+    readonly edit_by?: string | null;
+  }[];
+  readonly members?: readonly { readonly person: string; readonly nickname?: string }[];
+  /** This person's own notices not read yet: a change of theirs a newer one replaced (step 3d). */
+  readonly notices?: readonly Notice[];
+}
+
+interface Notice {
+  readonly id: string;
+  readonly data: {
+    readonly lost?: string;
+    readonly by?: string;
+    readonly made_at?: string;
+  } | null;
 }
 
 /** The server's rows as this phone keeps them, from what plan_changes gave back. */
 function rowsFrom(changes: PlanChanges): MirrorRow[] {
   return [
     mirrorRowOf('plans', changes.plan),
-    ...changes.rows.map(({ table, row }) => mirrorRowOf(table, row)),
+    ...changes.rows.map(({ table, row, edit_made_at: madeAt, edit_by: by }) =>
+      mirrorRowOf(table, row, { madeAt, by }),
+    ),
   ];
+}
+
+/** Each person in the plan's nickname, for "Tom changed Rent" (step 3d). */
+function nicknamesOf(changes: PlanChanges): Record<string, string> | undefined {
+  if (changes.members === undefined) return undefined;
+  return Object.fromEntries(changes.members.map((one) => [one.person, one.nickname ?? '']));
 }
 
 /**
@@ -220,6 +274,8 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
         ...(stored ?? { id: link.planId, isExample: false }),
         owner: link.personId,
         setup: unsent.at(-1)?.setup ?? setup ?? stored?.setup ?? DONE,
+        // A change made on these records was made on what's been brought down so far (step 3d).
+        seen: { shared: link.shared, mine: link.mine },
       };
       await savePlan(db, plan, records);
       return true;
@@ -240,13 +296,15 @@ async function bringDown(
   db: PrePennyDb,
   link: PlanLink,
 ): Promise<boolean | Failure> {
-  const answer = await rpc<PlanChanges>(client, 'plan_changes', {
-    plan: link.planId,
-    shared_after: link.shared,
-    mine_after: link.mine,
-  });
+  const answer = await rpc<PlanChanges>(
+    client,
+    'plan_changes',
+    { plan: link.planId, shared_after: link.shared, mine_after: link.mine },
+    db,
+  );
   if (!answer.ok) return answer.failure;
   const rows = rowsFrom(answer.data);
+  const nicknames = nicknamesOf(answer.data);
   const known = new Map(
     (await rowsOn(db, link.planId)).map((row) => [`${row.table}|${row.id}`, row]),
   );
@@ -261,10 +319,82 @@ async function bringDown(
     else mine = Math.max(mine, row.seq);
   }
   await keepRows(db, link.planId, changed);
-  await db.links.put({ ...link, shared, mine });
-  if (changed.length === 0) return false;
-  await rebuild(db, { ...link, shared, mine });
-  return true;
+  const now: PlanLink = {
+    ...link,
+    shared,
+    mine,
+    ...(nicknames === undefined ? {} : { nicknames }),
+  };
+  await db.links.put(now);
+  if (changed.length > 0) await rebuild(db, now);
+  await hearNotices(client, db, now, answer.data.notices ?? []);
+  return changed.length > 0;
+}
+
+/**
+ * The person's notices: a change this phone sent that a newer one from
+ * another phone replaced (step 3d). The phone that sent it tells the person,
+ * from its own copy of what it sent and the records as they are now, then
+ * marks the notice as read. A notice about a change sent from another phone
+ * of theirs is left for that phone.
+ */
+async function hearNotices(
+  client: SupabaseClient,
+  db: PrePennyDb,
+  link: PlanLink,
+  notices: readonly Notice[],
+) {
+  const heard: string[] = [];
+  for (const notice of notices) {
+    const lost = notice.data?.lost;
+    if (typeof lost !== 'string') continue;
+    const sent = await db.sent.get([link.planId, lost]);
+    if (sent === undefined) continue;
+    if ((await db.clashes.get(notice.id)) === undefined) {
+      const facts = await clashFactsInBackground({
+        rows: await rowsOn(db, link.planId),
+        change: queued(sent),
+        by: notice.data?.by ?? null,
+      });
+      await db.clashes.put({
+        id: notice.id,
+        planId: link.planId,
+        kind: 'replaced',
+        facts,
+        ...putBackOf(sent),
+        at: Date.now(),
+      });
+      clashesChanged();
+    }
+    heard.push(notice.id);
+  }
+  if (heard.length === 0) return;
+  try {
+    await client.from('notices').update({ read_at: new Date().toISOString() }).in('id', heard);
+  } catch {
+    // Heard again next time, and shown once: the clash is kept on the phone.
+  }
+}
+
+/** A change as lib/clash.ts takes it. */
+function queued(change: MadeChange): QueuedChange {
+  return {
+    writes: change.writes,
+    madeAt: change.madeAt,
+    ...(change.before === undefined ? {} : { before: change.before }),
+    ...(change.commands === undefined ? {} : { commands: change.commands }),
+    ...(change.today === undefined ? {} : { today: change.today }),
+    ...(change.numbers === undefined ? {} : { numbers: change.numbers }),
+    ...(change.payments === undefined ? {} : { payments: change.payments }),
+    ...(change.seen === undefined ? {} : { seen: change.seen }),
+    ...(change.setup === undefined ? {} : { setup: change.setup }),
+  };
+}
+
+/** What "Put mine back" makes again, when the change can be made again. */
+function putBackOf(change: MadeChange): Pick<StoredClash, 'putBack'> {
+  if (change.commands === undefined || change.commands.length === 0) return {};
+  return { putBack: { commands: change.commands, payments: change.payments ?? [] } };
 }
 
 /** At most this many records in one edit, well inside save_edit's 1,000 and the server's time limit. */
@@ -292,7 +422,11 @@ async function sendWhole(
     });
     let refused: Failure | null = null;
     for (const chunk of chunksOf(writes)) {
-      const result = await saveOnServer(client, db, link, newId(), timeNow(), 'first-copy', chunk);
+      const editId = newId();
+      const madeAt = correctedTime(Date.now(), await clockOn(db));
+      // Its records are this phone's own, so they never count as someone else's change (step 3d).
+      await keepSent(db, { planId: link.planId, editId, madeAt, kind: 'first-copy', writes: [] });
+      const result = await saveOnServer(client, db, link, editId, madeAt, 'first-copy', chunk);
       if (result !== true) {
         refused = result;
         break;
@@ -339,22 +473,62 @@ async function saveOnServer(
   madeAt: string,
   kind: string,
   writes: readonly DbWrite[],
+  /** The edits a clash's newest change replaces, whose people are told (step 3d). */
+  overrides: readonly string[] = [],
 ): Promise<true | Failure> {
   if (writes.length === 0) return true;
-  const answer = await rpc<{ rows: Parameters<typeof savedRows>[1] }>(client, 'save_edit', {
-    plan: link.planId,
-    edit: editId,
-    made_at: madeAt,
-    kind,
-    writes,
-  });
+  const answer = await rpc<{ rows: Parameters<typeof savedRows>[1] }>(
+    client,
+    'save_edit',
+    {
+      plan: link.planId,
+      edit: editId,
+      made_at: madeAt,
+      kind,
+      writes,
+      ...(overrides.length === 0 ? {} : { overrides }),
+    },
+    db,
+  );
   if (!answer.ok) return answer.failure;
   const before = await rowsOn(db, link.planId);
-  await keepRows(db, link.planId, savedRows(writes, answer.data.rows, before));
+  await keepRows(
+    db,
+    link.planId,
+    savedRows(writes, answer.data.rows, before, { id: editId, madeAt, by: link.personId }),
+  );
   return true;
 }
 
-/** Sends every change in the queue, one at a time, in the order made. */
+/** How many changes this phone keeps a note of having sent, for each plan. */
+const SENT_KEPT = 100;
+
+/**
+ * Notes a change as sent from this phone, before it's sent: if the answer
+ * is lost on the way back, its records are still known to be this phone's
+ * own when they come down (step 3d). Only the newest are kept.
+ */
+async function keepSent(db: PrePennyDb, change: MadeChange & { readonly planId: string }) {
+  await db.sent.put({ ...change, sentAt: Date.now() });
+  const all = await db.sent.where('planId').equals(change.planId).toArray();
+  if (all.length <= SENT_KEPT) return;
+  const oldest = all.sort((a, b) => a.sentAt - b.sentAt).slice(0, all.length - SENT_KEPT);
+  await db.sent.bulkDelete(oldest.map((one) => [one.planId, one.editId] as [string, string]));
+}
+
+/** The changes this phone has sent, by id. */
+async function oursOn(db: PrePennyDb, planId: string): Promise<string[]> {
+  return (await db.sent.where('planId').equals(planId).toArray()).map((one) => one.editId);
+}
+
+/**
+ * Sends every change in the queue, one at a time, in the order made. Each
+ * is looked at first against the newest records (lib/clash.ts). A change
+ * that clashes and loses, can't be made any more, or that the server
+ * refuses, is taken off the queue and the person is told: nothing after it
+ * waits for ever (PLAN.md item 32). Stops at the first that can't reach the
+ * server, to try again later.
+ */
 async function sendQueue(
   client: SupabaseClient,
   db: PrePennyDb,
@@ -363,29 +537,148 @@ async function sendQueue(
   for (;;) {
     const next = await db.unsent.where('planId').equals(link.planId).first();
     if (next === undefined) return true;
-    if (next.refused !== undefined) return { kind: 'refused', code: next.refused };
-    const rows = await rowsOn(db, link.planId);
-    const writes = await syncWritesInBackground({
+    const sent = await sendOne(client, db, next);
+    if (sent !== true) return sent;
+  }
+}
+
+/** Sends one change, after a clash looks again: up to 3 times, then later. */
+async function sendOne(
+  client: SupabaseClient,
+  db: PrePennyDb,
+  waiting: UnsentEdit,
+): Promise<true | Failure> {
+  let next = waiting;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const link = await db.links.get(next.planId);
+    if (link === undefined) return { kind: 'unreachable' };
+    // Sent before with no answer back: sent again exactly as it was (save_edit
+    // changes nothing the second time). Only if it never arrived, and the
+    // records have moved on since, is it looked at afresh.
+    const before = next.attempt;
+    if (before !== undefined) {
+      const again = await saveOnServer(
+        client,
+        db,
+        link,
+        next.editId,
+        before.madeAt,
+        next.kind,
+        before.writes,
+        before.overrides,
+      );
+      if (again === true) {
+        await db.unsent.delete([next.planId, next.n]);
+        return true;
+      }
+      if (again.kind === 'unreachable') return again;
+      const { attempt: _sent, ...fresh } = next;
+      next = fresh;
+      await db.unsent.put(next);
+      if (again.code !== 'changed-since') continue;
+      const down = await bringDown(client, db, link);
+      if (typeof down === 'object') return down;
+      continue;
+    }
+    // A change made before the phone knew the server's time is corrected now.
+    const clock = await clockOn(db);
+    const madeAt =
+      next.clockKnown === false && next.madeOnPhone !== undefined && clock !== null
+        ? correctedTime(next.madeOnPhone, clock)
+        : next.madeAt;
+    const change: UnsentEdit = { ...next, madeAt };
+    const settled = await settleInBackground({
       plan: { planId: link.planId, personId: link.personId },
-      rows,
-      writes: next.writes,
-      ...(next.setup === undefined ? {} : { setup: next.setup }),
+      rows: await rowsOn(db, link.planId),
+      change: queued(change),
+      ours: await oursOn(db, link.planId),
+    });
+    if (settled.kind === 'done') {
+      await takeOff(db, link, change, null);
+      return true;
+    }
+    if (settled.kind === 'kept-theirs' || settled.kind === 'cant') {
+      await takeOff(db, link, change, { kind: settled.kind, facts: settled.facts });
+      return true;
+    }
+    const { refused: _old, n: _n, planId: _plan, attempt: _none, ...made } = change;
+    await keepSent(db, { ...made, planId: link.planId });
+    // Kept before it goes, in case the answer is lost on the way back.
+    await db.unsent.put({
+      ...change,
+      attempt: { writes: settled.writes, overrides: settled.overrides, madeAt },
     });
     const result = await saveOnServer(
       client,
       db,
       link,
-      next.editId,
-      next.madeAt,
-      next.kind,
-      writes,
+      change.editId,
+      madeAt,
+      change.kind,
+      settled.writes,
+      settled.overrides,
     );
-    if (result !== true) {
-      if (result.kind === 'refused') await db.unsent.put({ ...next, refused: result.code });
-      return result;
+    if (result === true) {
+      await db.unsent.delete([change.planId, change.n]);
+      return true;
     }
-    await db.unsent.delete([next.planId, next.n]);
+    if (result.kind === 'unreachable') return result;
+    if (result.code === 'not-found') {
+      // The plan itself gone from the account is for keepInStepOnce to see
+      // (D355); otherwise it's this change that names something not there.
+      const down = await bringDown(client, db, link);
+      if (typeof down === 'object') return down;
+    }
+    if (result.code === 'changed-since') {
+      // Saved by another phone a moment ago: nothing of this was saved, so
+      // it's looked at against what's new and settled again.
+      await db.unsent.put(change);
+      const down = await bringDown(client, db, link);
+      if (typeof down === 'object') return down;
+      continue;
+    }
+    // Refused for another reason: taken off, so the changes after it still go (item 32).
+    const facts = await clashFactsInBackground({
+      rows: await rowsOn(db, link.planId),
+      change: queued(change),
+      by: null,
+    });
+    await takeOff(db, link, change, { kind: 'refused', facts, code: result.code });
+    return true;
   }
+  return { kind: 'unreachable' };
+}
+
+/**
+ * Takes a change off the queue without sending it, with what to tell the
+ * person, if anything, and works the plan on this phone out again, so it
+ * shows what the account has.
+ */
+async function takeOff(
+  db: PrePennyDb,
+  link: PlanLink,
+  change: UnsentEdit,
+  tell: {
+    readonly kind: StoredClash['kind'];
+    readonly facts: ClashFacts;
+    readonly code?: string;
+  } | null,
+) {
+  await db.transaction('rw', [db.unsent, db.clashes], async () => {
+    await db.unsent.delete([change.planId, change.n]);
+    if (tell === null) return;
+    await db.clashes.put({
+      id: change.editId,
+      planId: change.planId,
+      kind: tell.kind,
+      facts: tell.facts,
+      ...(tell.code === undefined ? {} : { code: tell.code }),
+      ...(tell.kind === 'kept-theirs' ? putBackOf(change) : {}),
+      at: Date.now(),
+    });
+  });
+  await rebuild(db, link);
+  if (tell !== null) clashesChanged();
 }
 
 // ---------------------------------------------------------------------------
@@ -566,11 +859,12 @@ async function askToChoose(
   own: StoredPlan,
   saved: string,
 ): Promise<Connection> {
-  const answer = await rpc<PlanChanges>(client, 'plan_changes', {
-    plan: saved,
-    shared_after: 0,
-    mine_after: 0,
-  });
+  const answer = await rpc<PlanChanges>(
+    client,
+    'plan_changes',
+    { plan: saved, shared_after: 0, mine_after: 0 },
+    db,
+  );
   if (!answer.ok) return NOT_NOW;
   const rows = rowsFrom(answer.data);
   waitingChoice = { planId: saved, rows };
@@ -668,14 +962,17 @@ async function bringDownInstead(
   instead: { readonly id: string; readonly onlyIfEmpty: boolean } | null,
 ): Promise<'done' | 'changed-here' | 'not-now'> {
   let all = rows;
+  let nicknames: Record<string, string> | undefined;
   if (all === null) {
-    const answer = await rpc<PlanChanges>(client, 'plan_changes', {
-      plan: planId,
-      shared_after: 0,
-      mine_after: 0,
-    });
+    const answer = await rpc<PlanChanges>(
+      client,
+      'plan_changes',
+      { plan: planId, shared_after: 0, mine_after: 0 },
+      db,
+    );
     if (!answer.ok) return 'not-now';
     all = rowsFrom(answer.data);
+    nicknames = nicknamesOf(answer.data);
   }
   let shared = 0;
   let mine = 0;
@@ -684,11 +981,17 @@ async function bringDownInstead(
     if (row.privateTo === null) shared = Math.max(shared, row.seq);
     else mine = Math.max(mine, row.seq);
   }
-  const link: PlanLink = { planId, personId: person, shared, mine };
+  const link: PlanLink = {
+    planId,
+    personId: person,
+    shared,
+    mine,
+    ...(nicknames === undefined ? {} : { nicknames }),
+  };
   const arrived = all;
   const swapped = await db.transaction(
     'rw',
-    [db.plans, db.records, db.rows, db.unsent, db.links],
+    [db.plans, db.records, db.rows, db.unsent, db.links, db.sent, db.clashes],
     async () => {
       // A plan started here meanwhile, as with "Make my plan" tapped while
       // this one was on its way: look again rather than keep two.
@@ -697,7 +1000,13 @@ async function bringDownInstead(
         if (instead.onlyIfEmpty && (await hasSomething(db, instead.id))) return false;
         await removeFromPhone(db, instead.id);
       }
-      await db.plans.put({ id: planId, isExample: false, owner: person, setup: DONE });
+      await db.plans.put({
+        id: planId,
+        isExample: false,
+        owner: person,
+        setup: DONE,
+        seen: { shared, mine },
+      });
       await keepRows(db, planId, arrived);
       await db.links.put(link);
       return true;
@@ -713,13 +1022,19 @@ async function bringDownInstead(
 
 /** Removes one plan from this phone, and everything kept with it. */
 async function removeFromPhone(db: PrePennyDb, planId: string) {
-  await db.transaction('rw', [db.plans, db.records, db.rows, db.unsent, db.links], async () => {
-    await db.records.where('planId').equals(planId).delete();
-    await db.rows.where('planId').equals(planId).delete();
-    await db.unsent.where('planId').equals(planId).delete();
-    await db.links.delete(planId);
-    await db.plans.delete(planId);
-  });
+  await db.transaction(
+    'rw',
+    [db.plans, db.records, db.rows, db.unsent, db.links, db.sent, db.clashes],
+    async () => {
+      await db.records.where('planId').equals(planId).delete();
+      await db.rows.where('planId').equals(planId).delete();
+      await db.unsent.where('planId').equals(planId).delete();
+      await db.sent.where('planId').equals(planId).delete();
+      await db.clashes.where('planId').equals(planId).delete();
+      await db.links.delete(planId);
+      await db.plans.delete(planId);
+    },
+  );
 }
 
 /**
@@ -795,12 +1110,7 @@ async function publish(db: PrePennyDb, planId: string | null, cantSend = false) 
   // A first copy still going up isn't safely kept yet (D352).
   const kept = link !== undefined && link.sending !== true;
   const unsent = await db.unsent.where('planId').equals(planId).toArray();
-  setState({
-    kept,
-    unsent: unsent.length,
-    cantSend,
-    refused: unsent.some((one) => one.refused !== undefined),
-  });
+  setState({ kept, unsent: unsent.length, cantSend });
 }
 
 /** Account work runs one task at a time, so two looks never both send a first copy. */
@@ -930,8 +1240,18 @@ async function keepInStepOnce(client: SupabaseClient, person: string): Promise<b
     // The plan itself not found means it has left the account.
     if (!('planId' in rest)) return refusedWith(rest, 'not-found');
     let link = rest;
-    // A refused change waits in the queue (step 3d); only the plan itself
-    // not being found below means it has left the account.
+    // Changes waiting to go are looked at against what's new first, so one
+    // made on records another phone has changed since is seen as a clash
+    // (step 3d). Only the plan itself not being found means it has left the account.
+    if ((await db.unsent.where('planId').equals(own.id).count()) > 0) {
+      const first = await bringDown(client, db, link);
+      if (typeof first === 'object') {
+        if (refusedWith(first, 'not-found')) return true;
+        await publish(db, own.id, first.kind === 'unreachable');
+        return false;
+      }
+      link = (await db.links.get(own.id)) ?? link;
+    }
     const sent = await sendQueue(client, db, link);
     link = (await db.links.get(own.id)) ?? link;
     const down = await bringDown(client, db, link);
@@ -952,6 +1272,15 @@ let soon: ReturnType<typeof setTimeout> | null = null;
 
 /** Syncs in a moment: after a change, so several in a row go together, or after a nudge. */
 export function syncSoon(): void {
+  // A change has just joined the queue: More says so straight away (step 3d).
+  void withDb(async (db) => {
+    const own = await ownPlanOnPhone(db);
+    if (own !== undefined && (await db.links.get(own.id)) !== undefined) {
+      await publish(db, own.id, state.cantSend);
+    }
+  }).catch(() => {
+    // No database: nothing is queued anyway.
+  });
   if (soon !== null) clearTimeout(soon);
   soon = setTimeout(() => {
     soon = null;

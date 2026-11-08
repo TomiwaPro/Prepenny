@@ -15,6 +15,7 @@ import {
   sameValue,
 } from '@prepenny/engine';
 import { holidaysFor } from './holidays.ts';
+import { onNewestRecords, type PaymentAt, paymentsAt } from './payment-at.ts';
 import { editInputOf } from './plan-input.ts';
 
 /**
@@ -30,6 +31,11 @@ export interface EditResult {
   readonly records: PlanRecords;
   /** For its undo: which payment each change and tick it would put back was on. */
   readonly numbers: PaymentNumbers;
+  /**
+   * The payments its commands were about, before and after, so the change
+   * can be made again on newer records after a clash (step 3d).
+   */
+  readonly payments: readonly PaymentAt[];
 }
 
 /** The payment number of a series' payment on its original date, in these records. */
@@ -77,7 +83,12 @@ export function runEdit(
       }
     }
   }
-  return { edit, records: after, numbers: numbersOf(records, edit.undo) };
+  return {
+    edit,
+    records: after,
+    numbers: numbersOf(records, edit.undo),
+    payments: paymentsAt(records, after, [command]),
+  };
 }
 
 /** Which record a write is about, so two writes to the same record can be told apart. */
@@ -104,8 +115,15 @@ export function recordKey(write: RecordWrite): string {
 export function runEdits(
   records: PlanRecords,
   today: string,
-  commands: readonly EditCommand[],
+  given: readonly EditCommand[],
+  /**
+   * The payments the commands were about when they were first made: each is
+   * found again on these records by its family and number, as for "Put mine
+   * back" after a clash (step 3d).
+   */
+  madeOn?: readonly PaymentAt[],
 ): EditResult {
+  const commands = madeOn === undefined ? given : onNewestRecords(records, given, madeOn);
   let now = records;
   const order: string[] = [];
   const first = new Map<string, RecordWrite>();
@@ -134,5 +152,10 @@ export function runEdits(
     writes.push(after);
     undo.push(before);
   }
-  return { edit: { writes, undo }, records: now, numbers: numbersOf(records, undo) };
+  return {
+    edit: { writes, undo },
+    records: now,
+    numbers: numbersOf(records, undo),
+    payments: paymentsAt(records, now, commands),
+  };
 }
