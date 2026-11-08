@@ -4036,7 +4036,19 @@ The owner's decision, 8 Nov 2026. Replaces brief 4.1's order of setup steps, D22
   - **"Saving for something?"** is a line of words on the card, not a heading, because VOICE.md avoids questions as headlines. Under it: "Set a target and see the date you'll get there. You can also add one later from More, under Savings goals.", which is how savings stays easy to find after setup: More has had Savings goals since step 2f.
   - **"Add a goal"** opens the same savings goal sheet as More's Savings goals, which asks everything setup's old savings step asked (D226). As the old step did, it starts with the money kept in a savings account if there is one, the second account if not, or "A new savings account" when there's only one account; More's sheet keeps its own start. Each goal is one thing setup added, made a moment after the last (D229), listed on the card with Remove, and "Holiday added." is said. The button then says "Add another goal". The plan's figures, such as "First savings goal reached", are worked out again straight away.
   - The welcome's line shows for everyone, setup finished or not, so nothing on the welcome moves while the page loads and no tap lands on the wrong button. After setup it still says what to do: keep it up to date.
-  - **Taps.** A tap is a press of a button, a choice or a tick box, or a tap into a box to type in. Picking a date in a phone's own date picker takes a few more taps, the same before and after. Counted from "Make my plan" to "Go to my plan", with the same answers each time: {{TAPS}}
+  - **Taps.** A tap is a press of a button, a choice or a tick box, or a tap into a box to type in. Picking a date in a phone's own date picker takes a few more taps, the same before and after. Counted from "Make my plan" to "Go to my plan", with the same answers each time, the old setup on `main` before this change and the new one:
+
+  | Setting up as | Before: 8 steps | Now: 6 screens |
+  | --- | --- | --- |
+  | Someone who skips every step they can | 12 taps | 10 taps |
+  | Sam (debts, no rent or bills) | 87 taps | 86 taps |
+  | Priya (every screen, and a savings goal) | 79 taps | 79 taps |
+  | Dee (two incomes, rent, bills) | 57 taps | 55 taps |
+  | Kofi (three incomes, rent, bills, a debt) | 80 taps | 78 taps |
+  | Jess and Tom (three accounts) | 79 taps | 77 taps |
+  | Ali (student loan, rent each term) | 45 taps | 43 taps |
+
+  Most taps are typing in the person's own numbers, which are all still asked, so the taps fall by 1 or 2: Next once for rent and bills together, and no Skip for savings. Someone adding a savings goal taps "Add a goal" and "Add goal" instead of Next, so Priya's taps stay the same. What changes most is what there is to read: 6 screens instead of 8 for everyone.
 
 Test: `apps/web/e2e/setup.spec.ts` tests 1 to 9, with test 7 counting the screens and taps of Priya's whole setup; each of the six people set up and using the app in `apps/web/e2e/people.spec.ts`; `apps/web/e2e/your-plan.spec.ts` test 14 for setting up while signed in; `apps/web/test/unit/setup-progress.test.ts` for the parts. Screenshots of the welcome and all 6 screens are in `docs/screens/setup-6`.
 

@@ -54,7 +54,7 @@ While they set up, note anything like this, with the screen's name (its heading,
 - They read the same words twice, or read them out with a question in their voice.
 - They say "what does this mean", "where's the...", "I don't know" or similar. Write their words down exactly.
 - They tap "Skip this step". Note whether they meant to.
-- On Home and bills, whether they found the bills below their rent, and whether "I don't pay rent or a mortgage" was clear to someone who doesn't pay either.
+- On Home and bills, whether they found the bills below their rent, and whether "I don't pay rent or a mortgage" and "I'll add it later" were clear.
 - They type something the app says is wrong, and what the app's message was.
 - Anything they say they like or don't like.
 

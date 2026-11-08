@@ -1290,6 +1290,7 @@ Home and bills
 | ( ) Mortgage                   |
 | ( ) I don't pay rent or a      |
 |     mortgage                   |
+| ( ) I'll add it later          |
 | Amount       [£ 550.00       ] |
 | Next payment [Sun 1 Nov      ] |
 | How often [Monthly on the 1st] |
