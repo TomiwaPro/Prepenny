@@ -53,8 +53,8 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
       <h1 className={styles.name}>{strings.app.name}</h1>
       <p className={styles.tagline}>{strings.app.tagline}</p>
       <p className={styles.description}>{strings.app.description}</p>
-      {/* Before setup starts, how long it takes (D356). */}
-      {done ? null : <p className={styles.once}>{strings.welcome.once}</p>}
+      {/* How long setup takes (D356), shown to everyone, so nothing moves as the page loads. */}
+      <p className={styles.once}>{strings.welcome.once}</p>
       <button
         type="button"
         className={formStyles.main}

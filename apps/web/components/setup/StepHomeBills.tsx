@@ -6,7 +6,9 @@
 // tax, energy, water, phone, broadband, TV licence, insurance and
 // subscriptions, each one ticked asking for its amount, next payment and how
 // often, with council tax's "10 payments, April to January"; and "Add
-// another bill". It asks everything the two steps it replaces asked.
+// another bill". It asks everything the two steps it replaces asked, and
+// rent can still be left out on its own with "I'll add it later", as Skip
+// on the old rent step did.
 
 import type { NewSeries } from '@prepenny/engine';
 import { useId, useState } from 'react';
@@ -33,7 +35,7 @@ import { useStep } from './useStep.ts';
 const t = strings.setup.bills;
 const r = strings.setup.rent;
 
-type Which = 'rent' | 'mortgage' | 'none';
+type Which = 'rent' | 'mortgage' | 'none' | 'later';
 
 interface BillDraft {
   readonly key: string;
@@ -86,8 +88,10 @@ export function StepHomeBills() {
     savedBills.flatMap((item) => (item.bill === undefined ? [] : [item.bill])),
   );
   const firstAccount = step.accounts[0]?.id ?? '';
+  // "I don't pay rent or a mortgage" stays chosen when coming back, unless
+  // rent was added after all: then removing it starts again on Rent.
   const [which, setWhich] = useState<Which>(() =>
-    step.progress.answers.noRent === true ? 'none' : 'rent',
+    step.progress.answers.noRent === true && savedRent.length === 0 ? 'none' : 'rent',
   );
   const [rent, setRentState] = useState<OutgoingForm>(() => ({
     ...blankWhen('monthly'),
@@ -121,7 +125,7 @@ export function StepHomeBills() {
     // Rent first, as it shows: a home payment, or "I don't pay rent or a mortgage".
     let rentSeries: Omit<NewSeries, 'id'> | null = null;
     let foundRent: PaymentErrors = {};
-    if (asksRent && which !== 'none') {
+    if (asksRent && (which === 'rent' || which === 'mortgage')) {
       const built = buildOutgoing(
         { ...rent, name: which === 'rent' ? r.rent : r.mortgage },
         'rent',
@@ -193,6 +197,7 @@ export function StepHomeBills() {
     const outcome = await step.save({
       commands: [],
       ...(asksRent && which === 'none' ? { answers: { noRent: true } } : {}),
+      ...(asksRent && which === 'later' ? { answers: { noRent: false } } : {}),
       step: 4,
     });
     step.setBusy(false);
@@ -298,13 +303,14 @@ export function StepHomeBills() {
               { value: 'rent', label: r.rent },
               { value: 'mortgage', label: r.mortgage },
               { value: 'none', label: r.none },
+              { value: 'later', label: r.later },
             ]}
             onChange={(value) => {
               setWhich(value);
               setRentErrors({});
             }}
           />
-          {which === 'none' ? null : (
+          {which === 'none' || which === 'later' ? null : (
             <OutgoingFields
               id={rentId}
               form={rent}

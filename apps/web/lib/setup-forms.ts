@@ -1035,7 +1035,7 @@ export function alreadySpentCommand(
   };
 }
 
-// Step 7: savings
+// Savings goals: the goal sheet, from "Add a goal" on Here's your plan (D356) and from More
 
 /** "Each payday", or a "when" of its own. */
 export type MoveOften = 'payday' | 'own';

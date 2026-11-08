@@ -1,10 +1,11 @@
 'use client';
 
-// The boxes for a savings goal (brief 4.7, D114, D153, D226), shared by
-// setup's step 7 and the Savings goals screen: what it's for, the target,
-// a date if there is one, the account it's kept in (or a new savings
-// account), what's already saved, and the money moved into it, each payday
-// or another way. Changing a goal asks only for the goal's own details.
+// The boxes for a savings goal (brief 4.7, D114, D153, D226), in the
+// savings goal sheet that the Savings goals screen and setup's "Add a goal"
+// open (D356): what it's for, the target, a date if there is one, the
+// account it's kept in (or a new savings account), what's already saved,
+// and the money moved into it, each payday or another way. Changing a goal
+// asks only for the goal's own details.
 
 import type { BankHolidayLookup } from '@prepenny/engine';
 import { formatDay } from '../lib/dates.ts';

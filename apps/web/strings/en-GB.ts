@@ -181,8 +181,10 @@ export const strings = {
       rent: 'Rent',
       mortgage: 'Mortgage',
       none: "I don't pay rent or a mortgage",
+      /** Leaves rent out for now, as Skip on the old rent step did (D356). */
+      later: "I'll add it later",
       amount: 'Amount',
-      amountError: "Type the amount, for example 550, or choose I don't pay rent or a mortgage.",
+      amountError: "Type the amount, for example 550. Or choose I'll add it later.",
       from: 'From',
       card: (amount: string, often: string) => `${amount}, ${often}`,
     },

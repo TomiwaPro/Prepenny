@@ -144,7 +144,9 @@ function screenOf(step: unknown, old: boolean): SetupStep | 'done' {
   if (step === 'done') return 'done';
   if (typeof step !== 'number' || !Number.isInteger(step)) return 1;
   if (old) return OLD_STEP_TO_SCREEN[step] ?? 1;
-  return step >= 0 && step <= SETUP_SCREENS ? (step as SetupStep) : 1;
+  if (step >= 0 && step <= SETUP_SCREENS) return step as SetupStep;
+  // 7 or 8 from a phone still running the old 8 steps (D358): the plan.
+  return step === 7 || step === 8 ? 6 : 1;
 }
 
 /**
@@ -163,7 +165,13 @@ export function upgradeSetup(saved: unknown): SetupProgress | undefined {
     readonly answers?: unknown;
   };
   const old = stored.layout !== SETUP_LAYOUT;
-  const items = Array.isArray(stored.items) ? (stored.items as SetupItem[]) : [];
+  // Anything that isn't an item is left out, so damaged progress still opens.
+  const items = Array.isArray(stored.items)
+    ? (stored.items as unknown[]).filter(
+        (item): item is SetupItem =>
+          item !== null && typeof item === 'object' && typeof (item as SetupItem).kind === 'string',
+      )
+    : [];
   return {
     layout: SETUP_LAYOUT,
     step: screenOf(stored.step, old),
