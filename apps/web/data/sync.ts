@@ -25,7 +25,7 @@
 import type { RecordWrite } from '@prepenny/engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
-import { signedInClient } from '../lib/account.ts';
+import { finishBeforeSigningOut, signedInClient } from '../lib/account.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import { SETUP_LAYOUT, type SetupProgress, setupDone } from '../lib/setup-progress.ts';
 import {
@@ -821,6 +821,12 @@ let accountLooked = false;
 
 let running: Promise<void> | null = null;
 let again = false;
+// Signing out waits for account work under way, so a send or a look that
+// ends just after it can't write to the phone once it's cleared (D360).
+finishBeforeSigningOut(async () => {
+  await running;
+  await chain;
+});
 
 /**
  * Looks at the account when it's due, sends what's queued, then brings down

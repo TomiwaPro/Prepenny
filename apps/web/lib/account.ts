@@ -443,6 +443,19 @@ export async function finishGoogle(code: string): Promise<Outcome> {
   }
 }
 
+/** Work to let finish before the phone forgets everything, such as a send under way (D360). */
+const beforeForgetting = new Set<() => Promise<unknown>>();
+
+/**
+ * Lets work already under way, such as sending a change or bringing down
+ * what's new, finish before signing out clears the phone, so nothing it
+ * saves comes back afterwards (D360). Gives back a way to stop.
+ */
+export function finishBeforeSigningOut(work: () => Promise<unknown>): () => void {
+  beforeForgetting.add(work);
+  return () => beforeForgetting.delete(work);
+}
+
 /**
  * Ends this phone's sign-in, then removes the plan and everything else
  * PrePenny keeps from the phone (brief 4.13). Ends it on the server too when
@@ -460,6 +473,12 @@ export async function signOutAndForget(): Promise<void> {
       new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
     ]);
   }
+  // Signed out, nothing new starts; what's under way finishes first, for a
+  // few seconds at most, so it can't save anything after the phone is cleared (D360).
+  await Promise.race([
+    Promise.allSettled([...beforeForgetting].map((work) => work())),
+    new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
+  ]);
   await forgetEverything();
   setAccount({ status: 'signed-out' });
 }
