@@ -258,37 +258,46 @@ export function comparable(records: PlanRecords) {
 }
 
 /**
- * Counts taps from here on, for the setup tests (D356): every press of a
- * button, choice or tick box, and every tap into a box to type in. Picking a
- * date in a phone's own date picker takes a few more taps, the same before
- * and after.
+ * Counts taps from here on, for the setup tests (D356, D363): every press
+ * of a button, choice or tick box, and every box typed into, counted once
+ * when typing starts there. Picking a date in a phone's own date picker
+ * takes a few more taps, the same before and after.
+ *
+ * A box is counted by what's typed into it (the browser's "input" event),
+ * once, not by it getting focus: filling in a date box, one browser says
+ * the box got focus twice and another says once, so counting focus counted
+ * each of Priya's 12 dates twice in one and once in the other (D363).
  */
 export async function countTaps(page: Page) {
   await page.addInitScript(() => {
     const textBoxes = new Set(['text', 'date', 'number', 'email', 'tel', 'search', '']);
-    const counter = window as unknown as { __taps: number };
+    const counter = window as unknown as { __taps: number; __datesTyped: number };
     counter.__taps = 0;
-    let pressed: EventTarget | null = null;
+    counter.__datesTyped = 0;
+    const isBox = (target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement =>
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLInputElement && textBoxes.has(target.type));
+    // The box being typed in, once counted; null after a tap anywhere else.
+    let typingIn: EventTarget | null = null;
     document.addEventListener(
       'pointerdown',
       (event) => {
         counter.__taps += 1;
-        pressed = event.target;
+        const box =
+          event.target instanceof Element ? event.target.closest('input, textarea') : null;
+        typingIn = isBox(box) ? box : null;
       },
       true,
     );
     document.addEventListener(
-      'focusin',
+      'input',
       (event) => {
         const box = event.target;
-        const typed =
-          box instanceof HTMLTextAreaElement ||
-          (box instanceof HTMLInputElement && textBoxes.has(box.type));
-        // A box typed into without a tap on it first: that's one tap.
-        if (typed && !(pressed instanceof Node && (pressed === box || box.contains(pressed)))) {
-          counter.__taps += 1;
-        }
-        pressed = null;
+        if (!isBox(box) || box === typingIn) return;
+        // The first thing typed into a box since tapping elsewhere: one tap into it.
+        counter.__taps += 1;
+        typingIn = box;
+        if (box instanceof HTMLInputElement && box.type === 'date') counter.__datesTyped += 1;
       },
       true,
     );
@@ -297,6 +306,10 @@ export async function countTaps(page: Page) {
 
 export const tapsSoFar = (page: Page) =>
   page.evaluate(() => (window as unknown as { __taps: number }).__taps);
+
+/** How many date boxes were typed into, each counted once. */
+export const datesTyped = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __datesTyped: number }).__datesTyped);
 
 export interface GoalAnswers {
   readonly name: string;

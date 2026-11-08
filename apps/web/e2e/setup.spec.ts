@@ -22,6 +22,7 @@ import {
   box,
   comparable,
   countTaps,
+  datesTyped,
   expectAddedOn,
   expectStep,
   fillAccount,
@@ -545,6 +546,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
         .evaluateAll((parts) => parts.map((part) => (part as HTMLElement).style.width));
       expect(fills).toEqual(['100%', '100%', '100%']);
       const taps = await tapsSoFar(page);
+      // Nothing was left out on the way: the plan is the one the commands build
+      // from Priya's answers, every date typed included.
+      expect(comparable(await ownRecords(page))).toEqual(
+        comparable(buildFrom(priyaCommands(), PRIYA_TODAY)),
+      );
+      // Her 12 date boxes (pay, rent, 9 bills and the goal's date) are each a tap.
+      expect(await datesTyped(page)).toBe(12);
       await page.getByRole('button', { name: 'Go to my plan' }).click();
       await expect(page).toHaveURL(/\/app\/$/);
       await expect(page.getByTestId('balance')).toContainText('£1,240.00');
@@ -734,8 +742,13 @@ test('the welcome says what PrePenny is, how long setting it up takes, with Make
   await expect(page.getByRole('button', { name: 'Make my plan' })).toBeVisible();
 });
 
-/** Every tap of Priya's whole setup, from Make my plan to Go to my plan (test 7, D356). */
-const PRIYA_TAPS = 79;
+/**
+ * Every tap of Priya's whole setup, from Make my plan to Go to my plan (test
+ * 7, D356). 67, with each box typed into counted once (D363). It was 79 when
+ * each of her 12 date boxes counted twice: a browser can say a date box got
+ * focus twice when it's filled, and the counter counted focus.
+ */
+const PRIYA_TAPS = 67;
 
 interface StoredSetup {
   readonly layout?: number;
