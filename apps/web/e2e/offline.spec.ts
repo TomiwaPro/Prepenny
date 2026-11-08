@@ -100,3 +100,60 @@ test('with no signal, a change is saved on the phone and is still there next tim
   await page.getByRole('button', { name: 'Work out take-home pay' }).click();
   await expect(page.getByTestId('pay-result')).toBeVisible();
 });
+
+// PLAN.md item 37: your-plan test 5 once waited 60 seconds for the offline
+// helper, which never took charge of its page. Signing up loads the sign-in
+// page afresh, and on a busy machine that load could start just before the
+// helper took charge and finish just after. The helper takes over the pages
+// open when it starts, and that page wasn't open yet, so it stayed without
+// the helper until it was loaded again. Here the timing is made exact: the
+// helper's files are held while the page starts loading, then the helper
+// takes charge, then the page arrives. Without the fix it is never taken over.
+test('a page that loads while the offline helper is taking charge is taken over too', async ({
+  context,
+}) => {
+  let releaseHelper = () => {};
+  const helperHeld = new Promise<void>((resolve) => {
+    releaseHelper = resolve;
+  });
+  let releasePage = () => {};
+  const pageHeld = new Promise<void>((resolve) => {
+    releasePage = resolve;
+  });
+  let heldFiles = 0;
+  let pageAsked = false;
+  await context.route('**/*', async (route, request) => {
+    if (request.serviceWorker() !== null && request.url().includes('/_next/')) {
+      heldFiles += 1;
+      await helperHeld;
+    } else if (request.isNavigationRequest() && request.url().includes('/sign-in/')) {
+      pageAsked = true;
+      await pageHeld;
+    }
+    await route.continue();
+  });
+  // A first page puts the helper on the phone; its files are held, so it waits to start.
+  const first = await context.newPage();
+  await first.goto('/app/');
+  await expect.poll(() => heldFiles).toBeGreaterThan(0);
+  // A second page starts loading the sign-in page, as signing up does.
+  const page = await context.newPage();
+  const loading = page.goto('/sign-in/?to=sign-up&from=more');
+  await expect.poll(() => pageAsked).toBe(true);
+  // The files arrive and the helper takes charge of the first page...
+  releaseHelper();
+  await expect
+    .poll(() => first.evaluate(() => navigator.serviceWorker.controller !== null))
+    .toBe(true);
+  // ...and only then does the sign-in page arrive. It's taken over all the same.
+  releasePage();
+  await loading;
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign up' })).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+    .toBe(true);
+  // So it opens with no signal straight away.
+  await context.setOffline(true);
+  await page.goto('/app/');
+  await expect(page.getByTestId('balance')).toHaveText('£267.54');
+});

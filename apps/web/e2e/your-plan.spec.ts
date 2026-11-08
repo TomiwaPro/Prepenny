@@ -34,7 +34,6 @@
 // once, progress the old 8 steps saved in the account opens the matching new
 // screen on another phone, from every old step (15).
 
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { type Browser, expect, type Page, type TestInfo, test } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
@@ -73,56 +72,20 @@ import {
   TODAY,
   whatThePhoneKeeps,
 } from './sign-in-helpers.ts';
+import {
+  accountFor,
+  openMore,
+  personOn,
+  quoted,
+  secondPhone,
+  signIn,
+  signInLink,
+  signUpFromMore,
+  sql,
+} from './two-phones.ts';
 
 const t = strings.account;
 const s = strings.signIn;
-
-/** A query on the local database, as Supabase's own administrator, for setting up and checking. */
-function sql(query: string): string {
-  return execFileSync('docker', [
-    'exec',
-    'supabase_db_prepenny',
-    'psql',
-    '--quiet',
-    '--no-psqlrc',
-    '-At',
-    '-v',
-    'ON_ERROR_STOP=1',
-    '-U',
-    'postgres',
-    '-d',
-    'postgres',
-    '-c',
-    query,
-  ])
-    .toString()
-    .trim();
-}
-
-const quoted = (text: string) => `'${text.replaceAll("'", "''")}'`;
-
-/** A second phone: a fresh browser with nothing on it, the same size and colours as the first. */
-async function secondPhone(
-  browser: Browser,
-  info: TestInfo,
-  colorScheme: 'light' | 'dark',
-  today = TODAY,
-) {
-  const use = info.project.use;
-  const context = await browser.newContext({
-    ...(use.viewport === undefined ? {} : { viewport: use.viewport }),
-    ...(use.isMobile === undefined ? {} : { isMobile: use.isMobile }),
-    ...(use.hasTouch === undefined ? {} : { hasTouch: use.hasTouch }),
-    ...(use.deviceScaleFactor === undefined ? {} : { deviceScaleFactor: use.deviceScaleFactor }),
-    locale: 'en-GB',
-    timezoneId: 'Europe/London',
-    ...(use.baseURL === undefined ? {} : { baseURL: use.baseURL }),
-    colorScheme,
-  });
-  const page = await context.newPage();
-  await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today }] as const);
-  return { context, page };
-}
 
 /** A plan of the phone's own, set up to the end: one account with this balance today. */
 async function makePlanWith(page: Page, balance: string) {
@@ -136,58 +99,6 @@ async function makePlanWith(page: Page, balance: string) {
   await expectStep(page, 6, "Here's your plan");
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page.getByTestId('balance')).toContainText(`£${balance}`);
-}
-
-async function openMore(page: Page) {
-  await page
-    .getByRole('navigation', { name: 'Main' })
-    .getByRole('link', { name: 'More', exact: true })
-    .click();
-  await expect(page.getByRole('heading', { level: 1, name: 'More' })).toBeVisible();
-}
-
-/** Signs up from More, with the plan on this phone, and waits for it to be saved in the account. */
-async function signUpFromMore(page: Page, address: string) {
-  await openMore(page);
-  await page.getByTestId('account').getByRole('link', { name: 'Sign up or sign in' }).click();
-  await expect(page.getByText(s.planBecomesYours)).toBeVisible();
-  await askForCode(page, address);
-  await box(page, '6-digit code').fill((await signInEmail(address)).code);
-  await page.getByRole('button', { name: 'Sign up', exact: true }).click();
-  await expect(page).toHaveURL(/\/app\/more\/$/);
-  await expect(page.getByTestId('where-kept')).toHaveText(t.savedInAccount);
-}
-
-/** The local Supabase's own key for its administrator (supabase/config.toml): the same on every machine, and local only. */
-const LOCAL_SECRET_KEY = 'sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz';
-
-/** A sign-in link from the local Supabase, for an account it makes if there isn't one yet. */
-async function signInLink(address: string): Promise<{ id: string; hashed_token: string }> {
-  const response = await fetch(`${LOCAL_SUPABASE.url}/auth/v1/admin/generate_link`, {
-    method: 'POST',
-    headers: { apikey: LOCAL_SECRET_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'magiclink', email: address }),
-  });
-  expect(response.ok, 'the local Supabase makes a sign-in link').toBe(true);
-  return (await response.json()) as { id: string; hashed_token: string };
-}
-
-/** An account for this address, as signing up makes one, and its id. */
-async function accountFor(address: string): Promise<string> {
-  return (await signInLink(address)).id;
-}
-
-/**
- * Signs in on a phone with the sign-in link the email would have, made by
- * the local Supabase straight away (no email is sent), so a second phone
- * needn't wait the minute Supabase leaves between codes to one address
- * (D305). The page opens on "Finish signing in", as the email's link does (D312).
- */
-async function signIn(page: Page, address: string) {
-  const { hashed_token: key } = await signInLink(address);
-  await page.goto(`/sign-in/#token_hash=${key}`);
-  await expect(page.getByRole('heading', { level: 1, name: s.linkHeading })).toBeVisible();
-  await page.getByRole('button', { name: s.finishLink }).click();
 }
 
 /** What Home, Coming up and Debts show, word for word, once each has worked its figures out. */
@@ -208,16 +119,6 @@ async function threeScreens(page: Page) {
   // biome-ignore lint/performance/useDomNodeTextContent: Playwright's own innerText, the words as shown on screen
   const debts = await page.locator('main').innerText();
   return { home, comingUp, debts };
-}
-
-/** The person's id, from the sign-in kept on the phone. */
-async function personOn(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const kept = JSON.parse(localStorage.getItem('prepenny-sign-in') ?? 'null') as {
-      user: { id: string };
-    };
-    return kept.user.id;
-  });
 }
 
 /** Every piece of text kept in the phone's database, for checking nothing of someone else's is there. */

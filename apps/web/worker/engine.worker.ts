@@ -3,6 +3,7 @@
 
 import { EngineInputError } from '@prepenny/engine';
 import { workOutActionsView } from '../lib/actions-view.ts';
+import { replacedFacts, settleChange } from '../lib/clash.ts';
 import { compareWaysToPay, workOutDebtsView } from '../lib/debts-view.ts';
 import { runEdit, runEdits } from '../lib/edit.ts';
 import { workOutHome } from '../lib/home.ts';
@@ -36,7 +37,7 @@ function answer(ask: Ask): Answers[Ask['kind']] {
     case 'pay-preview':
       return previewPayChange(ask.records, ask.today, ask.command);
     case 'edits':
-      return runEdits(ask.records, ask.today, ask.commands);
+      return runEdits(ask.records, ask.today, ask.commands, ask.madeOn);
     case 'setup':
       return workOutSetupView(ask.records, ask.today);
     case 'debts':
@@ -59,6 +60,10 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return syncWrites(ask);
     case 'sync-records':
       return syncRecords(ask.rows, ask.unsent);
+    case 'settle':
+      return settleChange(ask);
+    case 'clash-facts':
+      return replacedFacts(ask);
     case 'what-if':
       return workOutWhatIfView(ask.records, ask.today, ask.practice);
     default:

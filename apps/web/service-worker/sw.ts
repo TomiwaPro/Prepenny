@@ -7,6 +7,7 @@
 // plan lives in the phone's database (data/db.ts).
 
 import { type PrecacheEntry, Serwist } from 'serwist';
+import { TAKE_CHARGE } from './messages.ts';
 
 declare const self: ServiceWorkerGlobalScope & {
   readonly __SW_MANIFEST: (PrecacheEntry | string)[];
@@ -41,6 +42,19 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: false,
+});
+
+// A page that loaded while this helper was taking charge, and so wasn't
+// taken over with the others, asks to be (PLAN.md item 37).
+self.addEventListener('message', (event) => {
+  const data: unknown = event.data;
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { type?: unknown }).type === TAKE_CHARGE.type
+  ) {
+    event.waitUntil(self.clients.claim());
+  }
 });
 
 serwist.addEventListeners();

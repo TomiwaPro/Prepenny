@@ -84,14 +84,15 @@ select is_empty(
 
 -- The only functions a signed-in person can use are the checks the rules
 -- call, each answering only about the person asking, and from step 3c the
--- four steps the phone calls and what they call in turn (D324).
+-- four steps the phone calls and what they call in turn (D324): since step
+-- 3d, the server's time and the notice for a change a newer one replaced.
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
   array['session_id', 'session_ok', 'my_plans', 'my_edit_plans', 'my_owned_plans', 'my_partners', 'my_own_pay',
     'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem',
     'record_tables', 'begin_edit', 'nudge', 'send_nudge', 'family_rules_problem', 'sent_columns', 'may_hear',
-    'save_edit', 'plan_changes', 'start_plan', 'remove_plan'],
+    'server_time', 'tell_clashes', 'save_edit', 'plan_changes', 'start_plan', 'remove_plan'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 

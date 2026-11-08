@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -4167,3 +4167,192 @@ Test: `apps/web/e2e/what-if.spec.ts` test 1 passed 80 runs in a row afterwards, 
 
 Why: the reviewer's instruction. Find the cause, fix it, and don't skip, loosen or retry.
 
+## Made during step 3d
+
+D365 to D374 were decided on 8 Nov 2026 while building step 3d, offline changes and clashes, from the owner's instructions for it and D59. Questions for the owner are in `PLAN.md`.
+
+### D365. How a clash is settled
+
+Decided 8 Nov 2026 in step 3d. Builds D59 and ARCHITECTURE.md 3.5.
+
+- **The queue.** A change made with no signal is saved on the phone at once and waits in the queue, in the order made, as since step 3c. Each change now also keeps the commands that made it, the day it was made on, the payments it was about (as they looked before and after it) and what the phone had brought down when it was made.
+- **Before each change is sent,** the phone looks at what's new on the server first. When nobody else has changed what the change is about since it was made, it's sent as it is.
+- **When someone has,** the phone makes the change again, with its own commands, on the newest records, as the engine would make it now (ARCHITECTURE.md 3.5). A payment is found again by its family and number (D49), so a change to Rent on Tue 1 Dec still lands on it after the other phone split Rent for this and all later ones. Then:
+  - Both changed different things, such as one moved Rent on Tue 1 Dec and the other changed its amount: both are kept, and nobody needs telling.
+  - Both changed the same thing, such as Rent's amount on Tue 1 Dec: they clash, and the change made last wins (D59). Judged by the payment as the person sees it (its amount, date, whether it's removed or ticked) and record by record, so "this and all later ones" on one phone and "just this one" on the other is a clash too.
+  - The winner is saved. When it's this phone's, the server tells the other person (D367). When it's the other phone's, this phone's change isn't sent, and the person is told, with "Put mine back" (D368).
+- **One change is one unit,** as for undo (D87): when it clashes and loses, none of it is sent, and "Put mine back" makes all of it again.
+- **A payment the other phone removed** can't be changed here, whichever was made last: making the change again wouldn't bring the payment back. It isn't sent, and the person is told it can't be made. A payment removed on both phones is done already, with nothing to send. When this phone removed a payment the other phone changed, the newest wins as usual.
+- **Both phones ticked the same payment:** it's done, with nothing to send and nobody told.
+- **A change this phone sent itself** never clashes with a later one from the same phone.
+- **"Put mine back"** makes the same commands again, now, on the plan as it is, as a new change with its own Undo. Being newest, it's kept. When the newer change removed the payment, there's no "Put mine back" (making the old change again wouldn't bring the payment back), and the button says "Got it".
+
+Test: `apps/web/test/unit/clash.test.ts` (12 checks on Sam's example plan), and `apps/web/e2e/clashes.spec.ts` tests 2.
+
+Why: D59, ARCHITECTURE.md 3.5's "the phone runs the same command again on top of them", and the owner's instruction that the change that lost is replayed on the newest records where that still makes sense.
+
+### D366. The phone's clock, corrected against the server's
+
+Decided 8 Nov 2026 in step 3d. Builds D59 and ARCHITECTURE.md 3.5.
+
+- Every answer from `save_edit` and `plan_changes` carries the server's own time. The phone keeps the difference from the latest answer that came back within 10 seconds, worked out against the middle of the time the question took, so it's right to within half a second or so.
+- Each change is stamped "made at" with the phone's time plus that difference. A change made before the phone had heard the server's time is corrected when it's sent.
+- The server saves a "made at" later than its own time as its own time, so even a phone that never corrected its clock can't make its changes look newer than they are.
+- The difference is kept in the phone's database, so signing out removes it with everything else (D308).
+- Only "made at" is corrected. The times a phone writes inside the plan, such as when a payment was ticked or a balance updated (D33), are still the phone's own: changing them changes which ticks count inside a balance update, so it's a question for the owner in `PLAN.md`.
+
+Test: `apps/web/e2e/clashes.spec.ts` test 3 (a phone an hour fast, and a phone a day slow: both fail with the correction taken out), `apps/web/test/unit/clash-words.test.ts`, and `supabase/tests/database/16-clashes.test.sql`.
+
+Why: the owner's instruction: a phone with the wrong time can't always win or always lose.
+
+### D367. What the server adds for clashes
+
+Decided 8 Nov 2026 in step 3d. Adds to D330, D331 and D339.
+
+- `plan_changes` gives, for each record, the edit that last saved it, when that edit was made and by whom. A shared record only ever names a shared edit (D291), so a partner never learns anything about the other person's private changes this way. It also gives each person in the plan's nickname, and the person's own notices not read yet.
+- A change that wins a clash says which edits it replaces (`overrides`). As it saves, `save_edit` notes each record it replaced that one of those edits saved last, and leaves a notice for that edit's person, naming only those records, which they saved themselves and can read. A notice holds ids and a time, never an amount, a name or a note: their phone puts the words together from its own records. Only an edit made before the winner counts (the newest wins), the same change sent twice tells nobody twice, and nobody can leave a notice outside `save_edit`.
+- The phone that made the replaced change shows the message and marks the notice as read. Another phone of the same person leaves it.
+
+Test: `supabase/tests/database/16-clashes.test.sql`, 40 checks with the plan's own row (D375); each new rule was broken on purpose to see them fail.
+
+Why: ARCHITECTURE.md 3.5 ("the other person gets a notice") and CLAUDE.md's privacy rules.
+
+### D368. The words for a clash, and where they appear
+
+Decided 8 Nov 2026 in step 3d. Builds ARCHITECTURE.md 4.4's "Clash notice" sheet.
+
+- A sheet, "Changed on two phones", opens by itself on the app's screens, one at a time, oldest first, and only once no other sheet is open, so it never covers something the person is in the middle of. Under its title: "The same thing was changed on two phones. PrePenny keeps the newest change, and tells you when yours wasn't kept."
+- The words, with each person's own names and the payment's date:
+  - Someone else in the plan: "Tom changed Rent on Tue 1 Dec to £650 after you changed it to £640. Tom's change is kept." with "Put mine back" and "Keep Tom's change".
+  - The person's own other phone: "Your other phone changed Rent on Tue 1 Dec to £650 after you changed it to £640 on this phone. Your other phone's change is kept." with "Put mine back" and "Keep your other phone's change".
+  - Moved, removed and ticked say so: "Tom moved Rent on Tue 1 Dec to Fri 4 Dec after you moved it to Wed 2 Dec.", "Tom marked Rent on Tue 1 Dec as not paid after you marked it as paid.", "Tom changed Rent on Tue 1 Dec to £650 after you removed it."
+  - The payment removed on the other phone: "Tom removed Rent on Tue 1 Dec, so your change to it can't be made. Make it again if you still want it." with "Got it".
+  - A change that can't be made on the newest records for another reason: "... after you changed it to £640. Yours can't be made on the plan as it is now, so it wasn't saved." with "Got it".
+- "Tom's change is kept", not "His change is kept" as in the owner's example: PrePenny doesn't know anyone's pronouns, and the name is just as short.
+- Amounts in the sentence are whole pounds when there are no pence, "£650", as in other sentences (D166), and "£640.50" when there are.
+- Until nicknames can be set (step 3f), someone in the plan with none is "Your partner".
+- Once seen, a message isn't shown again, even if the server tells the phone again.
+
+Test: `apps/web/test/unit/clash-words.test.ts`, and `apps/web/e2e/clashes.spec.ts` tests 2. Screenshots are in `docs/screens/3d`.
+
+Why: the owner's instruction: plain words, the real names, one tap to put theirs back.
+
+### D369. A change the account refuses is taken off, and the person told
+
+Decided 8 Nov 2026 in step 3d. Replaces D333's "a change the server refuses stays, and nothing after it is sent" (PLAN.md item 32).
+
+- When the server refuses a change for a reason other than a clash, such as someone who can only view changing something shared (D51), the change is taken off this phone's queue and off the plan on this phone, which goes back to what the account has. The changes made after it are still sent, in order.
+- The person sees "A change wasn't saved": "Your account couldn't take a change made on this phone, so it was taken off. Changes made after it are still sent.", then "Your change to Rent on Tue 1 Dec wasn't saved in your account, so it has been taken off this phone." and why, when the server says: "You can look at this plan but not change it.", or otherwise "Make it again if you still want it.", with "Got it".
+- No signal, or a server that can't be reached, is never a refusal: those changes wait and are tried again.
+- A refusal the privacy rules give for a record the person can read but not change is "not allowed" now; it was "not found" in step 3c.
+
+Test: `apps/web/e2e/clashes.spec.ts` test 5.
+
+Why: the owner's instruction: a refused change mustn't block everything after it for ever.
+
+### D370. The same change sent twice
+
+Decided 8 Nov 2026 in step 3d. Adds to D331.
+
+- Before a change is sent, the phone keeps exactly what it's sending. If no answer comes back, as when the signal drops after the server saved it, the phone sends exactly the same thing again, with the same edit id, and `save_edit` changes nothing the second time (D331).
+- Only if the first never arrived, and the records have moved on since, is the change looked at afresh, as a clash would be.
+- The phone also notes each change as its own before it's sent, so if the answer is lost, its records still count as this phone's own when they come down, and never as a clash.
+
+Test: `apps/web/e2e/clashes.spec.ts` test 4: the answer to the first save is dropped on the way back; the phone sends it again with the same id; the server has one edit and one Car MOT, at version 1; the other phone has one Car MOT.
+
+Why: the owner's instruction to prove it from the phone's side too.
+
+### D371. More says how many changes are waiting
+
+Decided 8 Nov 2026 in step 3d. Replaces D325's words for More's line.
+
+- Under "Signed in as": "1 change is waiting to be sent to your account. It's saved on this phone, and goes when there's a signal." or "3 changes are waiting to be sent to your account. They're saved on this phone, and go when there's a signal."
+- It changes straight after each change. In step 3c it changed only once the phone next tried to send, so it could say "Your plan is saved in your account." just after a change made with no signal.
+- Step 3c's line for a refused change is gone: nothing waits behind a refused change now (D369).
+
+Test: `apps/web/e2e/clashes.spec.ts` tests 1 and 6. Screenshot: `docs/screens/3d/more-changes-waiting-360-light.png`.
+
+Why: the owner's instruction.
+
+### D372. PLAN.md item 37: the offline helper missed a page that loaded while it was starting
+
+Decided 8 Nov 2026 in step 3d, from the owner's instruction to find the cause.
+
+- **The cause.** Signing up loads the sign-in page afresh. The offline helper takes over the pages that are open when it starts. A page whose load started just before the helper started, and finished just after, wasn't among them, and nothing took it over later, so it stayed without the helper until it was loaded again. Test 5 waits for the helper on that page, so on a busy machine, where the helper's first start takes longer and lands on the sign-in page's load, it waited 60 seconds and failed. The second try had different timing. A person's phone could do the same: PrePenny wouldn't open with no signal from that page until it was next opened.
+- **Found by** making the timing exact on purpose: holding the helper's files while a page starts loading, letting the helper start, then letting the page arrive. The page was never taken over, every time. GitHub's report from the failed run couldn't be read from the computer this was built on, so the cause was shown this way.
+- **Now** a page the helper hasn't taken over asks it to, once the helper is ready, and the helper takes it over.
+- No retry was added and no wait was loosened.
+
+Test: `apps/web/e2e/offline.spec.ts`, "a page that loads while the offline helper is taking charge is taken over too", which fails without the fix.
+
+Why: the owner's instruction: find the root cause and fix it.
+
+### D373. Testing two phones and wrong clocks
+
+Decided 8 Nov 2026 in step 3d.
+
+- The new tests are `apps/web/e2e/clashes.spec.ts`, in the sign-in projects with the local Supabase, at 320px and 360px in light and dark. The helpers for two phones, shared with `your-plan.spec.ts`, are in `apps/web/e2e/two-phones.ts`.
+- A phone with the wrong time is a browser whose clock is moved by a set amount from when the page starts, an hour ahead or a day behind, while the server and the other phone keep the right time.
+- A shared plan with two people is made as in step 3c's test 6, with the joint account and Tom joining written straight into the local database, since sharing on screen is step 3f. The nicknames "Jess" and "Tom" are written there too.
+- A dropped answer is the browser letting the save reach the server, then cutting the connection before the answer comes back.
+
+Why: each is the smallest way to make the owner's six tests real with the screens there are now.
+
+### D374. Smaller choices in step 3d
+
+Decided 8 Nov 2026 in step 3d.
+
+- The phone keeps a note of the last 100 changes it sent for each plan, for D365 and D367, and forgets the rest. Signing out removes them with everything else.
+- A clash message is kept on the phone until it's seen; one for a plan removed from the phone goes with it.
+- The screenshots of step 3c stay as they were, as its record; step 3d's are in `docs/screens/3d`.
+- A record that names no edit isn't counted as anyone else's change, and a change to it is sent as in step 3c. After merging, the live app and the database are updated side by side (D297), so for a minute or two the new app can talk to the old database, which names no edits; this keeps that minute exactly as step 3c was. Test: `apps/web/test/unit/clash.test.ts`.
+
+Why: each follows from the owner's instructions where they didn't say exactly.
+
+## From the outside review of step 3d
+
+### D375. What the outside review of step 3d changed
+
+Decided 8 Nov 2026 in step 3d, from an outside review of the whole step. Adds to D365 to D374.
+
+- **The phone shows what was sent.** When a change was made again on newer records, as when both phones' changes were kept, the phone sent the merged version but went on showing its own until something else changed. A later change on it could then undo the other phone's without a clash. Now the plan on the phone is worked out again from what the server has after anything is sent.
+- **"Already saved" keeps nothing.** A change sent again after a lost answer is "already" saved; the server's records may have moved on since, so the phone no longer keeps what it sent as the server's copy, and brings down what's there instead.
+- **A sign-in that ends while sending isn't a refusal.** The server's "not allowed" for a sign-in that has just ended looked like a refused change, so every waiting change would have been taken off. Now only the privacy rules' own refusal of a record counts as "not allowed"; anything else is tried again, and the sign-in is looked at, as before (D326).
+- **Signing out stops the sending.** Sending now checks between steps that signing out hasn't begun, and stops, so nothing is written to the phone after it's cleared (D360).
+- **The right payment in the words, and an Update balance kept.** The words described the change's first payment, which could be the wrong one. Now they describe the payment that clashed. A tick inside an Update balance on a payment the other phone removed is left out, as a tick already made is, and the balance typed in is still saved: a removed payment moves no money, so no figure changes.
+- **A change the phone can't work out doesn't hold up the rest.** If the phone can't work out whether a change clashes, as when it's too slow, it tries again later, and after 3 tries the change is taken off with "Make it again if you still want it."
+- **Bank holidays clash too.** The plan's own row now says which change last saved it, so the plan's bank holidays changed on two phones are settled by the newest, like everything else.
+- **The clock.** The phone keeps the most precise difference from the server (the quickest answer), and still follows a phone whose clock is put right; times are compared as times, not as text; and a change's time is never later than now when it's sent, so a phone whose clock jumped forward can't make an older change look newer.
+- **Accepted:** someone who can edit could name, in `overrides`, the last change to a shared record they then change, and the other person would be told "Tom changed it after you" for an ordinary change. The server can't tell a real clash from that; the notice holds ids and a time only, so nothing leaks, and it's once per change and record.
+
+Test: `apps/web/test/unit/clash.test.ts` (Update balance, bank holidays, rows naming no edit), `apps/web/test/unit/clash-words.test.ts` (the clock), `supabase/tests/database/16-clashes.test.sql` (the plan's row, 40 checks), and `apps/web/e2e/clashes.spec.ts` ("both are kept, on both phones").
+
+Why: each was shown by the review with a case that went wrong.
+
+## From the owner's answers to step 3d's questions
+
+D376 to D378 are the owner's answers of 8 Nov 2026 to the three questions in step 3d's report, each as suggested.
+
+### D376. "Tom's change is kept": confirmed
+
+Agreed 8 Nov 2026. Confirms D368.
+
+A clash message names the person, "Tom's change is kept.", rather than "His change is kept.", because PrePenny doesn't know anyone's pronouns. The button is "Keep Tom's change". Nothing changes: it's how step 3d built it.
+
+Why: the owner's answer.
+
+### D377. "Your partner" until nicknames come: confirmed
+
+Agreed 8 Nov 2026. Confirms D368.
+
+Someone in the plan with no nickname yet is "Your partner" in a clash message ("Your partner changed Rent…", "Keep your partner's change"), until nicknames can be set in step 3f. Nothing changes: it's how step 3d built it.
+
+Why: the owner's answer.
+
+### D378. Tick and balance-update times corrected against the server's clock too, in step 3e
+
+Agreed 8 Nov 2026. Adds to D366; to be built in step 3e.
+
+As well as the time a change was made (D366), the times written inside the plan are to be corrected against the server's clock: when a payment was ticked, when a balance was updated, when a spend was recorded and when a debt was updated from a statement (D33, D62). So two phones whose clocks disagree can't count a tick on the wrong side of a balance update. It changes no figure for anyone with one phone. It's in `PLAN.md` under step 3e.
+
+Why: the owner's answer.

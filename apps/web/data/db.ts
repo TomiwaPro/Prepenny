@@ -6,10 +6,14 @@
 // Nothing here ever writes an amount, a name or a note anywhere but this
 // database: no logs, no error reports (CLAUDE.md).
 
-import type { PlanRecords, PlanSettings, RecordWrite } from '@prepenny/engine';
+import type { EditCommand, PlanRecords, PlanSettings, RecordWrite } from '@prepenny/engine';
 import { Dexie, type EntityTable } from 'dexie';
+import type { ClashFacts } from '../lib/clash.ts';
+import type { PaymentNumbers } from '../lib/edit.ts';
+import type { PaymentAt } from '../lib/payment-at.ts';
 import type { SetupProgress } from '../lib/setup-progress.ts';
-import type { MirrorRow } from '../lib/sync-rows.ts';
+import type { DbWrite, MirrorRow } from '../lib/sync-rows.ts';
+import { clockOn, correctedTime } from './clock.ts';
 
 /** One plan on this phone. */
 export interface StoredPlan {
@@ -35,6 +39,18 @@ export interface StoredPlan {
    * id. It stays on the phone until step 3c sends it to the server.
    */
   readonly owner?: string;
+  /**
+   * For a plan kept in an account: the change numbers its records were
+   * brought down up to (step 3d), so a change made on them knows what it
+   * was made on, and what came after is a clash.
+   */
+  readonly seen?: Seen;
+}
+
+/** The plan's change numbers, for its shared records and the person's own (D299). */
+export interface Seen {
+  readonly shared: number;
+  readonly mine: number;
 }
 
 /** Which plan the app shows: the person's own, or the example (step 2e). */
@@ -75,21 +91,93 @@ export type StoredRow = MirrorRow & { readonly planId: string };
  * engine's writes, in the order they were made. Sent one at a time; taken
  * off once the server has saved it.
  */
-export interface UnsentEdit {
+export interface UnsentEdit extends MadeChange {
   readonly planId: string;
   /** Its place in the queue. */
   readonly n: number;
+  /**
+   * Set by step 3c when the server refused it. Since step 3d a refused
+   * change is taken off the queue and the person told (PLAN.md item 32), so
+   * this is only ever on a change left from before.
+   */
+  readonly refused?: string;
+  /**
+   * What was sent the last time, when no answer came back (step 3d): it may
+   * have been saved, with only the answer lost on the way. It goes again
+   * exactly as it was, with the same edit id, so the server changes nothing
+   * the second time if it was (save_edit).
+   */
+  /** How many times the phone couldn't work out whether it clashes, as when too slow (step 3d). */
+  readonly tries?: number;
+  readonly attempt?: {
+    readonly writes: readonly DbWrite[];
+    readonly overrides: readonly string[];
+    readonly madeAt: string;
+  };
+}
+
+/** A change as it was made on this phone, to send it, and to make it again after a clash (step 3d). */
+export interface MadeChange {
   /** The edit's own id, so sending it twice changes nothing (save_edit). */
   readonly editId: string;
-  /** When it was made, by this phone's clock (D59; corrected in step 3d). */
+  /** When it was made, by this phone's clock corrected against the server's (D59, data/clock.ts). */
   readonly madeAt: string;
+  /** This phone's own time when it was made, before correcting. */
+  readonly madeOnPhone?: number;
+  /** False when the phone hadn't heard the server's time yet: `madeAt` is corrected when it's sent. */
+  readonly clockKnown?: boolean;
   /** What kind of change, as a short code: "tick", "this-and-later", "setup". */
   readonly kind: string;
   readonly writes: readonly RecordWrite[];
   /** How far setup had got with it, for the person's own settings (step 2e). */
   readonly setup?: SetupProgress;
-  /** Set when the server refused it, with the refusal's code. What happens then is step 3d. */
-  readonly refused?: string;
+  /** The commands that made it, and the day they were made on (step 3d). Missing on changes from before. */
+  readonly commands?: readonly EditCommand[];
+  readonly today?: string;
+  /** For an undo: the payment numbers its edit was made with (PLAN.md item 4). */
+  readonly numbers?: PaymentNumbers;
+  /** The records as they were before it: its undo list. */
+  readonly before?: readonly RecordWrite[];
+  /** The payments it was about, before and after it. */
+  readonly payments?: readonly PaymentAt[];
+  /** The plan's change numbers its records had been brought down up to. */
+  readonly seen?: Seen;
+}
+
+/**
+ * A change this phone has sent, kept a while (step 3d): so its own changes
+ * never count as someone else's, and so when a newer change from another
+ * phone replaces it, the phone can say what it was and put it back.
+ */
+export interface SentEdit extends MadeChange {
+  readonly planId: string;
+  /** When it was sent, by this phone's own clock, to keep only the newest. */
+  readonly sentAt: number;
+}
+
+/**
+ * A clash or a refused change the person is told about (step 3d), kept until
+ * they've seen it. Its words are made from `facts` on the screen.
+ * - `kept-theirs`: a newer change from another phone is kept, and this one wasn't sent.
+ * - `replaced`: this one was saved, then a newer one from another phone replaced it.
+ * - `cant`: it can't be made on the newest records, as when the payment has gone.
+ * - `refused`: the account couldn't take it (PLAN.md item 32).
+ */
+export interface StoredClash {
+  readonly id: string;
+  readonly planId: string;
+  readonly kind: 'kept-theirs' | 'replaced' | 'cant' | 'refused';
+  readonly facts: ClashFacts;
+  /** For `refused`: the server's code. */
+  readonly code?: string;
+  /** What "Put mine back" makes again. */
+  readonly putBack?: {
+    readonly commands: readonly EditCommand[];
+    readonly payments: readonly PaymentAt[];
+  };
+  readonly at: number;
+  /** Seen and closed: kept, so a notice heard again isn't shown twice. */
+  readonly dismissed?: true;
 }
 
 /**
@@ -107,6 +195,8 @@ export interface PlanLink {
    * from where it stopped (step 3c fix). Gone once all of it has arrived.
    */
   readonly sending?: true;
+  /** Each person in the plan's nickname, for "Tom changed Rent" (step 3d). */
+  readonly nicknames?: Readonly<Record<string, string>>;
 }
 
 export type PrePennyDb = Dexie & {
@@ -116,6 +206,8 @@ export type PrePennyDb = Dexie & {
   rows: Dexie.Table<StoredRow, [string, string, string]>;
   unsent: Dexie.Table<UnsentEdit, [string, number]>;
   links: EntityTable<PlanLink, 'planId'>;
+  sent: Dexie.Table<SentEdit, [string, string]>;
+  clashes: EntityTable<StoredClash, 'id'>;
 };
 
 export function openDb(name = 'prepenny'): PrePennyDb {
@@ -130,6 +222,11 @@ export function openDb(name = 'prepenny'): PrePennyDb {
     rows: '[planId+table+id], planId',
     unsent: '[planId+n], planId',
     links: 'planId',
+  });
+  // Step 3d: changes sent from this phone, and clashes to tell the person about.
+  db.version(3).stores({
+    sent: '[planId+editId], planId',
+    clashes: 'id, planId',
   });
   return db;
 }
@@ -291,8 +388,15 @@ export class PlanGone extends Error {
 /** A change as it's sent to the server once the plan is kept in an account (step 3c). */
 export interface ChangeToSend {
   readonly editId: string;
-  readonly madeAt: string;
+  /** This phone's own time when it was made: corrected against the server's as it's saved (step 3d). */
+  readonly madeOnPhone: number;
   readonly kind: string;
+  /** The commands that made it, to make it again after a clash (step 3d). */
+  readonly commands?: readonly EditCommand[];
+  readonly today?: string;
+  readonly numbers?: PaymentNumbers;
+  readonly before?: readonly RecordWrite[];
+  readonly payments?: readonly PaymentAt[];
 }
 
 /**
@@ -311,7 +415,7 @@ export async function saveChange(
   isNew = false,
 ): Promise<StoredPlan> {
   let saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
-  await db.transaction('rw', [db.plans, db.records, db.links, db.unsent], async () => {
+  await db.transaction('rw', [db.plans, db.records, db.links, db.unsent, db.device], async () => {
     // A plan removed from this phone, as when the account's plan has come
     // down in its place, is never saved back by a screen that still had it
     // open (D351). Only setup's "Make my plan" makes a new one.
@@ -324,15 +428,21 @@ export async function saveChange(
     await saveWrites(db, plan.id, writes);
     await db.plans.put(saved);
     if (plan.isExample || send === undefined) return;
-    if ((await db.links.get(plan.id)) === undefined) return;
+    const link = await db.links.get(plan.id);
+    if (link === undefined) return;
     const last = await db.unsent.where('planId').equals(plan.id).last();
+    const clock = await clockOn(db);
+    const { madeOnPhone, ...made } = send;
     await db.unsent.put({
+      ...made,
       planId: plan.id,
       n: (last?.n ?? 0) + 1,
-      editId: send.editId,
-      madeAt: send.madeAt,
-      kind: send.kind,
+      madeAt: correctedTime(madeOnPhone, clock),
+      madeOnPhone,
+      clockKnown: clock !== null,
       writes,
+      // What its records had been brought down up to: anything after is a clash (step 3d).
+      seen: plan.seen ?? { shared: link.shared, mine: link.mine },
       ...(saved.setup === undefined ? {} : { setup: saved.setup }),
     });
   });

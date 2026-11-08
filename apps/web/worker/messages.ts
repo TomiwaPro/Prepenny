@@ -4,6 +4,7 @@
 
 import type { CardComparison, EditCommand, PlanRecords, RecordWrite } from '@prepenny/engine';
 import type { ActionsView } from '../lib/actions-view.ts';
+import type { ClashFacts, ReplacedAsk, SettleAsk, Settled } from '../lib/clash.ts';
 import type { CompareAsk as CompareRequest, DebtsView } from '../lib/debts-view.ts';
 import type { EditResult, PaymentNumbers } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
@@ -11,6 +12,7 @@ import type { JobPreview, JobView } from '../lib/job-view.ts';
 import type { AccountsView, BudgetsView, GoalsView } from '../lib/money-views.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PayView } from '../lib/pay-view.ts';
+import type { PaymentAt } from '../lib/payment-at.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 import type { SetupProgress } from '../lib/setup-progress.ts';
 import type { SetupView } from '../lib/setup-view.ts';
@@ -63,6 +65,8 @@ export interface EditsAsk {
   readonly records: PlanRecords;
   readonly today: string;
   readonly commands: readonly EditCommand[];
+  /** The payments the commands were about when first made, found again on these records ("Put mine back", step 3d). */
+  readonly madeOn?: readonly PaymentAt[];
 }
 
 /** What setup shows that only the engine can work out (step 2e). */
@@ -137,7 +141,15 @@ export interface SyncRecordsAsk {
   readonly unsent: readonly (readonly RecordWrite[])[];
 }
 
+/** What to do with one waiting change, against the newest records (step 3d, lib/clash.ts). */
+export type SettleChangeAsk = SettleAsk & { readonly kind: 'settle' };
+
+/** The words' facts for a change of this phone's that wasn't kept (step 3d). */
+export type ClashFactsAsk = ReplacedAsk & { readonly kind: 'clash-facts' };
+
 export type Ask =
+  | SettleChangeAsk
+  | ClashFactsAsk
   | SyncWritesAsk
   | SyncRecordsAsk
   | HomeAsk
@@ -173,6 +185,8 @@ export interface Answers {
   readonly 'job-preview': JobPreview;
   readonly 'sync-writes': readonly DbWrite[];
   readonly 'sync-records': FromRows;
+  readonly settle: Settled;
+  readonly 'clash-facts': ClashFacts;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

@@ -481,6 +481,8 @@ export function WhatIfScreen() {
       lastChange: null,
       makeChange: (command, message) => practiceChange([command], message),
       makeChanges: (commands, message) => practiceChange(commands, message),
+      // "Put mine back" is for real changes only (step 3d).
+      makeChangesAgain: async () => ({ ok: false, code: 'not-last-change' }),
       undoLastChange: async () => ({ ok: false, code: 'not-last-change' }),
       dismissLastChange: () => {},
     }),
