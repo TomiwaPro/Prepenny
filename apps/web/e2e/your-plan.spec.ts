@@ -845,3 +845,41 @@ test('12. two phones sending their first copy at the same moment leave one plan 
     expect(plansOwnedBy(user.id)).toBe(1);
   }
 });
+
+test('13. a first copy cut off part-way is sent again from where it stopped, and signing out warns until it has gone', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'sign-in-360', 'Once, at 360px.');
+  const address = newEmail('jess');
+  await makeAPlan(page);
+  // The server answers signing in and starting the plan, but nothing it saves arrives.
+  const saving = `${LOCAL_SUPABASE.url}/rest/v1/rpc/save_edit`;
+  await page.context().route(saving, (route) => route.abort());
+  await openMore(page);
+  await page.getByTestId('account').getByRole('link', { name: 'Sign up or sign in' }).click();
+  await askForCode(page, address);
+  await box(page, '6-digit code').fill((await signInEmail(address)).code);
+  await page.getByRole('button', { name: 'Sign up', exact: true }).click();
+  await expect(page).toHaveURL(/\/app\/more\/$/, { timeout: 30_000 });
+  await expect(page.getByTestId('where-kept')).toHaveText(t.notSavedYet);
+  const person = await personOn(page);
+  const accountsSaved = () =>
+    Number(
+      sql(`select count(*) from public.accounts a join public.plans p on p.id = a.plan_id
+        where p.owner = ${quoted(person)}`),
+    );
+  expect(plansOwnedBy(person)).toBe(1);
+  expect(accountsSaved()).toBe(0);
+
+  // Until it has all gone, signing out says the plan would be lost.
+  await page.getByTestId('account').getByRole('button', { name: 'Sign out' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Sign out' });
+  await expect(sheet.getByTestId('unsent-warning')).toHaveText(t.signOutNotSaved);
+  await sheet.getByRole('button', { name: t.staySignedIn }).click();
+
+  // The signal comes back: the rest goes up.
+  await page.context().unroute(saving);
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(page.getByTestId('where-kept')).toHaveText(t.savedInAccount, { timeout: 20_000 });
+  expect(accountsSaved()).toBe(1);
+});

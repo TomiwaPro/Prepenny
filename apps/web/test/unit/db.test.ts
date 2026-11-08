@@ -191,3 +191,14 @@ describe('A plan removed from this phone (D351)', () => {
     expect(await db.records.where('planId').equals(own.id).count()).toBe(0);
   });
 });
+
+describe('A new plan beside one that has just come down (D351)', () => {
+  it('is never started, so the phone never holds two plans of its own', async () => {
+    const saved = { id: 'saved-plan', isExample: false };
+    await saveChange(db, saved, [], undefined, true);
+    await expect(
+      saveChange(db, { id: 'new-plan', isExample: false }, [], undefined, true),
+    ).rejects.toBeInstanceOf(PlanGone);
+    expect((await db.plans.toArray()).map((plan) => plan.id)).toEqual(['saved-plan']);
+  });
+});
