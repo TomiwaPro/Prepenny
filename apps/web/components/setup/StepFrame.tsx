@@ -2,14 +2,16 @@
 
 // One step of setup (brief 4.1, D163, D213, step 2e): "Step 2 of 8", Skip
 // this step (except on step 1), the step's title with one plain sentence
-// saying what it's for, the step itself, then Next and Back. The title takes
-// focus when the step opens, so a screen reader starts there.
+// saying what it's for, the step itself, then Next and Back, and who's
+// signed in with "Sign out" (D353). The title takes focus when the step
+// opens, so a screen reader starts there.
 
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { SETUP_STEPS } from '../../lib/setup-progress.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { Problem } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
+import { SignedInLine } from '../SignedInLine.tsx';
 import styles from './Setup.module.css';
 
 const t = strings.setup;
@@ -78,6 +80,8 @@ export function StepFrame({
           </button>
         </div>
       </form>
+      {/* Who's signed in, with "Sign out", since setup can't reach More (D353). */}
+      <SignedInLine />
     </main>
   );
 }

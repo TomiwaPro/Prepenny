@@ -207,14 +207,6 @@
   margin-top: var(--space-2);
 }
 
-.signedIn {
-  margin-top: var(--space-2);
-  font-size: var(--size-second);
-  color: var(--ink-muted);
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
 .signedOut {
   padding: var(--space-3);
   border-radius: var(--radius-inner);

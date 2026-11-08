@@ -44,6 +44,7 @@ import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { describedBy, Field } from './Fields.tsx';
 import formStyles from './Form.module.css';
 import screenStyles from './Screens.module.css';
+import { SignedInLine } from './SignedInLine.tsx';
 import styles from './SignInScreen.module.css';
 
 const t = strings.signIn;
@@ -486,7 +487,7 @@ export function SignInScreen() {
                 {
                   value: 'phone',
                   label: t.phonePlan(dayOf(choice.phoneStartedAt)),
-                  hint: t.phonePlanHint,
+                  hint: choice.phoneSetUp ? t.phonePlanHint : t.phonePlanUnfinishedHint,
                 },
               ]}
               onChange={(value) => {
@@ -616,6 +617,8 @@ export function SignInScreen() {
             {t.removeOther}
           </button>
         )}
+        {/* Signing out, instead of choosing now, is always there too (D353). */}
+        {step === 'choose' && choice !== null ? <SignedInLine /> : null}
       </main>
       <ConfirmSheet
         open={confirming}
