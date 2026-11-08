@@ -13,7 +13,7 @@
 // 6. A partner's phone gets shared records only (the database tests try every
 //    role; this one is end to end).
 //
-// And the owner's four tests for the step 3c fix (D351 to D354), on every
+// And the owner's four tests for the step 3c fix (D351 to D355), on every
 // screen, the welcome and setup included:
 // 7. The owner's own case: a phone signed in part-way through setup before
 //    the account had a plan; a second phone saves a finished plan; the first
@@ -23,9 +23,10 @@
 //    welcome's "Already have an account? Sign in" and is asked which to keep.
 // 9. A fresh phone signs in from the welcome, and the saved plan comes down.
 // 10. Signing out from the welcome screen, and from a setup step.
-// With two more, run once: an account that already has two plans of its own
-// asks which to keep (11), and two phones sending their first copy at the
-// same moment leave one plan (12).
+// With three more, run once: an account that already has two plans of its
+// own asks which to keep (11), two phones sending their first copy at the
+// same moment leave one plan (12), and a first copy cut off part-way is sent
+// again (13).
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
