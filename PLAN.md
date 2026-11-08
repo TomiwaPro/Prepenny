@@ -116,6 +116,7 @@ Found in step 3d:
 38. **"Put mine back" after a payment was removed** (step 3g, with Activity): when the newer change removed a payment, there's no "Put mine back", because making the old change again wouldn't bring the payment back; the message says "Got it" (D365, D368). Undo for older changes, in step 3g, could offer to bring it back.
 39. **A notice for another phone of the same person** (step 3e, with the list of signed-in devices): the phone that made a replaced change shows the message; another phone of the same person leaves the notice unread, and the server stops offering it after 30 days (D367). Nothing else uses notices yet.
 40. **A record that names no edit** isn't known to be anyone else's, so a change to it is sent as in step 3c, with no clash (D374). Only a server from before step 3d, for the moment between the app and the database going live after merging, and the end-to-end tests' set-up give such records; every person's change goes through `save_edit` (D345).
+41. **A database check that counts the whole database** (any time): `03-view-only.test.sql`'s first check counts every shared record in the database, so after the end-to-end tests have run on the same local Supabase (steps 3c and 3d both make shared records), it fails until `supabase db reset`. GitHub runs the database tests on a fresh database, where it passes. It could count only the test plan's records.
 
 ## Waiting for the owner
 

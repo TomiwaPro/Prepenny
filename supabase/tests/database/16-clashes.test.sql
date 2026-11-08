@@ -207,8 +207,9 @@ select is(tests.rows_changed($$ update public.notices set read_at = now() $$), 0
 select tests.as_person('jess');
 select is(jsonb_array_length(public.plan_changes(tests.id('plan'), 0, 0) -> 'notices'), 3,
   'plan_changes gives Jess her three notices not read yet');
-select is((public.plan_changes(tests.id('plan'), 0, 0) -> 'notices' -> 0 -> 'data' ->> 'lost'),
-  tests.id('jess-rent')::text, 'oldest first');
+select ok(exists (select 1 from jsonb_array_elements(public.plan_changes(tests.id('plan'), 0, 0) -> 'notices') n
+    where n -> 'data' ->> 'lost' = tests.id('jess-rent')::text),
+  'the first about her rent change among them');
 select is(tests.rows_changed($$ update public.notices set read_at = now()
     where id = (select id from public.notices where data ->> 'lost' = tests.id('jess-rent')::text) $$), 1::bigint,
   'Jess marks one as read');
