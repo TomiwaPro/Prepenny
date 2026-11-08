@@ -31,10 +31,12 @@ import { syncSoon } from '../../data/sync.ts';
 import { newId, timeNow } from '../../lib/ids.ts';
 import {
   NEW_SETUP,
+  SCREEN_OF_KIND,
   type SetupAnswers,
   type SetupItem,
   type SetupProgress,
   type SetupStep,
+  upgradeSetup,
 } from '../../lib/setup-progress.ts';
 import type { SetupView } from '../../lib/setup-view.ts';
 import { testSetting } from '../../lib/test-setting.ts';
@@ -133,10 +135,13 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
         setNotSaved(true);
       }
       if (!current) return;
+      // Progress saved in the old 8 steps carries on at the matching screen (D356).
+      const progress = upgradeSetup(plan?.setup) ?? { ...NEW_SETUP, step: 0 };
+      if (plan !== null && plan.setup !== undefined) plan = { ...plan, setup: progress };
       keep({
         status: 'ready',
         plan,
-        progress: plan?.setup ?? { ...NEW_SETUP, step: 0 },
+        progress,
         records,
         today,
         version: 1,
@@ -263,11 +268,12 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
             : {
                 id: change.item.id,
                 kind: change.item.kind,
-                step: now.progress.step === 'done' ? 8 : now.progress.step,
+                step: SCREEN_OF_KIND[change.item.kind],
                 ...(change.item.bill === undefined ? {} : { bill: change.item.bill }),
                 edit: result.edit,
               };
         const progress: SetupProgress = {
+          layout: now.progress.layout,
           step: change.step ?? now.progress.step,
           items: item === null ? now.progress.items : [...now.progress.items, item],
           answers: { ...now.progress.answers, ...change.answers },

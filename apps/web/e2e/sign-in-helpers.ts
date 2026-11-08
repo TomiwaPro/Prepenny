@@ -6,7 +6,16 @@ import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { expect, type Page, type Request } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
-import { box, fillAccount, lastForm, next, skip, startSetup } from './setup.ts';
+import {
+  box,
+  expectStep,
+  fillAccount,
+  lastForm,
+  next,
+  SCREEN_TITLES,
+  skip,
+  startSetup,
+} from './setup.ts';
 
 /** The local test inbox's own address (supabase/config.toml, [local_smtp]). */
 const INBOX = 'http://127.0.0.1:54324';
@@ -125,12 +134,12 @@ export async function makeAPlan(page: Page) {
     warning: '20',
   });
   await next(page);
-  // Each step is waited for before the next tap, so a tap never lands between two.
-  for (let step = 2; step <= 7; step += 1) {
-    await expect(page.getByText(`Step ${step} of 8`, { exact: true })).toBeVisible();
+  // Each screen is waited for before the next tap, so a tap never lands between two.
+  for (const [screen, title] of SCREEN_TITLES.slice(1, 5).entries()) {
+    await expectStep(page, (screen + 2) as 2, title);
     await skip(page);
   }
-  await expect(page.getByText('Step 8 of 8', { exact: true })).toBeVisible();
+  await expectStep(page, 6, "Here's your plan");
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page).toHaveURL(/\/app\/$/);
   await expect(page.getByTestId('balance')).toContainText('£267.54');

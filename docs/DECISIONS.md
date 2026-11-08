@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -4012,3 +4012,158 @@ Decided 8 Nov 2026 in the step 3c fix, from an outside review of the whole fix. 
 Test: `apps/web/e2e/your-plan.spec.ts` test 13 (without the mark, More said "Your plan is saved in your account." with nothing in it, and the test failed), and `apps/web/test/unit/db.test.ts` ("A new plan beside one that has just come down").
 
 Why: each was shown by the review with a case that went wrong.
+
+## From the owner's decision for the shorter setup
+
+D356 is the owner's decision of 8 Nov 2026, and D357 the owner's answer to the question the step 3c fix left in `PLAN.md`. Points marked "decided in the shorter setup" weren't in the owner's words.
+
+### D356. Setup is 6 screens in 3 parts
+
+The owner's decision, 8 Nov 2026. Replaces brief 4.1's order of setup steps, D221's "Step 2 of 8" and Next and Back between 8 steps, D226 (savings as a setup step) and the step numbers in D224, D225 and D227. Everything else those decisions say stays.
+
+- **Why.** The owner finds 8 setup steps tiring: even with "Skip this step", people still read every screen. Brief Part 10 counts PrePenny as done when three people set it up on their own phones in under 5 minutes.
+- **The welcome** says, before setup starts: "Set it up once, about 5 minutes. After that, just keep it up to date." It fits VOICE.md as the owner wrote it, so it's kept word for word.
+- **6 screens in 3 parts:**
+  - Part 1, Money in: 1. Your account (what your bank shows today). 2. How you're paid.
+  - Part 2, Money out: 3. Home and bills: rent or mortgage at the top, then tick your bills, on one screen. 4. Debts. 5. Spending money.
+  - Part 3, Your plan: 6. Here's your plan.
+- **The top of each screen** shows its part instead of "Step 3 of 8": "Part 2 of 3: Money out", with a simple three-part bar.
+- **Savings leaves setup.** "Here's your plan" ends with "From now on: update your balance when you check your bank, and tick payments as they go out." Below it, a card says "Saving for something? Add a goal", which opens the savings goal form. Savings stays easy to find after setup.
+- **Nothing about the plan's accuracy changes:** everything the old 8 steps asked for is still asked for, apart from savings, which the plan screen offers. "Skip this step" stays where it was: on every screen but the first and the last.
+- Decided in the shorter setup:
+  - **Home and bills.** "I don't pay rent", a button that went on to the bills, is now an answer to "Which do you pay": Rent, Mortgage, "I don't pay rent or a mortgage", or "I'll add it later". The last two hide the rent boxes. "I'll add it later" leaves rent out on its own while the bills are added, as Skip on the old rent step did, so someone who pays rent but hasn't the amount to hand isn't made to say they don't pay it; it's asked again on the way back. Next checks the rent and every ticked bill together, saves nothing until all of them are right, and puts focus on the first mistake, the rent's before the bills' (D203). Then the rent is added, then each bill, each as its own thing with Remove, rent listed first (D221). Rent left empty says "Type the amount, for example 550. Or choose I'll add it later." "I don't pay rent or a mortgage" stays chosen when coming back, unless rent was added after all.
+  - **The bar.** Three parts side by side, each filled in navy as far as the screen showing: Part 1 is half filled on screen 1 and full on screen 2, Part 2 fills a third on each of screens 3 to 5, and Part 3 is full on the plan. The empty part is the card edge colour, so it shows on the paper. The bar is only a picture: the words above it say the same, and screen readers hear only the words (brief Part 6: colour is never the only signal).
+  - **"Saving for something?"** is a line of words on the card, not a heading, because VOICE.md avoids questions as headlines. Under it: "Set a target and see the date you'll get there. You can also add one later from More, under Savings goals.", which is how savings stays easy to find after setup: More has had Savings goals since step 2f.
+  - **"Add a goal"** opens the same savings goal sheet as More's Savings goals, which asks everything setup's old savings step asked (D226). As the old step did, it starts with the money kept in a savings account if there is one, the second account if not, or "A new savings account" when there's only one account; More's sheet keeps its own start. Each goal is one thing setup added, made a moment after the last (D229), listed on the card with Remove, and "Holiday added." is said. The button then says "Add another goal". The plan's figures, such as "First savings goal reached", are worked out again straight away.
+  - The welcome's line shows for everyone, setup finished or not, so nothing on the welcome moves while the page loads and no tap lands on the wrong button. After setup it still says what to do: keep it up to date.
+  - **Taps.** A tap is a press of a button, a choice or a tick box, or a box typed into, counted once. Picking a date in a phone's own date picker takes a few more taps, the same before and after. Counted from "Make my plan" to "Go to my plan", with the same answers each time, the old setup on `main` before this change and the new one, the same at 320px and 360px (corrected by D363, which found every date box counted twice before):
+
+  | Setting up as | Before: 8 steps | Now: 6 screens |
+  | --- | --- | --- |
+  | Someone who skips every step they can | 12 taps | 10 taps |
+  | Sam (debts, no rent or bills) | 78 taps | 77 taps |
+  | Priya (every screen, and a savings goal) | 67 taps | 67 taps |
+  | Dee (two incomes, rent, bills) | 49 taps | 47 taps |
+  | Kofi (three incomes, rent, bills, a debt) | 72 taps | 70 taps |
+  | Jess and Tom (three accounts) | 70 taps | 68 taps |
+  | Ali (student loan, rent each term) | 39 taps | 37 taps |
+
+  Most taps are typing in the person's own numbers, which are all still asked, so the taps fall by 1 or 2: Next once for rent and bills together, and no Skip for savings. Someone adding a savings goal taps "Add a goal" and "Add goal" instead of Next, so Priya's taps stay the same. What changes most is what there is to read: 6 screens instead of 8 for everyone.
+
+Test: `apps/web/e2e/setup.spec.ts` tests 1 to 9, with test 7 counting the screens and taps of Priya's whole setup; each of the six people set up and using the app in `apps/web/e2e/people.spec.ts`; `apps/web/e2e/your-plan.spec.ts` test 14 for setting up while signed in; `apps/web/test/unit/setup-progress.test.ts` for the parts. Screenshots of the welcome and all 6 screens are in `docs/screens/setup-6`.
+
+Why: the owner's decision.
+
+### D357. An account that already has two plans: confirmed
+
+The owner's answer about D352, 8 Nov 2026. Confirms D352.
+
+An account that already has two plans of the person's own asks, on the next phone signed in to it, which plan to keep. Nothing is removed by itself.
+
+Why: the owner's answer. Only the person knows which plan is the right one.
+
+## Made during the shorter setup
+
+D358 to D360 were decided on 8 Nov 2026 while building the shorter setup. D360 came from checking its tests.
+
+### D358. Progress from the old 8 steps carries on at the matching screen
+
+Decided 8 Nov 2026 in the shorter setup, from the owner's instruction that anyone part-way through the old 8 steps, on their phone or in their saved account, carries on at the matching new screen with nothing lost. Adds to D221 and D351.
+
+- Progress saved now says it's the new layout (`layout: 2`). Progress without it is from the old 8 steps, and is read like this wherever it was saved, on the phone or in the account:
+
+  | Old step | Opens |
+  | --- | --- |
+  | The welcome | The welcome, with "Carry on making my plan" |
+  | 1. Your account | 1. Your account |
+  | 2. How you're paid | 2. How you're paid |
+  | 3. Rent or mortgage | 3. Home and bills |
+  | 4. Bills | 3. Home and bills |
+  | 5. Debts | 4. Debts |
+  | 6. Spending money | 5. Spending money |
+  | 7. Savings | 6. Here's your plan, where "Add a goal" is |
+  | 8. Here's your plan | 6. Here's your plan |
+  | Done | Done |
+
+- Nothing is lost: every record stays as it is, every answer ("I don't pay rent", "I have no debts", extra hours) is kept, and every thing added keeps its Remove, now listed on the screen that shows its kind: rent and bills on Home and bills, goals on the plan's "Saving for something?" card.
+- The plan's records don't change, so nothing is sent to the account just for reading old progress. The next change saves the new layout, on the phone and in the account.
+- A step number that can't be read opens the first screen, and damaged items are left out, so no one is left on a blank page.
+- One case can't be read exactly: someone setting up on two phones at once, with one still running the PrePenny from before this update until it's reloaded ("PrePenny has been updated. Tap to reload.", D202). That phone reads the new screen numbers as its old steps, and can save its old numbers beside the new layout. Then setup may open a screen early or late, and an old 7 or 8 opens the plan. Nothing is lost either way: every record and every Remove is kept, and Back and Next reach every screen.
+
+Test: `apps/web/e2e/setup.spec.ts` test 8 (on the phone, from every old step, at 320px and 360px in light and dark, with an old "I don't pay rent" answer, and Remove after on a bill and on a goal from the old savings step) and `apps/web/e2e/your-plan.spec.ts` test 15 (in the account, from every old step, on another phone), and `apps/web/test/unit/setup-progress.test.ts`.
+
+Why: the owner's instruction.
+
+### D359. Smaller choices in the shorter setup
+
+Decided 8 Nov 2026 in the shorter setup.
+
+- The screenshots of the old 8 steps stay in `docs/screens/2e` as they were, as a record of step 2e. The new ones are in `docs/screens/setup-6`.
+- `docs/TESTING-WITH-PEOPLE.md` times setup from "Make my plan" to "Go to my plan" on "Part 3 of 3: Your plan", notes the screen's name where someone gets stuck, and uses the live address, https://prepenny.co.uk.
+- A screen of setup is still a "step" inside the code and in "Skip this step", the words the owner kept.
+- Test 13 of `apps/web/e2e/your-plan.spec.ts` (step 3c fix) now waits for the sign-in page to read the phone, "The plan you made on this phone becomes yours…", before typing an email, as the other sign-up tests do. On a busy machine its tap on "Send me a code" could come first, and nothing was sent. Nothing it checks changed.
+- One check can't pass on the computer this was built on, but passes on GitHub: "Continue with Google" (sign-in test 6), because the local Supabase there can't reach Google. It fails the same way on `main` there.
+
+Why: each follows from the owner's instructions where they didn't say exactly.
+
+### D360. Signing out waits for a send under way
+
+Decided 8 Nov 2026, while checking the shorter setup's tests. Adds to D308, D325 and D353.
+
+- **What was wrong.** Signing out straight after a change, such as Back on a setup screen and then "Sign out" on the welcome, could leave one record behind on the phone: the note of which account the plan is kept in, with the account's id and change numbers, though never an amount, a name or a note. The change was still being sent, or the phone was still bringing down what's new, when signing out cleared the phone, and it saved that note after. D308 says signing out leaves nothing behind. Your-plan test 10 caught it about once in 7 runs on this branch, and never in 20 runs on `main`, where the timing happened to be different.
+- **Now.** Once the sign-in has ended, nothing new starts, and signing out waits for any send or look already under way to finish, for 3 seconds at most, before it clears the phone. Then nothing can come back.
+- It changes nothing someone sees: signing out takes the same moment, and with no signal it still clears the phone at once.
+
+Test: `apps/web/e2e/your-plan.spec.ts` test 10 passed 20 runs in a row afterwards (3 of 20 failed before), and every sign-out test in `your-plan.spec.ts` and `sign-in.spec.ts` passes.
+
+Why: the rule in D308. A record left after signing out says whose plan this phone held.
+
+## From the owner's answers about the shorter setup
+
+D361 and D362 are the owner's answers of 8 Nov 2026 to the two questions in the shorter setup's report.
+
+### D361. "I'll add it later" for rent: confirmed
+
+The owner's answer, 8 Nov 2026. Confirms D356's point on Home and bills.
+
+On Home and bills, "Which do you pay" keeps four answers: Rent, Mortgage, "I don't pay rent or a mortgage" and "I'll add it later". The last leaves rent out on its own while the bills are added, as Skip on the old rent step did.
+
+Why: the owner's answer.
+
+### D362. The welcome's 5-minute line for everyone: confirmed
+
+The owner's answer, 8 Nov 2026. Confirms D356's point about the welcome.
+
+"Set it up once, about 5 minutes. After that, just keep it up to date." shows on the welcome for everyone, setup finished or not.
+
+Why: the owner's answer. Hiding it once setup is finished made the welcome's buttons move as the page loaded.
+
+## From the owner's reviewer of the shorter setup
+
+D363 and D364 come from the owner's reviewer, 8 Nov 2026, after GitHub's end-to-end run of the shorter setup.
+
+### D363. Setup's tap count counts each box typed into once
+
+From the owner's reviewer, 8 Nov 2026. Corrects the tap counts in D356.
+
+- **What GitHub found.** Setup test 7 counted 67 taps for Priya's whole setup on GitHub, at 320px and at 360px, where the computer this was built on had counted 79. Nothing in setup is skipped or works differently on a small phone: the same test now also checks that Priya's saved plan is exactly the one her answers make, every date included, and setup test 1 does the same at 320px and checks every day's balance, and both pass on GitHub.
+- **The cause.** The tap counter in the tests counted a box as tapped each time the browser said the box got focus. Filling in a date box, the browser on the computer this was built on says so twice, and GitHub's newer browser once. So each of Priya's 12 date boxes (pay, rent, 9 bills and the goal's date) counted as 2 taps there and 1 on GitHub. The counter was wrong, not setup.
+- **Now.** A box counts once, when typing starts in it, from what's typed (the browser's "input" event, which every browser sends for every kind of box). A tap anywhere else, then typing in the same box again, counts again. Priya's whole setup is 67 taps on both computers, at both widths, and the test checks her 12 dates are each counted once.
+- Every count in D356's table was taken again with the corrected counter, on `main` and on the shorter setup, at 320px and 360px. Each is lower by the date boxes it counted twice; what the shorter setup saves is the same: 1 or 2 taps for most people, and 2 screens for everyone.
+
+Test: `apps/web/e2e/setup.spec.ts` tests 3 and 7.
+
+Why: the reviewer's finding. A count that depends on the browser can't show whether setup got shorter.
+
+### D364. What if test 1 waits for Coming up before using it
+
+From the owner's reviewer, 8 Nov 2026, about PLAN.md item 36. Fixed in the shorter setup, not later, because a test that fails at random on `main` can stop the live app and the database updating after a merge (D297).
+
+- **What failed.** What if test 1, after throwing the practice changes away, taps "Back to Coming up" and opens Fri 30 Oct there. Sometimes Fri 30 Oct stayed closed. On the computer this was built on it failed 9 runs in 20 on `main`.
+- **The cause.** What if shows a practice copy of Coming up, with the same lowest point line and the same paydays, and the test had opened Fri 30 Oct in it. After the tap on "Back to Coming up", the test waited for the lowest point line, which the What if page already showed, so it sometimes went on while What if was still on screen. It found Fri 30 Oct already open there, so it didn't tap it, and a moment later Coming up came in with Fri 30 Oct closed. Logging every tap showed it: in each failed run no tap reached the page after "Back to Coming up", and Fri 30 Oct was open on What if just before. Nothing in the app was wrong: a person sees Coming up appear and taps it.
+- **Now.** After "Back to Coming up", the test waits for Coming up's own heading and for What if's side-by-side to have gone, then reads the paydays. Nothing it checks was loosened, and nothing is retried.
+
+Test: `apps/web/e2e/what-if.spec.ts` test 1 passed 80 runs in a row afterwards, 20 each at 320px and 360px in light and dark, on the computer that failed it 9 times in 20.
+
+Why: the reviewer's instruction. Find the cause, fix it, and don't skip, loosen or retry.
+

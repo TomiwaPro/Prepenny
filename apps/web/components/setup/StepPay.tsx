@@ -1,6 +1,6 @@
 'use client';
 
-// Step 2, how you're paid (brief 4.1 and 4.3, D5, D14, D64, D86, D131,
+// Screen 2, how you're paid (brief 4.1 and 4.3, D5, D14, D64, D86, D131,
 // D142, step 2e): every pay choice, "Next payday", "My pay changes in a
 // pattern" with up to 8 amounts, the weekend and bank holiday rule, money
 // set aside, and "Add another income". With more than one income, "Which is

@@ -1,13 +1,14 @@
 'use client';
 
-// One step of setup (brief 4.1, D163, D213, step 2e): "Step 2 of 8", Skip
-// this step (except on step 1), the step's title with one plain sentence
-// saying what it's for, the step itself, then Next and Back, and who's
-// signed in with "Sign out" (D353). The title takes focus when the step
-// opens, so a screen reader starts there.
+// One screen of setup (brief 4.1, D163, D213, D356): "Part 2 of 3: Money
+// out" with a three-part bar, Skip this step (except on the first screen),
+// the screen's title with one plain sentence saying what it's for, the
+// screen itself, then Next and Back, and who's signed in with "Sign out"
+// (D353). The title takes focus when the screen opens, so a screen reader
+// starts there.
 
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
-import { SETUP_STEPS } from '../../lib/setup-progress.ts';
+import { partOf, SETUP_PARTS, type SetupStep } from '../../lib/setup-progress.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { Problem } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
@@ -27,8 +28,9 @@ export function StepFrame({
   busy = false,
   problem = null,
   children,
+  outside = null,
 }: {
-  readonly step: number;
+  readonly step: SetupStep;
   readonly title: string;
   readonly intro: string;
   /** Left out where a step can't be skipped (D163). */
@@ -39,20 +41,33 @@ export function StepFrame({
   readonly busy?: boolean;
   readonly problem?: string | null;
   readonly children: ReactNode;
+  /** What goes after the screen's form, such as a sheet, which has a form of its own. */
+  readonly outside?: ReactNode;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();
   }, []);
+  const where = partOf(step);
   return (
     <main className={styles.page} data-step={step}>
       <div className={styles.top}>
-        <p className={styles.count}>{t.stepOf(step, SETUP_STEPS)}</p>
+        <p className={styles.count}>
+          {t.partOf(where.part, SETUP_PARTS.length, t.parts[where.key])}
+        </p>
         {onSkip === undefined ? null : (
           <button type="button" className={styles.skip} onClick={onSkip}>
             {t.skip}
           </button>
         )}
+      </div>
+      {/* The bar is only a picture: the words above say the same (brief Part 6). */}
+      <div className={styles.parts} aria-hidden="true" data-testid="setup-parts">
+        {where.filled.map((filled, at) => (
+          <span key={SETUP_PARTS[at]?.key} className={styles.part}>
+            <span className={styles.partFill} style={{ width: `${Math.round(filled * 100)}%` }} />
+          </span>
+        ))}
       </div>
       <header className={styles.header}>
         <h1 ref={heading} tabIndex={-1} className={styles.heading}>
@@ -80,6 +95,7 @@ export function StepFrame({
           </button>
         </div>
       </form>
+      {outside}
       {/* Who's signed in, with "Sign out", since setup can't reach More (D353). */}
       <SignedInLine />
     </main>

@@ -27,6 +27,12 @@
 // own asks which to keep (11), two phones sending their first copy at the
 // same moment leave one plan (12), and a first copy cut off part-way is sent
 // again (13).
+//
+// And for the shorter setup, 6 screens in 3 parts (D356): setting up while
+// signed in saves each screen to the account, a second phone opens at the
+// same screen, and the finished plan is the same on a third (14); and, run
+// once, progress the old 8 steps saved in the account opens the matching new
+// screen on another phone, from every old step (15).
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -38,12 +44,23 @@ import { settingScript } from './fixtures.ts';
 import { openHome, updateBalance } from './journeys.ts';
 import { SAM_TODAY, setUpSam } from './people.ts';
 import {
+  addGoalOnPlan,
+  asOldItems,
   back,
+  billOn,
   box,
+  expectAddedOn,
+  expectStep,
   fillAccount,
+  fillEveryScreen,
+  fillWhen,
   lastForm,
   next,
   noAxeProblems,
+  OLD_STEP_OPENS,
+  radio,
+  rentForm,
+  SCREEN_TITLES,
   skip,
   startSetup,
 } from './setup.ts';
@@ -112,11 +129,11 @@ async function makePlanWith(page: Page, balance: string) {
   await startSetup(page, TODAY);
   await fillAccount(lastForm(page, 'account'), { name: 'Current account', balance, warning: '20' });
   await next(page);
-  for (let step = 2; step <= 7; step += 1) {
-    await expect(page.getByText(`Step ${step} of 8`, { exact: true })).toBeVisible();
+  for (const [screen, title] of SCREEN_TITLES.slice(1, 5).entries()) {
+    await expectStep(page, (screen + 2) as 2, title);
     await skip(page);
   }
-  await expect(page.getByText('Step 8 of 8', { exact: true })).toBeVisible();
+  await expectStep(page, 6, "Here's your plan");
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page.getByTestId('balance')).toContainText(`£${balance}`);
 }
@@ -238,9 +255,9 @@ async function startAPlan(page: Page, balance: string) {
   await startSetup(page, TODAY);
   await fillAccount(lastForm(page, 'account'), { name: 'Current account', balance, warning: '20' });
   await next(page);
-  await expect(page.getByText('Step 2 of 8', { exact: true })).toBeVisible();
+  await expectStep(page, 2, "How you're paid");
   await back(page);
-  await expect(page.getByText('Step 1 of 8', { exact: true })).toBeVisible();
+  await expectStep(page, 1, 'Your account');
   await back(page);
   await expect(page.getByRole('button', { name: strings.welcome.carryOn })).toBeVisible();
 }
@@ -727,7 +744,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // On a setup step too, under the step.
       await page.getByRole('button', { name: strings.welcome.carryOn }).click();
-      await expect(page.getByText('Step 1 of 8', { exact: true })).toBeVisible();
+      await expectStep(page, 1, 'Your account');
       await expect(page.getByTestId('signed-in')).toContainText(t.signedInWelcome(address));
       await page.getByTestId('signed-in').getByRole('button', { name: t.signOut }).click();
       const onStep = page.getByRole('dialog', { name: t.signOut });
@@ -759,6 +776,107 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page).toHaveURL(/\/setup\/$/);
       await page.getByRole('button', { name: strings.welcome.carryOn }).click();
       await expect(page.getByTestId('added')).toContainText('£111.11');
+    });
+
+    test('14. setting up while signed in: every screen reaches the account, a second phone opens at the same screen, and a third has the finished plan with the same figures', async ({
+      page,
+      browser,
+    }, info) => {
+      test.slow();
+      const address = newEmail('jess');
+      // Signed in before there's a plan, then set up on the 6 screens (D356).
+      await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today: TODAY }] as const);
+      await signIn(page, address);
+      await expect(page).toHaveURL(/\/setup\/$/);
+      await page.getByRole('button', { name: strings.welcome.makeMyPlan }).click();
+      await expectStep(page, 1, 'Your account');
+      await expect(page.getByTestId('signed-in')).toContainText(t.signedInWelcome(address));
+      await fillAccount(lastForm(page, 'account'), {
+        name: 'Current account',
+        balance: '640',
+        warning: '20',
+      });
+      await next(page);
+      await expectStep(page, 2, "How you're paid");
+      const pay = lastForm(page, 'income');
+      await box(pay, 'Next payday').fill('2026-10-30');
+      await box(pay, 'How much comes in, after tax').fill('450');
+      await radio(page, 'No').check();
+      await next(page);
+      await expectStep(page, 3, 'Home and bills');
+      await box(rentForm(page), 'Amount').fill('550');
+      await fillWhen(rentForm(page), { date: '2026-11-02' });
+      const phone = billOn(page, 'phone');
+      await phone.getByRole('checkbox', { name: 'Phone', exact: true }).check();
+      await box(phone, 'Amount').fill('18');
+      await fillWhen(phone, { date: '2026-11-20' });
+      await next(page);
+      await expectStep(page, 4, 'Debts');
+
+      // The account has every screen's change so far, and the screen it's on.
+      const person = await personOn(page);
+      await expect
+        .poll(() =>
+          sql(
+            `select setup->>'layout' || ' ' || (setup->>'step') from public.settings
+               where private_to = ${quoted(person)} and not deleted`,
+          ),
+        )
+        .toBe('2 4');
+      expect(
+        sql(
+          `select string_agg(name, ', ' order by name) from public.series
+             where created_by = ${quoted(person)} and not deleted`,
+        ),
+      ).toBe('Pay, Phone, Rent');
+
+      // A second phone signed in to the same account opens at the same screen.
+      const second = await secondPhone(browser, info, colorScheme);
+      await signIn(second.page, address);
+      await expect(second.page).toHaveURL(/\/setup\/$/);
+      await expectStep(second.page, 4, 'Debts');
+      await noAxeProblems(second.page);
+      await second.context.close();
+
+      // The first phone finishes, with a goal from the plan.
+      await page.getByRole('button', { name: 'I have no debts' }).click();
+      await expectStep(page, 5, 'Spending money');
+      await skip(page);
+      await expectStep(page, 6, "Here's your plan");
+      await addGoalOnPlan(page, { name: 'Holiday', target: '600', move: '25' }, async (sheet) => {
+        await box(sheet, 'Name of the savings account').fill('Savings');
+      });
+      await page.getByRole('button', { name: 'Go to my plan' }).click();
+      await expect(page).toHaveURL(/\/app\/$/);
+      await openMore(page);
+      await expect(page.getByTestId('where-kept')).toHaveText(t.savedInAccount);
+      await expect
+        .poll(() =>
+          sql(
+            `select setup->>'step' from public.settings
+               where private_to = ${quoted(person)} and not deleted`,
+          ),
+        )
+        .toBe('done');
+      expect(
+        sql(
+          `select string_agg(name, ', ') from public.goals
+             where created_by = ${quoted(person)} and not deleted`,
+        ),
+      ).toBe('Holiday');
+      const finished = await threeScreens(page);
+
+      // And a third phone brings the finished plan down: the same plan, the same figures.
+      const third = await secondPhone(browser, info, colorScheme);
+      await signIn(third.page, address);
+      await expect(third.page).toHaveURL(/\/app\/$/);
+      await expect(third.page.getByTestId('balance')).toContainText('£640.00');
+      expect(await threeScreens(third.page)).toEqual(finished);
+      await openMore(third.page);
+      await third.page.getByRole('link', { name: 'Savings goals' }).click();
+      await expect(third.page.getByTestId('goal')).toContainText('Holiday');
+      await noAxeProblems(third.page);
+      await third.context.close();
     });
   });
 }
@@ -858,6 +976,9 @@ test('13. a first copy cut off part-way is sent again from where it stopped, and
   await page.context().route(saving, (route) => route.abort());
   await openMore(page);
   await page.getByTestId('account').getByRole('link', { name: 'Sign up or sign in' }).click();
+  // The page has read the phone before a tap, as signUpFromMore waits for too:
+  // a tap before then sends nothing (D359).
+  await expect(page.getByText(s.planBecomesYours)).toBeVisible();
   await askForCode(page, address);
   await box(page, '6-digit code').fill((await signInEmail(address)).code);
   await page.getByRole('button', { name: 'Sign up', exact: true }).click();
@@ -883,4 +1004,79 @@ test('13. a first copy cut off part-way is sent again from where it stopped, and
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(page.getByTestId('where-kept')).toHaveText(t.savedInAccount, { timeout: 20_000 });
   expect(accountsSaved()).toBe(1);
+});
+
+test('15. progress saved in the account on each of the old 8 steps opens the matching new screen on another phone, with nothing lost', async ({
+  page,
+  browser,
+}, info) => {
+  test.skip(info.project.name !== 'sign-in-360', 'Once, at 360px.');
+  test.slow();
+  const address = newEmail('dee');
+  await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today: TODAY }] as const);
+  await signIn(page, address);
+  await expect(page).toHaveURL(/\/setup\/$/);
+  await page.getByRole('button', { name: strings.welcome.makeMyPlan }).click();
+  // Something added on every screen, a goal included, as the old steps had.
+  await fillEveryScreen(page);
+  const person = await personOn(page);
+  const setupNow = () =>
+    sql(
+      `select setup::text from public.settings where private_to = ${quoted(person)} and not deleted`,
+    );
+  await expect
+    .poll(() => (JSON.parse(setupNow() || 'null') as { items?: unknown[] } | null)?.items?.length)
+    .toBe(7);
+  const saved = JSON.parse(setupNow()) as {
+    layout: number;
+    items: { kind: string; step: number }[];
+    answers: Record<string, unknown>;
+  };
+  expect(saved.layout).toBe(2);
+  const rows = () =>
+    sql(`select count(*) from public.series where created_by = ${quoted(person)} and not deleted`);
+  const seriesBefore = rows();
+  // This phone stops looking at the account while the old progress goes in.
+  await page.goto('about:blank');
+
+  for (const [old, screen] of OLD_STEP_OPENS) {
+    // As the old setup saved it in the account: no layout, its own step numbers.
+    const oldSetup = JSON.stringify({
+      step: old,
+      items: asOldItems(saved.items),
+      answers: saved.answers,
+    });
+    sql(`
+      begin;
+      select set_config('request.jwt.claims', json_build_object('sub', ${quoted(person)}, 'role', 'authenticated',
+        'session_id', (select id from auth.sessions where user_id = ${quoted(person)} order by created_at desc limit 1))::text, true);
+      update public.settings set setup = ${quoted(oldSetup)}::jsonb
+        where private_to = ${quoted(person)} and not deleted;
+      commit;`);
+    const phone = await secondPhone(browser, info, 'light');
+    await signIn(phone.page, address);
+    await expect(phone.page).toHaveURL(/\/setup\/$/);
+    if (screen === null) {
+      await phone.page.getByRole('button', { name: strings.welcome.carryOn }).click();
+      await expectStep(phone.page, 1, 'Your account');
+    } else {
+      await expectStep(phone.page, screen, SCREEN_TITLES[screen - 1] ?? '');
+    }
+    await expectAddedOn(phone.page, screen ?? 1);
+    if (old === 5) {
+      await noAxeProblems(phone.page);
+      // Carrying on saves the new layout in the account, with nothing lost.
+      await phone.page.getByRole('button', { name: 'Next', exact: true }).click();
+      await expectStep(phone.page, 5, 'Spending money');
+      await expect
+        .poll(() => {
+          const now = JSON.parse(setupNow()) as typeof saved & { step: number };
+          return `${now.layout} ${now.step} ${now.items.length}`;
+        })
+        .toBe('2 5 7');
+    }
+    // Nothing lost: every payment is still in the account.
+    expect(rows()).toBe(seriesBefore);
+    await phone.context.close();
+  }
 });

@@ -23,7 +23,7 @@ export interface SetupView {
    * there's an account.
    */
   readonly budgetPeriods: { readonly week: Period; readonly month: Period } | null;
-  /** "Here's your plan" (step 8). Null before there's an account. */
+  /** "Here's your plan" (screen 6, D356). Null before there's an account. */
   readonly summary: SetupSummary | null;
 }
 

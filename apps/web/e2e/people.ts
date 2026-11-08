@@ -15,7 +15,18 @@ import {
   period,
   undoBar,
 } from './journeys.ts';
-import { box, expectStep, fillAccount, fillWhen, lastForm, next, radio, skip } from './setup.ts';
+import {
+  billOn,
+  box,
+  expectStep,
+  fillAccount,
+  fillWhen,
+  lastForm,
+  next,
+  radio,
+  rentForm,
+  skip,
+} from './setup.ts';
 
 export const DEE_TODAY = '2026-11-02';
 export const COUPLE_TODAY = '2026-10-25';
@@ -139,12 +150,12 @@ export async function setUpSam(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 3, 'Rent or mortgage');
-  await page.getByRole('button', { name: "I don't pay rent" }).click();
-  await expectStep(page, 4, 'Bills');
-  await skip(page);
+  // No rent and no bills set up here (D231): one screen for both (D356).
+  await expectStep(page, 3, 'Home and bills');
+  await radio(rentForm(page), "I don't pay rent or a mortgage").check();
+  await next(page);
 
-  await expectStep(page, 5, 'Debts');
+  await expectStep(page, 4, 'Debts');
   // Brief 8.1's debts with the D15 names, each with its first payments (brief 8.2).
   await addDebt(page, {
     name: 'Pay-later card',
@@ -204,11 +215,9 @@ export async function setUpSam(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 6, 'Spending money');
+  await expectStep(page, 5, 'Spending money');
   await skip(page);
-  await expectStep(page, 7, 'Savings');
-  await skip(page);
-  await expectStep(page, 8, "Here's your plan");
+  await expectStep(page, 6, "Here's your plan");
   await expect(page.getByTestId('setup-first-debt')).toContainText('Pay-later card');
   await noAxeProblems(page);
   await page.getByRole('button', { name: 'Go to my plan' }).click();
@@ -383,13 +392,10 @@ export async function setUpDee(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 3, 'Rent or mortgage');
-  await box(page, 'Amount').fill('795');
-  await fillWhen(page.getByRole('form'), { date: '2026-12-01' });
-  await next(page);
-
-  await expectStep(page, 4, 'Bills');
-  const bill = (key: string) => page.locator(`[data-bill="${key}"]`);
+  await expectStep(page, 3, 'Home and bills');
+  await box(rentForm(page), 'Amount').fill('795');
+  await fillWhen(rentForm(page), { date: '2026-12-01' });
+  const bill = (key: string) => billOn(page, key);
   await bill('council-tax').getByRole('checkbox', { name: 'Council tax', exact: true }).check();
   await box(bill('council-tax'), 'Amount').fill('118');
   await fillWhen(bill('council-tax'), { date: '2026-12-01' });
@@ -408,16 +414,14 @@ export async function setUpDee(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 5, 'Debts');
+  await expectStep(page, 4, 'Debts');
   await page.getByRole('button', { name: 'I have no debts' }).click();
-  await expectStep(page, 6, 'Spending money');
+  await expectStep(page, 5, 'Spending money');
   const food = page.getByTestId('budget-form').first();
   await box(food, 'Amount').fill('60');
   await radio(food, 'Week').check();
   await next(page);
-  await expectStep(page, 7, 'Savings');
-  await skip(page);
-  await expectStep(page, 8, "Here's your plan");
+  await expectStep(page, 6, "Here's your plan");
   await noAxeProblems(page);
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page.getByTestId('balance')).toHaveText('£427.40');
@@ -479,14 +483,11 @@ export async function setUpJessAndTom(page: Page) {
   ).check();
   await next(page);
 
-  await expectStep(page, 3, 'Rent or mortgage');
-  await box(page, 'Amount').fill('950');
-  await fillWhen(page.getByRole('form'), { date: '2026-11-01' });
-  await radio(page.getByRole('group', { name: 'From' }), 'Joint account').check();
-  await next(page);
-
-  await expectStep(page, 4, 'Bills');
-  const bill = (key: string) => page.locator(`[data-bill="${key}"]`);
+  await expectStep(page, 3, 'Home and bills');
+  await box(rentForm(page), 'Amount').fill('950');
+  await fillWhen(rentForm(page), { date: '2026-11-01' });
+  await radio(rentForm(page).getByRole('group', { name: 'From' }), 'Joint account').check();
+  const bill = (key: string) => billOn(page, key);
   const from = async (where: ReturnType<typeof bill>, account: string) =>
     radio(where.getByRole('group', { name: 'From' }), account).check();
   await bill('council-tax').getByRole('checkbox', { name: 'Council tax', exact: true }).check();
@@ -514,7 +515,7 @@ export async function setUpJessAndTom(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 5, 'Debts');
+  await expectStep(page, 4, 'Debts');
   await page.getByRole('button', { name: 'Add a debt' }).click();
   const loan = lastForm(page, 'debt');
   await box(loan, 'Name').fill('Car loan');
@@ -526,14 +527,12 @@ export async function setUpJessAndTom(page: Page) {
   await radio(loan.getByRole('group', { name: 'From' }), 'Tom current account').check();
   await next(page);
 
-  await expectStep(page, 6, 'Spending money');
+  await expectStep(page, 5, 'Spending money');
   const food = page.getByTestId('budget-form').first();
   await box(food, 'Amount').fill('300');
   await radio(food.getByRole('group', { name: 'From' }), 'Joint account').check();
   await next(page);
-  await expectStep(page, 7, 'Savings');
-  await skip(page);
-  await expectStep(page, 8, "Here's your plan");
+  await expectStep(page, 6, "Here's your plan");
   await noAxeProblems(page);
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page.getByTestId('balance')).toHaveText('£410.00');
@@ -626,32 +625,27 @@ export async function setUpAli(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 3, 'Rent or mortgage');
-  await box(page, 'Amount').fill('1480');
-  const rent = page.getByRole('form');
+  await expectStep(page, 3, 'Home and bills');
+  const rent = rentForm(page);
+  await box(rent, 'Amount').fill('1480');
   await fillWhen(rent, { date: '2027-01-15', often: 'On chosen dates' });
   await rent.getByRole('button', { name: 'Add a date' }).click();
   await box(rent, 'Date 2').fill('2027-04-30');
-  await next(page);
-
-  await expectStep(page, 4, 'Bills');
-  const phone = page.locator('[data-bill="phone"]');
+  const phone = billOn(page, 'phone');
   await phone.getByRole('checkbox', { name: 'Phone', exact: true }).check();
   await box(phone, 'Name').fill('Phone contract');
   await box(phone, 'Amount').fill('14');
   await fillWhen(phone, { date: '2026-11-09' });
   await next(page);
 
-  await expectStep(page, 5, 'Debts');
+  await expectStep(page, 4, 'Debts');
   await page.getByRole('button', { name: 'I have no debts' }).click();
-  await expectStep(page, 6, 'Spending money');
+  await expectStep(page, 5, 'Spending money');
   const food = page.getByTestId('budget-form').first();
   await box(food, 'Amount').fill('35');
   await radio(food, 'Week').check();
   await next(page);
-  await expectStep(page, 7, 'Savings');
-  await skip(page);
-  await expectStep(page, 8, "Here's your plan");
+  await expectStep(page, 6, "Here's your plan");
   await noAxeProblems(page);
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page.getByTestId('balance')).toHaveText(`${MINUS}£300.00`);

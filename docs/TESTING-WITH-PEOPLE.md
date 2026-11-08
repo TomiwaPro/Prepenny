@@ -2,11 +2,19 @@
 
 A short script for watching three people who have never seen PrePenny set it up on their own phone, without help. Brief Part 10 counts PrePenny as done only when three people manage it in under 5 minutes. It takes about 20 minutes a person.
 
+Setup is 6 screens in 3 parts (D356). The top of each screen says which part it's in, such as "Part 2 of 3: Money out":
+
+| Part | Screens |
+| --- | --- |
+| Part 1 of 3: Money in | 1. Your account. 2. How you're paid. |
+| Part 2 of 3: Money out | 3. Home and bills. 4. Debts. 5. Spending money. |
+| Part 3 of 3: Your plan | 6. Here's your plan, with "Saving for something? Add a goal". |
+
 ## Before you start
 
 - **Who:** three people who have never seen PrePenny. Try to get a mix: someone paid weekly, someone paid monthly, and if you can, someone whose money comes in at different times (Universal Credit, a student loan or self-employed work).
 - **Their own phone,** in their usual browser (Chrome on Android, Safari on iPhone). Not a private window: some private windows can't save anything.
-- **The link:** https://prepenny.prepenny.workers.dev/ (the live app), or the preview link of the update you're testing.
+- **The link:** https://prepenny.co.uk (the live app), or the preview link of the update you're testing.
 - **Their numbers:** they can use their real balance and bills, rough figures, or made-up ones. Tell them so. Never write their amounts or payment names in your notes: write what they did, not what they typed.
 - **You need:** a stopwatch (your phone's clock app), this page, and a copy of the notes table below.
 
@@ -18,6 +26,8 @@ Read this out, in your own words if you like:
 >
 > It's the app being tested, not you. If something is confusing, that's exactly what I need to know.
 >
+> You don't need to sign in or make an account.
+>
 > I can't help or answer questions while you do it, because I won't be there when other people use it. If you get stuck, say what you're looking for out loud, and carry on however you think best. You can stop whenever you like.
 >
 > Use your real numbers, rough ones or made-up ones: whatever you're comfortable with. I won't write down any amounts.
@@ -28,21 +38,23 @@ Then give them the link.
 
 ## What to time
 
-- **Start** when they tap **Make my plan** on the first screen.
-- **Stop** when they reach **Here's your plan** (step 8 of 8) and tap **Go to my plan**.
+- **Start** when they tap **Make my plan** on the first screen. The welcome above it says "Set it up once, about 5 minutes": note whether they read it.
+- **Stop** when they reach **Here's your plan** (Part 3 of 3: Your plan) and tap **Go to my plan**.
 - **Under 5 minutes is a pass.** Write the time down to the second, even if it's over.
+- **A savings goal is optional.** If they tap **Add a goal** on Here's your plan, keep the clock running: it's part of their setup. Note whether they added one.
 
-Don't stop the clock if they pause to read: reading is part of setting up. If they give up, write down the time and the step they were on.
+Don't stop the clock if they pause to read: reading is part of setting up. If they give up, write down the time and the screen they were on.
 
 ## What to note
 
-While they set up, note anything like this, with the step number (each screen says "Step 2 of 8"):
+While they set up, note anything like this, with the screen's name (its heading, such as "Home and bills") and its part (the top of each screen says "Part 2 of 3: Money out"):
 
 - They stop for more than about 5 seconds without tapping anything.
 - They tap something, then go Back or undo it.
 - They read the same words twice, or read them out with a question in their voice.
 - They say "what does this mean", "where's the...", "I don't know" or similar. Write their words down exactly.
-- They skip a step. Note whether they meant to.
+- They tap "Skip this step". Note whether they meant to.
+- On Home and bills, whether they found the bills below their rent, and whether "I don't pay rent or a mortgage" and "I'll add it later" were clear.
 - They type something the app says is wrong, and what the app's message was.
 - Anything they say they like or don't like.
 
@@ -66,7 +78,7 @@ Ask these three questions, and write down their answers word for word:
 2. "Was there anything you expected to see that wasn't there?"
 3. "Would you use this? Why, or why not?"
 
-Thank them. If they used real numbers and want them gone, they can clear PrePenny from their phone: in Chrome on Android, tap the three dots, then **Settings**, **Site settings**, **All sites**, find the PrePenny address and tap **Delete** (or **Clear & reset**); on an iPhone, open **Settings**, **Safari**, **Advanced**, **Website Data**, find the PrePenny address and swipe to delete. Nothing they typed was sent anywhere: PrePenny keeps it on their phone only. A "Delete my data" button comes in Phase 3.
+Thank them. If they used real numbers and want them gone, they can clear PrePenny from their phone: in Chrome on Android, tap the three dots, then **Settings**, **Site settings**, **All sites**, find the PrePenny address and tap **Delete** (or **Clear & reset**); on an iPhone, open **Settings**, **Safari**, **Advanced**, **Website Data**, find the PrePenny address and swipe to delete. If they didn't sign in, nothing they typed was sent anywhere: PrePenny keeps it on their phone only. If they did sign in, their plan is also saved in their account, and "Delete my account and all my data" comes later in Phase 3 (step 3h): until then, ask Claude Code to remove it.
 
 ## Notes table
 
@@ -78,8 +90,10 @@ Copy this for each person.
 | How they're paid | Weekly, monthly, or other |
 | Phone and browser | For example, Android, Chrome |
 | Setup time | Minutes and seconds, and whether they finished |
-| Steps skipped | |
-| Where they got stuck | Step number and what happened |
+| Read the "about 5 minutes" line | Yes or no |
+| Screens skipped | Which screens, and whether they meant to |
+| Added a savings goal | Yes or no |
+| Where they got stuck | The screen's name and what happened |
 | Their words | What they said, exactly |
 | Task 1: left after rent | Pass or not, time, notes |
 | Task 2: lowest point | Pass or not, time, notes |

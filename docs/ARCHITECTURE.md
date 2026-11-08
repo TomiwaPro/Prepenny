@@ -685,7 +685,7 @@ Running the command again, rather than copying records over, keeps "this and all
   - Only through `save_edit` (D345), in `supabase/migrations/20261107200000_changes_only_through_save_edit.sql`: the trigger `a0_only_through_save_edit`, first on every record table and on `plans`, refuses a person's insert or update with `use-save-edit` (42501) unless the `prepenny.edit` mark is set; `save_edit` sets it once its edit has begun and clears it once its records are written; `start_plan` sets `prepenny.starting` to the one plan it inserts. A person is the role `authenticated` or `anon`; the database's own roles aren't refused. Tests: `14-only-through-save-edit.test.sql`, and `tests.in_an_edit(name, plan)` in `supabase/seed.sql` for tests that write as a person.
   - Tests: `12-save-edit.test.sql`, `13-save-edit-roles.test.sql` (which swaps `app.send_nudge` for a catcher inside its transaction, because Realtime's store takes nothing while its service is off).
 - **Built in step 3c, on the phone:** `apps/web/lib/sync-rows.ts` turns the engine's records into rows (`rowsOf`, `writesFor`, `writesForEdit`) and back (`recordsFromRows`), with derived ids from `lib/sync-ids.ts` (SHA-256, UUID version 8) for changes, ticks, settings, overtime details and private links; it runs in the worker (`sync-writes`, `sync-records`, `lib/sync-work.ts`). `apps/web/data/db.ts` version 2 adds `rows` (the server's rows as last seen), `unsent` (the queue, written by `saveChange` in the same transaction when the plan has a `links` row) and `links` (person and change numbers). `apps/web/data/sync.ts` does the rest: `connectPlan` after sign-in (first copy, bring down, or `choose`), `keepSavedPlan`, `keepPhonePlan`, `syncNow` (send the queue one edit at a time, then `plan_changes`), `keepInStep` (open, visible, online, every 60 s, and the nudges), `useSync`, `allSent` and `onPlanBroughtDown`. The plan on the phone is always `recordsFromRows(rows)` with the queue's writes on top (`rebuild`). `lib/edit.ts` gives each edit's `numbers` (payment numbers, `paymentNumberOf`) for undo's check.
-- **Step 3c fix** (D351 to D355): `components/KeepInStep.tsx` (`checkSignIn`, `followSignOutInOtherTabs`, then `keepInStep` and `onAccountNews` while signed in) is on every screen: `AppShell.tsx`, and `SetupScreen` and `WelcomeScreen` in `components/setup/SetupScreen.tsx`. `syncNow` runs `syncOnce` through `inTurn`, one task at a time with `connectPlan`, `keepSavedPlan` and `keepPhonePlan`. `syncOnce` calls `lookAtAccount` (`lookOnce`, again on `AGAIN`, up to 3 times) when the account hasn't been looked at since PrePenny opened (`accountLooked`) or the plan on the phone has no `links` row, then `keepInStepOnce`; a `not-found` from `save_edit` or `plan_changes` means the plan left the account, and it looks again. `lookOnce`: a linked plan missing from `plan_members` is swapped for the account's (`bringDownInstead`, one Dexie transaction: remove, then put the plan, its rows and link); a linked plan beside another owned plan, or an unlinked plan with an account or a series beside any plan in the account, gives `choose` (`askToChoose`); an unlinked plan with nothing in it, or none, is swapped for the account's (`onlyIfEmpty`, checked inside the transaction); an unlinked plan with something in it and an empty account goes up (`sendFirstCopy`, which returns `has-a-plan` when `start_plan` is refused). `onAccountNews` gives `choose` (KeepInStep: `router.replace('/sign-in/?choose')`) or `brought-down` (`location.replace('/app/')`). `keepSavedPlan` calls `remove_plan` on a linked plan first. `saveChange(…, isNew)` throws `PlanGone` for a plan no longer on the phone, or a new plan beside another. `bringDownInstead` checks inside its transaction that the phone's own plan is still the one it looked at (`changed-here`). A first copy going up has `sending: true` on its `PlanLink` until `sendRest` has sent all of it; `publish`, `allSent` and `planSafelyKept` count it as not kept (D355). Only `plan_changes` refusing `not-found` means the plan left the account. Database: `supabase/migrations/20261108100000_one_plan_of_your_own.sql`, the trigger `one_plan_each` on `plans` (`before insert`, after `before_write` by name), `app.one_plan_each()` (definer: locks the owner's `people` row, refuses `has-a-plan`); test `15-one-plan-each.test.sql`. Sign out on the welcome, setup steps and the choice: `components/SignedInLine.tsx` with `components/SignOutSheet.tsx`, which `AccountCard.tsx` uses too. Tests: `e2e/your-plan.spec.ts` 7 to 13, `test/unit/db.test.ts` ("A plan removed from this phone", "A new plan beside one that has just come down").
+- **Step 3c fix** (D351 to D355): `components/KeepInStep.tsx` (`checkSignIn`, `followSignOutInOtherTabs`, then `keepInStep` and `onAccountNews` while signed in) is on every screen: `AppShell.tsx`, and `SetupScreen` and `WelcomeScreen` in `components/setup/SetupScreen.tsx`. `syncNow` runs `syncOnce` through `inTurn`, one task at a time with `connectPlan`, `keepSavedPlan` and `keepPhonePlan`. `syncOnce` calls `lookAtAccount` (`lookOnce`, again on `AGAIN`, up to 3 times) when the account hasn't been looked at since PrePenny opened (`accountLooked`) or the plan on the phone has no `links` row, then `keepInStepOnce`; a `not-found` from `save_edit` or `plan_changes` means the plan left the account, and it looks again. `lookOnce`: a linked plan missing from `plan_members` is swapped for the account's (`bringDownInstead`, one Dexie transaction: remove, then put the plan, its rows and link); a linked plan beside another owned plan, or an unlinked plan with an account or a series beside any plan in the account, gives `choose` (`askToChoose`); an unlinked plan with nothing in it, or none, is swapped for the account's (`onlyIfEmpty`, checked inside the transaction); an unlinked plan with something in it and an empty account goes up (`sendFirstCopy`, which returns `has-a-plan` when `start_plan` is refused). `onAccountNews` gives `choose` (KeepInStep: `router.replace('/sign-in/?choose')`) or `brought-down` (`location.replace('/app/')`). `keepSavedPlan` calls `remove_plan` on a linked plan first. `saveChange(…, isNew)` throws `PlanGone` for a plan no longer on the phone, or a new plan beside another. `bringDownInstead` checks inside its transaction that the phone's own plan is still the one it looked at (`changed-here`). A first copy going up has `sending: true` on its `PlanLink` until `sendRest` has sent all of it; `publish`, `allSent` and `planSafelyKept` count it as not kept (D355). Only `plan_changes` refusing `not-found` means the plan left the account. Database: `supabase/migrations/20261108100000_one_plan_of_your_own.sql`, the trigger `one_plan_each` on `plans` (`before insert`, after `before_write` by name), `app.one_plan_each()` (definer: locks the owner's `people` row, refuses `has-a-plan`); test `15-one-plan-each.test.sql`. Sign out on the welcome, setup steps and the choice: `components/SignedInLine.tsx` with `components/SignOutSheet.tsx`, which `AccountCard.tsx` uses too. Since D360, `signOutAndForget` in `lib/account.ts` waits up to 3 seconds for the work registered with `finishBeforeSigningOut` (sync.ts's `running` and `chain`) before `forgetEverything`. Tests: `e2e/your-plan.spec.ts` 7 to 13, `test/unit/db.test.ts` ("A plan removed from this phone", "A new plan beside one that has just come down").
 
 ### 3.6 Shared plans, roles and privacy
 
@@ -849,19 +849,20 @@ The app has four places in the bottom navigation: **Home, Coming up, Debts, More
 
 ### 4.2 First-time setup
 
-Every step can be skipped and changed later (brief 4.1), except step 1, the account and balance (D163). Sketches are in 4.6. Built in step 2e (D220 to D229).
+6 screens in 3 parts since the shorter setup (D356), instead of step 2e's 8 steps. Every screen can be skipped and changed later (brief 4.1), except the first, the account and balance (D163), and the last, which has nothing to skip. Sketches are in 4.6. Built in step 2e (D220 to D229), and made shorter in D356.
 
-| Step | Brief | Who needs it most |
+| Screen | Brief | Who needs it most |
 | --- | --- | --- |
-| Welcome: the tagline, "Make my plan" and "Look at an example plan" (step 2e) | 4.1, Part 6 | Everyone |
+| Welcome: the tagline, "Set it up once, about 5 minutes. After that, just keep it up to date.", "Make my plan" and "Look at an example plan" (step 2e, D356) | 4.1, Part 6 | Everyone |
+| **Part 1 of 3: Money in** | | |
 | 1. Your account and balance today, with any overdraft limit and warning level | 4.1, 4.2 | Everyone; Ali for the overdraft |
 | 2. How you're paid: every pay choice, "My pay changes in a pattern", linking pattern steps to pay weeks (D5), choosing the main pay when there's more than one (D14) | 4.1, 4.3 | Everyone: Sam's pattern, Priya's last working day, Dee's two incomes, Kofi's estimate, Ali's chosen dates |
-| 3. Rent | 4.1 | Sam, Ali (each term), Jess and Tom |
-| 4. Bills checklist with UK defaults | 4.1 | Everyone; Priya's yearly bills, Dee's council tax |
-| 5. Debts | 4.1, 4.6 | Sam, Kofi, Ali |
-| 6. Spending money | 4.1, 4.5 | Everyone |
-| 7. Savings | 4.1, 4.7 | Priya, Jess and Tom |
-| 8. Here's your plan | 4.1 | Everyone |
+| **Part 2 of 3: Money out** | | |
+| 3. Home and bills: rent or mortgage at the top, then the bills checklist with UK defaults, on one screen | 4.1 | Sam, Ali (rent each term), Jess and Tom; everyone for bills, Priya's yearly bills, Dee's council tax |
+| 4. Debts | 4.1, 4.6 | Sam, Kofi, Ali |
+| 5. Spending money | 4.1, 4.5 | Everyone |
+| **Part 3 of 3: Your plan** | | |
+| 6. Here's your plan, ending "From now on: update your balance when you check your bank, and tick payments as they go out.", with "Saving for something? Add a goal", which opens the savings goal sheet | 4.1, 4.7 | Everyone; Priya, Jess and Tom for savings |
 
 ### 4.3 Main screens
 
@@ -1211,7 +1212,7 @@ Family loan (€)
 
 The last payment leaves −€0.01, so it shows "Paid off" (D34).
 
-**Setup, welcome**
+**Setup, welcome.** Since the shorter setup (D356), setup is 6 screens in 3 parts: money in (screens 1 and 2), money out (3 to 5) and your plan (6). Each screen's top says its part, "Part 2 of 3: Money out", over a bar of three, filled as far as that screen.
 
 ```
 PrePenny
@@ -1221,15 +1222,20 @@ See what's left after every
 payment, the lowest point ahead
 and when each debt is paid off.
 
-[           Start            ]
+Set it up once, about 5 minutes.
+After that, just keep it up to
+date.
+
+[        Make my plan        ]
 [  Look at an example plan   ]
 Already have an account? Sign in
 ```
 
-**Setup, step 1: your account**
+**Setup, screen 1: your account**
 
 ```
-Step 1 of 8                   Skip
+Part 1 of 3: Money in
+[######        ][      ][      ]
 Your account
 Name
 [Current account             ]
@@ -1243,10 +1249,11 @@ Warn me when it goes under
 [            Next            ]
 ```
 
-**Setup, step 2: how you're paid**
+**Setup, screen 2: how you're paid**
 
 ```
-Step 2 of 8                   Skip
+Part 1 of 3: Money in         Skip
+[##############][      ][      ]
 How you're paid
 (o) Weekly
 ( ) Every 2 weeks
@@ -1271,47 +1278,46 @@ Setup and "Add a payment" always ask for the next payment's date, labelled "Next
 
 Sam's example keeps every date (D15), so his pay stays on Fridays even on Christmas Day and New Year's Day. When pay follows a pattern, a short extra page offers to link each payday in the pattern to a saved pay week, for example "3-shift week" for paydays 1 and 3 (D5), with "Do this later". When there's more than one income, it asks which is the main pay (D14).
 
-**Setup, step 3: rent**
+**Setup, screen 3: home and bills** (example bill amounts, not from Sam's plan). Rent or mortgage at the top, then the bills, on one screen (D356).
 
 ```
-Step 3 of 8                   Skip
-Rent
-Amount
-[£ 550.00                    ]
-Next payment
-[Sun 1 Nov                   ]
-How often
-[Monthly on the 1st         v]
-From
-[Current account            v]
-[I don't pay rent]
-[            Next            ]
-```
-
-**Setup, step 4: bills** (example amounts, not from Sam's plan)
-
-```
-Step 4 of 8                   Skip
-Bills
-Tick the ones you pay
-[x] Council tax      [£ 132.00]
-    10 payments, Apr to Jan
-[ ] Energy
-[ ] Water
-[x] Phone            [£  18.00]
-    Monthly on the 14th
-[ ] Broadband
-[ ] TV licence
-[ ] Insurance
-[ ] Subscriptions
+Part 2 of 3: Money out        Skip
+[##############][##    ][      ]
+Home and bills
++--------------------------------+
+| Rent or mortgage               |
+| (o) Rent                       |
+| ( ) Mortgage                   |
+| ( ) I don't pay rent or a      |
+|     mortgage                   |
+| ( ) I'll add it later          |
+| Amount       [£ 550.00       ] |
+| Next payment [Sun 1 Nov      ] |
+| How often [Monthly on the 1st] |
+| From      [Current account   ] |
++--------------------------------+
++--------------------------------+
+| Tick the ones you pay          |
+| [x] Council tax   [£ 132.00]   |
+|     10 payments, Apr to Jan    |
+| [ ] Energy                     |
+| [ ] Water                      |
+| [x] Phone         [£  18.00]   |
+|     Monthly on the 14th        |
+| [ ] Broadband                  |
+| [ ] TV licence                 |
+| [ ] Insurance                  |
+| [ ] Subscriptions              |
++--------------------------------+
 [+ Add another bill]
 [            Next            ]
 ```
 
-**Setup, step 5: debts**
+**Setup, screen 4: debts**
 
 ```
-Step 5 of 8                   Skip
+Part 2 of 3: Money out        Skip
+[##############][####  ][      ]
 Debts
 Add anything you're paying off.
 +--------------------------------+
@@ -1326,10 +1332,11 @@ Add anything you're paying off.
 [            Next            ]
 ```
 
-**Setup, step 6: spending money** (example amounts, not from Sam's plan)
+**Setup, screen 5: spending money** (example amounts, not from Sam's plan)
 
 ```
-Step 6 of 8                   Skip
+Part 2 of 3: Money out        Skip
+[##############][######][      ]
 Spending money
 Food    [£ 200.00] [a month    v]
 Travel  [£  25.00] [a week     v]
@@ -1341,28 +1348,11 @@ How Food leaves your account
 [            Next            ]
 ```
 
-**Setup, step 7: savings** (example amounts, not from Sam's plan)
+**Setup, screen 6: here's your plan.** Savings left setup (D356): "Add a goal" opens the same savings goal sheet as under More, which asks what setup's old savings step asked.
 
 ```
-Step 7 of 8                   Skip
-Savings
-Goal
-[Holiday                     ]
-Target
-[£ 1,200.00                  ]
-By, if you have a date
-[Fri 30 Jul 2027             ]
-Move in
-[£ 50.00] [each payday       v]
-From [Current account       v]
-To   [Savings               v]
-[            Next            ]
-```
-
-**Setup, step 8: here's your plan**
-
-```
-Step 8 of 8
+Part 3 of 3: Your plan
+[##############][######][######]
 Here's your plan
 +--------------------------------+
 | Lowest point ahead     (Tight) |
@@ -1376,9 +1366,19 @@ Here's your plan
 | First debt paid off            |
 | Pay-later card, Thu 29 Oct     |
 +--------------------------------+
+From now on: update your balance
+when you check your bank, and
+tick payments as they go out.
++--------------------------------+
+| Saving for something?          |
+| Set a target and see the date  |
+| you'll get there.              |
+| [         Add a goal         ] |
++--------------------------------+
 [        Go to my plan         ]
-[  Take the 60-second tour     ]
 ```
+
+The 60-second tour comes with the help centre in Phase 4 (D227, brief 4.16).
 
 **What if** (brief 4.10): Sam tries "What if my pay on Fri 30 Oct is £100 less?"
 
@@ -1570,8 +1570,9 @@ In Phase 6, Capacitor adds `apps/web/ios`, `apps/web/android` and `apps/web/capa
 - **Built in step 2b** (D164 to D175): `apps/web` as sketched above, with these details. Words are in `strings/en-GB.ts`; money and dates go through `lib/money.ts` and `lib/dates.ts`. Home's figures come from `workOutHome` in `lib/home.ts`, run in the background worker (`worker/`), which `scripts/build-worker.ts` builds into `public/engine-worker-<fingerprint>.js` before `next build`, telling the app its name in `.env.local` (D170). The phone's database is `data/db.ts`: one `records` table keyed by plan, kind and key, so an edit's writes (D87) are saved as they are. Sam's example is `data/example-plan.ts` (D165). Figtree comes from `@fontsource/figtree` through `next/font/local`, not `public/fonts` (D169). The service worker is `service-worker/sw.ts`, built by Serwist's command line into `out/sw.js` after `next build`. Cloudflare's settings are `wrangler.jsonc` and `public/_headers`. Unit tests are in `test/unit` (Vitest), end-to-end tests in `e2e` (Playwright, served by Wrangler as Cloudflare serves it), and `pnpm build` comes before `pnpm e2e`. `scripts/check-voice.ts` at the root checks every string.
 - **Built in step 2d** (D190 to D203): the four actions on Home are `components/UpdateBalanceSheet.tsx`, `SpentSheet.tsx`, `AddPaymentSheet.tsx` and `OvertimeSheet.tsx`, opened by `components/Actions.tsx`, with the boxes shared in `components/Fields.tsx` and `Form.module.css` (the edit sheet's styles). The worker answers two more questions: `actions` (`lib/actions-view.ts`: each account's expected balance, lowest point and payments to tick, each budget's week or month, the debts, goals and pay) and `pay-preview` (`lib/pay-preview.ts`: an overtime or missed shift made on a copy, giving its payday and change). `lib/new-payment.ts` turns the Add a payment form into the engine's new payment. `lib/test-setting.ts` is the test-only today and plan (D201), read in `components/PlanProvider.tsx`. `components/UpdateNote.tsx` is the update note (D202), in the bottom area of `components/AppShell.tsx` with the undo bar.
 - **Built in step 2d-2** (D204 to D215): the Plan page is the Coming up page, `components/ComingUpScreen.tsx` at `app/app/coming-up/`, with `public/_redirects` sending `/app/plan/` there (D208). The worker's `plan` answer (`lib/plan-view.ts`) also gives each account's balance, each period's main pay (`pay`), its lowest end-of-day balance (`lowest`) and whether it's a calendar month (`byMonth`), and the pay week for "Fri to Thu" (`payWeek`). What's shown is one choice in `lib/plan-filters.ts` (D210). `components/Sheet.tsx` takes the one plain sentence under its title (`intro`) and the close button's words (`closeLabel`), and `components/ChoiceList.tsx` a hint beside a choice. `lib/home.ts` gives Home's cover the pay landing today (`payToday`, D206). The end-to-end tests share `e2e/coming-up.ts` to open the page and open a payday. The switch part (`Segmented`) is gone (D213).
-- **Built in step 2e** (D216 to D229): first-time setup is `app/setup/page.tsx` and the website's first page `app/page.tsx`, both drawn by `components/setup/` (`SetupScreen.tsx` chooses the welcome or the step; `StepAccounts.tsx` to `StepPlan.tsx` are steps 1 to 8; `StepFrame.tsx` is the frame every step shares). `components/setup/SetupProvider.tsx` loads the person's own plan, makes each step's commands in the background worker as one edit (`runEdits` in `lib/edit.ts`, the worker's `edits` question) and saves it on the phone with how far setup has got (`lib/setup-progress.ts`, kept in the own plan's `setup` field in `data/db.ts`). `lib/setup-forms.ts` turns each step's boxes into the engine's commands, and `lib/setup-view.ts` (the worker's `setup` question) works out the budgets' next week and month and "Here's your plan". The phone keeps which plan is showing (`showing` in `data/db.ts`): `components/PlanProvider.tsx` loads the person's own plan once it's set up, or the example, and otherwise `components/AppShell.tsx` goes to setup (D220). The "when" boxes of Add a payment and setup are `components/WhenFields.tsx`. The setup tests are `e2e/setup.spec.ts`, with the answers as engine commands in `e2e/setup-answers.ts`; the tests from before setup open on the example through `e2e/fixtures.ts`.
-- **Built in step 2f** (D230 to D245): the Debts tab is `components/DebtsScreen.tsx` and one debt `components/DebtScreen.tsx` at `app/app/debt/` (`?id=`), with `DebtSheet.tsx` (add or change, from the boxes in `DebtFields.tsx` that setup's step 5 shares), `StatementSheet.tsx`, `RateSheet.tsx`, `CompareCard.tsx` and `ConfirmSheet.tsx`. Budgets, Savings goals and Accounts are `BudgetsScreen.tsx`, `GoalsScreen.tsx` and `AccountsScreen.tsx` at `app/app/budgets/`, `goals/` and `accounts/`, with `BudgetSheet.tsx`, `GoalSheet.tsx` (from `GoalFields.tsx`, shared with setup's step 7), `AccountSheet.tsx` and `NationSheet.tsx`; More links to them with `MoreLinks.tsx`. The worker answers `debts` (`lib/debts-view.ts`, 24 months ahead, with each over-payment's fix as engine commands), `compare`, and `budgets`, `goals` and `accounts` (`lib/money-views.ts`), read by `components/useScreenView.ts`. `makeChanges` in `PlanProvider.tsx` makes several commands as one change with one undo (`runEdits`). The edit sheet's "Change how often it repeats" uses `RepeatFields` from `WhenFields.tsx` and `repeatSchedule` in `lib/new-payment.ts`, with each row's schedule in `RowView.repeats`. The engine refuses `close-account` with `account-has-money` unless the account shows £0.00 at the end of today (D234). The tests are `e2e/money-screens.spec.ts` and `test/unit/money-screens.test.ts`.
+- **Built in step 2e** (D216 to D229): first-time setup is `app/setup/page.tsx` and the website's first page `app/page.tsx`, both drawn by `components/setup/` (`SetupScreen.tsx` chooses the welcome or the step; `StepAccounts.tsx` to `StepPlan.tsx` are the steps, 8 then and 6 screens since D356; `StepFrame.tsx` is the frame every step shares). `components/setup/SetupProvider.tsx` loads the person's own plan, makes each step's commands in the background worker as one edit (`runEdits` in `lib/edit.ts`, the worker's `edits` question) and saves it on the phone with how far setup has got (`lib/setup-progress.ts`, kept in the own plan's `setup` field in `data/db.ts`). `lib/setup-forms.ts` turns each step's boxes into the engine's commands, and `lib/setup-view.ts` (the worker's `setup` question) works out the budgets' next week and month and "Here's your plan". The phone keeps which plan is showing (`showing` in `data/db.ts`): `components/PlanProvider.tsx` loads the person's own plan once it's set up, or the example, and otherwise `components/AppShell.tsx` goes to setup (D220). The "when" boxes of Add a payment and setup are `components/WhenFields.tsx`. The setup tests are `e2e/setup.spec.ts`, with the answers as engine commands in `e2e/setup-answers.ts`; the tests from before setup open on the example through `e2e/fixtures.ts`.
+- **The shorter setup** (D356 to D358): 6 screens in 3 parts. `lib/setup-progress.ts` has the screens (`SetupStep` 0 to 6), the parts (`SETUP_PARTS`, `partOf`), the screen that lists each kind of thing added (`SCREEN_OF_KIND`), and `upgradeSetup`, which reads progress saved during the old 8 steps (no `layout`) as the matching screen (`OLD_STEP_TO_SCREEN`) with every item moved to its screen; progress saved now has `layout: 2`. `SetupProvider` upgrades what it loads, from the phone or brought down from the account. Screen 3 is `StepHomeBills.tsx`, which replaced `StepRent.tsx` and `StepBills.tsx`; `StepSavings.tsx` has gone, and `StepPlan.tsx` opens `GoalSheet.tsx` under `PlanActionsOverride`, with setup's own plan and a save that adds the goal as one setup item (`madeAt` and `start` are `GoalSheet`'s new props). `StepFrame.tsx` draws "Part 2 of 3: Money out" and the bar of three, and takes `outside` for a sheet, which has a form of its own. The tests are `e2e/setup.spec.ts` (tests 7 to 9, with the tap count from `countTaps` in `e2e/setup.ts`), `e2e/your-plan.spec.ts` (14 and 15) and `test/unit/setup-progress.test.ts`.
+- **Built in step 2f** (D230 to D245): the Debts tab is `components/DebtsScreen.tsx` and one debt `components/DebtScreen.tsx` at `app/app/debt/` (`?id=`), with `DebtSheet.tsx` (add or change, from the boxes in `DebtFields.tsx` that setup's debts screen shares), `StatementSheet.tsx`, `RateSheet.tsx`, `CompareCard.tsx` and `ConfirmSheet.tsx`. Budgets, Savings goals and Accounts are `BudgetsScreen.tsx`, `GoalsScreen.tsx` and `AccountsScreen.tsx` at `app/app/budgets/`, `goals/` and `accounts/`, with `BudgetSheet.tsx`, `GoalSheet.tsx` (from `GoalFields.tsx`, which setup's old step 7 shared; since D356 setup opens the sheet itself), `AccountSheet.tsx` and `NationSheet.tsx`; More links to them with `MoreLinks.tsx`. The worker answers `debts` (`lib/debts-view.ts`, 24 months ahead, with each over-payment's fix as engine commands), `compare`, and `budgets`, `goals` and `accounts` (`lib/money-views.ts`), read by `components/useScreenView.ts`. `makeChanges` in `PlanProvider.tsx` makes several commands as one change with one undo (`runEdits`). The edit sheet's "Change how often it repeats" uses `RepeatFields` from `WhenFields.tsx` and `repeatSchedule` in `lib/new-payment.ts`, with each row's schedule in `RowView.repeats`. The engine refuses `close-account` with `account-has-money` unless the account shows £0.00 at the end of today (D234). The tests are `e2e/money-screens.spec.ts` and `test/unit/money-screens.test.ts`.
 - **Built in step 2g** (D247 to D259): What if is `components/WhatIfScreen.tsx` at `app/app/what-if/` (`?from=coming-up` for its link back), worked out by the worker's `what-if` question (`lib/what-if-view.ts`, the engine's `whatIf` with the practice commands, the lowest point 12 months ahead and debts 24). It gives its sheets the practice plan through `PlanActionsOverride` in `PlanProvider.tsx`, so `makeChange` there adds a practice change instead of saving; the practice list is `ComingUpScreen` with `practice`. Keep is `makeChanges` with every practice command (D135). Practice changes are kept in a module variable while PrePenny is open. The pay calculator is `components/PayCalculator.tsx`, shared by `PayScreen.tsx` at `app/app/pay/` and `PublicPayScreen.tsx` at `app/pay-calculator/` (outside the app's shell). Its boxes are read and worked out on the main thread by `lib/pay-calculator.ts` (`readCalculator`, `workOutCalculator`, `checkPayslipForm`, `calculatorFromPlan`, `saveWeekCommands`), and the app's plan side comes from the worker's `pay` question (`lib/pay-view.ts`: the main pay's paydays from tomorrow, its tax settings and the saved weeks). "Start a free plan with this pay" goes through `lib/pay-draft.ts`, read once by setup's `StepPay.tsx`. From the owner's answers to step 2f: `lib/debts-view.ts` gives each debt payment its edit sheet row (`edit`), what the fix also removes (`alsoRemoves`) and the planned payments closing can remove (`planned`); `ConfirmSheet.tsx` takes a Yes or No `question`. The tests are `e2e/what-if.spec.ts`, `e2e/pay-calculator.spec.ts` and `e2e/answers-2f.spec.ts`, with `test/unit/what-if.test.ts`, `pay-calculator.test.ts` and `debt-answers.test.ts`.
 - **Built in step 2h** (D262 onwards): Your job is `components/JobScreen.tsx` at `app/app/job/`, with `JobSheet.tsx`; its view and the preview of what a change does to paydays still to come are the worker's `job` and `job-preview` questions (`lib/job-view.ts`), the boxes are read by `lib/job-form.ts`, and its words come from `lib/job-words.ts`. The calculator's tax and payslip boxes are shared as `TaxBoxes` and `SoFarBoxes` in `PayCalculator.tsx`, read by `readTaxBoxes` in `lib/pay-calculator.ts`. "Save as a pay week" takes which paydays it's for (`saveWeekCommands(…, weekFor)`, `canChooseOneWeek`), using each payday's `step` from `lib/pay-view.ts`. What if's practice changes are kept on the phone by `data/practice.ts` (the `device` table, one key per plan). `ConfirmSheet.tsx`'s question starts with neither answer. The six people's journeys are `e2e/people.spec.ts`, with their setups in `e2e/people.ts` and the shared steps and balance checks in `e2e/journeys.ts`; every screen and sheet is checked by `e2e/checks.spec.ts`, offline by `e2e/offline.spec.ts`, and speed by `e2e/speed.spec.ts`. GitHub runs the end-to-end tests in three parts side by side.
 - **Built in step 3a** (D288 to D299): `supabase/` as sketched above, with `config.toml` from `supabase init` (CLI 2.122.0, Postgres 17, services the tests don't use switched off), `migrations/`, `seed.sql` (test helpers only) and `tests/database/`. No `functions/` yet. The Check workflow's "Database and its privacy rules" job runs the tests on every push; `.github/workflows/database.yml` runs `supabase link` and `supabase db push` from `main` after Check passes (D297). The app's own changes from the owner's answers to step 2h: `lib/bar-words.ts` (an undo bar message with its short words, D284), `UndoBar.tsx`'s `isShortForItsText()`, and `ConfirmSheet.tsx`'s `answers` (D279).
