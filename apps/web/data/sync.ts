@@ -12,6 +12,10 @@
 //   it (Supabase Realtime, D295), and also looks when PrePenny opens, when it
 //   comes back on screen, when the signal comes back and every minute while
 //   it's open. Then it brings down only what's new.
+// - Every screen of a phone that's signed in looks at the account, the
+//   welcome and setup included (D351): a plan of the phone's own beside the
+//   account's asks which to keep (D324), and a phone with none brings the
+//   account's down. The account holds one plan of the person's own (D352).
 // - A change the server refuses stays queued, and nothing after it is sent:
 //   what the phone does then is step 3d.
 // - Only a phone that's signed in sends anything; the example plan is never
@@ -23,7 +27,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import { signedInClient } from '../lib/account.ts';
 import { newId, timeNow } from '../lib/ids.ts';
-import type { SetupProgress } from '../lib/setup-progress.ts';
+import { type SetupProgress, setupDone } from '../lib/setup-progress.ts';
 import {
   type DbWrite,
   type MirrorRow,
@@ -123,6 +127,7 @@ const REFUSALS = new Set([
   'not-your-pay',
   'link-not-needed',
   'private-belongs-to',
+  'has-a-plan',
 ]);
 
 function failureOf(error: { code?: unknown; message?: unknown } | null): Failure {
@@ -384,27 +389,46 @@ async function sendQueue(
 }
 
 // ---------------------------------------------------------------------------
-// Signing in: the first copy, bringing a plan down, or asking which to keep.
+// Looking at the account: the first copy, bringing a plan down, or asking
+// which to keep. Done when someone signs in, and on every screen of a phone
+// that's signed in: the welcome, setup and the app (D351).
 
 export type Connection =
   /** The plan on this phone is the one kept in the account. */
   | { readonly kind: 'kept' }
-  /** There's no plan on this phone or in the account yet. */
+  /** There's no plan in the account, and none on this phone with anything in it yet. */
   | { readonly kind: 'nothing-yet' }
-  /** This phone has a plan of its own and the account has another: the person chooses. */
+  /** The account's plan has just come down to this phone: the screens start afresh with it. */
+  | { readonly kind: 'brought-down' }
+  /** This phone has a plan of its own and the account another: the person chooses (D324). */
   | {
       readonly kind: 'choose';
       readonly savedChangedAt: string;
       readonly phoneStartedAt: string | null;
+      /** The plan on this phone has been set up to the end, not left part-way. */
+      readonly phoneSetUp: boolean;
     }
   /** The server can't be reached now, or isn't ready for it: the plan stays on the phone and is tried again. */
   | { readonly kind: 'not-now' };
 
-/** The account's plan, and the rows already brought down for the choice. */
+const KEPT: Connection = { kind: 'kept' };
+const NOTHING_YET: Connection = { kind: 'nothing-yet' };
+const BROUGHT_DOWN: Connection = { kind: 'brought-down' };
+const NOT_NOW: Connection = { kind: 'not-now' };
+/** Something changed while looking: look again. */
+const AGAIN = Symbol('again');
+
+/** The account's plan to choose against, and its rows, already brought down for the choice. */
 let waitingChoice: { readonly planId: string; readonly rows: MirrorRow[] } | null = null;
 
+/** A plan the person is in now, and whether it's theirs (D352: one of their own at most). */
+interface InAccount {
+  readonly id: string;
+  readonly owned: boolean;
+}
+
 /** The plans the person is in now: their own first, then the newest. */
-async function plansInAccount(client: SupabaseClient, person: string): Promise<string[] | null> {
+async function plansInAccount(client: SupabaseClient, person: string): Promise<InAccount[] | null> {
   try {
     const { data, error } = await client
       .from('plan_members')
@@ -418,7 +442,7 @@ async function plansInAccount(client: SupabaseClient, person: string): Promise<s
           Number(b.role === 'owner') - Number(a.role === 'owner') ||
           b.joined_at.localeCompare(a.joined_at),
       )
-      .map((one) => one.plan_id);
+      .map((one) => ({ id: one.plan_id, owned: one.role === 'owner' }));
   } catch {
     return null;
   }
@@ -435,80 +459,165 @@ function startedAt(records: Awaited<ReturnType<typeof loadRecords>>): string | n
 }
 
 /**
- * After signing in, or when PrePenny opens signed in: puts the plan on this
- * phone and the one in the account together (brief 4.13 "Try first", Part 10).
- * - Only a plan on the phone: it goes up as the first copy.
- * - Only a plan in the account: it comes down.
- * - The same plan in both: what's different is sent.
- * - A plan of its own in each: the person is asked which to keep (D324).
+ * True when a plan on this phone has something in it. One with nothing yet,
+ * as when "Make my plan" has just been tapped, is never asked about and
+ * never sent: the saved plan comes down in its place (D324).
  */
-export async function connectPlan(): Promise<Connection> {
-  const client = await signedInClient();
-  if (client === null) return { kind: 'not-now' };
-  const person = await personOf(client);
-  if (person === null) return { kind: 'not-now' };
+async function hasSomething(db: PrePennyDb, planId: string): Promise<boolean> {
+  const found = await db.records
+    .where('planId')
+    .equals(planId)
+    .filter((record) => record.kind === 'account' || record.kind === 'series')
+    .count();
+  return found > 0;
+}
+
+const refusedWith = (failure: Failure, code: string) =>
+  failure.kind === 'refused' && failure.code === code;
+
+/**
+ * Looks at the account and puts the plan on this phone and the one there
+ * together (brief 4.13 "Try first", Part 10, D324, D351):
+ * - Only a plan on the phone, with something in it: it goes up as the first copy.
+ * - Only a plan in the account, or one on the phone with nothing in it yet: it comes down.
+ * - The same plan in both: kept in step.
+ * - A plan on the phone with something in it, finished or not, and another
+ *   in the account: the person is asked which to keep. That includes an
+ *   account with two plans of its own, from before the database refused a
+ *   second (D352): the one on this phone against the other.
+ * - The plan on this phone was removed from the account by another phone,
+ *   which kept another (D324): that one comes down here too.
+ */
+async function lookAtAccount(client: SupabaseClient, person: string): Promise<Connection> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const found = await lookOnce(client, person);
+    if (found !== AGAIN) return found;
+  }
+  return NOT_NOW;
+}
+
+async function lookOnce(
+  client: SupabaseClient,
+  person: string,
+): Promise<Connection | typeof AGAIN> {
   return withDb(async (db) => {
     const own = await ownPlanOnPhone(db);
-    if (own?.owner !== undefined && own.owner !== person) return { kind: 'not-now' };
-    if (own !== undefined && (await db.links.get(own.id)) !== undefined) {
-      await syncNow();
-      return { kind: 'kept' };
-    }
+    // Another account's plan stays until it's removed from the sign-in page (D326).
+    if (own?.owner !== undefined && own.owner !== person) return NOT_NOW;
     const inAccount = await plansInAccount(client, person);
-    if (inAccount === null) return { kind: 'not-now' };
+    if (inAccount === null) return NOT_NOW;
+    const link = own === undefined ? undefined : await db.links.get(own.id);
+
+    if (own !== undefined && link !== undefined) {
+      if (link.personId !== person) return NOT_NOW;
+      if (!inAccount.some((one) => one.id === own.id)) {
+        // Removed from the account on another phone, which kept another
+        // plan: that one comes down in its place. With no plan there at
+        // all, the other phone hasn't sent its own yet: wait for it.
+        const kept = inAccount[0];
+        if (kept === undefined) return NOT_NOW;
+        const swapped = await bringDownInstead(client, db, kept.id, person, null, {
+          id: own.id,
+          onlyIfEmpty: false,
+        });
+        return swapped === 'done' ? BROUGHT_DOWN : NOT_NOW;
+      }
+      const other = inAccount.find((one) => one.owned && one.id !== own.id);
+      if (other === undefined) return KEPT;
+      return askToChoose(client, db, own, other.id);
+    }
+
     const saved = inAccount[0];
-    const records = own === undefined ? null : await loadRecords(db, own.id);
-    const hasOwn = records !== null && (records.accounts.length > 0 || records.series.length > 0);
-    if (saved === undefined) {
-      if (own === undefined) return { kind: 'nothing-yet' };
-      return (await sendFirstCopy(client, db, own, person))
-        ? { kind: 'kept' }
-        : { kind: 'not-now' };
-    }
-    if (own !== undefined && own.id === saved) {
+    const ownHasSomething = own !== undefined && (await hasSomething(db, own.id));
+    if (own !== undefined && inAccount.some((one) => one.id === own.id)) {
+      // The same plan in both, from a phone that lost which plan it was for.
       await db.links.put({ planId: own.id, personId: person, shared: 0, mine: 0 });
-      await syncNow();
-      return { kind: 'kept' };
+      return AGAIN;
     }
-    if (!hasOwn) {
-      if (own !== undefined) await removeFromPhone(db, own.id);
-      return (await bringDownNew(client, db, saved, person, null))
-        ? { kind: 'kept' }
-        : { kind: 'not-now' };
+    if (saved === undefined) {
+      if (own === undefined || !ownHasSomething) return NOTHING_YET;
+      const sent = await sendFirstCopy(client, db, own, person);
+      // Another phone sent its plan a moment ago: look again, and ask.
+      if (sent === 'has-a-plan') return AGAIN;
+      return sent ? KEPT : NOT_NOW;
     }
-    const answer = await rpc<PlanChanges>(client, 'plan_changes', {
-      plan: saved,
-      shared_after: 0,
-      mine_after: 0,
-    });
-    if (!answer.ok) return { kind: 'not-now' };
-    const rows = rowsFrom(answer.data);
-    waitingChoice = { planId: saved, rows };
-    const changed = rows
-      .map((row) => row.changedAt ?? '')
-      .filter((time) => time !== '')
-      .sort()
-      .at(-1);
-    return {
-      kind: 'choose',
-      savedChangedAt: changed ?? new Date().toISOString(),
-      phoneStartedAt: records === null ? null : startedAt(records),
-    };
+    if (!ownHasSomething) {
+      const swapped = await bringDownInstead(
+        client,
+        db,
+        saved.id,
+        person,
+        null,
+        own === undefined ? null : { id: own.id, onlyIfEmpty: true },
+      );
+      // Something was put in this phone's plan meanwhile: look again, and ask.
+      if (swapped === 'not-empty') return AGAIN;
+      return swapped === 'done' ? BROUGHT_DOWN : NOT_NOW;
+    }
+    return askToChoose(client, db, own, saved.id);
   });
 }
 
+/** Brings the account's plan down for the choice, and says what each plan is. */
+async function askToChoose(
+  client: SupabaseClient,
+  db: PrePennyDb,
+  own: StoredPlan,
+  saved: string,
+): Promise<Connection> {
+  const answer = await rpc<PlanChanges>(client, 'plan_changes', {
+    plan: saved,
+    shared_after: 0,
+    mine_after: 0,
+  });
+  if (!answer.ok) return NOT_NOW;
+  const rows = rowsFrom(answer.data);
+  waitingChoice = { planId: saved, rows };
+  const changed = rows
+    .map((row) => row.changedAt ?? '')
+    .filter((time) => time !== '')
+    .sort()
+    .at(-1);
+  return {
+    kind: 'choose',
+    savedChangedAt: changed ?? new Date().toISOString(),
+    phoneStartedAt: startedAt(await loadRecords(db, own.id)),
+    phoneSetUp: setupDone(own.setup),
+  };
+}
+
+/**
+ * After signing in, or from the sign-in page's "Choose which plan to keep":
+ * looks at the account, then keeps the plan in step.
+ */
+export async function connectPlan(): Promise<Connection> {
+  const client = await signedInClient();
+  if (client === null) return NOT_NOW;
+  const person = await personOf(client);
+  if (person === null) return NOT_NOW;
+  const found = await inTurn(() => lookAtAccount(client, person));
+  accountLooked = found.kind !== 'not-now' && found.kind !== 'choose';
+  if (found.kind === 'kept') await syncNow();
+  return found;
+}
+
+/**
+ * Sends the plan on this phone up as the account's first copy. "has-a-plan"
+ * when the account already has a plan of its own, sent by another phone a
+ * moment ago (D352).
+ */
 async function sendFirstCopy(
   client: SupabaseClient,
   db: PrePennyDb,
   own: StoredPlan,
   person: string,
-): Promise<boolean> {
+): Promise<boolean | 'has-a-plan'> {
   const records = await loadRecords(db, own.id);
   const started = await rpc(client, 'start_plan', {
     plan: own.id,
     nation: records.settings?.nation ?? 'england-and-wales',
   });
-  if (!started.ok) return false;
+  if (!started.ok) return refusedWith(started.failure, 'has-a-plan') ? 'has-a-plan' : false;
   const link: PlanLink = { planId: own.id, personId: person, shared: 0, mine: 0 };
   // Kept first, so a change made while the first copy goes up joins the queue.
   await db.links.put(link);
@@ -528,14 +637,20 @@ async function sendFirstCopy(
   return true;
 }
 
-async function bringDownNew(
+/**
+ * Brings a plan in the account down to this phone, in place of the plan
+ * here, if any, in one go: nothing is removed until the new plan has
+ * arrived. With `onlyIfEmpty`, a plan here that has had something put in it
+ * meanwhile is kept, and the person is asked instead.
+ */
+async function bringDownInstead(
   client: SupabaseClient,
   db: PrePennyDb,
   planId: string,
   person: string,
   rows: MirrorRow[] | null,
-): Promise<boolean> {
-  const link: PlanLink = { planId, personId: person, shared: 0, mine: 0 };
+  instead: { readonly id: string; readonly onlyIfEmpty: boolean } | null,
+): Promise<'done' | 'not-empty' | 'not-now'> {
   let all = rows;
   if (all === null) {
     const answer = await rpc<PlanChanges>(client, 'plan_changes', {
@@ -543,7 +658,7 @@ async function bringDownNew(
       shared_after: 0,
       mine_after: 0,
     });
-    if (!answer.ok) return false;
+    if (!answer.ok) return 'not-now';
     all = rowsFrom(answer.data);
   }
   let shared = 0;
@@ -553,15 +668,28 @@ async function bringDownNew(
     if (row.privateTo === null) shared = Math.max(shared, row.seq);
     else mine = Math.max(mine, row.seq);
   }
-  await db.plans.put({ id: planId, isExample: false, owner: person, setup: DONE });
-  await keepRows(db, planId, all);
-  const kept = { ...link, shared, mine };
-  await db.links.put(kept);
-  await rebuild(db, kept);
+  const link: PlanLink = { planId, personId: person, shared, mine };
+  const arrived = all;
+  const swapped = await db.transaction(
+    'rw',
+    [db.plans, db.records, db.rows, db.unsent, db.links],
+    async () => {
+      if (instead !== null) {
+        if (instead.onlyIfEmpty && (await hasSomething(db, instead.id))) return false;
+        await removeFromPhone(db, instead.id);
+      }
+      await db.plans.put({ id: planId, isExample: false, owner: person, setup: DONE });
+      await keepRows(db, planId, arrived);
+      await db.links.put(link);
+      return true;
+    },
+  );
+  if (!swapped) return 'not-empty';
+  await rebuild(db, link);
   await setShowing(db, 'own');
   await publish(db, planId);
-  startListening(client, kept);
-  return true;
+  startListening(client, link);
+  return 'done';
 }
 
 /** Removes one plan from this phone, and everything kept with it. */
@@ -575,35 +703,62 @@ async function removeFromPhone(db: PrePennyDb, planId: string) {
   });
 }
 
-/** "Keep your saved plan": the plan on this phone is removed, and the saved one comes down. */
-export async function keepSavedPlan(): Promise<boolean> {
-  const client = await signedInClient();
-  const choice = waitingChoice;
-  if (client === null || choice === null) return false;
-  const person = await personOf(client);
-  if (person === null) return false;
-  return withDb(async (db) => {
-    const own = await ownPlanOnPhone(db);
-    if (own !== undefined) await removeFromPhone(db, own.id);
-    waitingChoice = null;
-    return bringDownNew(client, db, choice.planId, person, choice.rows);
+/**
+ * "Keep your saved plan": the plan on this phone is removed, from the
+ * account too when it's there (D352), and the saved one comes down.
+ */
+export function keepSavedPlan(): Promise<boolean> {
+  return inTurn(async () => {
+    const client = await signedInClient();
+    const choice = waitingChoice;
+    if (client === null || choice === null) return false;
+    const person = await personOf(client);
+    if (person === null) return false;
+    const kept = await withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      if (own !== undefined && (await db.links.get(own.id)) !== undefined) {
+        const removed = await rpc(client, 'remove_plan', { plan: own.id });
+        if (!removed.ok && !refusedWith(removed.failure, 'not-found')) return false;
+      }
+      const swapped = await bringDownInstead(
+        client,
+        db,
+        choice.planId,
+        person,
+        choice.rows,
+        own === undefined ? null : { id: own.id, onlyIfEmpty: false },
+      );
+      return swapped === 'done';
+    });
+    if (kept) {
+      waitingChoice = null;
+      // Looked at again on the next screen, in case the account had a third.
+      accountLooked = false;
+    }
+    return kept;
   });
 }
 
-/** "Keep the plan on this phone": the saved plan is removed for good, and this one goes up. */
-export async function keepPhonePlan(): Promise<boolean> {
-  const client = await signedInClient();
-  const choice = waitingChoice;
-  if (client === null || choice === null) return false;
-  const person = await personOf(client);
-  if (person === null) return false;
-  const removed = await rpc(client, 'remove_plan', { plan: choice.planId });
-  if (!removed.ok) return false;
-  waitingChoice = null;
-  return withDb(async (db) => {
-    const own = await ownPlanOnPhone(db);
-    if (own === undefined) return false;
-    return sendFirstCopy(client, db, own, person);
+/** "Keep the plan on this phone": the saved plan is removed for good, and this one goes up, if it isn't there already. */
+export function keepPhonePlan(): Promise<boolean> {
+  return inTurn(async () => {
+    const client = await signedInClient();
+    const choice = waitingChoice;
+    if (client === null || choice === null) return false;
+    const person = await personOf(client);
+    if (person === null) return false;
+    const removed = await rpc(client, 'remove_plan', { plan: choice.planId });
+    if (!removed.ok && !refusedWith(removed.failure, 'not-found')) return false;
+    waitingChoice = null;
+    accountLooked = false;
+    return withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      if (own === undefined) return false;
+      if ((await db.links.get(own.id)) !== undefined) return true;
+      // Refused only when the account still has another plan of its own:
+      // the next screen asks about that one (D352).
+      return (await sendFirstCopy(client, db, own, person)) !== false;
+    });
   });
 }
 
@@ -625,12 +780,29 @@ async function publish(db: PrePennyDb, planId: string | null, cantSend = false) 
   });
 }
 
+/** Account work runs one task at a time, so two looks never both send a first copy. */
+let chain: Promise<unknown> = Promise.resolve();
+
+function inTurn<T>(task: () => Promise<T>): Promise<T> {
+  const next = chain.then(task, task);
+  chain = next.catch(() => undefined);
+  return next;
+}
+
+/**
+ * Whether the account has been looked at since PrePenny opened. A phone
+ * whose plan is kept there looks once, then keeps it in step; one that's
+ * still to send its plan, or has none, looks every time (D351).
+ */
+let accountLooked = false;
+
 let running: Promise<void> | null = null;
 let again = false;
 
 /**
- * Sends what's queued, then brings down what's new. Once at a time: asked
- * again while it runs, it runs once more straight after.
+ * Looks at the account when it's due, sends what's queued, then brings down
+ * what's new. Once at a time: asked again while it runs, it runs once more
+ * straight after.
  */
 export function syncNow(): Promise<void> {
   if (running !== null) {
@@ -641,13 +813,32 @@ export function syncNow(): Promise<void> {
     try {
       do {
         again = false;
-        await syncOnce();
+        await inTurn(syncOnce);
       } while (again);
     } finally {
       running = null;
     }
   })();
   return running;
+}
+
+/** What a look at the account found that the screen showing has to act on. */
+export type AccountNews = 'choose' | 'brought-down';
+
+const newsListeners = new Set<(news: AccountNews) => void>();
+
+/**
+ * Calls back when a look at the account, made while PrePenny is open, finds
+ * the person must choose which plan to keep (D324), or has brought the
+ * account's plan down in place of what was showing.
+ */
+export function onAccountNews(listener: (news: AccountNews) => void): () => void {
+  newsListeners.add(listener);
+  return () => newsListeners.delete(listener);
+}
+
+function tell(news: AccountNews) {
+  for (const listener of newsListeners) listener(news);
 }
 
 async function syncOnce(): Promise<void> {
@@ -658,50 +849,66 @@ async function syncOnce(): Promise<void> {
   }
   const person = await personOf(client);
   if (person === null) return;
-  await withDb(async (db) => {
+  for (let pass = 0; pass < 2; pass += 1) {
+    const due = !accountLooked || (await withDb(async (db) => !(await keptHere(db, person))));
+    if (due) {
+      const found = await lookAtAccount(client, person);
+      if (found.kind === 'not-now') {
+        await withDb(async (db) => {
+          const own = await ownPlanOnPhone(db);
+          if (own !== undefined && own.owner === person) await publish(db, own.id, true);
+        });
+        return;
+      }
+      if (found.kind === 'choose') {
+        tell('choose');
+        return;
+      }
+      accountLooked = true;
+      if (found.kind === 'brought-down') {
+        tell('brought-down');
+        return;
+      }
+      if (found.kind === 'nothing-yet') {
+        await withDb(async (db) => publish(db, (await ownPlanOnPhone(db))?.id ?? null));
+        return;
+      }
+    }
+    // The plan on this phone is no longer in the account: look again straight away.
+    if (!(await keepInStepOnce(client, person))) return;
+    accountLooked = false;
+  }
+}
+
+/** True when the plan on this phone is kept in this person's account. */
+async function keptHere(db: PrePennyDb, person: string): Promise<boolean> {
+  const own = await ownPlanOnPhone(db);
+  if (own === undefined) return false;
+  return (await db.links.get(own.id))?.personId === person;
+}
+
+/**
+ * Sends what's queued for the plan kept in the account, then brings down
+ * what's new. True when the server says the plan isn't there any more.
+ */
+async function keepInStepOnce(client: SupabaseClient, person: string): Promise<boolean> {
+  return withDb(async (db) => {
     const own = await ownPlanOnPhone(db);
-    if (own === undefined) {
-      await publish(db, null);
-      return;
-    }
+    if (own === undefined) return false;
     let link = await db.links.get(own.id);
-    if (link === undefined) {
-      // A plan made on this phone after signing in, or a first copy that
-      // couldn't go up before: it goes up now. One that would need asking
-      // which to keep is asked on the sign-in page (choose()).
-      if (own.owner !== undefined && own.owner !== person) return;
-      const inAccount = await plansInAccount(client, person);
-      if (inAccount === null) {
-        await publish(db, own.id, true);
-        return;
-      }
-      if (inAccount.length > 0 && !inAccount.includes(own.id)) {
-        chooseListener?.();
-        return;
-      }
-      if (!(await sendFirstCopy(client, db, own, person))) await publish(db, own.id, true);
-      return;
-    }
-    if (link.personId !== person) return;
+    if (link === undefined || link.personId !== person) return false;
     const sent = await sendQueue(client, db, link);
+    if (sent !== true && refusedWith(sent, 'not-found')) return true;
     link = (await db.links.get(own.id)) ?? link;
     const down = await bringDown(client, db, link);
+    if (typeof down === 'object' && refusedWith(down, 'not-found')) return true;
     const cantSend =
       (sent !== true && sent.kind === 'unreachable') ||
       (typeof down === 'object' && down.kind === 'unreachable');
     await publish(db, own.id, cantSend);
     startListening(client, link);
+    return false;
   });
-}
-
-let chooseListener: (() => void) | null = null;
-
-/** Called when this phone has a plan of its own and the account another, found while PrePenny was open. */
-export function onNeedToChoose(listener: () => void): () => void {
-  chooseListener = listener;
-  return () => {
-    if (chooseListener === listener) chooseListener = null;
-  };
 }
 
 // The live nudges, and looking again now and then.

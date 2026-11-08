@@ -276,6 +276,13 @@ export async function askToKeepData(): Promise<boolean> {
   }
 }
 
+/** The plan a change was for isn't on this phone any more (D351). */
+export class PlanGone extends Error {
+  constructor() {
+    super('plan-gone');
+  }
+}
+
 /** A change as it's sent to the server once the plan is kept in an account (step 3c). */
 export interface ChangeToSend {
   readonly editId: string;
@@ -288,16 +295,24 @@ export interface ChangeToSend {
  * it has been changed (D182). All in one go, so nothing is half saved. When
  * the plan is kept in an account, the change joins the queue to send in the
  * same go (step 3c), so it's never saved without being queued, or the
- * other way round. The example is never sent anywhere.
+ * other way round. The example is never sent anywhere. `isNew` for a plan
+ * being made now; any other plan must still be on the phone.
  */
 export async function saveChange(
   db: PrePennyDb,
   plan: StoredPlan,
   writes: readonly RecordWrite[],
   send?: ChangeToSend,
+  isNew = false,
 ): Promise<StoredPlan> {
   let saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
   await db.transaction('rw', [db.plans, db.records, db.links, db.unsent], async () => {
+    // A plan removed from this phone, as when the account's plan has come
+    // down in its place, is never saved back by a screen that still had it
+    // open (D351). Only setup's "Make my plan" makes a new one.
+    if (!plan.isExample && !isNew && (await db.plans.get(plan.id)) === undefined) {
+      throw new PlanGone();
+    }
     saved = await keepingOwner(db, saved);
     await saveWrites(db, plan.id, writes);
     await db.plans.put(saved);

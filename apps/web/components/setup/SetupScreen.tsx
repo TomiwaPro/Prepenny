@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { Problem } from '../Fields.tsx';
+import { KeepInStep } from '../KeepInStep.tsx';
 import { UpdateNote } from '../UpdateNote.tsx';
 import styles from './Setup.module.css';
 import { SetupProvider, useSetup } from './SetupProvider.tsx';
@@ -81,9 +82,12 @@ function Steps() {
   );
 }
 
+// Signed in, setup and the welcome look at the account too, as every screen
+// does (D351): the saved plan comes down, or the person chooses which to keep.
 export function SetupScreen() {
   return (
     <SetupProvider>
+      <KeepInStep />
       <Steps />
     </SetupProvider>
   );
@@ -93,6 +97,7 @@ export function SetupScreen() {
 export function WelcomeScreen() {
   return (
     <SetupProvider>
+      <KeepInStep />
       <Welcome inSetup={false} />
     </SetupProvider>
   );

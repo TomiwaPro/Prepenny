@@ -11,6 +11,7 @@ import {
   exampleNeedsReplacing,
   loadRecords,
   openDb,
+  PlanGone,
   type PrePennyDb,
   recordsOf,
   rowsOf,
@@ -174,5 +175,19 @@ describe('Changing the example on this phone (D182)', () => {
     const older = { ...examplePlanRecord, exampleVersion: 'older' };
     expect(exampleNeedsReplacing(older, EXAMPLE_VERSION)).toBe(true);
     expect(exampleNeedsReplacing({ ...older, edited: true }, EXAMPLE_VERSION)).toBe(false);
+  });
+});
+
+describe('A plan removed from this phone (D351)', () => {
+  it('is never saved back by a screen that still had it open', async () => {
+    const own = { id: 'own-plan', isExample: false };
+    await saveChange(db, own, [], undefined, true);
+    expect(await db.plans.get(own.id)).toEqual(own);
+
+    // The account's plan comes down in its place, and the old plan goes.
+    await db.plans.delete(own.id);
+    await expect(saveChange(db, own, [])).rejects.toBeInstanceOf(PlanGone);
+    expect(await db.plans.get(own.id)).toBeUndefined();
+    expect(await db.records.where('planId').equals(own.id).count()).toBe(0);
   });
 });

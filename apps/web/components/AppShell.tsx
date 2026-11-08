@@ -6,12 +6,11 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { keepInStep, onNeedToChoose } from '../data/sync.ts';
-import { checkSignIn, followSignOutInOtherTabs, useAccount } from '../lib/account.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
+import { KeepInStep } from './KeepInStep.tsx';
 import { ExampleBanner, OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlan, usePlanActions } from './PlanProvider.tsx';
 import { UndoBar } from './UndoBar.tsx';
@@ -36,33 +35,6 @@ function Notes() {
       <OfflineNote />
     </div>
   );
-}
-
-/**
- * Renews this phone's sign-in when PrePenny opens, if it has one, so it lasts
- * until the person signs out, or 90 days without opening PrePenny (D19). A
- * phone that has never signed in loads and sends nothing (step 3b). Signed
- * in, the plan is kept in step with the account while PrePenny is open
- * (step 3c), and a plan of the phone's own beside the account's goes to the
- * sign-in page to choose which to keep (D324).
- */
-function KeepSignedIn() {
-  const account = useAccount();
-  const router = useRouter();
-  useEffect(() => {
-    void checkSignIn();
-    return followSignOutInOtherTabs();
-  }, []);
-  useEffect(() => {
-    if (account.status !== 'signed-in') return;
-    const stopChoosing = onNeedToChoose(() => router.push('/sign-in/?choose'));
-    const stop = keepInStep();
-    return () => {
-      stop();
-      stopChoosing();
-    };
-  }, [account.status, router]);
-  return null;
 }
 
 /** Goes to setup when the person's own plan isn't set up yet (brief 4.1, step 2e). */
@@ -160,7 +132,7 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
   return (
     <PlanProvider>
       <ToSetup />
-      <KeepSignedIn />
+      <KeepInStep />
       <Column>{children}</Column>
       {/* Above the navigation: the update note, then the undo bar (D186, D202). */}
       <div className={styles.bottom} data-bottom-notes>
