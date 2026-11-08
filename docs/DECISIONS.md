@@ -3997,3 +3997,18 @@ The owner's instruction, 8 Nov 2026. Adds to D72 and D134.
 - Tried on purpose: with the building computer's 4 processors kept busy by 8 other programs, rounds 1 to 3 took 17.69, 22.46 and 12.23 milliseconds and round 4 took 5.41, so it passed. With the limit lowered to 3 milliseconds, all 5 rounds were over it and the test failed.
 
 Why: the owner's instruction: sturdy on a busy machine, without loosening what it checks.
+
+## From the outside review of the step 3c fix
+
+### D355. What the outside review of the step 3c fix changed
+
+Decided 8 Nov 2026 in the step 3c fix, from an outside review of the whole fix. Adds to D351 and D352.
+
+- **A refused change isn't the plan leaving the account.** The fix first took any "not found" while sending a change to mean the plan had been removed elsewhere, and then stopped bringing changes down. Now only the plan itself not being found, when the phone asks for what's new, means that. A refused change waits in the queue, as step 3c decided (step 3d).
+- **Never two plans on one phone.** "Make my plan" tapped in the moment the saved plan was on its way could have left both on the phone. Now the swap checks, in the same save, that the phone's plan is still the one it looked at, and looks again if not; and a new plan is never started beside one that has just come down.
+- **A first copy cut off part-way is sent again.** Found in step 3c's own code: a first copy that didn't all arrive, as with the signal lost part-way, was taken as saved, never sent again, and More and the sign-out sheet said nothing was missing. Now the phone marks it as still going up, sends the rest from where it stopped at the next look, and until then More says "Your plan hasn't been saved in your account yet." and signing out warns.
+- **"Keep the plan on this phone" can't say nothing was removed when something was.** Found in step 3c's own code: once the saved plan has been removed, the choice is made, even if this phone's plan can't go up straight away; it goes up at the next look, as any plan not saved yet does.
+
+Test: `apps/web/e2e/your-plan.spec.ts` test 13 (without the mark, More said "Your plan is saved in your account." with nothing in it, and the test failed), and `apps/web/test/unit/db.test.ts` ("A new plan beside one that has just come down").
+
+Why: each was shown by the review with a case that went wrong.
