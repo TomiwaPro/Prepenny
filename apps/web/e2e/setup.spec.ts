@@ -1,6 +1,10 @@
 // First-time setup (brief 4.1, D163, step 2e), from a phone with nothing on
 // it, at 320px and 360px wide, in light and dark, checked by axe: the
-// owner's tests 1 to 6. "Today" is the test-only today (D201).
+// owner's tests 1 to 6, now on 6 screens in 3 parts. And for the shorter
+// setup (D356): the whole of it from the welcome to the plan, counting its
+// screens and taps (test 7); progress saved on each of the old 8 steps opens
+// the matching new screen with nothing lost (test 8); and "Add a goal" on
+// the plan (test 9). "Today" is the test-only today (D201).
 
 import { expect, type Page, test } from '@playwright/test';
 import { type PlanRecords, workOutPlan } from '@prepenny/engine';
@@ -11,9 +15,12 @@ import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { openPeriod, paydayButton, period, rowIn } from './coming-up.ts';
 import { settingScript } from './fixtures.ts';
 import {
+  addGoalOnPlan,
   back,
+  billOn,
   box,
   comparable,
+  countTaps,
   expectStep,
   fillAccount,
   fillWhen,
@@ -23,11 +30,14 @@ import {
   openFresh,
   ownRecords,
   radio,
+  rentForm,
+  SCREEN_TITLES,
   setUpKofi,
   setUpPriya,
   skip,
   startSetup,
   storedPlans,
+  tapsSoFar,
 } from './setup.ts';
 import {
   buildFrom,
@@ -161,7 +171,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await setUpKofi(page);
-      await expectStep(page, 8, "Here's your plan");
+      await expectStep(page, 6, "Here's your plan");
       await expect(page.getByTestId('setup-first-debt')).toContainText('Van finance');
       // £70.00 lower than before step 2f: what's left of this week's Fuel
       // (£40.00) and Food (£30.00) leaves today (D230).
@@ -204,9 +214,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByRole('dialog').getByText('Mon to Sun', { exact: true })).toBeVisible();
     });
 
-    test('test 3: skipping every step but the first still gives a plan with one account and its balance', async ({
+    test('test 3: skipping every screen but the first still gives a plan with one account and its balance', async ({
       page,
     }) => {
+      await countTaps(page);
       await startSetup(page, '2026-11-04');
       await fillAccount(lastForm(page, 'account'), {
         name: 'Current account',
@@ -216,16 +227,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await next(page);
       for (const [step, title] of [
         [2, "How you're paid"],
-        [3, 'Rent or mortgage'],
-        [4, 'Bills'],
-        [5, 'Debts'],
-        [6, 'Spending money'],
-        [7, 'Savings'],
+        [3, 'Home and bills'],
+        [4, 'Debts'],
+        [5, 'Spending money'],
       ] as const) {
         await expectStep(page, step, title);
         await skip(page);
       }
-      await expectStep(page, 8, "Here's your plan");
+      await expectStep(page, 6, "Here's your plan");
+      // Make my plan, 3 boxes and Next, then 4 Skips (D356): 9 taps, then Go to my plan.
+      expect(await tapsSoFar(page)).toBe(9);
       await expect(page.getByTestId('setup-lowest')).toContainText('£412.30');
       await expect(page.getByTestId('setup-left-to-spend')).toHaveCount(0);
       await noAxeProblems(page);
@@ -252,7 +263,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(await ownRecords(page)).toEqual(before);
     });
 
-    test('test 4: leaving after step 3 and opening the app again carries on at step 4', async ({
+    test('test 4: leaving after Home and bills and opening the app again carries on at Debts', async ({
       page,
       context,
     }) => {
@@ -269,32 +280,47 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(pay, 'How much comes in, after tax').fill('450');
       await radio(page, 'No').check();
       await next(page);
-      await expectStep(page, 3, 'Rent or mortgage');
-      await box(page, 'Amount').fill('550');
-      await fillWhen(page.getByRole('form'), { date: '2026-12-01' });
+      await expectStep(page, 3, 'Home and bills');
+      await box(rentForm(page), 'Amount').fill('550');
+      await fillWhen(rentForm(page), { date: '2026-12-01' });
+      const phone = billOn(page, 'phone');
+      await phone.getByRole('checkbox', { name: 'Phone', exact: true }).check();
+      await box(phone, 'Amount').fill('18');
+      await fillWhen(phone, { date: '2026-11-20' });
       await next(page);
-      await expectStep(page, 4, 'Bills');
+      await expectStep(page, 4, 'Debts');
       await page.close();
 
       // Opening PrePenny again, in a new tab on the same phone.
       const again = await context.newPage();
       await again.emulateMedia({ colorScheme });
       await openAgain(again, '2026-11-04');
-      await expectStep(again, 4, 'Bills');
+      await expectStep(again, 4, 'Debts');
       await back(again);
-      await expectStep(again, 3, 'Rent or mortgage');
-      await expect(again.getByTestId('added')).toContainText('Rent');
-      await expect(again.getByTestId('added')).toContainText(
-        '£550.00, monthly on the 1st, next Tue 1 Dec',
+      await expectStep(again, 3, 'Home and bills');
+      // Rent first, then the bills, each with Remove (D221, D356).
+      await expect(again.getByTestId('added').getByRole('listitem')).toHaveCount(2);
+      await expect(again.getByTestId('added').getByRole('listitem').first()).toContainText(
+        'Rent£550.00, monthly on the 1st, next Tue 1 Dec',
       );
+      await expect(again.getByTestId('added').getByRole('listitem').nth(1)).toContainText(
+        'Phone£18.00, monthly on the 20th, next Fri 20 Nov',
+      );
+      // Rent is added, so its card has gone; the phone has left the checklist.
+      await expect(rentForm(again)).toHaveCount(0);
+      await expect(billOn(again, 'phone')).toHaveCount(0);
+      await expect(billOn(again, 'energy')).toBeVisible();
       await noAxeProblems(again);
 
       // Anything added can be removed while setting up, as one undo (D221)…
       await again.getByRole('button', { name: 'Remove Rent' }).click();
+      await expect(again.getByTestId('added').getByRole('listitem')).toHaveCount(1);
+      await expect(box(rentForm(again), 'Amount')).toBeVisible();
+      expect((await ownRecords(again)).series.map((one) => one.name)).toEqual(['Pay', 'Phone']);
+      await again.getByRole('button', { name: 'Remove Phone' }).click();
       await expect(again.getByTestId('added')).toHaveCount(0);
-      // Its row and button have gone, so focus moves to the step's title (WCAG 2.4.3).
-      await expect(again.getByRole('heading', { level: 1 })).toBeFocused();
-      await expect(box(again, 'Amount')).toBeVisible();
+      // Its row and button have gone, so focus moves to "Add another bill" (WCAG 2.4.3).
+      await expect(again.getByRole('button', { name: 'Add another bill' })).toBeFocused();
       expect((await ownRecords(again)).series.map((one) => one.name)).toEqual(['Pay']);
       // …except something a later step uses: the pay arrives in the account.
       await back(again);
@@ -388,31 +414,42 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await radio(page, 'No').check();
       await next(page);
 
-      // Step 3: rent.
-      await expectStep(page, 3, 'Rent or mortgage');
-      await box(page, 'Amount').fill('550');
-      await fillWhen(page.getByRole('form'), { date: '2026-11-01' });
-      await next(page);
-      await expect(page.getByText(message, { exact: true })).toBeVisible();
-      await expect(box(page, 'Next payment')).toBeFocused();
-      await fillWhen(page.getByRole('form'), { date: '2026-12-01' });
-      await next(page);
-
-      // Step 4: a bill.
-      await expectStep(page, 4, 'Bills');
-      const phone = page.locator('[data-bill="phone"]');
+      // Screen 3: rent and a bill, both before today. Nothing is saved until
+      // both are right, and focus goes to the first, the rent (D203).
+      await expectStep(page, 3, 'Home and bills');
+      const rent = rentForm(page);
+      await box(rent, 'Amount').fill('550');
+      await fillWhen(rent, { date: '2026-11-01' });
+      const phone = billOn(page, 'phone');
       await phone.getByRole('checkbox', { name: 'Phone', exact: true }).check();
       await box(phone, 'Amount').fill('18');
       await fillWhen(phone, { date: '2026-10-20' });
       await next(page);
+      await expect(rent.getByText(message, { exact: true })).toBeVisible();
       await expect(phone.getByText(message, { exact: true })).toBeVisible();
-      await expect(box(phone, 'Next payment')).toBeFocused();
+      await expect(box(rent, 'Next payment')).toBeFocused();
       await noAxeProblems(page);
+      expect((await ownRecords(page)).series.map((one) => one.name)).toEqual(['Pay']);
+      await fillWhen(rent, { date: '2026-12-01' });
+      await next(page);
+      await expect(rent.getByText(message, { exact: true })).toHaveCount(0);
+      await expect(box(phone, 'Next payment')).toBeFocused();
       await fillWhen(phone, { date: '2026-11-20' });
+      // Rent left empty says to type it or choose no rent.
+      await box(rent, 'Amount').fill('');
+      await next(page);
+      await expect(
+        rent.getByText(
+          "Type the amount, for example 550, or choose I don't pay rent or a mortgage.",
+          { exact: true },
+        ),
+      ).toBeVisible();
+      await expect(box(rent, 'Amount')).toBeFocused();
+      await box(rent, 'Amount').fill('550');
       await next(page);
 
-      // Step 5: a debt's payments.
-      await expectStep(page, 5, 'Debts');
+      // Screen 4: a debt's payments.
+      await expectStep(page, 4, 'Debts');
       await page.getByRole('button', { name: 'Add a debt' }).click();
       const debt = lastForm(page, 'debt');
       await box(debt, 'Name').fill('Sofa finance');
@@ -425,9 +462,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await fillWhen(debt, { date: '2026-11-23', payments: '12' });
       await next(page);
 
-      // Step 6: a budget starts this week or month, so there's no date to pick
+      // Screen 5: a budget starts this week or month, so there's no date to pick
       // (D230). What's already spent is an amount, explained in words too.
-      await expectStep(page, 6, 'Spending money');
+      await expectStep(page, 5, 'Spending money');
       const food = page.getByTestId('budget-form').first();
       await box(food, 'Amount').fill('200');
       await box(food, 'Already spent this month').fill('lots');
@@ -439,21 +476,197 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(food, 'Already spent this month').fill('');
       await next(page);
 
-      // Step 7: money moved into a savings goal.
-      await expectStep(page, 7, 'Savings');
-      const goal = lastForm(page, 'goal');
+      // Screen 6: money moved into a savings goal, from "Add a goal" (D356).
+      await expectStep(page, 6, "Here's your plan");
+      await page.getByRole('button', { name: 'Add a goal', exact: true }).click();
+      const goal = page.getByRole('dialog', { name: 'Add a savings goal' });
       await box(goal, 'What are you saving for?').fill('Holiday');
       await box(goal, 'Target').fill('1200');
       await box(goal, 'Move into it').fill('50');
       await radio(goal, 'Another way').check();
       await fillWhen(goal, { date: '2026-11-01' });
-      await next(page);
+      await goal.getByRole('button', { name: 'Add goal', exact: true }).click();
       await expect(goal.getByText(message, { exact: true })).toBeVisible();
       await expect(box(goal, 'Next payment')).toBeFocused();
       await noAxeProblems(page);
+      expect((await ownRecords(page)).goals ?? []).toEqual([]);
       await fillWhen(goal, { date: '2026-11-06' });
+      await goal.getByRole('button', { name: 'Add goal', exact: true }).click();
+      await expect(goal).toBeHidden();
+      await expect(page.getByTestId('add-goal').getByTestId('added')).toContainText('Holiday');
+    });
+
+    test('test 7: the whole of setup, from the welcome to the plan, is 6 screens in 3 parts', async ({
+      page,
+    }) => {
+      // Priya uses every screen, and adds her holiday goal from the plan (D356).
+      await countTaps(page);
+      const seen: string[] = [];
+      await setUpPriya(page, async (screen) => {
+        if (screen === 0) {
+          seen.push('welcome');
+          // Counting starts on the welcome.
+          expect(await tapsSoFar(page)).toBe(0);
+          return;
+        }
+        // Each screen's part at the top, with its bar of three, filled this far.
+        const bar = page.getByTestId('setup-parts');
+        await expect(bar.locator('span > span')).toHaveCount(3);
+        seen.push((await page.getByRole('heading', { level: 1 }).textContent()) ?? '');
+      });
+      expect(seen).toEqual(['welcome', ...SCREEN_TITLES]);
+      const fills = await page
+        .getByTestId('setup-parts')
+        .locator('span > span')
+        .evaluateAll((parts) => parts.map((part) => (part as HTMLElement).style.width));
+      expect(fills).toEqual(['100%', '100%', '100%']);
+      const taps = await tapsSoFar(page);
+      await page.getByRole('button', { name: 'Go to my plan' }).click();
+      await expect(page).toHaveURL(/\/app\/$/);
+      await expect(page.getByTestId('balance')).toContainText('£1,240.00');
+      // 6 screens after the welcome, and every tap from Make my plan to Go to my plan.
+      test.info().annotations.push({
+        type: 'setup',
+        description: `${seen.length - 1} screens after the welcome, ${taps + 1} taps`,
+      });
+      expect(seen.length - 1).toBe(6);
+      expect(taps + 1).toBe(PRIYA_TAPS);
+    });
+
+    test('test 8: progress saved on each of the old 8 steps opens the matching new screen, with nothing lost', async ({
+      page,
+    }) => {
+      // Something added on every screen, a goal included, as the old steps had.
+      await setUpEverything(page);
+      const records = await ownRecords(page);
+      const saved = await ownSetup(page);
+      expect(saved.layout).toBe(2);
+      // The old 8 steps' numbers for each kind of thing (step 2e).
+      const OLD_STEP: Record<string, number> = {
+        account: 1,
+        income: 2,
+        'pay-details': 2,
+        rent: 3,
+        bill: 4,
+        debt: 5,
+        budget: 6,
+        goal: 7,
+      };
+      const oldItems = saved.items.map((item) => ({ ...item, step: OLD_STEP[item.kind] }));
+      const opens = [
+        [0, null],
+        [1, 1],
+        [2, 2],
+        [3, 3],
+        [4, 3],
+        [5, 4],
+        [6, 5],
+        [7, 6],
+        [8, 6],
+      ] as const;
+      for (const [old, screen] of opens) {
+        // As the old setup saved it: no layout, its own step numbers.
+        await writeSetup(page, { step: old, items: oldItems, answers: saved.answers });
+        await page.goto('/app/');
+        await expect(page).toHaveURL(/\/setup\/$/);
+        if (screen === null) {
+          await expect(page.getByRole('button', { name: 'Carry on making my plan' })).toBeVisible();
+          await page.getByRole('button', { name: 'Carry on making my plan' }).click();
+          await expectStep(page, 1, 'Your account');
+        } else {
+          await expectStep(page, screen, SCREEN_TITLES[screen - 1] ?? '');
+        }
+        await expectAddedOn(page, screen ?? 1);
+        // Nothing lost: the plan is as it was.
+        expect(await ownRecords(page)).toEqual(records);
+      }
+      await noAxeProblems(page);
+
+      // Every screen still lists what it added, and Remove still takes it back.
+      await writeSetup(page, { step: 4, items: oldItems, answers: saved.answers });
+      await page.goto('/app/');
+      await expectStep(page, 3, 'Home and bills');
+      await page.getByRole('button', { name: 'Remove Phone' }).click();
+      await expect(page.getByTestId('added').getByRole('listitem')).toHaveCount(1);
+      expect((await ownRecords(page)).series.map((one) => one.name)).not.toContain('Phone');
+      // Saving again saves the new layout, with every item on its new screen.
+      const after = await ownSetup(page);
+      expect(after.layout).toBe(2);
+      expect(after.step).toBe(3);
+      expect(after.items.map((item) => [item.kind, item.step])).toEqual(
+        saved.items.filter((item) => item.kind !== 'bill').map((item) => [item.kind, item.step]),
+      );
+    });
+
+    test('test 9: "Add a goal" on the plan adds a savings goal, and Remove takes it back', async ({
+      page,
+    }) => {
+      await startSetup(page, '2026-11-04');
+      await fillAccount(lastForm(page, 'account'), {
+        name: 'Current account',
+        balance: '500',
+        warning: '20',
+      });
       await next(page);
-      await expectStep(page, 8, "Here's your plan");
+      const pay = lastForm(page, 'income');
+      await box(pay, 'Next payday').fill('2026-11-06');
+      await box(pay, 'How much comes in, after tax').fill('450');
+      await radio(page, 'No').check();
+      await next(page);
+      for (const [step, title] of [
+        [3, 'Home and bills'],
+        [4, 'Debts'],
+        [5, 'Spending money'],
+      ] as const) {
+        await expectStep(page, step, title);
+        await skip(page);
+      }
+      await expectStep(page, 6, "Here's your plan");
+      await expect(page.getByTestId('setup-first-goal')).toHaveCount(0);
+      const card = page.getByTestId('add-goal');
+      await expect(card).toContainText(
+        "Set a target and see the date you'll get there. You can also add one later from More, under Savings goals.",
+      );
+      // With one account, the goal is kept in a new savings account, as before (D226).
+      await addGoalOnPlan(page, { name: 'New phone', target: '300', move: '50' }, async (sheet) => {
+        await expect(
+          radio(sheet.getByRole('group', { name: 'Kept in' }), 'A new savings account'),
+        ).toBeChecked();
+        await box(sheet, 'Name of the savings account').fill('Savings');
+        await expect(radio(sheet, 'Each payday, from Fri 6 Nov')).toBeChecked();
+      });
+      await expect(page.getByTestId('setup-first-goal')).toHaveText(
+        'First savings goal reachedNew phone, Fri 11 Dec',
+      );
+      await expect(card.getByRole('button', { name: 'Add another goal' })).toBeFocused();
+      await noAxeProblems(page);
+      const records = await ownRecords(page);
+      expect(records.goals?.map((one) => one.name)).toEqual(['New phone']);
+      expect(records.accounts.map((one) => one.name)).toEqual(['Current account', 'Savings']);
+      expect(records.series.map((one) => one.name)).toEqual(['Pay', 'Saving for New phone']);
+
+      // Remove takes the goal, its new account and its moves back, as one undo (D221).
+      await card.getByRole('button', { name: 'Remove New phone' }).click();
+      await expect(card.getByRole('status')).toHaveText('New phone removed.');
+      await expect(card.getByTestId('added')).toHaveCount(0);
+      await expect(page.getByTestId('setup-first-goal')).toHaveCount(0);
+      const after = await ownRecords(page);
+      expect(after.goals ?? []).toEqual([]);
+      expect(after.accounts.map((one) => one.name)).toEqual(['Current account']);
+
+      // Added again, it's there on Home's plan and under More, Savings goals.
+      await addGoalOnPlan(page, { name: 'New phone', target: '300', move: '50' }, async (sheet) => {
+        await box(sheet, 'Name of the savings account').fill('Savings');
+      });
+      await page.getByRole('button', { name: 'Go to my plan' }).click();
+      await expect(page).toHaveURL(/\/app\/$/);
+      await page
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('link', { name: 'More', exact: true })
+        .click();
+      await page.getByRole('link', { name: 'Savings goals' }).click();
+      await expect(page.getByTestId('goal')).toContainText('New phone');
+      await noAxeProblems(page);
     });
   });
 }
@@ -465,7 +678,7 @@ async function openAgain(page: Page, today: string) {
   await expect(page).toHaveURL(/\/setup\/$/);
 }
 
-test('the welcome says what PrePenny is, with Make my plan and Look at an example plan', async ({
+test('the welcome says what PrePenny is, how long setting it up takes, with Make my plan and Look at an example plan', async ({
   page,
 }) => {
   await openFresh(page, '2026-11-04');
@@ -477,9 +690,124 @@ test('the welcome says what PrePenny is, with Make my plan and Look at an exampl
       { exact: true },
     ),
   ).toBeVisible();
+  // Before setup starts (D356).
+  await expect(
+    page.getByText('Set it up once, about 5 minutes. After that, just keep it up to date.', {
+      exact: true,
+    }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Look at an example plan' })).toBeVisible();
   await noAxeProblems(page);
   // The website's first page is the same welcome.
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Make my plan' })).toBeVisible();
 });
+
+/** Every tap of Priya's whole setup, from Make my plan to Go to my plan (test 7, D356). */
+const PRIYA_TAPS = 79;
+
+/**
+ * A plan with something added on every screen, as the old 8 steps could
+ * have had: an account, pay, rent, a bill, a debt, a budget and a goal. It
+ * ends on Here's your plan.
+ */
+async function setUpEverything(page: Page) {
+  await startSetup(page, '2026-11-04');
+  await fillAccount(lastForm(page, 'account'), {
+    name: 'Current account',
+    balance: '800',
+    warning: '20',
+  });
+  await next(page);
+  const pay = lastForm(page, 'income');
+  await box(pay, 'Next payday').fill('2026-11-06');
+  await box(pay, 'How much comes in, after tax').fill('450');
+  await radio(page, 'No').check();
+  await next(page);
+  await expectStep(page, 3, 'Home and bills');
+  await box(rentForm(page), 'Amount').fill('550');
+  await fillWhen(rentForm(page), { date: '2026-12-01' });
+  const phone = billOn(page, 'phone');
+  await phone.getByRole('checkbox', { name: 'Phone', exact: true }).check();
+  await box(phone, 'Amount').fill('18');
+  await fillWhen(phone, { date: '2026-11-20' });
+  await next(page);
+  await expectStep(page, 4, 'Debts');
+  await page.getByRole('button', { name: 'Add a debt' }).click();
+  const debt = lastForm(page, 'debt');
+  await box(debt, 'Name').fill('Sofa finance');
+  await box(debt, 'What you owe now').fill('300');
+  await box(debt, 'Each payment').fill('25');
+  await fillWhen(debt, { date: '2026-11-23', payments: '12' });
+  await next(page);
+  await expectStep(page, 5, 'Spending money');
+  await box(page.getByTestId('budget-form').first(), 'Amount').fill('200');
+  await next(page);
+  await expectStep(page, 6, "Here's your plan");
+  await addGoalOnPlan(page, { name: 'Holiday', target: '600' }, async (sheet) => {
+    await box(sheet, 'Name of the savings account').fill('Savings');
+  });
+}
+
+/** What each screen lists as added, from setUpEverything. */
+const ADDED_ON: Readonly<Record<number, readonly string[]>> = {
+  1: ['Current account'],
+  2: ['Pay'],
+  3: ['Rent', 'Phone'],
+  4: ['Sofa finance'],
+  5: ['Food'],
+  6: ['Holiday'],
+};
+
+async function expectAddedOn(page: Page, screen: number) {
+  const names = page.getByTestId('added').locator('li span:first-child');
+  for (const name of ADDED_ON[screen] ?? []) {
+    await expect(names.filter({ hasText: new RegExp(`^${name}$`) })).toHaveCount(1);
+  }
+}
+
+interface StoredSetup {
+  readonly layout?: number;
+  readonly step: number | 'done';
+  readonly items: readonly { readonly kind: string; readonly step: number }[];
+  readonly answers: Record<string, unknown>;
+}
+
+/** How far setup has got, as the phone keeps it with the person's own plan. */
+async function ownSetup(page: Page): Promise<StoredSetup> {
+  const plans = (await storedPlans(page)) as { isExample: boolean; setup?: StoredSetup }[];
+  const own = plans.find((plan) => !plan.isExample);
+  if (own?.setup === undefined) throw new Error('No setup on the phone.');
+  return own.setup;
+}
+
+/** Writes how far setup has got straight into the phone's database, as an older PrePenny saved it. */
+async function writeSetup(page: Page, setup: unknown) {
+  await page.evaluate(
+    (value) =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('prepenny');
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const store = db.transaction('plans', 'readwrite').objectStore('plans');
+          const all = store.getAll();
+          all.onsuccess = () => {
+            const own = (all.result as { isExample: boolean }[]).find((plan) => !plan.isExample);
+            if (own === undefined) {
+              db.close();
+              reject(new Error('No plan of its own on the phone.'));
+              return;
+            }
+            const put = store.put({ ...own, setup: value });
+            put.onsuccess = () => {
+              db.close();
+              resolve();
+            };
+            put.onerror = () => reject(put.error);
+          };
+        };
+      }),
+    setup,
+  );
+}

@@ -5,8 +5,8 @@
 // at 360px in light, filled in as in the owner's tests, with the window as
 // tall as the sheet so all of it shows. Step 2d-2: the Coming up page at
 // 360px in light, on the first visit with "How to read this", and with Fri
-// 6 Nov opened. Step 2e: setup's welcome and steps 1, 2 and 8 at 360px in
-// light, filled in with Priya's answers. Step 2f: Debts, the Family loan,
+// 6 Nov opened. The shorter setup (D356): the welcome and all 6 screens at
+// 360px in light, filled in with Priya's answers. Step 2f: Debts, the Family loan,
 // Budgets, Savings goals and Accounts at 360px in light; Budgets and
 // Savings goals on the example with the owner's test 5 Travel budget and
 // test 6 Holiday goal added, because the example has none (D180). Each
@@ -264,8 +264,11 @@ for (const shot of comingUpShots) {
   });
 }
 
-test('Step 2e: setup, with Priya’s answers', async ({ browser }) => {
-  test.setTimeout(120_000);
+// Step 2e's pictures of the old 8 steps stay in docs/screens/2e as they
+// were. Since the shorter setup (D356), this takes the welcome and all 6
+// screens instead, into docs/screens/setup-6.
+test('Shorter setup: the welcome and all 6 screens, with Priya’s answers', async ({ browser }) => {
+  test.setTimeout(180_000);
   const context = await browser.newContext({
     viewport: { width: 360, height: 780 },
     deviceScaleFactor: 2,
@@ -277,22 +280,25 @@ test('Step 2e: setup, with Priya’s answers', async ({ browser }) => {
     timezoneId: 'Europe/London',
   });
   const page = await context.newPage();
-  const folder2e = join(screens, '2e');
-  mkdirSync(folder2e, { recursive: true });
+  const folder = join(screens, 'setup-6');
+  mkdirSync(folder, { recursive: true });
   const names: Record<number, string> = {
-    0: 'welcome-360-light.png',
-    1: 'step-1-your-account-360-light.png',
-    2: 'step-2-how-you-are-paid-360-light.png',
-    8: 'step-8-your-plan-360-light.png',
+    0: '0-welcome-360-light.png',
+    1: '1-your-account-360-light.png',
+    2: '2-how-you-are-paid-360-light.png',
+    3: '3-home-and-bills-360-light.png',
+    4: '4-debts-360-light.png',
+    5: '5-spending-money-360-light.png',
+    6: '6-your-plan-360-light.png',
   };
-  await setUpPriya(page, async (step) => {
-    const file = names[step];
+  await setUpPriya(page, async (screen) => {
+    const file = names[screen];
     if (file === undefined) return;
     await page.evaluate(() => document.fonts.ready);
-    // The step's title has focus, which shows no outline; the page is drawn as it is.
+    // The screen's title has focus, which shows no outline; the page is drawn as it is.
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
     await page.setViewportSize({ width: 360, height: Math.max(height, 780) });
-    await page.screenshot({ path: join(folder2e, file) });
+    await page.screenshot({ path: join(folder, file) });
     await page.setViewportSize({ width: 360, height: 780 });
   });
   await context.close();

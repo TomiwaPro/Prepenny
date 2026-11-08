@@ -1,6 +1,7 @@
-// Shared steps for the setup tests (brief 4.1, step 2e): starting from the
-// welcome on a phone with nothing on it, filling in each step's boxes, and
-// reading back the plan setup saved on the phone.
+// Shared steps for the setup tests (brief 4.1, step 2e, D356): starting from
+// the welcome on a phone with nothing on it, filling in each screen's boxes,
+// and reading back the plan setup saved on the phone. Setup is 6 screens in
+// 3 parts: money in (1 and 2), money out (3 to 5) and your plan (6).
 
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { PlanRecords } from '@prepenny/engine';
@@ -30,12 +31,40 @@ export async function startSetup(page: Page, today: string) {
   await expectStep(page, 1, 'Your account');
 }
 
-export async function expectStep(page: Page, step: number, title: string) {
-  await expect(page.getByText(`Step ${step} of 8`, { exact: true })).toBeVisible();
+/** The words at the top of each screen (D356). */
+export const PART_OF_SCREEN: Readonly<Record<number, string>> = {
+  1: 'Part 1 of 3: Money in',
+  2: 'Part 1 of 3: Money in',
+  3: 'Part 2 of 3: Money out',
+  4: 'Part 2 of 3: Money out',
+  5: 'Part 2 of 3: Money out',
+  6: 'Part 3 of 3: Your plan',
+};
+
+/** The screen showing: its number, the part at the top, its title, which has focus. */
+export async function expectStep(page: Page, screen: 1 | 2 | 3 | 4 | 5 | 6, title: string) {
+  await expect(page.locator('main[data-step]')).toHaveAttribute('data-step', String(screen));
+  await expect(page.getByText(PART_OF_SCREEN[screen] ?? '', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
   // The title takes focus, so a screen reader starts there.
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
 }
+
+/** Each screen's title, in order (D356). */
+export const SCREEN_TITLES = [
+  'Your account',
+  "How you're paid",
+  'Home and bills',
+  'Debts',
+  'Spending money',
+  "Here's your plan",
+] as const;
+
+/** The rent or mortgage card at the top of screen 3 (D356). */
+export const rentForm = (page: Page) => page.getByTestId('rent-form');
+
+/** A bill on the checklist on screen 3, by its key. */
+export const billOn = (page: Page, key: string) => page.locator(`[data-bill="${key}"]`);
 
 export const next = (page: Page) => page.getByRole('button', { name: 'Next', exact: true }).click();
 export const skip = (page: Page) =>
@@ -228,13 +257,97 @@ export function comparable(records: PlanRecords) {
   };
 }
 
-/** Step 1 to step 8 with Priya's answers (brief 8.5, D137), checking every step with axe. */
-export async function setUpPriya(page: Page, at: (step: number) => Promise<void> = async () => {}) {
+/**
+ * Counts taps from here on, for the setup tests (D356): every press of a
+ * button, choice or tick box, and every tap into a box to type in. Picking a
+ * date in a phone's own date picker takes a few more taps, the same before
+ * and after.
+ */
+export async function countTaps(page: Page) {
+  await page.addInitScript(() => {
+    const textBoxes = new Set(['text', 'date', 'number', 'email', 'tel', 'search', '']);
+    const counter = window as unknown as { __taps: number };
+    counter.__taps = 0;
+    let pressed: EventTarget | null = null;
+    document.addEventListener(
+      'pointerdown',
+      (event) => {
+        counter.__taps += 1;
+        pressed = event.target;
+      },
+      true,
+    );
+    document.addEventListener(
+      'focusin',
+      (event) => {
+        const box = event.target;
+        const typed =
+          box instanceof HTMLTextAreaElement ||
+          (box instanceof HTMLInputElement && textBoxes.has(box.type));
+        // A box typed into without a tap on it first: that's one tap.
+        if (typed && !(pressed instanceof Node && (pressed === box || box.contains(pressed)))) {
+          counter.__taps += 1;
+        }
+        pressed = null;
+      },
+      true,
+    );
+  });
+}
+
+export const tapsSoFar = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __taps: number }).__taps);
+
+export interface GoalAnswers {
+  readonly name: string;
+  readonly target: string;
+  readonly by?: string;
+  readonly saved?: string;
+  readonly move?: string;
+}
+
+/**
+ * "Saving for something? Add a goal" on Here's your plan (D356): the savings
+ * goal sheet, the same as under More, then back on the plan with the goal
+ * listed.
+ */
+export async function addGoalOnPlan(
+  page: Page,
+  answers: GoalAnswers,
+  check: (sheet: Locator) => Promise<void> = async () => {},
+) {
+  const card = page.getByTestId('add-goal');
+  await expect(card.getByText('Saving for something?', { exact: true })).toBeVisible();
+  await card.getByRole('button', { name: /^Add (a|another) goal$/ }).click();
+  const sheet = page.getByRole('dialog', { name: 'Add a savings goal' });
+  await expect(sheet).toBeVisible();
+  await box(sheet, 'What are you saving for?').fill(answers.name);
+  await box(sheet, 'Target').fill(answers.target);
+  if (answers.by !== undefined) await box(sheet, 'By, if you have a date').fill(answers.by);
+  if (answers.saved !== undefined) await box(sheet, 'Already saved towards it').fill(answers.saved);
+  if (answers.move !== undefined) await box(sheet, 'Move into it').fill(answers.move);
+  await check(sheet);
+  await sheet.getByRole('button', { name: 'Add goal', exact: true }).click();
+  await expect(sheet).toBeHidden();
+  await expect(card.getByRole('status')).toHaveText(`${answers.name} added.`);
+  await expect(card.getByTestId('added')).toContainText(answers.name);
+}
+
+/** Priya's answers on the 6 screens (brief 8.5, D137, D356), checking every screen with axe. */
+export async function setUpPriya(
+  page: Page,
+  at: (screen: number) => Promise<void> = async () => {},
+) {
   await openFresh(page, PRIYA_TODAY);
+  await expect(
+    page.getByText('Set it up once, about 5 minutes. After that, just keep it up to date.', {
+      exact: true,
+    }),
+  ).toBeVisible();
   await at(0);
   await page.getByRole('button', { name: 'Make my plan' }).click();
   await expectStep(page, 1, 'Your account');
-  // Step 1 can't be skipped (D163).
+  // The first screen can't be skipped (D163).
   await expect(page.getByRole('button', { name: 'Skip this step' })).toHaveCount(0);
   await expect(box(lastForm(page, 'account'), 'Warn me when it goes under')).toHaveValue('20.00');
   await noAxeProblems(page);
@@ -268,16 +381,15 @@ export async function setUpPriya(page: Page, at: (step: number) => Promise<void>
   await at(2);
   await next(page);
 
-  await expectStep(page, 3, 'Rent or mortgage');
+  // Rent at the top, then the bills, on one screen (D356).
+  await expectStep(page, 3, 'Home and bills');
   await noAxeProblems(page);
-  await box(page, 'Amount').fill('850');
-  await fillWhen(page.getByRole('form'), { date: '2026-11-01' });
-  await expect(radio(page, 'The 1st of the month')).toBeChecked();
-  await next(page);
-
-  await expectStep(page, 4, 'Bills');
-  await noAxeProblems(page);
-  const bill = (key: string) => page.locator(`[data-bill="${key}"]`);
+  const rent = rentForm(page);
+  await expect(radio(rent, 'Rent')).toBeChecked();
+  await box(rent, 'Amount').fill('850');
+  await fillWhen(rent, { date: '2026-11-01' });
+  await expect(radio(rent, 'The 1st of the month')).toBeChecked();
+  const bill = (key: string) => billOn(page, key);
   const tick = async (key: string, name: string) => {
     await bill(key).getByRole('checkbox', { name, exact: true }).check();
   };
@@ -317,13 +429,15 @@ export async function setUpPriya(page: Page, at: (step: number) => Promise<void>
   await box(other, 'Amount').fill('2.99');
   await fillWhen(other, { date: '2026-10-27' });
   await noAxeProblems(page);
+  await at(3);
   await next(page);
 
-  await expectStep(page, 5, 'Debts');
+  await expectStep(page, 4, 'Debts');
   await noAxeProblems(page);
+  await at(4);
   await page.getByRole('button', { name: 'I have no debts' }).click();
 
-  await expectStep(page, 6, 'Spending money');
+  await expectStep(page, 5, 'Spending money');
   await noAxeProblems(page);
   const food = page.getByTestId('budget-form').first();
   const travel = page.getByTestId('budget-form').nth(1);
@@ -339,32 +453,38 @@ export async function setUpPriya(page: Page, at: (step: number) => Promise<void>
   await radio(travel, 'Spread across the days').check();
   await expect(travel.getByText('It starts this week, Mon 19 Oct to Sun 25 Oct.')).toBeVisible();
   await box(travel, 'Already spent this week').fill('20');
+  await at(5);
   await next(page);
 
-  await expectStep(page, 7, 'Savings');
-  await noAxeProblems(page);
-  const goal = lastForm(page, 'goal');
-  await box(goal, 'What are you saving for?').fill('Holiday');
-  await box(goal, 'Target').fill('1500');
-  await box(goal, 'By, if you have a date').fill('2027-07-30');
-  await expect(
-    radio(goal.getByRole('group', { name: 'Kept in' }), 'Holiday savings'),
-  ).toBeChecked();
-  await box(goal, 'Already saved towards it').fill('300');
-  await box(goal, 'Move into it').fill('150');
-  await expect(radio(goal, 'Each payday, from Fri 30 Oct')).toBeChecked();
-  await expect(radio(goal.getByRole('group', { name: 'From' }), 'Current account')).toBeChecked();
-  await noAxeProblems(page);
-  await next(page);
-
-  await expectStep(page, 8, "Here's your plan");
+  await expectStep(page, 6, "Here's your plan");
   await expect(page.getByRole('button', { name: 'Skip this step' })).toHaveCount(0);
   await expect(page.getByTestId('setup-summary')).toBeVisible();
+  await expect(page.getByTestId('from-now')).toHaveText(
+    'From now on: update your balance when you check your bank, and tick payments as they go out.',
+  );
+  // Savings left setup: "Add a goal" opens the savings goal sheet (D356).
+  await expect(page.getByTestId('setup-first-goal')).toHaveCount(0);
   await noAxeProblems(page);
-  await at(8);
+  await addGoalOnPlan(
+    page,
+    { name: 'Holiday', target: '1500', by: '2027-07-30', saved: '300', move: '150' },
+    async (sheet) => {
+      await expect(
+        radio(sheet.getByRole('group', { name: 'Kept in' }), 'Holiday savings'),
+      ).toBeChecked();
+      await expect(radio(sheet, 'Each payday, from Fri 30 Oct')).toBeChecked();
+      await expect(
+        radio(sheet.getByRole('group', { name: 'From' }), 'Current account'),
+      ).toBeChecked();
+      await noAxeProblems(page);
+    },
+  );
+  await expect(page.getByTestId('setup-first-goal')).toBeVisible();
+  await noAxeProblems(page);
+  await at(6);
 }
 
-/** Step 1 to step 7 with Kofi's answers (brief Part 2, D137), checking each with axe; it ends on step 8. */
+/** Kofi's answers on the 6 screens (brief Part 2, D137, D356), checking each with axe; it ends on Here's your plan. */
 export async function setUpKofi(page: Page) {
   await startSetup(page, KOFI_TODAY);
   await fillAccount(lastForm(page, 'account'), {
@@ -407,13 +527,10 @@ export async function setUpKofi(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 3, 'Rent or mortgage');
-  await box(page, 'Amount').fill('650');
-  await fillWhen(page.getByRole('form'), { date: '2026-11-01' });
-  await next(page);
-
-  await expectStep(page, 4, 'Bills');
-  const bill = (key: string) => page.locator(`[data-bill="${key}"]`);
+  await expectStep(page, 3, 'Home and bills');
+  await box(rentForm(page), 'Amount').fill('650');
+  await fillWhen(rentForm(page), { date: '2026-11-01' });
+  const bill = (key: string) => billOn(page, key);
   await bill('insurance').getByRole('checkbox', { name: 'Insurance', exact: true }).check();
   await box(bill('insurance'), 'Name').fill('Van insurance');
   await box(bill('insurance'), 'Amount').fill('96');
@@ -430,7 +547,7 @@ export async function setUpKofi(page: Page) {
   await tax.getByRole('checkbox', { name: 'This is an estimate' }).check();
   await next(page);
 
-  await expectStep(page, 5, 'Debts');
+  await expectStep(page, 4, 'Debts');
   await page.getByRole('button', { name: 'Add a debt' }).click();
   const van = lastForm(page, 'debt');
   await box(van, 'Name').fill('Van finance');
@@ -442,7 +559,7 @@ export async function setUpKofi(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 6, 'Spending money');
+  await expectStep(page, 5, 'Spending money');
   const fuel = page.getByTestId('budget-form').first();
   const food = page.getByTestId('budget-form').nth(1);
   await box(fuel, 'Name').fill('Fuel');
@@ -458,7 +575,5 @@ export async function setUpKofi(page: Page) {
   await noAxeProblems(page);
   await next(page);
 
-  await expectStep(page, 7, 'Savings');
-  await skip(page);
-  await expectStep(page, 8, "Here's your plan");
+  await expectStep(page, 6, "Here's your plan");
 }

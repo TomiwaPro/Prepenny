@@ -40,10 +40,12 @@ import { SAM_TODAY, setUpSam } from './people.ts';
 import {
   back,
   box,
+  expectStep,
   fillAccount,
   lastForm,
   next,
   noAxeProblems,
+  SCREEN_TITLES,
   skip,
   startSetup,
 } from './setup.ts';
@@ -112,11 +114,11 @@ async function makePlanWith(page: Page, balance: string) {
   await startSetup(page, TODAY);
   await fillAccount(lastForm(page, 'account'), { name: 'Current account', balance, warning: '20' });
   await next(page);
-  for (let step = 2; step <= 7; step += 1) {
-    await expect(page.getByText(`Step ${step} of 8`, { exact: true })).toBeVisible();
+  for (const [screen, title] of SCREEN_TITLES.slice(1, 5).entries()) {
+    await expectStep(page, (screen + 2) as 2, title);
     await skip(page);
   }
-  await expect(page.getByText('Step 8 of 8', { exact: true })).toBeVisible();
+  await expectStep(page, 6, "Here's your plan");
   await page.getByRole('button', { name: 'Go to my plan' }).click();
   await expect(page.getByTestId('balance')).toContainText(`£${balance}`);
 }
@@ -238,9 +240,9 @@ async function startAPlan(page: Page, balance: string) {
   await startSetup(page, TODAY);
   await fillAccount(lastForm(page, 'account'), { name: 'Current account', balance, warning: '20' });
   await next(page);
-  await expect(page.getByText('Step 2 of 8', { exact: true })).toBeVisible();
+  await expectStep(page, 2, "How you're paid");
   await back(page);
-  await expect(page.getByText('Step 1 of 8', { exact: true })).toBeVisible();
+  await expectStep(page, 1, 'Your account');
   await back(page);
   await expect(page.getByRole('button', { name: strings.welcome.carryOn })).toBeVisible();
 }
@@ -727,7 +729,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // On a setup step too, under the step.
       await page.getByRole('button', { name: strings.welcome.carryOn }).click();
-      await expect(page.getByText('Step 1 of 8', { exact: true })).toBeVisible();
+      await expectStep(page, 1, 'Your account');
       await expect(page.getByTestId('signed-in')).toContainText(t.signedInWelcome(address));
       await page.getByTestId('signed-in').getByRole('button', { name: t.signOut }).click();
       const onStep = page.getByRole('dialog', { name: t.signOut });
