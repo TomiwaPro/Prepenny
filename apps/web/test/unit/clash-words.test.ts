@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { ClashToShow } from '../../data/clashes.ts';
-import { clockFrom, correctedTime } from '../../data/clock.ts';
+import { betterClock, clockFrom, correctedTime } from '../../data/clock.ts';
 import type { ClashFacts } from '../../lib/clash.ts';
 import { clashWords } from '../../lib/clash-words.ts';
 
@@ -135,7 +135,7 @@ describe("The phone's clock, corrected against the server's", () => {
   it('a phone an hour fast takes an hour off', () => {
     const phone = Date.parse('2026-11-08T11:00:00.000Z');
     const clock = clockFrom('2026-11-08T10:00:00.100Z', phone, phone + 200);
-    expect(clock).toEqual({ offsetMs: -3_600_000, roundTripMs: 200 });
+    expect(clock).toEqual({ offsetMs: -3_600_000, roundTripMs: 200, at: phone + 200 });
     expect(correctedTime(phone + 60_000, clock)).toBe('2026-11-08T10:01:00.000Z');
   });
 
@@ -152,5 +152,14 @@ describe("The phone's clock, corrected against the server's", () => {
     expect(correctedTime(Date.parse('2026-11-08T10:00:00.000Z'), null)).toBe(
       '2026-11-08T10:00:00.000Z',
     );
+  });
+
+  it('keeps the most precise difference, and follows a phone whose clock is put right', () => {
+    const kept = { offsetMs: -3_600_000, roundTripMs: 100, at: 1_000 };
+    expect(betterClock(kept, { offsetMs: -3_600_400, roundTripMs: 800, at: 2_000 })).toBe(false);
+    expect(betterClock(kept, { offsetMs: -3_600_020, roundTripMs: 60, at: 2_000 })).toBe(true);
+    expect(betterClock(kept, { offsetMs: 0, roundTripMs: 800, at: 2_000 })).toBe(true);
+    expect(betterClock(kept, { offsetMs: -3_600_400, roundTripMs: 800, at: 4_000_000 })).toBe(true);
+    expect(betterClock(null, kept)).toBe(true);
   });
 });

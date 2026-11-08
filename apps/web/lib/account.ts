@@ -443,6 +443,18 @@ export async function finishGoogle(code: string): Promise<Outcome> {
   }
 }
 
+/** Set once signing out has begun: the page is loaded afresh after it, so it's never unset. */
+let forgetting = false;
+
+/**
+ * True while this phone is signed in and isn't signing out. Work under way,
+ * such as sending the queue, checks it between steps, so it stops before
+ * signing out clears the phone and nothing is written after (D360, step 3d).
+ */
+export function stillSignedIn(): boolean {
+  return !forgetting && signInConfig() !== null && hasStoredSignIn();
+}
+
 /** Work to let finish before the phone forgets everything, such as a send under way (D360). */
 const beforeForgetting = new Set<() => Promise<unknown>>();
 
@@ -462,6 +474,7 @@ export function finishBeforeSigningOut(work: () => Promise<unknown>): () => void
  * there's a signal; without one, the sign-in on the phone is removed all the same.
  */
 export async function signOutAndForget(): Promise<void> {
+  forgetting = true;
   if (signInConfig() !== null && hasStoredSignIn() && !offline()) {
     // Supabase is given a few seconds at most: with a weak signal the phone
     // forgets the sign-in all the same, straight after (D314).

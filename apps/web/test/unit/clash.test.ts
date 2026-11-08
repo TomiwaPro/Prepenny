@@ -274,6 +274,69 @@ describe('A change waiting to be sent, and what another phone saved since', () =
     }
   });
 
+  it("the plan's bank holidays changed on both phones: the newest wins", () => {
+    const toScotland: EditCommand = { kind: 'set-nation', nation: 'scotland' };
+    const toNorthernIreland: EditCommand = { kind: 'set-nation', nation: 'northern-ireland' };
+    const theirs = runEdit(examplePlan, TODAY, toScotland);
+    const rows = rowsFor(
+      theirs.records,
+      { id: 'theirs', madeAt: '2026-10-25T09:00:00.000Z', by: 'tom' },
+      9,
+      startRows,
+    );
+    expect(rows.find((row) => row.table === 'plans')?.editId).toBe('theirs');
+    const older = settleChange({
+      plan,
+      rows,
+      change: waiting([toNorthernIreland], '2026-10-25T08:00:00.000Z'),
+      ours: [],
+    });
+    expect(older.kind).toBe('kept-theirs');
+    const newer = settleChange({
+      plan,
+      rows,
+      change: waiting([toNorthernIreland], '2026-10-25T10:00:00.000Z'),
+      ours: [],
+    });
+    expect(newer.kind).toBe('send');
+  });
+
+  it('an Update balance ticking a payment the other phone removed: the balance is still saved, without that tick', () => {
+    const rows = savedElsewhere(
+      { kind: 'remove-this-one', seriesId: 'spending-until-payday', originalDate: TODAY },
+      '2026-10-25T10:00:00.000Z',
+    );
+    const update: EditCommand = {
+      kind: 'update-balance',
+      update: {
+        id: 'balance-now',
+        accountId: 'current',
+        balance: 25000,
+        checkedOn: TODAY,
+        checkedAt: '2026-10-25T09:00:00.000Z',
+      },
+      ticks: [
+        {
+          seriesId: 'spending-until-payday',
+          originalDate: TODAY,
+          tickedAt: '2026-10-25T09:00:00.000Z',
+        },
+      ],
+    };
+    const settled = settleChange({
+      plan,
+      rows,
+      change: waiting([update], '2026-10-25T09:00:00.000Z'),
+      ours: [],
+    });
+    expect(settled.kind).toBe('send');
+    if (settled.kind !== 'send') return;
+    expect(settled.writes.find((write) => write.table === 'balance_updates')?.row?.balance).toBe(
+      25000,
+    );
+    expect(settled.writes.filter((write) => write.table === 'ticks')).toEqual([]);
+  });
+
   it('both phones ticked the same payment: it is done, with nothing to send', () => {
     const tick: EditCommand = {
       kind: 'tick',

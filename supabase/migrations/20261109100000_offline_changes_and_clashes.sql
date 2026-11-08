@@ -341,9 +341,14 @@ begin
   if plan is null or not exists (select 1 from app.my_plans() p where p = plan) then
     perform app.refuse('not-found', '42501');
   end if;
+  -- The plan's own row (its bank holidays) with its last edit too, so a
+  -- change to it clashes like any other.
   select jsonb_build_object('id', p.id, 'nation', p.nation, 'owner', p.owner, 'version', p.version,
-      'seq', p.seq, 'changed_at', p.changed_at)
-    into the_plan from public.plans p where p.id = plan;
+      'seq', p.seq, 'changed_at', p.changed_at, 'edit_id', p.edit_id,
+      'edit_made_at', e.made_at, 'edit_by', e.person_id)
+    into the_plan from public.plans p
+    left join public.edits e on e.id = p.edit_id and e.plan_id = p.id
+    where p.id = plan;
   for t in select unnest(app.record_tables()) loop
     -- The edit is read as the person too: a shared record names only a
     -- shared edit (D291), and their own records their own.

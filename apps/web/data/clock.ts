@@ -19,6 +19,8 @@ export interface ServerClock {
   readonly offsetMs: number;
   /** How long the answer took to come back: the difference is right to within half of it. */
   readonly roundTripMs: number;
+  /** When it was worked out, by this phone's clock. */
+  readonly at?: number;
 }
 
 /** An answer slower than this says too little about the server's time to use. */
@@ -28,7 +30,11 @@ const SLOWEST_USEFUL_MS = 10_000;
 export async function clockOn(db: PrePennyDb): Promise<ServerClock | null> {
   const value = (await db.device.get(CLOCK_KEY))?.value as Partial<ServerClock> | undefined;
   if (typeof value?.offsetMs !== 'number' || typeof value.roundTripMs !== 'number') return null;
-  return { offsetMs: value.offsetMs, roundTripMs: value.roundTripMs };
+  return {
+    offsetMs: value.offsetMs,
+    roundTripMs: value.roundTripMs,
+    ...(typeof value.at === 'number' ? { at: value.at } : {}),
+  };
 }
 
 /**
@@ -44,11 +50,34 @@ export function clockFrom(
   const server = Date.parse(serverTime);
   const roundTripMs = receivedAtMs - sentAtMs;
   if (!Number.isFinite(server) || roundTripMs < 0 || roundTripMs > SLOWEST_USEFUL_MS) return null;
-  return { offsetMs: Math.round(server - (sentAtMs + receivedAtMs) / 2), roundTripMs };
+  return {
+    offsetMs: Math.round(server - (sentAtMs + receivedAtMs) / 2),
+    roundTripMs,
+    at: receivedAtMs,
+  };
 }
 
-/** Keeps the difference from the latest answer, so a phone whose clock is put right is followed. */
+/** A difference this old is worked out afresh from the next answer. */
+const FRESH_FOR_MS = 60 * 60 * 1000;
+
+/**
+ * Whether a new difference should replace the one kept: when it's more
+ * precise (a quicker answer), when the kept one is old, or when they
+ * disagree by more than either could be out, which means this phone's clock
+ * has been changed since.
+ */
+export function betterClock(kept: ServerClock | null, next: ServerClock): boolean {
+  if (kept === null) return true;
+  if (next.roundTripMs <= kept.roundTripMs) return true;
+  if (kept.at === undefined || next.at === undefined || next.at - kept.at > FRESH_FOR_MS) {
+    return true;
+  }
+  return Math.abs(next.offsetMs - kept.offsetMs) > (next.roundTripMs + kept.roundTripMs) / 2 + 1000;
+}
+
+/** Keeps the most precise difference, following a phone whose clock is put right. */
 export async function rememberClock(db: PrePennyDb, clock: ServerClock): Promise<void> {
+  if (!betterClock(await clockOn(db), clock)) return;
   await db.device.put({ key: CLOCK_KEY, value: clock });
 }
 

@@ -31,6 +31,7 @@ import {
 } from '@prepenny/engine';
 import { type PaymentNumbers, runEdit, runEdits } from './edit.ts';
 import {
+  mainPayments,
   onNewestRecords,
   type PaymentAt,
   type PaymentFacts,
@@ -94,6 +95,15 @@ export function rowOf(plan: SyncPlan, write: RecordWrite): { table: Table; id: s
     case 'settings':
       return { table: 'settings', id: settingsRowId(plan.planId, plan.personId) };
   }
+}
+
+/**
+ * Every server row an engine record is kept in: the plan's settings are the
+ * person's own row and, for the bank holidays, the plan's own (D155, D289).
+ */
+function rowsOf(plan: SyncPlan, write: RecordWrite): { table: Table; id: string }[] {
+  const row = rowOf(plan, write);
+  return write.kind === 'settings' ? [row, { table: 'plans', id: plan.planId }] : [row];
 }
 
 /** A record as it is in these records, or null when it isn't there. */
@@ -314,11 +324,12 @@ export function settleChange(ask: SettleAsk): Settled {
 
   // 1. Has anyone else changed what this change is about since it was made?
   const touched = [
-    ...change.writes.flatMap((write) => {
-      const { table, id } = rowOf(plan, write);
-      const row = byOthers(table, id);
-      return row === null ? [] : [row];
-    }),
+    ...change.writes.flatMap((write) =>
+      rowsOf(plan, write).flatMap(({ table, id }) => {
+        const row = byOthers(table, id);
+        return row === null ? [] : [row];
+      }),
+    ),
     ...payments.flatMap(othersOnPayment),
   ];
   if (touched.length === 0) return send(change.writes, []);
@@ -326,13 +337,17 @@ export function settleChange(ask: SettleAsk): Settled {
   // A payment the other phone removed can't be changed here, whichever was
   // newer: making this change again wouldn't bring it back. Removed on both
   // phones, it's done.
-  for (const at of payments) {
+  // Only the payments the change is about count here: a tick inside an
+  // Update balance on a payment that's gone is simply left out (payment-at.ts).
+  for (const at of mainPayments(change.commands, payments)) {
     if (!removedNow(at.before, paymentInFamily(server, at.familyId, at.number)?.facts ?? null)) {
       continue;
     }
     if (othersOnPayment(at).length === 0) continue;
-    if (removedNow(at.before, at.after)) return { kind: 'done' };
-    return { kind: 'cant', facts: factsFor(server, change, touched, []) };
+    if (removedNow(at.before, at.after) && (change.commands?.length ?? 1) <= 1) {
+      return { kind: 'done' };
+    }
+    return { kind: 'cant', facts: factsFor(server, change, othersOnPayment(at), [], at) };
   }
 
   // 2. Made again on the newest records.
@@ -360,10 +375,12 @@ export function settleChange(ask: SettleAsk): Settled {
 
   // 3. Would it undo something someone else changed? Record by record...
   const before = new Map((change.before ?? []).map((write) => [keyOfWrite(write), write]));
-  const clashing: { readonly write: RecordWrite | null; readonly rows: MirrorRow[] }[] = [];
+  const clashing: Clashing[] = [];
   for (const write of again) {
-    const { table, id } = rowOf(plan, write);
-    const row = byOthers(table, id);
+    const row =
+      rowsOf(plan, write)
+        .map(({ table, id }) => byOthers(table, id))
+        .find((one) => one !== null) ?? null;
     if (row === null) continue;
     const theirs = valueIn(server, write);
     const base = before.get(keyOfWrite(write));
@@ -383,18 +400,16 @@ export function settleChange(ask: SettleAsk): Settled {
       (removesTheirs || !keepsWhatTheyChanged(at.before, theirs, after))
     ) {
       const others = othersOnPayment(at);
-      if (others.length > 0) clashing.push({ write: null, rows: others });
+      if (others.length > 0) clashing.push({ write: null, rows: others, at });
     }
   }
   if (clashing.length === 0) return send(again, []);
 
   // 4. The newest change wins (D59).
   const theirRows = clashing.flatMap((one) => one.rows);
-  const newest = theirRows
-    .map((row) => row.editMadeAt ?? '')
-    .sort()
-    .at(-1);
-  if (newest !== undefined && newest !== '' && change.madeAt > newest) {
+  // Times compared as times, not as text, whatever their decimal places.
+  const newest = Math.max(...theirRows.map((row) => timeOf(row.editMadeAt)));
+  if (Number.isFinite(newest) && timeOf(change.madeAt) > newest) {
     const edits = [
       ...new Set(theirRows.flatMap((row) => (typeof row.editId === 'string' ? [row.editId] : []))),
     ];
@@ -404,6 +419,19 @@ export function settleChange(ask: SettleAsk): Settled {
 }
 
 const UNKNOWN = Symbol('unknown');
+
+/** Something this change would undo: a record, or a payment as the person sees it. */
+interface Clashing {
+  readonly write: RecordWrite | null;
+  readonly rows: MirrorRow[];
+  readonly at?: PaymentAt;
+}
+
+/** A time as a number, or minus infinity when it isn't known. */
+const timeOf = (time: string | undefined) => {
+  const parsed = time === undefined ? Number.NaN : Date.parse(time);
+  return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+};
 
 /** True when a payment that was there is gone, or removed just this once, now. */
 function removedNow(before: PaymentFacts | null, now: PaymentFacts | null): boolean {
@@ -451,9 +479,7 @@ function keepsWhatTheyChanged(
 
 /** The newest of these rows' edits: whose it was. */
 function newestBy(rows: readonly MirrorRow[]): string | null {
-  const newest = [...rows]
-    .sort((a, b) => (a.editMadeAt ?? '').localeCompare(b.editMadeAt ?? ''))
-    .at(-1);
+  const newest = [...rows].sort((a, b) => timeOf(a.editMadeAt) - timeOf(b.editMadeAt)).at(-1);
   return newest?.editBy ?? null;
 }
 
@@ -465,10 +491,33 @@ function factsFor(
   server: PlanRecords,
   change: QueuedChange,
   rows: readonly MirrorRow[],
-  clashing: readonly { readonly write: RecordWrite | null }[],
+  clashing: readonly Clashing[],
+  /** The payment it was about, when it's known. */
+  known?: PaymentAt,
 ): ClashFacts {
   const by = newestBy(rows);
-  const at = change.payments?.[0];
+  const payments = change.payments ?? [];
+  const main = mainPayments(change.commands, payments);
+  const theirsNow = (one: PaymentAt) =>
+    paymentInFamily(server, one.familyId, one.number)?.facts ?? null;
+  const onWrite = (write: RecordWrite | null) =>
+    write !== null && (write.kind === 'change' || write.kind === 'tick')
+      ? payments.find(
+          (one) => one.seriesId === write.seriesId && one.originalDate === write.originalDate,
+        )
+      : undefined;
+  // The payment it was about: the one that clashed, or the one now different
+  // from what this change made it, before any other.
+  const at =
+    known ??
+    clashing.find((one) => one.at !== undefined)?.at ??
+    clashing.map((one) => onWrite(one.write)).find((one) => one !== undefined) ??
+    (clashing.some((one) => one.write !== null)
+      ? undefined
+      : (main.find((one) => !sameValue(theirsNow(one), one.after)) ??
+        payments.find((one) => !sameValue(theirsNow(one), one.after)) ??
+        main[0] ??
+        payments[0]));
   if (at !== undefined) {
     const theirs = paymentInFamily(server, at.familyId, at.number)?.facts ?? null;
     return {

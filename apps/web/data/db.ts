@@ -107,6 +107,8 @@ export interface UnsentEdit extends MadeChange {
    * exactly as it was, with the same edit id, so the server changes nothing
    * the second time if it was (save_edit).
    */
+  /** How many times the phone couldn't work out whether it clashes, as when too slow (step 3d). */
+  readonly tries?: number;
   readonly attempt?: {
     readonly writes: readonly DbWrite[];
     readonly overrides: readonly string[];

@@ -15,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(38);
+select plan(40);
 
 select tests.make_jess_and_tom('editor');
 
@@ -91,6 +91,17 @@ select is((select r ->> 'nickname' from jsonb_array_elements(public.plan_changes
 select tests.as_person('jess');
 select is(tests.brought_down('accounts', 'jess-current') -> 'row' ->> 'edit_id', tests.id('jess-private')::text,
   'Jess''s own phone hears which of her edits saved her private account');
+
+-- The plan's bank holidays clash like any other record.
+select tests.save_at('jess-nation', '2026-11-08T09:10:00Z', jsonb_build_array(jsonb_build_object(
+  'table', 'plans', 'id', tests.id('plan'), 'version', (select version from public.plans where id = tests.id('plan')),
+  'row', '{"nation":"scotland"}'::jsonb)));
+select tests.as_person('tom');
+select is(public.plan_changes(tests.id('plan'), 0, 0) -> 'plan' ->> 'edit_id', tests.id('jess-nation')::text,
+  'The plan''s own row says which edit last changed its bank holidays');
+select is(public.plan_changes(tests.id('plan'), 0, 0) -> 'plan' ->> 'edit_made_at', '2026-11-08T09:10:00Z',
+  'and when it was made');
+select tests.as_person('jess');
 
 -- ---------------------------------------------------------------------------
 -- 3. A newer change replaces Jess's: she is told.

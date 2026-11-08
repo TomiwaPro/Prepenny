@@ -8,7 +8,8 @@
 // 2. Both phones change the same payment while one is offline: the newest
 //    wins, the other phone shows the message, and "Put mine back" works.
 //    For one person's two phones ("your other phone"), for two people in a
-//    shared plan, by name, and when the other phone removed the payment.
+//    shared plan, by name, and when the other phone removed the payment;
+//    and when they changed different parts of it, both are kept.
 // 3. A wrong phone clock, an hour fast or a day slow, doesn't decide who wins.
 // 4. The same change sent twice after a dropped signal changes nothing.
 // 5. A refused change: the person is told, and nothing after it is lost.
@@ -415,6 +416,40 @@ for (const colorScheme of ['light', 'dark'] as const) {
           where s.created_by = ${quoted(person)} and c.original_date = '2026-11-01'`),
       ).toBe('t');
       await allSent(page);
+      await second.context.close();
+    });
+
+    test('2, when the two phones changed different parts of the same payment: both are kept, on both phones, and nobody is told', async ({
+      page,
+      context,
+      browser,
+    }, info) => {
+      test.slow();
+      const { second, person } = await samsTwoPhones(page, browser, info, colorScheme);
+      // This phone, with no signal, changes Rent's amount; the other moves it to Mon 2 Nov.
+      await context.setOffline(true);
+      await changeOnHome(page, 'Rent', '640');
+      await openHome(second.page);
+      await due(second.page, 'Rent').click();
+      const move = second.page.getByRole('dialog', { name: 'Rent' });
+      await move.getByLabel('Date', { exact: true }).fill('2026-11-02');
+      await move.getByRole('button', { name: 'Save' }).click();
+      await expect(move).toBeHidden();
+      await allSent(second.page);
+
+      await context.setOffline(false);
+      await allSent(page);
+      // Both phones show both: £640 on Mon 2 Nov.
+      await openHome(page);
+      await expect(due(page, 'Rent')).toContainText('Mon 2 Nov');
+      await expect(due(page, 'Rent')).toContainText('£640.00');
+      await openHome(second.page);
+      await expect(due(second.page, 'Rent')).toContainText('£640.00', { timeout: 20_000 });
+      await expect(due(second.page, 'Rent')).toContainText('Mon 2 Nov');
+      expect(rentOnServer(person)).toBe('64000');
+      await expect(page.getByRole('dialog', { name: c.title })).toHaveCount(0);
+      await expect(second.page.getByRole('dialog', { name: c.title })).toHaveCount(0);
+      await noAxeProblems(page);
       await second.context.close();
     });
 

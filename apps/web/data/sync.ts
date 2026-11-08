@@ -32,7 +32,7 @@
 import type { RecordWrite } from '@prepenny/engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
-import { finishBeforeSigningOut, signedInClient } from '../lib/account.ts';
+import { finishBeforeSigningOut, signedInClient, stillSignedIn } from '../lib/account.ts';
 import type { ClashFacts, QueuedChange } from '../lib/clash.ts';
 import { newId } from '../lib/ids.ts';
 import { SETUP_LAYOUT, type SetupProgress, setupDone } from '../lib/setup-progress.ts';
@@ -150,8 +150,12 @@ function failureOf(error: { code?: unknown; message?: unknown } | null): Failure
   if (REFUSALS.has(message)) return { kind: 'refused', code: message };
   // The privacy rules' own refusal: a record they can read but not change,
   // as for "Can view only" (D51). Anything they can't see is refused as
-  // "not-found" by PrePenny's own checks first (D290).
-  if (error?.code === '42501') return { kind: 'refused', code: 'not-allowed' };
+  // "not-found" by PrePenny's own checks first (D290). Any other "not
+  // allowed", such as a sign-in that has just ended, isn't the change's
+  // fault: it's tried again, and the sign-in is looked at (step 3d).
+  if (error?.code === '42501' && message.startsWith('new row violates row-level security')) {
+    return { kind: 'refused', code: 'not-allowed' };
+  }
   // A server whose database hasn't had step 3c yet, a weak signal, or none.
   return { kind: 'unreachable' };
 }
@@ -238,8 +242,9 @@ interface Notice {
 
 /** The server's rows as this phone keeps them, from what plan_changes gave back. */
 function rowsFrom(changes: PlanChanges): MirrorRow[] {
+  const { edit_made_at: planMadeAt, edit_by: planBy, ...plan } = changes.plan;
   return [
-    mirrorRowOf('plans', changes.plan),
+    mirrorRowOf('plans', plan, { madeAt: planMadeAt, by: planBy }),
     ...changes.rows.map(({ table, row, edit_made_at: madeAt, edit_by: by }) =>
       mirrorRowOf(table, row, { madeAt, by }),
     ),
@@ -346,6 +351,7 @@ async function hearNotices(
 ) {
   const heard: string[] = [];
   for (const notice of notices) {
+    if (!stillSignedIn()) return;
     const lost = notice.data?.lost;
     if (typeof lost !== 'string') continue;
     const sent = await db.sent.get([link.planId, lost]);
@@ -477,7 +483,7 @@ async function saveOnServer(
   overrides: readonly string[] = [],
 ): Promise<true | Failure> {
   if (writes.length === 0) return true;
-  const answer = await rpc<{ rows: Parameters<typeof savedRows>[1] }>(
+  const answer = await rpc<{ saved?: string; rows: Parameters<typeof savedRows>[1] }>(
     client,
     'save_edit',
     {
@@ -491,6 +497,10 @@ async function saveOnServer(
     db,
   );
   if (!answer.ok) return answer.failure;
+  // Saved already, the first time it was sent: the server's records may have
+  // moved on since, so the phone keeps nothing of what it sent, and brings
+  // down what's there with its next look (step 3d).
+  if (answer.data.saved === 'already') return true;
   const before = await rowsOn(db, link.planId);
   await keepRows(
     db,
@@ -534,11 +544,24 @@ async function sendQueue(
   db: PrePennyDb,
   link: PlanLink,
 ): Promise<true | Failure> {
-  for (;;) {
-    const next = await db.unsent.where('planId').equals(link.planId).first();
-    if (next === undefined) return true;
-    const sent = await sendOne(client, db, next);
-    if (sent !== true) return sent;
+  let sentSome = false;
+  try {
+    for (;;) {
+      // Signing out has begun: nothing more is written to the phone (D360).
+      if (!stillSignedIn()) return { kind: 'unreachable' };
+      const next = await db.unsent.where('planId').equals(link.planId).first();
+      if (next === undefined) return true;
+      const sent = await sendOne(client, db, next);
+      if (sent !== true) return sent;
+      sentSome = true;
+    }
+  } finally {
+    // What was sent may be the change made again on newer records, so the
+    // plan on this phone is worked out again from what the server now has.
+    if (sentSome && stillSignedIn()) {
+      const now = await db.links.get(link.planId);
+      if (now !== undefined) await rebuild(db, now);
+    }
   }
 }
 
@@ -582,17 +605,47 @@ async function sendOne(
     }
     // A change made before the phone knew the server's time is corrected now.
     const clock = await clockOn(db);
-    const madeAt =
+    const stamped =
       next.clockKnown === false && next.madeOnPhone !== undefined && clock !== null
         ? correctedTime(next.madeOnPhone, clock)
         : next.madeAt;
+    // Never later than now: a phone whose clock jumped forward since can't
+    // make an older change look newer (D366).
+    const now = correctedTime(Date.now(), clock);
+    const madeAt = Date.parse(stamped) > Date.parse(now) ? now : stamped;
     const change: UnsentEdit = { ...next, madeAt };
-    const settled = await settleInBackground({
-      plan: { planId: link.planId, personId: link.personId },
-      rows: await rowsOn(db, link.planId),
-      change: queued(change),
-      ours: await oursOn(db, link.planId),
-    });
+    let settled: Awaited<ReturnType<typeof settleInBackground>>;
+    try {
+      settled = await settleInBackground({
+        plan: { planId: link.planId, personId: link.personId },
+        rows: await rowsOn(db, link.planId),
+        change: queued(change),
+        ours: await oursOn(db, link.planId),
+      });
+    } catch {
+      // The phone couldn't work it out, as when it's too slow for now: tried
+      // again later, and after 3 tries taken off with a message, so it never
+      // holds up the changes after it for ever (D369).
+      const tries = (next.tries ?? 0) + 1;
+      if (tries < 3) {
+        await db.unsent.put({ ...next, tries });
+        return { kind: 'unreachable' };
+      }
+      const facts = await clashFactsInBackground({
+        rows: await rowsOn(db, link.planId),
+        change: queued(change),
+        by: null,
+      }).catch(() => ({
+        by: null,
+        name: '',
+        on: null,
+        theirs: { kind: 'changed' as const },
+        ours: { kind: 'changed' as const },
+      }));
+      await takeOff(db, link, change, { kind: 'refused', facts, code: 'unexpected' });
+      return true;
+    }
+    if (!stillSignedIn()) return { kind: 'unreachable' };
     if (settled.kind === 'done') {
       await takeOff(db, link, change, null);
       return true;
@@ -601,7 +654,7 @@ async function sendOne(
       await takeOff(db, link, change, { kind: settled.kind, facts: settled.facts });
       return true;
     }
-    const { refused: _old, n: _n, planId: _plan, attempt: _none, ...made } = change;
+    const { refused: _old, n: _n, planId: _plan, attempt: _none, tries: _tries, ...made } = change;
     await keepSent(db, { ...made, planId: link.planId });
     // Kept before it goes, in case the answer is lost on the way back.
     await db.unsent.put({

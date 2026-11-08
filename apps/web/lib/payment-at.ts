@@ -168,7 +168,8 @@ export function paymentsAt(
  * The commands again, each payment found on the newest records by its
  * family and number, so a change to one payment still lands on it after
  * another phone has split its series. A tick in an Update balance on a
- * payment already ticked there is left out: it's done already.
+ * payment already ticked there is left out, as it's done already, and so is
+ * one on a payment that's no longer there.
  */
 export function onNewestRecords(
   records: PlanRecords,
@@ -197,14 +198,46 @@ export function onNewestRecords(
         tick.originalDate === ref.originalDate &&
         (tick.setAside === true) === (ref.setAside === true),
     );
+  /**
+   * A payment still to tick: it's there, and not removed just this once. A
+   * payment removed moves no money, so leaving its tick out of an Update
+   * balance changes no figure, and the balance typed in is still saved.
+   */
+  const stillThere = (ref: PaymentRef) => {
+    if ((records.budgets ?? []).some((budget) => budget.id === ref.seriesId)) return true;
+    const series = records.series.find((one) => one.id === ref.seriesId);
+    if (series === undefined) return false;
+    if (paymentNumberOf({ series, holidays, originalDate: ref.originalDate }) === null)
+      return false;
+    return !(records.changes ?? []).some(
+      (change) =>
+        change.seriesId === ref.seriesId &&
+        change.originalDate === ref.originalDate &&
+        change.skipped === true,
+    );
+  };
   return commands.flatMap((command) => {
     const moved = withRefs(command, retarget);
     if (
       (moved.kind === 'update-balance' || moved.kind === 'update-from-statement') &&
       moved.ticks !== undefined
     ) {
-      return [{ ...moved, ticks: moved.ticks.filter((tick) => !ticked(tick)) }];
+      return [{ ...moved, ticks: moved.ticks.filter((tick) => !ticked(tick) && stillThere(tick)) }];
     }
     return [moved];
   });
+}
+
+/** The payments a change is mainly about: the ones its payment commands name, not the ticks inside an Update balance. */
+export function mainPayments(
+  commands: readonly EditCommand[] | undefined,
+  payments: readonly PaymentAt[],
+): PaymentAt[] {
+  if (commands === undefined) return [...payments];
+  const keys = new Set(
+    commands
+      .filter((one) => one.kind !== 'update-balance' && one.kind !== 'update-from-statement')
+      .flatMap((one) => paymentRefsIn(one).map((ref) => `${ref.seriesId}|${ref.originalDate}`)),
+  );
+  return payments.filter((one) => keys.has(`${one.seriesId}|${one.originalDate}`));
 }
