@@ -20,7 +20,14 @@ import { randomUUID } from 'node:crypto';
 import { type Browser, expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
 import { named, openPeriod, rowIn } from './coming-up.ts';
-import { addPayment, comingUp, openHome, undoBar, updateBalance } from './journeys.ts';
+import {
+  addPayment,
+  comingUp,
+  noSidewaysScroll,
+  openHome,
+  undoBar,
+  updateBalance,
+} from './journeys.ts';
 import { noAxeProblems } from './setup.ts';
 import { makeAPlan, newEmail } from './sign-in-helpers.ts';
 import {
@@ -294,6 +301,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       ).toBeVisible();
       expect(rentOnServer(person)).toBe('65000');
       await noAxeProblems(page);
+      await noSidewaysScroll(page);
       if (shoots(info, colorScheme)) {
         await page.screenshot({ path: `${SCREENS}/clash-your-other-phone-360-light.png` });
       }
@@ -360,6 +368,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(kept).not.toContain('Current account');
       expect(kept).not.toContain('26754');
       await noAxeProblems(tom.page);
+      await noSidewaysScroll(tom.page);
       if (shoots(info, colorScheme)) {
         await tom.page.screenshot({ path: `${SCREENS}/clash-partner-360-light.png` });
       }
@@ -406,6 +415,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       );
       await expect(sheet.getByRole('button', { name: c.putBack })).toHaveCount(0);
       await noAxeProblems(page);
+      await noSidewaysScroll(page);
       if (shoots(info, colorScheme)) {
         await page.screenshot({ path: `${SCREENS}/clash-removed-360-light.png` });
       }
@@ -572,6 +582,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         "Your change to Joint rent on Sun 1 Nov wasn't saved in your account, so it has been taken off this phone. You can look at this plan but not change it.",
       );
       await noAxeProblems(tom.page);
+      await noSidewaysScroll(tom.page);
       if (shoots(info, colorScheme)) {
         await tom.page.screenshot({ path: `${SCREENS}/change-refused-360-light.png` });
       }
