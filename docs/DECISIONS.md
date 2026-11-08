@@ -4305,5 +4305,6 @@ Decided 8 Nov 2026 in step 3d.
 - The phone keeps a note of the last 100 changes it sent for each plan, for D365 and D367, and forgets the rest. Signing out removes them with everything else.
 - A clash message is kept on the phone until it's seen; one for a plan removed from the phone goes with it.
 - The screenshots of step 3c stay as they were, as its record; step 3d's are in `docs/screens/3d`.
+- A record that names no edit isn't counted as anyone else's change, and a change to it is sent as in step 3c. After merging, the live app and the database are updated side by side (D297), so for a minute or two the new app can talk to the old database, which names no edits; this keeps that minute exactly as step 3c was. Test: `apps/web/test/unit/clash.test.ts`.
 
 Why: each follows from the owner's instructions where they didn't say exactly.

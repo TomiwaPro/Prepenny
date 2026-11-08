@@ -290,6 +290,19 @@ describe('A change waiting to be sent, and what another phone saved since', () =
     ).toEqual({ kind: 'done' });
   });
 
+  it('rows from a server before step 3d, naming no edit, are sent as before, with no clash', () => {
+    const rows = savedElsewhere(amount(65000), '2026-10-25T10:00:00.000Z').map(
+      ({ editId: _id, editMadeAt: _at, editBy: _by, ...row }) => row,
+    );
+    const settled = settleChange({
+      plan,
+      rows,
+      change: waiting([amount(64000)], '2026-10-25T09:00:00.000Z'),
+      ours: [],
+    });
+    expect(settled.kind).toBe('send');
+  });
+
   it("this phone's own earlier change is never a clash, even made on the same payment", () => {
     const rows = savedElsewhere(amount(65000), '2026-10-25T10:00:00.000Z', SAM);
     const settled = settleChange({

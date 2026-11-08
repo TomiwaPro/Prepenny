@@ -289,7 +289,10 @@ export function settleChange(ask: SettleAsk): Settled {
     const seen = change.seen;
     if (row === undefined || seen === undefined) return null;
     if (row.seq <= (row.privateTo === null ? seen.shared : seen.mine)) return null;
-    if (typeof row.editId === 'string' && ours.has(row.editId)) return null;
+    // A row with no edit named, from a server before step 3d, as when the
+    // app goes live a moment before the database change, isn't known to be
+    // anyone else's: the change is sent as it was in step 3c.
+    if (typeof row.editId !== 'string' || ours.has(row.editId)) return null;
     return row;
   };
   const payments = change.payments ?? [];
