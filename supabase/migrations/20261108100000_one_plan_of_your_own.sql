@@ -1,4 +1,4 @@
--- Step 3c fix (D351, D352): a person owns one plan at most.
+-- Step 3c fix (D352): a person owns one plan at most.
 --
 -- Two phones that each found the account empty could both send their own
 -- plan up as its first copy, leaving one account with two plans of its own,

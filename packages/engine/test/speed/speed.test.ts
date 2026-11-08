@@ -5,7 +5,7 @@
 // 50 milliseconds. Phase 4 checks it on a real mid-range Android phone.
 //
 // A machine busy with something else can slow a whole round of 20 runs, as
-// one of GitHub's did once (12.25 milliseconds, D353). So up to 5 rounds are
+// one of GitHub's did once (12.25 milliseconds, D354). So up to 5 rounds are
 // timed, each the middle of 20 runs after its own warm-up, and the fastest
 // round must be under 12 milliseconds. The limit and what's timed are the
 // same: an engine that's slower for real is slower in every round.
@@ -155,7 +155,7 @@ describe('test 54: speed', () => {
     );
   });
 
-  it(`takes under ${LIMIT_MILLISECONDS} milliseconds, the middle of ${RUNS} runs after a warm-up, in the best of up to ${ROUNDS} rounds (D72, D353)`, () => {
+  it(`takes under ${LIMIT_MILLISECONDS} milliseconds, the middle of ${RUNS} runs after a warm-up, in the best of up to ${ROUNDS} rounds (D72, D354)`, () => {
     /** One round: a warm-up, then the middle of RUNS timed runs. */
     const round = () => {
       for (let run = 0; run < WARM_UP_RUNS; run += 1) workOutPlan(input);

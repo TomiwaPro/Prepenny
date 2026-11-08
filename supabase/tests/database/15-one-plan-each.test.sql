@@ -1,4 +1,4 @@
--- Step 3c fix (D351): a person owns one plan at most. A second plan of their
+-- Step 3c fix (D352): a person owns one plan at most. A second plan of their
 -- own is refused ("has-a-plan"), whoever asks, while being in someone else's
 -- plan doesn't count. An account that already has two, from before this
 -- rule, keeps both until the person chooses, and either can be removed.
