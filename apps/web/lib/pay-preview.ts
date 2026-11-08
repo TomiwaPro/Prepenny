@@ -9,7 +9,8 @@ import {
   type EditCommand,
   EngineInputError,
   formatDate,
-  type PayAdjustment,
+  hasShiftDetails,
+  type PayAdjustmentWithDetails,
   type Pence,
   type PlanRecords,
   parseDate,
@@ -44,7 +45,7 @@ function codeOf(error: unknown): string {
 }
 
 /** The payday's pay in a plan, found by the pay's family and the payday's payment number. */
-function paydayIn(records: PlanRecords, today: string, saved: PayAdjustment) {
+function paydayIn(records: PlanRecords, today: string, saved: PayAdjustmentWithDetails) {
   const family = new Set(
     records.series.filter((one) => one.familyId === saved.familyId).map((one) => one.id),
   );
@@ -77,7 +78,8 @@ export function previewPayChange(
     return { ok: false, code: codeOf(error) };
   }
   const saved = (after.payAdjustments ?? []).find((one) => one.id === command.id);
-  if (saved === undefined) return { ok: false, code: 'unexpected' };
+  // A shift just worked out always has its details (D303).
+  if (saved === undefined || !hasShiftDetails(saved)) return { ok: false, code: 'unexpected' };
   // The extras box shows only when that payday's pay week has extras (D130):
   // the engine refuses a change to extras on pay without them.
   let hasExtras = (command.extras ?? 0) > 0;

@@ -9,6 +9,7 @@
 import type { PlanRecords, PlanSettings, RecordWrite } from '@prepenny/engine';
 import { Dexie, type EntityTable } from 'dexie';
 import type { SetupProgress } from '../lib/setup-progress.ts';
+import type { MirrorRow } from '../lib/sync-rows.ts';
 
 /** One plan on this phone. */
 export interface StoredPlan {
@@ -62,10 +63,54 @@ export interface DeviceSetting {
   readonly value: unknown;
 }
 
+/**
+ * One row as the server last gave it to this phone (step 3c): the phone's
+ * copy of the server, so it knows each record's version and whether
+ * anything is left to send.
+ */
+export type StoredRow = MirrorRow & { readonly planId: string };
+
+/**
+ * One change made on this phone and not sent yet (ARCHITECTURE.md 3.5): the
+ * engine's writes, in the order they were made. Sent one at a time; taken
+ * off once the server has saved it.
+ */
+export interface UnsentEdit {
+  readonly planId: string;
+  /** Its place in the queue. */
+  readonly n: number;
+  /** The edit's own id, so sending it twice changes nothing (save_edit). */
+  readonly editId: string;
+  /** When it was made, by this phone's clock (D59; corrected in step 3d). */
+  readonly madeAt: string;
+  /** What kind of change, as a short code: "tick", "this-and-later", "setup". */
+  readonly kind: string;
+  readonly writes: readonly RecordWrite[];
+  /** How far setup had got with it, for the person's own settings (step 2e). */
+  readonly setup?: SetupProgress;
+  /** Set when the server refused it, with the refusal's code. What happens then is step 3d. */
+  readonly refused?: string;
+}
+
+/**
+ * A plan on this phone that's kept in the person's account (step 3c): who
+ * it's for, and the change numbers this phone has brought down so far, for
+ * the plan's shared records and for the person's own (D299).
+ */
+export interface PlanLink {
+  readonly planId: string;
+  readonly personId: string;
+  readonly shared: number;
+  readonly mine: number;
+}
+
 export type PrePennyDb = Dexie & {
   plans: EntityTable<StoredPlan, 'id'>;
   records: Dexie.Table<StoredRecord, [string, RecordKind, string]>;
   device: EntityTable<DeviceSetting, 'key'>;
+  rows: Dexie.Table<StoredRow, [string, string, string]>;
+  unsent: Dexie.Table<UnsentEdit, [string, number]>;
+  links: EntityTable<PlanLink, 'planId'>;
 };
 
 export function openDb(name = 'prepenny'): PrePennyDb {
@@ -74,6 +119,12 @@ export function openDb(name = 'prepenny'): PrePennyDb {
     plans: 'id',
     records: '[planId+kind+key], planId',
     device: 'key',
+  });
+  // Step 3c: the server's rows, the changes not sent yet, and which plans are kept in an account.
+  db.version(2).stores({
+    rows: '[planId+table+id], planId',
+    unsent: '[planId+n], planId',
+    links: 'planId',
   });
   return db;
 }
@@ -225,22 +276,50 @@ export async function askToKeepData(): Promise<boolean> {
   }
 }
 
+/** A change as it's sent to the server once the plan is kept in an account (step 3c). */
+export interface ChangeToSend {
+  readonly editId: string;
+  readonly madeAt: string;
+  readonly kind: string;
+}
+
 /**
  * Saves one change to a plan (D87): its writes, and for the example, that
- * it has been changed (D182). All in one go, so nothing is half saved.
+ * it has been changed (D182). All in one go, so nothing is half saved. When
+ * the plan is kept in an account, the change joins the queue to send in the
+ * same go (step 3c), so it's never saved without being queued, or the
+ * other way round. The example is never sent anywhere.
  */
 export async function saveChange(
   db: PrePennyDb,
   plan: StoredPlan,
   writes: readonly RecordWrite[],
+  send?: ChangeToSend,
 ): Promise<StoredPlan> {
   let saved: StoredPlan = plan.isExample ? { ...plan, edited: true } : plan;
-  await db.transaction('rw', db.plans, db.records, async () => {
+  await db.transaction('rw', [db.plans, db.records, db.links, db.unsent], async () => {
     saved = await keepingOwner(db, saved);
     await saveWrites(db, plan.id, writes);
     await db.plans.put(saved);
+    if (plan.isExample || send === undefined) return;
+    if ((await db.links.get(plan.id)) === undefined) return;
+    const last = await db.unsent.where('planId').equals(plan.id).last();
+    await db.unsent.put({
+      planId: plan.id,
+      n: (last?.n ?? 0) + 1,
+      editId: send.editId,
+      madeAt: send.madeAt,
+      kind: send.kind,
+      writes,
+      ...(saved.setup === undefined ? {} : { setup: saved.setup }),
+    });
   });
   return saved;
+}
+
+/** How many changes on this phone haven't been sent yet, for one plan. */
+export async function unsentCount(db: PrePennyDb, planId: string): Promise<number> {
+  return db.unsent.where('planId').equals(planId).count();
 }
 
 /**

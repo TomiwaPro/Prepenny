@@ -60,7 +60,8 @@ async function expectSignedInOnMore(page: Page, address: string) {
   await expect(page).toHaveURL(/\/app\/more\/$/);
   const account = page.getByTestId('account');
   await expect(account.getByText(`Signed in as ${address}`)).toBeVisible();
-  await expect(account.getByText(strings.account.onPhoneOnly)).toBeVisible();
+  // From step 3c, the plan made before signing up goes up to the account.
+  await expect(account.getByTestId('where-kept')).toHaveText(strings.account.savedInAccount);
 }
 
 /** The id Supabase gave the person, from the sign-in kept on the phone. */
@@ -116,12 +117,21 @@ for (const colorScheme of ['light', 'dark'] as const) {
         'Current account',
       ]);
 
-      // Only the email address and the code went to Supabase: nothing about money.
+      // Signing in sent only the email address and the code: nothing about money.
+      const signingIn = sent.filter((request) =>
+        new URL(request.url()).pathname.startsWith('/auth/'),
+      );
       expect(
-        sent.map((request) => `${request.method()} ${new URL(request.url()).pathname}`),
+        signingIn.map((request) => `${request.method()} ${new URL(request.url()).pathname}`),
       ).toEqual(['POST /auth/v1/otp', 'POST /auth/v1/verify']);
-      for (const request of sent) {
+      for (const request of signingIn) {
         for (const word of MONEY) expect(request.postData() ?? '').not.toContain(word);
+      }
+      // Then the plan went up to the account, through PrePenny's own steps only (step 3c).
+      for (const request of sent) {
+        expect(new URL(request.url()).pathname).toMatch(
+          /^\/(auth\/v1\/(otp|verify|user|token)|rest\/v1\/(plan_members|rpc\/(start_plan|save_edit|plan_changes))|realtime\/v1\/.*)$/,
+        );
       }
     });
 
@@ -217,7 +227,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.getByTestId('account').getByRole('button', { name: 'Sign out' }).click();
       const sheet = page.getByRole('dialog', { name: 'Sign out' });
       await expect(sheet.getByText(strings.account.signOutIntro)).toBeVisible();
-      await expect(sheet.getByText(strings.account.signOutWarning)).toBeVisible();
+      // Everything has been sent, so there's no warning (step 3c).
+      await expect(sheet.getByTestId('unsent-warning')).toHaveCount(0);
       await noAxeProblems(page);
       // Tap 2: Sign out in the sheet.
       await sheet.getByRole('button', { name: 'Sign out', exact: true }).click();
@@ -285,7 +296,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await context.setOffline(false);
     });
 
-    test('4. signing in again on the same phone works', async ({ page }) => {
+    test('4. signing in again on the same phone works, and brings the plan back', async ({
+      page,
+    }) => {
       const address = newEmail('tom');
       await makeAPlan(page);
       await signUpFromMore(page, address);
@@ -307,9 +320,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(again.subject).toBe('Your PrePenny sign-in code');
       await typeCode(page, again.code, 'Sign in');
 
-      // Signed in, on a phone with no plan yet: the welcome says who's signed in.
-      await expect(page).toHaveURL(/\/setup\/$/);
-      await expect(page.getByText(strings.account.signedInWelcome(address))).toBeVisible();
+      // Signed in again: from step 3c, the plan comes back from the account.
+      await expect(page).toHaveURL(/\/app\/$/);
+      await expect(page.getByTestId('balance')).toContainText('£267.54');
       await noAxeProblems(page);
     });
 

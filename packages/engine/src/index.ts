@@ -225,9 +225,11 @@ export {
   type CoveredTo,
   type EstimateReason,
   type FixedPay,
+  hasShiftDetails,
   type OtherDeduction,
   PAY_LINE_KINDS,
   type PayAdjustment,
+  type PayAdjustmentWithDetails,
   type PayLine,
   type PayLineKind,
   type PayProfile,
@@ -248,9 +250,11 @@ export {
 } from './periods/periods.ts';
 export {
   applyHolidayRule,
+  type PaymentNumberOfRequest,
   type PaymentNumberRequest,
   type PaymentsRequest,
   paymentByNumber,
+  paymentNumberOf,
   workOutPayments,
 } from './schedule/payments.ts';
 export {

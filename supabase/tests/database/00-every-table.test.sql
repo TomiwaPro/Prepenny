@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(12);
 
 select is_empty(
   $$ select tablename from pg_tables where schemaname = 'public' and not rowsecurity $$,
@@ -25,6 +25,24 @@ select is_empty(
      where table_schema = 'public' and grantee = 'authenticated'
        and privilege_type not in ('SELECT', 'INSERT', 'UPDATE') $$,
   'A signed-in person can never delete a row, empty a table or change its triggers'
+);
+
+-- The first check on every record table and on the plan's own row refuses a
+-- person's insert or update outside save_edit (D345). Triggers run in order of
+-- name, so it's the first by name of those before each insert and update.
+select is_empty(
+  $$ select t from unnest(app.record_tables() || array['plans']) t
+     where (select g.tgname from pg_trigger g
+              join pg_class c on c.oid = g.tgrelid join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname = 'public' and c.relname = t and not g.tgisinternal
+              and g.tgtype & 2 = 2 and g.tgtype & 1 = 1
+            order by g.tgname limit 1) is distinct from 'a0_only_through_save_edit'
+        or not exists (select 1 from pg_trigger g
+              join pg_class c on c.oid = g.tgrelid join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname = 'public' and c.relname = t and g.tgname = 'a0_only_through_save_edit'
+              and g.tgtype & 23 = 23
+              and g.tgfoid = 'app.only_through_save_edit()'::regprocedure) $$,
+  'Every record table and the plan''s own row refuse a person''s change outside save_edit, before any other check'
 );
 
 select set_eq(
@@ -65,13 +83,24 @@ select is_empty(
 );
 
 -- The only functions a signed-in person can use are the checks the rules
--- call, and each answers only about the person asking.
+-- call, each answering only about the person asking, and from step 3c the
+-- four steps the phone calls and what they call in turn (D324).
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
   array['session_id', 'session_ok', 'my_plans', 'my_edit_plans', 'my_owned_plans', 'my_partners', 'my_own_pay',
-    'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem'],
-  'A signed-in person can use only the checks the privacy rules call'
+    'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem',
+    'record_tables', 'begin_edit', 'nudge', 'send_nudge', 'family_rules_problem', 'sent_columns', 'may_hear',
+    'save_edit', 'plan_changes', 'start_plan', 'remove_plan'],
+  'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
+);
+
+-- Of those, only the four steps are in the part the Data API shows.
+select set_eq(
+  $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute') $$,
+  array['save_edit', 'plan_changes', 'start_plan', 'remove_plan'],
+  'The Data API''s part holds only the four steps the phone calls'
 );
 
 select is_empty(

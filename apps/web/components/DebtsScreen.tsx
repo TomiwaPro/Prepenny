@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { formatDay } from '../lib/dates.ts';
 import type { DebtsView, DebtView } from '../lib/debts-view.ts';
 import { formatIn, formatMoney, perPoundWords } from '../lib/money.ts';
+import { recordAddress } from '../lib/record-id.ts';
 import { strings } from '../strings/en-GB.ts';
 import { DebtSheet } from './DebtSheet.tsx';
 import formStyles from './Form.module.css';
@@ -32,7 +33,7 @@ export function paidOffWords(debt: DebtView, view: { today: string; to: string }
 function DebtItem({ debt, view }: { readonly debt: DebtView; readonly view: DebtsView }) {
   return (
     <li data-testid="debt" data-debt={debt.name}>
-      <Link className={styles.rowLink} href={`/app/debt/?id=${encodeURIComponent(debt.id)}`}>
+      <Link className={styles.rowLink} href={recordAddress('/app/debt/', debt.id)}>
         <span className={styles.rowBody}>
           <span className={styles.rowTop}>
             <span className={styles.rowName}>{debt.name}</span>

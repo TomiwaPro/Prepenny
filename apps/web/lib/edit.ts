@@ -7,22 +7,77 @@ import {
   applyWrites,
   type Edit,
   type EditCommand,
+  EngineInputError,
   editPlan,
   type PlanRecords,
+  paymentNumberOf,
   type RecordWrite,
   sameValue,
 } from '@prepenny/engine';
+import { holidaysFor } from './holidays.ts';
 import { editInputOf } from './plan-input.ts';
+
+/**
+ * The payment number of each one-off change and tick an undo would put
+ * back, as it was when the edit was made (PLAN.md item 4), by recordKey.
+ * Null for a pay-later bill, or a payment no series has.
+ */
+export type PaymentNumbers = Readonly<Record<string, number | null>>;
 
 export interface EditResult {
   readonly edit: Edit;
   /** The records once the edit is saved. */
   readonly records: PlanRecords;
+  /** For its undo: which payment each change and tick it would put back was on. */
+  readonly numbers: PaymentNumbers;
 }
 
-export function runEdit(records: PlanRecords, today: string, command: EditCommand): EditResult {
+/** The payment number of a series' payment on its original date, in these records. */
+function numberIn(records: PlanRecords, seriesId: string, originalDate: string): number | null {
+  const series = records.series.find((one) => one.id === seriesId);
+  if (series === undefined) return null;
+  const holidays = holidaysFor(records.settings?.nation ?? 'england-and-wales');
+  return paymentNumberOf({ series, holidays, originalDate });
+}
+
+/** The payment numbers of the changes and ticks in a list of writes that put something back. */
+export function numbersOf(records: PlanRecords, writes: readonly RecordWrite[]): PaymentNumbers {
+  const numbers: Record<string, number | null> = {};
+  for (const write of writes) {
+    if ((write.kind !== 'change' && write.kind !== 'tick') || write.value === null) continue;
+    numbers[recordKey(write)] = numberIn(records, write.seriesId, write.originalDate);
+  }
+  return numbers;
+}
+
+/**
+ * One change, made by the engine. An undo given the payment numbers its
+ * edit was made with (PLAN.md item 4) is refused when a change or tick it
+ * puts back would now be on a different payment: a series' dates have moved
+ * since, as another phone's "this and all later ones" can do.
+ */
+export function runEdit(
+  records: PlanRecords,
+  today: string,
+  command: EditCommand,
+  numbers?: PaymentNumbers,
+): EditResult {
   const edit = editPlan(editInputOf(records, today), command);
-  return { edit, records: applyWrites(records, edit.writes) };
+  const after = applyWrites(records, edit.writes);
+  if (command.kind === 'undo' && numbers !== undefined) {
+    for (const write of edit.writes) {
+      if ((write.kind !== 'change' && write.kind !== 'tick') || write.value === null) continue;
+      const key = recordKey(write);
+      if (!(key in numbers)) continue;
+      if (numberIn(after, write.seriesId, write.originalDate) !== numbers[key]) {
+        throw new EngineInputError(
+          'changed-since',
+          `Series ${write.seriesId}: the payment on ${write.originalDate} has moved since, so this can't be undone.`,
+        );
+      }
+    }
+  }
+  return { edit, records: after, numbers: numbersOf(records, edit.undo) };
 }
 
 /** Which record a write is about, so two writes to the same record can be told apart. */
@@ -79,5 +134,5 @@ export function runEdits(
     writes.push(after);
     undo.push(before);
   }
-  return { edit: { writes, undo }, records: now };
+  return { edit: { writes, undo }, records: now, numbers: numbersOf(records, undo) };
 }

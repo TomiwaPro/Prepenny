@@ -10,7 +10,10 @@
 //    only once "Finish signing in" is tapped: some email services open links
 //    by themselves to check them, which mustn't use the key up (D312).
 // 3. Then back to More, or to their plan. The plan made on this phone
-//    becomes theirs, and stays on the phone for now (brief 4.13 "Try first").
+//    becomes theirs, and goes up to their account as its first copy, or
+//    their saved plan comes down (brief 4.13 "Try first", step 3c). When the
+//    phone has a plan of its own and the account another, they choose which
+//    to keep, and a confirm says the other will be removed (D324).
 //
 // Every mistake says what to do (VOICE.md). Nothing about money is sent,
 // and nothing is written to the console (PLAN.md item 20).
@@ -18,6 +21,8 @@
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { openDb, ownPlanOnPhone } from '../data/db.ts';
+import { forgetEverything, planSafelyKept } from '../data/forget.ts';
+import { type Connection, connectPlan, keepPhonePlan, keepSavedPlan } from '../data/sync.ts';
 import {
   CODE_LASTS_MS,
   checkCode,
@@ -30,8 +35,12 @@ import {
   sendCode,
   startGoogle,
 } from '../lib/account.ts';
+import { formatDay } from '../lib/dates.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
+import { localToday } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
+import { ChoiceList } from './ChoiceList.tsx';
+import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { describedBy, Field } from './Fields.tsx';
 import formStyles from './Form.module.css';
 import screenStyles from './Screens.module.css';
@@ -41,7 +50,7 @@ const t = strings.signIn;
 
 type Mode = 'sign-in' | 'sign-up';
 type From = 'more' | 'welcome';
-type Busy = 'sending' | 'checking' | 'google' | 'link' | null;
+type Busy = 'sending' | 'checking' | 'google' | 'link' | 'saving' | 'keeping' | null;
 
 /** What's happening while the person waits, read out as it changes. */
 const BUSY_WORDS: Record<Exclude<Busy, null>, string> = {
@@ -49,7 +58,19 @@ const BUSY_WORDS: Record<Exclude<Busy, null>, string> = {
   checking: t.checking,
   link: t.checkingLink,
   google: t.openingGoogle,
+  saving: t.saving,
+  keeping: t.keeping,
 };
+
+type Choice = Extract<Connection, { kind: 'choose' }>;
+
+/** A moment as a day on this phone: "today", or "Tue 3 Nov" (VOICE.md). */
+function dayOf(time: string | null): string {
+  const today = localToday();
+  if (time === null) return t.today;
+  const day = localToday(new Date(time));
+  return day === today ? t.today : formatDay(day, today);
+}
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE = /^\d{6}$/;
@@ -123,7 +144,13 @@ export function SignInScreen() {
   const id = useId();
   const [mode, setMode] = useState<Mode>('sign-in');
   const [from, setFrom] = useState<From>('welcome');
-  const [step, setStep] = useState<'email' | 'code' | 'link'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'link' | 'choose'>('email');
+  const [choice, setChoice] = useState<Choice | null>(null);
+  const [keep, setKeep] = useState<'saved' | 'phone' | ''>('');
+  const [confirming, setConfirming] = useState(false);
+  const [keepError, setKeepError] = useState<string | undefined>();
+  const [otherPlan, setOtherPlan] = useState<'saved' | 'not-saved' | null>(null);
+  const [removing, setRemoving] = useState(false);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentAt, setSentAt] = useState<number | null>(null);
@@ -168,16 +195,18 @@ export function SignInScreen() {
       setBusy(busyWith);
       const outcome = await attempt();
       if (outcome.ok) {
-        router.replace(afterSignIn(cameFrom));
+        await signedInNow(cameFrom);
         return;
       }
       setBusy(null);
-      setProblem(
-        outcome.problem.kind === 'code-refused' ? refused : wordsFor(outcome.problem, null),
-      );
+      showProblem(outcome.problem, refused);
     };
     if (off) {
       // Nothing to check: signing in is switched off in this version.
+    } else if (search.has('choose')) {
+      // From the app: a plan of this phone's own beside the account's (D324).
+      window.history.replaceState(null, '', pageAddress(opened, cameFrom));
+      void signedInNow(cameFrom);
     } else if (tokenHash !== null) {
       // Used only when the person taps "Finish signing in" (D312).
       linkKey.current = tokenHash;
@@ -228,6 +257,46 @@ export function SignInScreen() {
     }
     heading.current?.focus();
   }, [step]);
+
+  /**
+   * Once signed in: the plan goes up as the first copy, or the saved plan
+   * comes down, or the person chooses which to keep (step 3c). Then on to
+   * More or the plan. With no server for now, the plan stays on the phone and
+   * goes up later.
+   */
+  async function signedInNow(cameFrom: From) {
+    setBusy('saving');
+    const connection = await connectPlan();
+    if (connection.kind === 'choose') {
+      setBusy(null);
+      setChoice(connection);
+      setKeep('');
+      setStep('choose');
+      return;
+    }
+    router.replace(afterSignIn(cameFrom));
+  }
+
+  /** A problem in words, with the way to remove another account's plan when that's what's in the way. */
+  function showProblem(found: Problem, refused?: string) {
+    setProblem(
+      found.kind === 'code-refused' && refused !== undefined ? refused : wordsFor(found, sentAt),
+    );
+    if (found.kind === 'someone-elses-plan') {
+      void planSafelyKept().then((saved) => setOtherPlan(saved ? 'saved' : 'not-saved'));
+    }
+  }
+
+  async function chooseToKeep(event: FormEvent) {
+    event.preventDefault();
+    if (busy !== null) return;
+    if (keep === '') {
+      setKeepError(t.chooseFirst);
+      return;
+    }
+    setKeepError(undefined);
+    setConfirming(true);
+  }
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -291,7 +360,7 @@ export function SignInScreen() {
     setBusy('checking');
     const outcome = await checkCode(email, typed);
     if (outcome.ok) {
-      router.replace(afterSignIn(from));
+      await signedInNow(from);
       return;
     }
     setBusy(null);
@@ -299,7 +368,7 @@ export function SignInScreen() {
       setCodeError(wordsFor(outcome.problem, sentAt));
       codeBox.current?.focus();
     } else {
-      setProblem(wordsFor(outcome.problem, sentAt));
+      showProblem(outcome.problem);
     }
   }
 
@@ -310,15 +379,13 @@ export function SignInScreen() {
     setBusy('link');
     const outcome = await checkLink(key);
     if (outcome.ok) {
-      router.replace(afterSignIn(from));
+      await signedInNow(from);
       return;
     }
     setBusy(null);
     linkKey.current = null;
     setStep('email');
-    setProblem(
-      outcome.problem.kind === 'code-refused' ? t.linkRanOut : wordsFor(outcome.problem, null),
-    );
+    showProblem(outcome.problem, t.linkRanOut);
   }
 
   async function google() {
@@ -345,7 +412,7 @@ export function SignInScreen() {
       </a>
       <main className={styles.main}>
         <header className={screenStyles.header}>
-          {step === 'code' ? (
+          {step === 'choose' ? null : step === 'code' ? (
             <button
               type="button"
               className={`${screenStyles.back} ${styles.textButton}`}
@@ -364,24 +431,28 @@ export function SignInScreen() {
             </a>
           ) : null}
           <h1 ref={heading} tabIndex={-1} className={screenStyles.heading}>
-            {step === 'code'
-              ? t.codeHeading
-              : step === 'link'
-                ? t.linkHeading
-                : signUp
-                  ? t.signUpHeading
-                  : t.signInHeading}
+            {step === 'choose'
+              ? t.chooseHeading
+              : step === 'code'
+                ? t.codeHeading
+                : step === 'link'
+                  ? t.linkHeading
+                  : signUp
+                    ? t.signUpHeading
+                    : t.signInHeading}
           </h1>
           <p className={screenStyles.purpose}>
-            {step === 'code'
-              ? resent
-                ? t.newCodeSentTo(email)
-                : t.sentTo(email)
-              : step === 'link'
-                ? t.linkPurpose
-                : signUp
-                  ? t.signUpPurpose
-                  : t.signInPurpose}
+            {step === 'choose'
+              ? t.choosePurpose
+              : step === 'code'
+                ? resent
+                  ? t.newCodeSentTo(email)
+                  : t.sentTo(email)
+                : step === 'link'
+                  ? t.linkPurpose
+                  : signUp
+                    ? t.signUpPurpose
+                    : t.signInPurpose}
           </p>
           {step === 'email' && hasPlan ? (
             <p className={screenStyles.purpose}>{t.planBecomesYours}</p>
@@ -392,6 +463,46 @@ export function SignInScreen() {
           <section className={styles.card}>
             <p>{t.off}</p>
           </section>
+        ) : step === 'choose' && choice !== null ? (
+          <form
+            className={styles.card}
+            onSubmit={chooseToKeep}
+            noValidate
+            data-testid="choose-plan"
+          >
+            <ChoiceList<'saved' | 'phone' | ''>
+              legend={t.chooseLegend}
+              name={`${id}-keep`}
+              value={keep}
+              invalid={keepError !== undefined}
+              {...(keepError === undefined ? {} : { describedBy: `${id}-keep-error` })}
+              hintsUnder
+              options={[
+                {
+                  value: 'saved',
+                  label: t.savedPlan(dayOf(choice.savedChangedAt)),
+                  hint: t.savedPlanHint,
+                },
+                {
+                  value: 'phone',
+                  label: t.phonePlan(dayOf(choice.phoneStartedAt)),
+                  hint: t.phonePlanHint,
+                },
+              ]}
+              onChange={(value) => {
+                setKeep(value);
+                setKeepError(undefined);
+              }}
+            />
+            {keepError === undefined ? null : (
+              <p id={`${id}-keep-error`} className={formStyles.problem}>
+                {keepError}
+              </p>
+            )}
+            <button type="submit" className={formStyles.main} aria-disabled={busy !== null}>
+              {t.keepThisPlan}
+            </button>
+          </form>
         ) : step === 'link' ? (
           <section className={styles.card}>
             <button
@@ -495,7 +606,54 @@ export function SignInScreen() {
         <div role="alert" className={styles.alert} data-testid="sign-in-problem">
           {problem === null ? null : <p className={formStyles.problem}>{problem}</p>}
         </div>
+        {otherPlan === null ? null : (
+          <button
+            type="button"
+            className={formStyles.outlined}
+            aria-haspopup="dialog"
+            onClick={() => setRemoving(true)}
+          >
+            {t.removeOther}
+          </button>
+        )}
       </main>
+      <ConfirmSheet
+        open={confirming}
+        title={keep === 'phone' ? t.keepPhoneTitle : t.keepSavedTitle}
+        intro={keep === 'phone' ? t.keepPhoneIntro : t.keepSavedIntro}
+        confirm={t.removeIt}
+        keep={t.goBack}
+        onConfirm={async () => {
+          setBusy('keeping');
+          const kept = keep === 'phone' ? await keepPhonePlan() : await keepSavedPlan();
+          setBusy(null);
+          if (!kept) {
+            setProblem(t.couldNotKeep);
+            return { ok: false, code: 'not-ready' };
+          }
+          return { ok: true, version: 0 };
+        }}
+        onClose={(changed) => {
+          setConfirming(false);
+          if (changed) router.replace(afterSignIn(from));
+        }}
+      />
+      <ConfirmSheet
+        open={removing}
+        title={t.removeOtherTitle}
+        intro={otherPlan === 'saved' ? t.removeOtherSaved : t.removeOtherNotSaved}
+        confirm={t.removeIt}
+        keep={t.goBack}
+        onConfirm={async () => {
+          await forgetEverything();
+          return { ok: true, version: 0 };
+        }}
+        onClose={(changed) => {
+          setRemoving(false);
+          // Loaded afresh, with nothing of the other account's left, to sign in again.
+          if (changed) window.location.replace(pageAddress(mode, from));
+        }}
+      />
     </div>
   );
 }

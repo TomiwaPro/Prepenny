@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { claimOwnPlan, openDb, type PrePennyDb, saveChange, savePlan } from '../../data/db.ts';
 import { EXAMPLE_PLAN_ID, examplePlan } from '../../data/example-plan.ts';
-import { forgetEverything } from '../../data/forget.ts';
+import { forgetEverything, planSafelyKept } from '../../data/forget.ts';
 import { problemOf } from '../../lib/account.ts';
 import { LOCAL_SUPABASE, signInConfig } from '../../lib/sign-in-config.ts';
 import { strings } from '../../strings/en-GB.ts';
@@ -216,5 +216,70 @@ describe('Signing out leaves nothing behind (brief 4.13, PLAN.md item 20)', () =
     expect((await indexedDB.databases()).map((one) => one.name)).not.toContain('prepenny');
     Reflect.deleteProperty(globalThis, 'localStorage');
     Reflect.deleteProperty(globalThis, 'sessionStorage');
+  });
+});
+
+describe('A sign-in that ends by itself removes the plan only once it is safely in the account (D326, PLAN.md item 29)', () => {
+  let db: PrePennyDb;
+  const own = { id: 'own-plan', isExample: false, owner: 'person-a' } as const;
+  const link = { planId: 'own-plan', personId: 'person-a', shared: 3, mine: 9 } as const;
+  const writes = [
+    {
+      kind: 'account',
+      id: 'a',
+      value: { id: 'a', kind: 'current', overdraftLimit: 0, warningLevel: 2000 },
+    },
+  ] as const;
+
+  beforeEach(async () => {
+    db = openDb('prepenny');
+    await db.delete();
+    db = openDb('prepenny');
+  });
+  afterEach(() => db.close());
+
+  it('a phone with no plan of its own has nothing to lose', async () => {
+    expect(await planSafelyKept()).toBe(true);
+  });
+
+  it("a plan that has never gone up to the account isn't safe to remove", async () => {
+    await savePlan(db, own, { accounts: [], balanceUpdates: [], series: [] });
+    expect(await planSafelyKept()).toBe(false);
+  });
+
+  it('a plan kept in the account, with everything sent, is', async () => {
+    await savePlan(db, own, { accounts: [], balanceUpdates: [], series: [] });
+    await db.links.put(link);
+    expect(await planSafelyKept()).toBe(true);
+  });
+
+  it("a change made since, saved on the phone and queued in the same go, isn't sent yet, so it isn't safe", async () => {
+    await savePlan(db, own, { accounts: [], balanceUpdates: [], series: [] });
+    await db.links.put(link);
+    await saveChange(db, own, writes, {
+      editId: 'edit-1',
+      madeAt: '2026-11-07T10:00:00.000Z',
+      kind: 'add-account',
+    });
+    expect(await db.unsent.count()).toBe(1);
+    expect(await planSafelyKept()).toBe(false);
+  });
+
+  it('a change to a plan not kept in an account, or to the example, is never queued to send', async () => {
+    await savePlan(db, own, { accounts: [], balanceUpdates: [], series: [] });
+    await saveChange(db, own, writes, {
+      editId: 'edit-1',
+      madeAt: '2026-11-07T10:00:00.000Z',
+      kind: 'add-account',
+    });
+    const example = { id: EXAMPLE_PLAN_ID, isExample: true } as const;
+    await savePlan(db, example, examplePlan);
+    await db.links.put({ ...link, planId: EXAMPLE_PLAN_ID });
+    await saveChange(db, example, writes, {
+      editId: 'edit-2',
+      madeAt: '2026-11-07T10:00:00.000Z',
+      kind: 'add-account',
+    });
+    expect(await db.unsent.count()).toBe(0);
   });
 });

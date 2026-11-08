@@ -418,6 +418,11 @@ export const strings = {
     backToMakingMyPlan: 'Go back to making my plan',
     makeMyPlan: 'Make my plan',
     offline: "You're offline. PrePenny keeps working with what's on this phone.",
+    /** Signed in, from step 3c, when changes are sent to the account (D174). */
+    offlineSending:
+      "You're offline. Changes are saved on this phone and will be sent when you're back online.",
+    /** Signed in, with a signal, when the server can't take changes for now (ARCHITECTURE.md 4.5). */
+    cantSend: "Changes can't be sent right now. They're saved on this phone.",
     updated: 'PrePenny has been updated. Tap to reload.',
   },
 
@@ -1657,17 +1662,47 @@ export const strings = {
     signedOutLine: 'Sign up so your plan is yours. No password needed.',
     signUp: 'Sign up or sign in',
     signedInAs: (email: string) => `Signed in as ${email}`,
-    onPhoneOnly: 'For now your plan is on this phone only.',
+    /** Under "Signed in as" (step 3c): where the plan is kept. */
+    savedInAccount: 'Your plan is saved in your account.',
+    notSavedYet:
+      "Your plan hasn't been saved in your account yet. It's on this phone, and will be sent when PrePenny can reach its server.",
+    unsent: (count: number) =>
+      count === 1
+        ? "1 change hasn't been sent yet. It's saved on this phone."
+        : `${count} changes haven't been sent yet. They're saved on this phone.`,
+    refused:
+      "A change couldn't be saved in your account, so it and the changes after it are kept on this phone for now.",
     off: "Signing in isn't switched on yet. Your plan stays on this phone.",
     signOut: 'Sign out',
     signOutIntro:
-      'Signing out removes your plan, and everything else PrePenny keeps, from this phone.',
-    signOutWarning: "Your plan isn't kept anywhere else yet, so it can't be brought back.",
+      "Signing out removes your plan from this phone only. It's saved in your account, and comes back when you sign in again.",
+    /** Before signing out, when something on this phone hasn't been sent yet (step 3c). */
+    signOutUnsent: (count: number) =>
+      count === 1
+        ? "1 change hasn't been sent to your account yet. If you sign out now, it will be lost."
+        : `${count} changes haven't been sent to your account yet. If you sign out now, they'll be lost.`,
+    signOutNotSaved:
+      "Your plan hasn't been saved in your account yet. If you sign out now, it will be lost.",
+    /** `one` when it's one change, or the plan itself; otherwise there are several changes. */
+    signOutWhenSent: (one: boolean) =>
+      one ? 'Sign out once it has been sent' : 'Sign out once they have been sent',
+    signOutWhenSentHint: (one: boolean) =>
+      one
+        ? "You stay signed in until then, and it's sent as soon as there's a signal."
+        : "You stay signed in until then, and they're sent as soon as there's a signal.",
+    signOutAnyway: (one: boolean) =>
+      one ? 'Sign out now and lose it' : 'Sign out now and lose them',
+    waitingToSend: "Sending to your account. You'll be signed out once everything has gone.",
+    waitingForSignal:
+      "Waiting for a signal to send to your account. You'll be signed out once everything has gone.",
     signOutConfirm: 'Sign out',
     staySignedIn: 'Stay signed in',
     signingOut: 'Signing out.',
     /** On the welcome, after signing out. */
     signedOut: "You're signed out. Nothing of yours is left on this phone.",
+    /** When a sign-in ended by itself, as after "Sign out everywhere" (step 3c, PLAN.md item 29). */
+    signInEnded:
+      "Your sign-in has ended, so your plan was removed from this phone. It's saved in your account: sign in to bring it back.",
     /** On the welcome. */
     haveAccount: 'Already have an account?',
     signIn: 'Sign in',
@@ -1682,7 +1717,30 @@ export const strings = {
     signUpPurpose:
       'Make an account with your email address or Google. No password needed. If you already have one, this signs you in.',
     planBecomesYours:
-      'The plan you made on this phone becomes yours. For now it stays on this phone only.',
+      'The plan you made on this phone becomes yours, and is saved in your account.',
+    saving: 'Saving your plan in your account.',
+    /** A plan on this phone and another in the account: which to keep (step 3c, D324). */
+    chooseHeading: 'Choose which plan to keep',
+    choosePurpose:
+      'Your account already has a saved plan, and this phone has a plan of its own. You can keep one of them.',
+    chooseLegend: 'Which plan do you want to keep?',
+    savedPlan: (changed: string) => `Your saved plan, last changed ${changed}`,
+    savedPlanHint: 'The one in your account, as you last left it.',
+    phonePlan: (started: string) => `The plan on this phone, started ${started}`,
+    phonePlanHint: 'The one you made on this phone before signing in.',
+    /** "started today", "last changed today". */
+    today: 'today',
+    keepThisPlan: 'Keep this plan',
+    chooseFirst: 'Choose a plan to keep.',
+    keepSavedTitle: 'Keep your saved plan',
+    keepSavedIntro: "The plan on this phone will be removed. This can't be undone.",
+    keepPhoneTitle: 'Keep the plan on this phone',
+    keepPhoneIntro: "Your saved plan will be removed from your account. This can't be undone.",
+    removeIt: 'Yes, remove it',
+    goBack: 'No, go back',
+    keeping: 'Keeping the plan you chose.',
+    couldNotKeep:
+      "PrePenny couldn't reach its server, so nothing was removed. Try again in a minute.",
     backToMore: 'Back to More',
     emailLabel: 'Email address',
     emailHint: "We'll email you a 6-digit code.",
@@ -1733,7 +1791,13 @@ export const strings = {
     off: "Signing in isn't switched on yet. Your plan stays on this phone.",
     googleCancelled: "Google sign-in didn't finish. Try again, or use your email address instead.",
     someoneElsesPlan:
-      'This phone has a plan that belongs to another account. Sign in with that account and sign out first, then sign in with yours.',
+      'This phone has a plan from another account. To sign in with yours, remove that plan from this phone first.',
+    removeOther: "Remove the other account's plan",
+    removeOtherTitle: "Remove the other account's plan",
+    removeOtherSaved:
+      "It's removed from this phone only. It's saved in that account, so nothing of it is lost.",
+    removeOtherNotSaved:
+      "It's removed from this phone. Some of it hasn't been saved in that account, and that part will be lost.",
   },
 
   parts: {

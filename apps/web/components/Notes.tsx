@@ -1,9 +1,12 @@
 'use client';
 
 // Messages that can appear on any screen (ARCHITECTURE.md 4.5): the example
-// plan banner, and a small, clear note when the phone is offline (brief Part 6).
+// plan banner, and a small, clear note when the phone is offline (brief Part 6),
+// or, signed in, when changes can't be sent for now (step 3c).
 
 import { useSyncExternalStore } from 'react';
+import { useSync } from '../data/sync.ts';
+import { useAccount } from '../lib/account.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Notes.module.css';
 
@@ -58,17 +61,39 @@ export function useOffline(): boolean {
   );
 }
 
-/** The words of the offline note, on their own. */
-export function OfflineMessage() {
+/**
+ * The words of the offline note, on their own. Signed in, changes wait to be
+ * sent (D174, step 3c); otherwise nothing is ever sent, so it says only that
+ * PrePenny keeps working.
+ */
+export function OfflineMessage({ sending = false }: { readonly sending?: boolean }) {
   return (
     <p className={`${styles.note} ${styles.offline}`} data-testid="offline-note">
-      {strings.banners.offline}
+      {sending ? strings.banners.offlineSending : strings.banners.offline}
     </p>
   );
 }
 
-/** The offline note, shown only while the phone is offline. Screen readers hear it appear. */
+/**
+ * The offline note, shown only while the phone is offline; and signed in,
+ * with a signal, the note that changes can't be sent for now. Screen readers
+ * hear each appear.
+ */
 export function OfflineNote() {
   const offline = useOffline();
-  return <div role="status">{offline ? <OfflineMessage /> : null}</div>;
+  const account = useAccount();
+  const sync = useSync();
+  const signedIn = account.status === 'signed-in';
+  const cantSend = signedIn && sync.cantSend && (sync.unsent > 0 || !sync.kept);
+  return (
+    <div role="status">
+      {offline ? (
+        <OfflineMessage sending={signedIn} />
+      ) : cantSend ? (
+        <p className={`${styles.note} ${styles.offline}`} data-testid="cant-send-note">
+          {strings.banners.cantSend}
+        </p>
+      ) : null}
+    </div>
+  );
 }

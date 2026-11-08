@@ -7,13 +7,15 @@ import { parseDecimal } from '../money/decimal.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { lastDayCovered, workOutPayChange } from '../pay/shifts.ts';
 import { taxYearsOf } from '../pay/tax-year.ts';
-import type {
-  CoveredTo,
-  FixedPay,
-  PayAdjustment,
-  PayLine,
-  PayProfile,
-  PayWeek,
+import {
+  type CoveredTo,
+  type FixedPay,
+  hasShiftDetails,
+  type PayAdjustment,
+  type PayAdjustmentWithDetails,
+  type PayLine,
+  type PayProfile,
+  type PayWeek,
 } from '../pay/types.ts';
 import {
   type PaymentOnDays,
@@ -155,7 +157,7 @@ function basisOf(
 function workOutPayday(
   payday: { prepared: PreparedSeries; payment: PaymentOnDays },
   basis: PaydayBasis,
-  adjustments: readonly PayAdjustment[],
+  adjustments: readonly PayAdjustmentWithDetails[],
 ): PayAdjustment[] {
   const { profile, week } = basis;
   const inOrder = [...adjustments].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -187,7 +189,7 @@ function workOutPayday(
 function refuseTooMuchExtras(
   payday: { payment: PaymentOnDays },
   week: PayWeek,
-  adjustments: readonly PayAdjustment[],
+  adjustments: readonly PayAdjustmentWithDetails[],
 ): void {
   const total = [
     ...(week.fixed ?? []),
@@ -209,7 +211,7 @@ function saveAll(context: Context, worked: readonly PayAdjustment[]): void {
   }
 }
 
-function lineOf(adjustment: Pick<PayAdjustment, 'kind' | 'hours' | 'rate'>): PayLine {
+function lineOf(adjustment: Pick<PayAdjustmentWithDetails, 'kind' | 'hours' | 'rate'>): PayLine {
   return adjustment.kind === 'overtime'
     ? { name: 'Overtime', kind: 'overtime', hours: adjustment.hours, rate: adjustment.rate }
     : // A missed shift takes its hours off at its rate, as a line of its own (D9, D123).
@@ -218,7 +220,7 @@ function lineOf(adjustment: Pick<PayAdjustment, 'kind' | 'hours' | 'rate'>): Pay
 
 /** A change to the extras as fixed pay: added for overtime, taken off for a missed shift (D130). */
 function extrasOf(adjustment: {
-  readonly kind: PayAdjustment['kind'];
+  readonly kind: PayAdjustmentWithDetails['kind'];
   readonly extras?: Pence | undefined;
 }): FixedPay | null {
   if (adjustment.extras === undefined) return null;
@@ -305,10 +307,16 @@ export function recordPayAdjustment(context: Context, command: PayCommand): void
   const rateValue = parseDecimal(rate, 'The rate');
   if (rateValue.units < 0n) refuse('bad-command', "The rate can't be below zero.");
 
-  const others = [...context.checked.pay.adjustments.values()].filter(
-    (one) => one.familyId === familyId && one.number === payday.payment.number,
+  const others = ownShifts(
+    [...context.checked.pay.adjustments.values()].filter(
+      (one) => one.familyId === familyId && one.number === payday.payment.number,
+    ),
   );
-  const fresh = clean<PayAdjustment>({
+  if (others === null) {
+    // Someone else's shift is on this payday: it's their pay (D303).
+    refuse('not-your-pay', `The payday on ${formatDate(payday.payment.day)} isn't your pay.`);
+  }
+  const fresh = clean<PayAdjustmentWithDetails>({
     id: command.id,
     familyId,
     number: payday.payment.number,
@@ -346,10 +354,13 @@ export function removePayAdjustment(context: Context, id: string): void {
   // The others on the same payday were worked out on top of it, so they're
   // worked out again without it (D140). When the payday has no pay profile
   // or pay week any more, they can't be, and stay as they are.
-  const others = [...context.checked.pay.adjustments.values()].filter(
-    (one) => one.id !== id && one.familyId === removed.familyId && one.number === removed.number,
+  const others = ownShifts(
+    [...context.checked.pay.adjustments.values()].filter(
+      (one) => one.id !== id && one.familyId === removed.familyId && one.number === removed.number,
+    ),
   );
-  if (others.length === 0) return;
+  // Those of someone else's pay are never worked out here (D303).
+  if (others === null || others.length === 0) return;
   const payday = paydayByNumber(context, removed.familyId, removed.number);
   const basis = payday === null ? null : basisOf(context, payday);
   if (payday === null || basis === null) return;
@@ -449,6 +460,15 @@ function stillToCome(context: Context, payday: { payment: PaymentOnDays }): bool
   return payday.payment.day >= context.today && payday.payment.isEstimate;
 }
 
+/**
+ * The shifts with their details, or null when any of them has its change
+ * alone: someone else's pay, on a partner's phone (D303).
+ */
+function ownShifts(list: readonly PayAdjustment[]): PayAdjustmentWithDetails[] | null {
+  const own = list.filter(hasShiftDetails);
+  return own.length === list.length ? own : null;
+}
+
 /** Every saved overtime and missed shift as it is now in this edit, grouped by payday. */
 function savedByPayday(context: Context): PayAdjustment[][] {
   const groups = new Map<string, PayAdjustment[]>();
@@ -477,11 +497,13 @@ export function reworkPayAdjustments(context: Context): void {
     const payday = paydayByNumber(context, familyId, number);
     if (payday === null || !stillToCome(context, payday)) continue;
     const basis = basisNow(context, payday);
-    if (basis === null) continue;
-    refuseTooMuchExtras(payday, basis.week, group);
+    // Someone else's pay, with its change alone, is never worked out here (D303).
+    const own = ownShifts(group);
+    if (basis === null || own === null) continue;
+    refuseTooMuchExtras(payday, basis.week, own);
     let worked: PayAdjustment[];
     try {
-      worked = workOutPayday(payday, basis, group);
+      worked = workOutPayday(payday, basis, own);
     } catch (error) {
       // The year so far is from this payday's payslip or later, or from
       // another tax year: the payday is settled, so its shifts stay as saved.
@@ -513,6 +535,7 @@ export function refuseMovedShifts(
       (context.draft.get(seriesWrite(id, null)) as Series | null) ?? payday.prepared.series;
     if (series.payProfileId !== profileId) continue;
     for (const one of group) {
+      if (!hasShiftDetails(one)) continue;
       const now = paydayForShift(context, familyId, coveredTo, parseDate(one.workedOn));
       if (now === null || now.payment.number !== number) {
         refuse(

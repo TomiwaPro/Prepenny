@@ -27,7 +27,8 @@ import {
   saveChange,
   setShowing,
 } from '../../data/db.ts';
-import { newId } from '../../lib/ids.ts';
+import { syncSoon } from '../../data/sync.ts';
+import { newId, timeNow } from '../../lib/ids.ts';
 import {
   NEW_SETUP,
   type SetupAnswers,
@@ -178,11 +179,17 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
       try {
         const db = openDb();
         try {
-          await saveChange(db, plan, writes);
+          // Kept in an account, each step's change is sent too (step 3c).
+          await saveChange(db, plan, writes, {
+            editId: newId(),
+            madeAt: timeNow(),
+            kind: 'setup',
+          });
           if (showOwn) await setShowing(db, 'own');
         } finally {
           db.close();
         }
+        syncSoon();
       } catch {
         canSave.current = false;
         setNotSaved(true);

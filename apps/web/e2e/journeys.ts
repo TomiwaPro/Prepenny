@@ -9,7 +9,6 @@
 // and so on. So the screens are checked against the fixture, not against
 // themselves.
 
-import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page } from '@playwright/test';
 import {
   type EditCommand,
@@ -21,6 +20,7 @@ import {
 import { build, fixtureRecords } from '../../../packages/engine/test/fixtures/from-empty.ts';
 import { calendarFor as holidaysFor } from '../../../packages/engine/test/fixtures/holidays.ts';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, openPeriod, period, rowIn } from './coming-up.ts';
 import { settingScript } from './fixtures.ts';
 import { box, ownRecords, radio } from './setup.ts';
@@ -31,7 +31,7 @@ export const day = (text: string) => text.replaceAll(' ', NB);
 export const pounds = (text: string) => parsePounds(text);
 
 export async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(AXE_TAGS).analyze()).violations).toEqual([]);
 }
 
 export async function noSidewaysScroll(page: Page) {

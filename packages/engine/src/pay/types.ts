@@ -130,6 +130,12 @@ export interface PayWeek {
  * "I did overtime" or "I missed a shift" (D5, D44), saved on the payday the
  * shift is paid on. Found by the pay series' family and the payday's payment
  * number, so a split or a moved date never loses it (D123).
+ *
+ * The details (what happened, the day, the hours, the rate, the extras and
+ * the tax year) are private to the person whose pay it is (D303). A
+ * partner's phone has the change to the payday alone, with no details: it's
+ * added to the payday like any other, and never worked out again there
+ * (step 3c, PLAN.md item 28). An adjustment has all its details or none.
  */
 export interface PayAdjustment {
   readonly id: string;
@@ -137,11 +143,11 @@ export interface PayAdjustment {
   readonly familyId: string;
   /** The payment number of the payday, counted from the family's first series (brief 5.3). */
   readonly number: number;
-  readonly kind: 'overtime' | 'missed-shift';
+  readonly kind?: 'overtime' | 'missed-shift';
   /** The day of the shift, "YYYY-MM-DD". */
-  readonly workedOn: string;
-  readonly hours: string;
-  readonly rate: string;
+  readonly workedOn?: string;
+  readonly hours?: string;
+  readonly rate?: string;
   /**
    * A change to the pay week's extras, such as its shift premium, bonus or
    * allowance (D130): added for overtime, taken off for a missed shift.
@@ -151,7 +157,16 @@ export interface PayAdjustment {
   /** The change to the payday's take-home pay, worked out when it was saved (D5). Below zero for a missed shift. */
   readonly change: Pence;
   /** The tax year of the payday, "2026-27". */
-  readonly taxYear: string;
+  readonly taxYear?: string;
+}
+
+/** A pay adjustment with its details, as its own person's phone has it (D303). */
+export type PayAdjustmentWithDetails = PayAdjustment &
+  Required<Pick<PayAdjustment, 'kind' | 'workedOn' | 'hours' | 'rate' | 'taxYear'>>;
+
+/** True when the adjustment has its details: it's the person's own (D303). */
+export function hasShiftDetails(one: PayAdjustment): one is PayAdjustmentWithDetails {
+  return one.kind !== undefined;
 }
 
 /** What the calculator needs for one payday. */

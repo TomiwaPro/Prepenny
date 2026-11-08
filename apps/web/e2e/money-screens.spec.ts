@@ -4,7 +4,6 @@
 // "Today" is Sun 25 Oct 2026 on Sam's example unless a test says otherwise.
 // Tests that need a test plan use the test-only setting (D201).
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
 import {
   type Account,
@@ -17,6 +16,7 @@ import {
 } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
+import { axeOnceStill } from './axe.ts';
 import {
   chooseView,
   MINUS,
@@ -32,7 +32,7 @@ async function useSetting(page: Page, setting: TestSetting) {
 }
 
 async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(tags).analyze()).violations).toEqual([]);
 }
 
 const undoBar = (page: Page) => page.getByTestId('undo-bar');
@@ -235,7 +235,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openDebt(page, 'Family loan');
-      await expect(page).toHaveURL(/\/app\/debt\/\?id=family-loan$/);
+      await expect(page).toHaveURL(/\/app\/debt\/#id=family-loan$/);
       await expect(nav(page, 'Debts')).toHaveAttribute('aria-current', 'location');
       const left = page.getByTestId('left-now');
       await expect(left).toContainText('€1,400.57');

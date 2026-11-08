@@ -8,14 +8,14 @@
 // amount, payment name or note is written to the browser's console. With
 // reduced motion on, nothing moves.
 
-import AxeBuilder from '@axe-core/playwright';
 import { expect, type Locator, type Page, type Request } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
+import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, layoutProblems, openPeriod, period } from './coming-up.ts';
-import { test } from './fixtures.ts';
+import { openOnExample, test } from './fixtures.ts';
 
 async function noAxeProblems(page: Page, where?: string) {
-  const builder = new AxeBuilder({ page }).withTags(AXE_TAGS);
+  const builder = (await axeOnceStill(page)).withTags(AXE_TAGS);
   const found = (await (where === undefined ? builder : builder.include(where)).analyze())
     .violations;
   expect(
@@ -87,6 +87,10 @@ function watch(page: Page) {
         !line.startsWith('log: ') &&
         !line.startsWith('debug: ') &&
         !(notFound && line.includes('status of 404')) &&
+        // The browser's own note that the computer's network changed, as when
+        // GitHub's part 3 starts the local Supabase beside its first tests
+        // (D344). It names nothing of PrePenny's and holds no data.
+        line !== 'error: Failed to load resource: net::ERR_NETWORK_CHANGED' &&
         // The browser's own note when Next.js preloads a later screen's style sheet: no data in it.
         !/^warning: The resource \S+\/_next\/static\/\S+\.css was preloaded using link preload but not used/.test(
           line,
@@ -105,8 +109,8 @@ const SCREENS = [
   { path: '/app/', heading: 'Home', purpose: strings.home.purpose },
   { path: '/app/coming-up/', heading: 'Coming up', purpose: strings.comingUp.purpose },
   { path: '/app/debts/', heading: 'Debts', purpose: strings.debts.purpose },
-  { path: '/app/debt/?id=family-loan', heading: 'Family loan', purpose: strings.debt.purpose },
-  { path: '/app/debt/?id=credit-card', heading: 'Credit card', purpose: strings.debt.purpose },
+  { path: '/app/debt/#id=family-loan', heading: 'Family loan', purpose: strings.debt.purpose },
+  { path: '/app/debt/#id=credit-card', heading: 'Credit card', purpose: strings.debt.purpose },
   { path: '/app/more/', heading: 'More', purpose: strings.more.purpose },
   { path: '/app/accounts/', heading: 'Accounts', purpose: strings.accounts.purpose },
   { path: '/app/budgets/', heading: 'Budgets', purpose: strings.budgets.purpose },
@@ -283,7 +287,7 @@ const SHEETS: readonly {
       ['Close this debt', 'Close this debt'],
     ] as const
   ).map(([name, title]) => ({
-    path: '/app/debt/?id=family-loan',
+    path: '/app/debt/#id=family-loan',
     heading: 'Family loan',
     title,
     open: (page: Page) => page.getByRole('button', { name, exact: true }).click(),
@@ -435,7 +439,7 @@ test('making changes sends nothing anywhere', async ({ page }) => {
 test("every page is sent with its security rules: only PrePenny's own files, and no referrer", async ({
   request,
 }) => {
-  for (const path of ['/', '/setup/', '/app/', '/app/debt/?id=family-loan', '/pay-calculator/']) {
+  for (const path of ['/', '/setup/', '/app/', '/app/debt/#id=family-loan', '/pay-calculator/']) {
     const response = await request.get(path);
     const headers = response.headers();
     expect(headers['content-security-policy'], path).toContain("default-src 'self'");
@@ -554,4 +558,52 @@ test.describe("what's kept on the phone", () => {
       .click();
     await gone();
   });
+});
+
+// On a laptop: the same app in a centred column (brief Part 6). The owner saw
+// the welcome sit right of the middle at about 1150 to 1330px wide (step 3c),
+// so every screen is checked once, at 1280px in light: its column is in the
+// middle, to the pixel, and nothing makes the page scroll sideways.
+const LAPTOP_SCREENS = [
+  { path: '/', heading: 'PrePenny' },
+  { path: '/setup/', heading: 'PrePenny' },
+  { path: '/sign-in/', heading: 'Sign in' },
+  { path: '/pay-calculator/', heading: 'Take-home pay calculator' },
+  { path: '/app/', heading: 'Home' },
+  { path: '/app/coming-up/', heading: 'Coming up' },
+  { path: '/app/debts/', heading: 'Debts' },
+  { path: '/app/debt/#id=family-loan', heading: 'Family loan' },
+  { path: '/app/more/', heading: 'More' },
+  { path: '/app/accounts/', heading: 'Accounts' },
+  { path: '/app/what-if/', heading: 'What if' },
+] as const;
+
+test('on a laptop, 1280px wide, every screen sits in the middle', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'phone-360', 'One width, once.');
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    colorScheme: 'light',
+    locale: 'en-GB',
+    timezoneId: 'Europe/London',
+    ...(info.project.use.baseURL === undefined ? {} : { baseURL: info.project.use.baseURL }),
+  });
+  await openOnExample(context);
+  const page = await context.newPage();
+  for (const { path, heading } of LAPTOP_SCREENS) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+    const placed = await page.evaluate(() => {
+      const main = document.querySelector('main') as HTMLElement;
+      const box = main.getBoundingClientRect();
+      const page = document.documentElement;
+      return {
+        left: Math.round(box.left),
+        right: Math.round(page.clientWidth - box.right),
+        sideways: page.scrollWidth - page.clientWidth,
+      };
+    });
+    expect(Math.abs(placed.left - placed.right), `${path} is in the middle`).toBeLessThanOrEqual(1);
+    expect(placed.sideways, `${path} doesn't scroll sideways`).toBe(0);
+  }
+  await context.close();
 });

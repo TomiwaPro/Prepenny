@@ -12,6 +12,7 @@ import { previewPayChange } from '../lib/pay-preview.ts';
 import { workOutPayView } from '../lib/pay-view.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
 import { workOutSetupView } from '../lib/setup-view.ts';
+import { syncRecords, syncWrites } from '../lib/sync-work.ts';
 import { workOutWhatIfView } from '../lib/what-if-view.ts';
 import type { Answers, Ask, WorkRequest, WorkResponse } from './messages.ts';
 
@@ -29,7 +30,7 @@ function answer(ask: Ask): Answers[Ask['kind']] {
     case 'plan':
       return workOutPlanView(ask.records, ask.today, ask.options);
     case 'edit':
-      return runEdit(ask.records, ask.today, ask.command);
+      return runEdit(ask.records, ask.today, ask.command, ask.numbers);
     case 'actions':
       return workOutActionsView(ask.records, ask.today);
     case 'pay-preview':
@@ -54,6 +55,10 @@ function answer(ask: Ask): Answers[Ask['kind']] {
       return workOutJobView(ask.records, ask.today);
     case 'job-preview':
       return previewJobChange(ask.records, ask.today, ask.profileId, ask.commands);
+    case 'sync-writes':
+      return syncWrites(ask);
+    case 'sync-records':
+      return syncRecords(ask.rows, ask.unsent);
     case 'what-if':
       return workOutWhatIfView(ask.records, ask.today, ask.practice);
     default:

@@ -331,3 +331,25 @@ export function paymentByNumber(request: PaymentNumberRequest): Payment | null {
   const changes = indexChanges(request.changes ?? []);
   return paymentWithDates(paymentAtIndex(prepared, index, changes, request.holidays));
 }
+
+export interface PaymentNumberOfRequest {
+  readonly series: Series;
+  readonly holidays: BankHolidayLookup;
+  /** The payment's original date, "YYYY-MM-DD": the date its schedule gives (D78). */
+  readonly originalDate: string;
+}
+
+/**
+ * The payment number of a series' payment first due on `originalDate`,
+ * counted from the original series (brief 5.3), or `null` when the series has
+ * no payment on that date. The reverse of paymentByNumber. Kept with each
+ * tick and one-off change on the server (PLAN.md item 4), so an undo can
+ * check it's still the same payment.
+ */
+export function paymentNumberOf(request: PaymentNumberOfRequest): number | null {
+  const prepared = prepareSeries(request.series, request.holidays);
+  const day = parseDate(request.originalDate, 'The original date');
+  const index = prepared.firstIndexOnOrAfter(day);
+  if (index >= prepared.count || prepared.dateAt(index) !== day) return null;
+  return prepared.firstNumber + index;
+}

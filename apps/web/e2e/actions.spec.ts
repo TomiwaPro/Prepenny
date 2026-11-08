@@ -7,11 +7,11 @@
 // test-only setting (lib/test-setting.ts, D201), which only a browser
 // driven by test software can reach.
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
 import { type Budget, type PlanRecords, parsePounds, type Spend } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
+import { axeOnceStill } from './axe.ts';
 import {
   goToComingUp,
   leftAtEnd,
@@ -70,7 +70,7 @@ async function undo(page: Page) {
 }
 
 async function noAxeProblems(page: Page) {
-  expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+  expect((await (await axeOnceStill(page)).withTags(tags).analyze()).violations).toEqual([]);
 }
 
 /** Goes to the Coming up page and opens the paydays given (D211). */

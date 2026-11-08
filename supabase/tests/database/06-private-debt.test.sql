@@ -9,7 +9,7 @@ select plan(15);
 
 select tests.make_jess_and_tom('editor');
 
-select tests.as_person('tom');
+select tests.in_an_edit('tom');
 
 select is_empty($$ select id from public.debts $$, 'Tom can''t read Jess''s private card');
 select is_empty($$ select * from tests.rows_naming(array[tests.id('jess-card')::text]) $$,
@@ -32,7 +32,7 @@ select throws_ok($$ update public.series set debt_id = tests.id('jess-card') whe
 
 -- Jess sees her card and the link, and the database keeps the link off the
 -- shared payment itself.
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 
 select is((select debt_id from public.private_links where family_id = tests.id('joint-card-payment')),
   tests.id('jess-card'), 'Jess reads the link from the joint payment to her card');

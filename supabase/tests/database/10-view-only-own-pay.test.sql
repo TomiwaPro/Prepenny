@@ -9,7 +9,7 @@ create extension if not exists pgtap with schema extensions;
 select plan(22);
 
 select tests.make_jess_and_tom('viewer');
-select tests.as_person('tom');
+select tests.in_an_edit('tom');
 
 -- Tom's own pay, into the joint account.
 select lives_ok($$ insert into public.series (id, plan_id, account_id, name, direction, type, amount, start_date,
@@ -89,7 +89,7 @@ select throws_ok($$ insert into public.series (id, plan_id, account_id, name, di
   '42501', null, 'Nor add a payment going out');
 
 -- Jess, who can edit, sees his pay and its overtime as amounts, and can't change the overtime.
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 select is((select change::bigint from public.pay_adjustments where id = tests.id('tom-overtime')), 5000::bigint,
   'Jess reads the change Tom''s overtime makes, as an amount');
 select is(tests.rows_changed($$ update public.pay_adjustments set change = 1 where id = tests.id('tom-overtime') $$),

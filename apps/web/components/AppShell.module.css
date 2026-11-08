@@ -1,5 +1,6 @@
 /* The app in one column, centred on a laptop (brief Part 6), clear of the bottom navigation. */
 .column {
+  width: 100%;
   max-width: var(--column);
   margin: 0 auto;
   padding: var(--space-3) var(--gutter)

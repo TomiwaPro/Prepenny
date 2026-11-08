@@ -3,8 +3,8 @@
 // ARCHITECTURE.md 4.6, no sideways scrolling, text at 200%, reduced motion,
 // and WCAG 2.2 AA checked by axe in light and dark.
 
-import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
+import { axeOnceStill } from './axe.ts';
 import { expect, test } from './fixtures.ts';
 
 const MINUS = '−';
@@ -293,10 +293,10 @@ test.describe('Accessibility: WCAG 2.2 AA with axe', () => {
     test(`Home has no problems in ${colorScheme} mode`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
       await openHome(page);
-      expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+      expect((await (await axeOnceStill(page)).withTags(tags).analyze()).violations).toEqual([]);
       await page.getByRole('button', { name: 'Update balance' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
-      expect((await new AxeBuilder({ page }).withTags(tags).analyze()).violations).toEqual([]);
+      expect((await (await axeOnceStill(page)).withTags(tags).analyze()).violations).toEqual([]);
     });
 
     test(`every other page has no problems in ${colorScheme} mode`, async ({ page }) => {
@@ -304,7 +304,7 @@ test.describe('Accessibility: WCAG 2.2 AA with axe', () => {
       for (const path of ['/', '/app/coming-up/', '/app/debts/', '/app/more/', '/app/parts/']) {
         await page.goto(path);
         await page.waitForLoadState('networkidle');
-        const results = await new AxeBuilder({ page }).withTags(tags).analyze();
+        const results = await (await axeOnceStill(page)).withTags(tags).analyze();
         expect(results.violations, path).toEqual([]);
       }
     });

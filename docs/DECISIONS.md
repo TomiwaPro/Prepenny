@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -3629,3 +3629,308 @@ The owner's instruction, 7 Nov 2026. Replaces D300's point about Ubuntu's downlo
 The end-to-end workflow no longer installs anything from Ubuntu for the test browser. GitHub's machines already have every library it needs: the step only ever said "already the newest version", and on 6 Nov 2026 its download hung for 10 minutes and stopped parts 1 and 3, while the tests ran straight after it and passed. If a library ever goes missing, the browser says which when it starts, and the step can come back then.
 
 Why: the owner's instruction, to remove the step or make it unable to hold up a job. Removing it also saves the minute or so it took.
+
+## From the owner's instructions for step 3c
+
+D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026. Points marked "decided in step 3c" weren't in the owner's words.
+
+### D324. A plan on the phone and another in the account: the person chooses which to keep
+
+The owner's answer, 7 Nov 2026.
+
+- When someone signs in on a phone that has a plan of its own, and their account already has a saved plan, one plain screen asks which to keep: "Your saved plan, last changed Tue 3 Nov" or "The plan on this phone, started today".
+- After they choose one and tap "Keep this plan", a confirm says the other will be removed and that this can't be undone: "The plan on this phone will be removed. This can't be undone." or "Your saved plan will be removed from your account. This can't be undone.", with "Yes, remove it" and "No, go back".
+- Decided in step 3c:
+  - The screen is the sign-in page's last step, "Choose which plan to keep", with the two plans as a list with a round button beside each (DESIGN.md, D213) under "Which plan do you want to keep?", neither chosen to start with (D265). "Keep this plan" with nothing chosen says "Choose a plan to keep."
+  - "Last changed" is when anything in the saved plan was last saved; "started" is when the first thing was put in the plan on the phone. Each says "today", or the day as everywhere else.
+  - Keeping the saved plan removes the phone's plan from the phone and brings the saved one down. Keeping the phone's plan removes the saved plan from the account for good (`remove_plan`), then sends the phone's plan up as the first copy. A plan someone else is in is never removed from under them: the server refuses ("shared-plan").
+  - A plan on the phone with nothing in it yet, as when "Make my plan" has just been tapped, isn't asked about: the saved plan comes down.
+  - A phone that finds the two plans while PrePenny is open, rather than at sign-in, opens this same step.
+
+Test: `apps/web/e2e/your-plan.spec.ts` test 3, both answers, and `supabase/tests/database/12-save-edit.test.sql`.
+
+Why: the owner's answer.
+
+### D325. Signing out, now the plan is kept in the account
+
+The owner's instruction, 7 Nov 2026. Replaces D308's sign-out words and D315's warning.
+
+- The sign-out sheet says: "Signing out removes your plan from this phone only. It's saved in your account, and comes back when you sign in again."
+- When something hasn't been sent yet, it says so plainly first, and offers to stay signed in until it's sent.
+- Decided in step 3c:
+  - The words: "1 change hasn't been sent to your account yet. If you sign out now, it will be lost." (or "3 changes … they'll be lost"), or, for a plan that hasn't gone up at all, "Your plan hasn't been saved in your account yet. If you sign out now, it will be lost."
+  - Three buttons: "Sign out once it has been sent" (with "You stay signed in until then, and it's sent as soon as there's a signal."), "Sign out now and lose it", and "Stay signed in". The first waits, saying "Waiting for a signal to send to your account. You'll be signed out once everything has gone." with no signal, or "Sending to your account…" with one, and signs out as soon as everything has gone. "Stay signed in" stops waiting.
+  - More says where the plan is kept, under "Signed in as": "Your plan is saved in your account.", "1 change hasn't been sent yet. It's saved on this phone.", or "Your plan hasn't been saved in your account yet. It's on this phone, and will be sent when PrePenny can reach its server."
+
+Test: `apps/web/e2e/your-plan.spec.ts` tests 4 and 5, and `apps/web/e2e/sign-in.spec.ts` test 3.
+
+Why: the owner's instruction.
+
+### D326. When a sign-in ends by itself, the plan is removed from the phone
+
+The owner's instruction, 7 Nov 2026 (PLAN.md item 29). Replaces the last point of D306.
+
+- After 90 days without opening PrePenny, or "Sign out everywhere" (step 3e), the phone removes the plan and everything else PrePenny keeps, as signing out does, and the welcome says "Your sign-in has ended, so your plan was removed from this phone. It's saved in your account: sign in to bring it back."
+- Decided in step 3c: only once the plan is safely in the account: kept there, with nothing left to send. A plan with something not sent yet stays on the phone, so nothing is lost, as in step 3b. Whoever then signs in on that phone with another account sees "This phone has a plan from another account. To sign in with yours, remove that plan from this phone first." with "Remove the other account's plan", and a confirm that says whether anything of it would be lost ("It's saved in that account, so nothing of it is lost." or "Some of it hasn't been saved in that account, and that part will be lost.").
+
+Test: `apps/web/test/unit/account.test.ts` ("A sign-in that ends by itself…"). Ending a sign-in by itself is tried end to end with "Sign out everywhere" in step 3e.
+
+Why: the owner's instruction, and item 29: "once the plan is on the server". Removing a change nobody has sent would lose it for good.
+
+### D327. Every screen in the middle on a laptop, and a check for it
+
+The owner's instruction, 7 Nov 2026, from their review of the live app.
+
+- The owner saw the welcome's column sit right of the middle, with a big empty area on the left, on a laptop about 1150 to 1330px wide, in light and dark.
+- Decided in step 3c: the welcome measured in the middle here, to the pixel, at 1150, 1280, 1330 and 1440px, in a laptop-sized browser window and in Playwright's, at `/`, `/setup/` and `/sign-in/`, so what the owner saw couldn't be reproduced. Every page's column now fills the screen up to its width and centres itself whatever is around it (`width: 100%` with its `max-width`), which can only help. Every screen and a sheet were looked at in light and dark at 1280 and 1440px: all in the middle.
+- A check (`e2e/checks.spec.ts`, "on a laptop, 1280px wide, every screen sits in the middle") opens 11 screens at 1280px in light and fails if a column is more than a pixel off the middle or the page scrolls sideways. Pushing the welcome to the right on purpose made it fail.
+
+Why: the owner's instruction. If the owner still sees it after this step is merged, a screenshot and the browser's name would show what's different there (PLAN.md, "Waiting for the owner").
+
+### D328. Three GitHub actions run on Node 24, pinned to the exact release
+
+The owner's instruction, 7 Nov 2026. Adds to D77.
+
+- `pnpm/action-setup` 5.0.0 (13 Mar 2026), `actions/cache` 5.1.0 (26 Jun 2026) and `actions/upload-artifact` 6.0.0 (12 Dec 2025), each the release of its first Node 24 version line, none brand new.
+- Decided in step 3c: each is pinned to its release's exact commit, with the version and date beside it, so a moved tag can't change what runs (D77's reason).
+
+Why: GitHub retires Node 20 for actions; the owner's instruction.
+
+### D329. Two end-to-end tests at a time on each GitHub machine
+
+Builds D320.
+
+- Each part runs the end-to-end tests two at a time (`--workers=2`). The timed speed test runs on its own afterwards in part 1 (tagged `@alone`). Part 3's sign-in and plan-on-the-server tests run two at a time too.
+- The minutes before and after are measured on this step's own pull request; PLAN.md and the step's report give them.
+
+Why: the owner's instruction in D320.
+
+## Made during step 3c
+
+D330 to D344 were decided on 7 Nov 2026 while building step 3c, your plan on the server.
+
+### D330. save_edit runs as the person, with two small helpers that use the database's own rights
+
+Decided 7 Nov 2026 in step 3c. Builds ARCHITECTURE.md 3.5 and PLAN.md item 25.
+
+- `save_edit` runs as the person who sent it (`security invoker`). Every record it writes goes through the same privacy rules and checks as everything else (steps 3a and 3b, 281 database checks), so it can't open a hole those rules close. It adds what the rules can't: the same edit twice changes nothing, a record changed since refuses the whole edit, the engine's family rules (D332), and the history and the nudge.
+- Two things a person can't do themselves are done by small helpers with the database's own rights, each checking who's asking: `app.begin_edit` writes the edit in the history (D296), only for a current member of the plan, while their sign-in lasts, and never under someone else's edit id; `app.nudge` and `app.send_nudge` send the live nudge, only for a member's own plan. `remove_plan` uses the database's rights too, to delete a plan: only its owner, only while signed in, and never while someone else is in it. Every check each makes has a test that tries to get past it (`12-save-edit.test.sql`, `13-save-edit-roles.test.sql`), and each was removed on purpose to see the tests fail.
+- `plan_changes` runs as the person, so the privacy rules decide every row, and it also only asks for shared rows and the person's own: removing either guard alone still sends a partner nothing private; removing both makes 5 checks fail.
+- The `app` part stays off the Data API: only the four steps the phone calls are in `public` (`save_edit`, `plan_changes`, `start_plan`, `remove_plan`), and a database check fails if anything else a signed-in person can run turns up there.
+
+Why: the owner asked which, and why. Running as the person means one set of rules decides everything, already tested record by record; the helpers are kept to the two jobs a person mustn't be able to do directly.
+
+### D331. What an edit is on the server
+
+Decided 7 Nov 2026 in step 3c. Builds ARCHITECTURE.md 3.5.
+
+- One change on the phone is one edit: its records, saved whole or not at all. Each record sent is the whole record, null where empty, with the version the phone last saw; a new record has none, and a removed one is marked removed (ARCHITECTURE.md 3.1).
+- An edit's id comes from the phone. Sent again, the same edit is "already" saved and changes nothing; the phone gets each record's version as it is now.
+- A record not at the version the phone saw refuses the whole edit with "changed-since" and the records' ids (never what's in them). Nothing of it is saved, not even in the history, so it can be sent again once the phone has looked (step 3d). A record the person can read but not change ("Can view only", or locked to someone else) is refused as "not-allowed"; one they can't see, as "not-found".
+- Anything else the database refuses, such as an amount below zero in a budget, comes back as "bad-record" alone, and only that reaches the database's logs: Postgres's own message would show what the record holds (CLAUDE.md).
+- An edit starts private to its person, and becomes shared the moment it saves a shared record, so a partner never sees that someone changed only private things (D299), and a shared record never names a private edit (D291). It keeps no before-copies or summary yet: Activity and older undos are step 3g.
+
+Test: `supabase/tests/database/12-save-edit.test.sql` and `13-save-edit-roles.test.sql`.
+
+Why: the owner's five tests, and ARCHITECTURE.md 3.5.
+
+### D332. The engine's family rules on the server
+
+Decided 7 Nov 2026 in step 3c. Builds PLAN.md item 27.
+
+After every edit, for each payment family it touched, the server refuses ("family-broken"): two series of a family holding the same payment number; a family whose first series isn't the one it's named after, starting at payment 0; a series split from another that starts before it; a series before the family's last that never ends, or has a different last amount; and the two halves of a private transfer that don't match, or a shared half that isn't mirrored by exactly one private half of its person's (D49, D89, D94).
+
+Test: `supabase/tests/database/12-save-edit.test.sql`.
+
+Why: ARCHITECTURE.md 2 asks the server to refuse what the engine never makes.
+
+### D333. How the phone keeps its plan in step with the account
+
+Decided 7 Nov 2026 in step 3c. Builds ARCHITECTURE.md 3.5 and 3.8.
+
+- The phone keeps three things beside the plan: a copy of the server's rows as it last saw them, the queue of changes not sent yet, and, for a plan kept in an account, who it's for and the change numbers it has brought down (D299).
+- A change is saved on the phone and joins the queue in the same save, so one is never kept without the other. The queue is sent one change at a time, in order, each as one edit. A change the server refuses stays, and nothing after it is sent: step 3d decides what happens then.
+- The plan on the phone is always the server's rows with the queue on top, so a change brought down never hides one made here.
+- A phone looks for what's new when PrePenny opens, when it comes back on screen, when the signal returns, every minute while it's showing, straight after sending, and when a live nudge arrives (D338).
+- The first copy goes up in edits of at most 400 records, every series of a plan in the same one, so a family is never half saved.
+- The example is never sent (D182). A phone that has never signed in sends nothing, as before (D309).
+
+Why: ARCHITECTURE.md 3.5, and so a plan with no signal keeps working and loses nothing.
+
+### D334. The plan as rows on the server
+
+Decided 7 Nov 2026 in step 3c. Builds D288 to D291, D303, and PLAN.md items 5, 24 and 28.
+
+- Each engine record is one row, every field a column, so the plan comes back exactly as it was left: tested on Sam's example, Sam with every part of the engine on, and the other five people's plans, which come back identical, with the same figures on Home, Coming up and Debts, and nothing more to send.
+- Everything a person makes is private to them, until shared plans come in step 3f: accounts, debts and goals, and so everything on them. A new account, debt or goal on a partner's phone is private to that partner too.
+- A one-off change, a tick, a person's settings, an overtime's details and a private link have no id in the engine, so each row's id is worked out from what it's for (a SHA-256 of its plan, kind and parts): two phones ticking the same payment name the same row, so it's one tick (D83) and a clash, never two.
+- Whose pay a payment is (`paid_to`, D303) is set once, when the pay is added: on a private account, its person's; on a shared one, the person adding it, for Pay or Benefits. A split keeps it. Shared pay someone else added can't later be claimed: the person removes it and adds it again as theirs (D314's question).
+- A shared payment's private debt or goal, and shared pay's job and usual weeks, go in its person's private links, and come back on their phone only (items 5, 24 and 28). A shared tick inside a private debt's Update from statement keeps its link the same way. A shared tick inside another account's private Update balance doesn't name it, because it counts only for that account (D83).
+- A debt's or goal's `belongsTo` in the engine is carried by its privacy; the app never sets it.
+
+Test: `apps/web/test/unit/sync-rows.test.ts` (37 checks).
+
+Why: brief Part 10 ("exactly as they left it") and the privacy decisions of steps 3a and 3b.
+
+### D335. A partner's phone has someone else's overtime as an amount only
+
+Decided 7 Nov 2026 in step 3c. Builds D303 and PLAN.md item 28.
+
+The engine takes a pay adjustment with its change alone, no details: it's added to its payday like any other, never worked out again on that phone, and overtime on a payday with someone else's shift on it is refused ("not-your-pay"), as the server would.
+
+Test: `packages/engine/test/unit/pay-amount-only.test.ts`.
+
+Why: D303 sends a partner the amount only, and the engine needed to accept it.
+
+### D336. Undo checks it's still the same payment
+
+Decided 7 Nov 2026 in step 3c. Builds PLAN.md item 4.
+
+Each tick and one-off change keeps its payment number on the server, worked out by the engine (`paymentNumberOf`). The undo bar keeps the payment numbers of what its change would put back, and an undo is refused ("changed-since", with D186's words) when one would now land on a different payment, as after another phone's "this and all later ones" has moved a series' dates.
+
+Test: `packages/engine/test/unit/payment-number.test.ts`.
+
+Why: item 4.
+
+### D337. A record's id after a "#" in its address
+
+Decided 7 Nov 2026 in step 3c. Builds PLAN.md items 20 and 31.
+
+One debt's page is `/app/debt/#id=…`. What's after a "#" stays on the phone: it's never sent to PrePenny's site, written in its logs, or fetched ahead. An older `?id=` link still opens the same debt, and the address becomes the "#" one.
+
+Why: item 31, now that a record's id is also its id on the server.
+
+### D338. The offline note, and when changes can't be sent
+
+Decided 7 Nov 2026 in step 3c. Replaces D174 as the owner asked.
+
+- Signed in, with no signal: "You're offline. Changes are saved on this phone and will be sent when you're back online." (ARCHITECTURE.md 4.5).
+- Not signed in, nothing is ever sent, so the note keeps D174's words: "You're offline. PrePenny keeps working with what's on this phone."
+- Signed in, with a signal, when changes can't be sent for now: "Changes can't be sent right now. They're saved on this phone." (ARCHITECTURE.md 4.5).
+
+Why: the owner's instruction, and each note says only what's true on that phone.
+
+### D339. The live nudges
+
+Decided 7 Nov 2026 in step 3c. Builds D295.
+
+- Each saved edit nudges "plan:<id>" when it saved a shared record, which everyone in the plan hears, and "plan:<id>:<person>" when it saved something private, which only that person's phones hear. A nudge holds nothing; the phone then asks for what's new.
+- Only a current member hears a plan's nudges, and nobody can send one but save_edit. A nudge that can't be sent never stops a change being saved.
+- The local Supabase has Realtime switched on in `supabase/config.toml`, so its tables are there for the database tests, and part 3 of the end-to-end tests runs it.
+
+Test: `13-save-edit-roles.test.sql`, and `your-plan.spec.ts` test 2, where a change reaches the other phone, left open, from the nudge.
+
+Why: ARCHITECTURE.md 3.5.
+
+### D340. Trying step 3c before it's merged
+
+Decided 7 Nov 2026 in step 3c.
+
+Preview links use the real Supabase project, whose database only changes after merging (D297). On a preview, signing in works, and the plan stays on the phone with "Changes can't be sent right now. They're saved on this phone." Nothing breaks and nothing is lost: once merged, the plan goes up the next time PrePenny opens. So step 3c can only be tried end to end after merging, unless the owner adds a second, free Supabase project for previews (a question in PLAN.md).
+
+Why: the owner asked how to try it safely.
+
+### D341. The Database workflow checks the Data API's settings
+
+Decided 7 Nov 2026 in step 3c.
+
+After the migrations, the Database workflow reads the real project's Data API settings with its key and checks `app` isn't among the schemas the Data API shows. If it ever is, it takes it off; if Supabase refuses (the key can only read these settings), the run fails with the steps to do it by hand: Project Settings, Data API, Exposed schemas, remove `app`, keep `public` and `graphql_public`. It warns if `public` is missing, which would stop plans being saved.
+
+Why: the owner asked for it to be checked, and changed through the workflow where its key can.
+
+### D342. A newly signed-up person is added to `people` with their first plan
+
+Decided 7 Nov 2026 in step 3c, found by the end-to-end tests.
+
+A plan's owner must be a person in PrePenny, and nothing added someone who had only just signed up. `start_plan` adds them first, with an empty nickname (brief 7.2).
+
+Test: `12-save-edit.test.sql`.
+
+Why: without it, nobody's first copy could go up.
+
+
+### D343. Two end-to-end tests at a time saved nothing, so it's one at a time again
+
+Decided 7 Nov 2026 in step 3c, from the measurements D320 asked for. Replaces D329's first point.
+
+- Measured on this step's pull request, with the same tests, as GitHub bills them (each part rounded up to a whole minute):
+  - One at a time, run twice: 11 + 15 + 21 = 47 minutes for the end-to-end tests, then 8 + 15 + 24 = 47 minutes.
+  - Two at a time, run twice: 9 + 14 + 18 = 41 minutes, then 13 + 15 + 22 = 50 minutes.
+  - For comparison, step 3b on `main`, one at a time, with 28 fewer tests: 8 + 14 + 14 = 36 minutes. The quick checks take 2 minutes on every push, whatever the setting.
+- No saving could be measured: GitHub's machines vary from run to run by more than the difference. On the slow machine of the second run two at a time, the speed test, run on its own, saw Home open again in 2.2 seconds with the phone slowed 4 times; on another run it was 0.6 seconds, the same as step 3b's app measured side by side on the building computer.
+- Two at a time wasn't fully reliable either. On its first run, two older checks needed a second try, both in part 3's first minutes, while the local Supabase was starting beside them (D344). Its second run needed none. One at a time, the first run needed no second try, and the second needed one, for a reason that has nothing to do with the setting (D344). Every test passed in the end on every run, and on a full run two at a time on the building computer.
+- GitHub's machines for a private repository have 2 processors, and one test keeps them mostly busy: the browser, the app's background worker that works out the plan, the local web server, and in part 3 the local Supabase. With another test beside it, each test takes about twice as long. That halves the room each test has before its time limit.
+- So each part runs one test at a time again (`--workers=1`, written out so it doesn't depend on the machine), with the speed test among the others, as before.
+
+Why: D320 keeps two at a time only if it saves minutes and every test passes several runs in a row. It did neither.
+
+### D344. Two checks that tripped over a busy machine
+
+Decided 7 Nov 2026 in step 3c, found on GitHub. Each failed once and passed on its second try.
+
+- **The accessibility checks wait for the page to stop moving.** On one of GitHub's slower machines, axe checked the overtime sheet while it was still fading in, and measured its intro line at 4.33 to 1, below the 4.5 to 1 it needs. Once the sheet is open, the line is 7.92 to 1 (`--ink-muted`, #4a5060, on the card, #fffdf8). The grey axe measured is that colour at about three-quarters strength, part of the way through the sheet's 0.18-second fade. Every axe check in the end-to-end tests now goes through `e2e/axe.ts`, which first waits for anything moving on the page to finish. An endless animation, such as a skeleton's pulse, isn't waited for.
+- **The check that PrePenny writes nothing to the console leaves out one note of the browser's own**: "Failed to load resource: net::ERR_NETWORK_CHANGED", which the browser writes when the computer's network changes, as it did when part 3 started the local Supabase beside its first tests. It names nothing of PrePenny's and holds no data. Every other line still counts.
+- Nothing on any screen changes, and no expected result in a test changes.
+- A third check that needed a second try, the Pay sheet's layout at 200% text, two at a time while Supabase was starting, can't be explained from the log, and passed on every other run. It's left as it is, and PLAN.md item 35 says to look at it if it happens again.
+
+Why: a check that sometimes measures a screen mid-movement, or counts the computer's own network change, fails at random, and a person only reads a sheet once it's open.
+
+## From the owner's review of step 3c
+
+D345 comes from the owner's reviewer, and D346 to D350 are the owner's answers to the questions step 3c left in `PLAN.md`, all on 7 Nov 2026.
+
+### D345. Every change a person makes goes through save_edit
+
+From the owner's reviewer, 7 Nov 2026. Builds D296 and D330.
+
+- Signed-in people had insert and update on the record tables and on the plan's own row, so a change could still be made straight through the Data API (REST or GraphQL). The privacy rules held, but such a change skipped `save_edit`: no edit in the history, no family rules, no nudge. A partner who can edit could change shared records and leave no history, which matters for Activity in step 3g.
+- Now the first check on every record table and on the plan's own row refuses a person's insert or update with "use-save-edit", unless `save_edit` is saving it. `start_plan` still makes a plan: it marks the one plan it's making, for that one insert.
+- Decided in step 3c: `save_edit` marks its writes with a setting that lasts to the end of the request, so it now takes the mark off as soon as its records are written. Otherwise one GraphQL request with two steps, `save_edit` then a change of its own, could pass the second off as part of the first.
+- A person is a request with a person's own rights, the Data API's roles. The database's own helpers, the migrations and the tests' set-up aren't refused. Nothing a person can reach can set either mark.
+- The check runs as the person writing and reads its marks itself, so nobody is given a right to any new function.
+- The older tests of the privacy rules now write inside an edit, as `save_edit` does (`tests.in_an_edit`), so the rules are still tested as they apply there. Test 08's check that a shared record never names a private edit is now made as the database writing for Jess, since a person's change always names the edit `save_edit` is saving.
+- A plan can't be renamed for now: `save_edit` changes only the plan's nation, and no screen renames a plan yet. Renaming will go through `save_edit` when a screen needs it.
+
+Test: `14-only-through-save-edit.test.sql` (31 checks): a direct insert and a direct update on every record table, and on the plan's nation, are refused for the owner, someone who can edit and someone who can only view, and the same changes through `save_edit` still work; `start_plan` makes a plan and nothing else; neither mark lasts beyond its step; the database itself isn't refused. `00-every-table.test.sql` checks the guard comes first on every table. Each rule was broken on purpose to see the tests fail, apart from `start_plan` taking its mark off, which can only ever let in the plan it has just made.
+
+Why: the reviewer's finding. Every change needs its history (Activity, step 3g), its family rules and its nudge.
+
+### D346. A second Supabase project for previews: a small step of its own, just before step 3f
+
+The owner's answer to `PLAN.md`'s question about D340, 7 Nov 2026.
+
+Not now. It's its own small setup step, 3e-2 in `PLAN.md`, just before step 3f, when previews of shared plans will need a database of their own to try.
+
+Why: the owner's answer.
+
+### D347. The welcome screen on a laptop: the owner checks after merging
+
+The owner's answer about D327, 7 Nov 2026.
+
+The owner checks the welcome screen on their own laptop once step 3c is merged. Nothing more changes until then.
+
+Why: the owner's answer.
+
+### D348. A sign-in that ends by itself with a change not sent yet keeps the plan on the phone
+
+The owner's answer about D326, 7 Nov 2026. Confirms D326.
+
+The plan stays on the phone, so nothing is lost, and whoever signs in next is offered to remove it, being told whether anything would be lost.
+
+Why: the owner's answer, as suggested.
+
+### D349. Shared pay someone else added can't be claimed until step 3f
+
+The owner's answer about D334, 7 Nov 2026. Confirms D334's point.
+
+Until step 3f, when sharing is on screen, the person removes such pay and adds it again as theirs.
+
+Why: the owner's answer, as suggested.
+
+### D350. GitHub's minutes stay as they are
+
+The owner's answer about D343, 7 Nov 2026.
+
+The end-to-end tests stay as they are: one at a time, at 320px and 360px, on every push to a ready pull request and on `main`. The repository stays private.
+
+Why: the owner's answer.

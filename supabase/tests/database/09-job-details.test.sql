@@ -13,7 +13,7 @@ select plan(25);
 select tests.make_jess_and_tom('editor');
 
 -- As Tom, who can edit the shared plan.
-select tests.as_person('tom');
+select tests.in_an_edit('tom');
 
 -- What Tom reads: the pay, and the overtime as an amount.
 select is((select amount::bigint from public.series where id = tests.id('jess-cafe-pay')), 9000::bigint,
@@ -95,7 +95,7 @@ select throws_ok($$ insert into public.series (id, plan_id, account_id, name, di
   'P0001', 'family-mixed', 'But can''t split it into pay that isn''t hers');
 
 -- As Jess.
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 
 select throws_ok($$ insert into public.series (id, plan_id, account_id, name, direction, type, amount, start_date,
     schedule, end_rule, holiday_rule, family_id, family_created_at, paid_to, pay_profile_id)

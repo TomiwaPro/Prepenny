@@ -11,9 +11,11 @@ select plan(15);
 
 select tests.make_jess_and_tom('viewer');
 
--- Tom, who can only view Jess's plan, makes a plan of his own.
+-- Tom, who can only view Jess's plan, makes a plan of his own, and changes
+-- things in it.
 select tests.as_person('tom');
-insert into public.plans (id, name) values (tests.id('tom-plan'), 'Mine');
+select public.start_plan(tests.id('tom-plan'), null);
+select tests.in_an_edit('tom', 'tom-plan');
 
 select throws_ok($$ insert into public.ticks (id, plan_id, series_id, original_date, payment_number, paid_on, ticked_at)
   values (gen_random_uuid(), tests.id('tom-plan'), tests.id('rent'), '2026-12-01', 1, '2026-12-01', '2026-12-01T09:00:00Z') $$,
@@ -32,7 +34,7 @@ select throws_ok($$ insert into public.pay_adjustments (id, plan_id, family_id, 
   '42501', null, 'Nor add overtime to a payment of Jess''s plan from there');
 
 -- So Jess can still tick and change her rent, as the owner.
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 select lives_ok($$ insert into public.ticks (id, plan_id, series_id, original_date, payment_number, paid_on, ticked_at)
   values (gen_random_uuid(), tests.id('plan'), tests.id('rent'), '2026-12-01', 1, '2026-12-01', '2026-12-01T09:00:00Z') $$,
   'Jess can still tick her rent');
@@ -66,7 +68,7 @@ select tests.as_test();
 update public.series set note = 'Due on the 1st' where id = tests.id('rent');
 create temporary table seen_before as select seq from public.series where id = tests.id('rent');
 grant select on seen_before to authenticated;
-select tests.as_person('jess');
+select tests.in_an_edit('jess');
 update public.balance_updates set expected = 1 where id = tests.id('jess-balance');
 update public.balance_updates set expected = 2 where id = tests.id('jess-balance');
 update public.spends set note = 'Lunch' where id = tests.id('jess-spend');
@@ -83,7 +85,9 @@ insert into public.edits (id, plan_id, private_to, person_id, made_at, kind)
     '2026-10-26T09:00:00Z', 'update-balance');
 insert into public.edits (id, plan_id, person_id, made_at, kind)
   values (tests.id('jess-shared-edit'), tests.id('plan'), tests.id('jess'), '2026-10-26T09:00:00Z', 'this-and-later');
-select tests.as_person('jess');
+-- A person's change always names the edit save_edit is saving (D345), so the
+-- rule is checked as the database writing for Jess: it holds for any write.
+select tests.writing_as('jess');
 select throws_ok($$ update public.series set edit_id = tests.id('jess-private-edit') where id = tests.id('rent') $$,
   '42501', null, 'The shared rent can''t name an edit only Jess can read');
 select lives_ok($$ update public.series set edit_id = tests.id('jess-shared-edit') where id = tests.id('rent') $$,
@@ -93,7 +97,7 @@ select lives_ok($$ update public.balance_updates set edit_id = tests.id('jess-pr
   'And her private balance update names her private edit');
 
 -- Nobody can say an account is someone else's.
-select tests.as_person('tom');
+select tests.in_an_edit('tom', 'tom-plan');
 select throws_ok($$ insert into public.accounts (id, plan_id, name, kind, warning_level, belongs_to)
   values (gen_random_uuid(), tests.id('tom-plan'), 'Hers', 'current', 0, tests.id('jess')) $$,
   '42501', null, 'Tom can''t make an account that says it''s Jess''s');

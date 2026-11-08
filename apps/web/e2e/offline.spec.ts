@@ -32,7 +32,7 @@ const SCREENS = [
   { path: '/app/', heading: 'Home', shows: '£267.54' },
   { path: '/app/coming-up/', heading: 'Coming up', shows: 'Lowest point: £4.53' },
   { path: '/app/debts/', heading: 'Debts', shows: 'Owed now' },
-  { path: '/app/debt/?id=family-loan', heading: 'Family loan', shows: '€1,400.57' },
+  { path: '/app/debt/#id=family-loan', heading: 'Family loan', shows: '€1,400.57' },
   { path: '/app/more/', heading: 'More', shows: strings.more.purpose },
   { path: '/app/accounts/', heading: 'Accounts', shows: 'Current account' },
   { path: '/app/budgets/', heading: 'Budgets', shows: strings.budgets.purpose },

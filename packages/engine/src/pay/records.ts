@@ -85,13 +85,19 @@ export function checkPayAdjustment(one: PayAdjustment, what: string): void {
   if (!Number.isSafeInteger(one.number) || one.number < 0) {
     bad('bad-pay-adjustment', `${what}: the payment number must be a whole number, 0 or more.`);
   }
+  // A partner's phone has the change alone, with none of the details (D303).
+  const details = [one.kind, one.workedOn, one.hours, one.rate, one.extras, one.taxYear];
+  if (details.every((detail) => detail === undefined)) {
+    checkPence(one.change, `${what}: the change`);
+    return;
+  }
   if (one.kind !== 'overtime' && one.kind !== 'missed-shift') {
     bad('bad-pay-adjustment', `${what}: it's overtime or a missed shift.`);
   }
-  parseDate(one.workedOn, `${what}: the day of the shift`);
-  const hours = parseDecimal(one.hours, `${what}: the hours`);
+  parseDate(one.workedOn ?? '', `${what}: the day of the shift`);
+  const hours = parseDecimal(one.hours ?? '', `${what}: the hours`);
   if (hours.units <= 0n) bad('bad-pay-adjustment', `${what}: the hours must be above zero.`);
-  const rate = parseDecimal(one.rate, `${what}: the rate`);
+  const rate = parseDecimal(one.rate ?? '', `${what}: the rate`);
   if (rate.units < 0n) bad('bad-pay-adjustment', `${what}: the rate can't be below zero.`);
   if (one.extras !== undefined) {
     checkPence(one.extras, `${what}: the change to the extras`);

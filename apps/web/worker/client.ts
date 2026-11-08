@@ -3,7 +3,7 @@
 
 import type { EditCommand, PlanRecords } from '@prepenny/engine';
 import type { ActionsView } from '../lib/actions-view.ts';
-import type { EditResult } from '../lib/edit.ts';
+import type { EditResult, PaymentNumbers } from '../lib/edit.ts';
 import type { HomeView } from '../lib/home.ts';
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
@@ -116,8 +116,15 @@ export function editInBackground(
   records: PlanRecords,
   today: string,
   command: EditCommand,
+  numbers?: PaymentNumbers,
 ): Promise<EditResult> {
-  return ask({ kind: 'edit', records, today, command });
+  return ask({
+    kind: 'edit',
+    records,
+    today,
+    command,
+    ...(numbers === undefined ? {} : { numbers }),
+  });
 }
 
 /** What the four actions on Home need, worked out in the background. */
@@ -149,4 +156,19 @@ export function editsInBackground(
 /** What setup shows that only the engine can work out, in the background (step 2e). */
 export function workOutSetupInBackground(records: PlanRecords, today: string): Promise<SetupView> {
   return ask({ kind: 'setup', records, today });
+}
+
+/** What to send the server for a change, or a whole plan, worked out in the background (step 3c). */
+export function syncWritesInBackground(
+  question: Omit<Extract<Ask, { kind: 'sync-writes' }>, 'kind'>,
+): Promise<Answers['sync-writes']> {
+  return ask({ kind: 'sync-writes', ...question });
+}
+
+/** The plan from the server's rows, with the changes not sent yet on top (step 3c). */
+export function syncRecordsInBackground(
+  rows: Extract<Ask, { kind: 'sync-records' }>['rows'],
+  unsent: Extract<Ask, { kind: 'sync-records' }>['unsent'],
+): Promise<Answers['sync-records']> {
+  return ask({ kind: 'sync-records', rows, unsent });
 }

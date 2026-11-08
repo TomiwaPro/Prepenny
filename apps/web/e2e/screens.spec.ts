@@ -369,7 +369,7 @@ const moneyShots = [
   { file: 'debts-360-light.png', path: '/app/debts/', ready: 'owed-now', plan: null },
   {
     file: 'family-loan-360-light.png',
-    path: '/app/debt/?id=family-loan',
+    path: '/app/debt/#id=family-loan',
     ready: 'left-now',
     plan: null,
   },
