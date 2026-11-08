@@ -577,3 +577,99 @@ export async function setUpKofi(page: Page) {
 
   await expectStep(page, 6, "Here's your plan");
 }
+
+/**
+ * A plan with something added on every screen, as the old 8 steps could
+ * have had: an account, pay, rent, a bill, a debt, a budget and a goal. It
+ * ends on Here's your plan.
+ */
+export async function setUpEverything(page: Page, today = '2026-11-04') {
+  await startSetup(page, today);
+  await fillEveryScreen(page);
+}
+
+/** setUpEverything's answers, from the first screen to Here's your plan. */
+export async function fillEveryScreen(page: Page) {
+  await expectStep(page, 1, 'Your account');
+  await fillAccount(lastForm(page, 'account'), {
+    name: 'Current account',
+    balance: '800',
+    warning: '20',
+  });
+  await next(page);
+  const pay = lastForm(page, 'income');
+  await box(pay, 'Next payday').fill('2026-11-06');
+  await box(pay, 'How much comes in, after tax').fill('450');
+  await radio(page, 'No').check();
+  await next(page);
+  await expectStep(page, 3, 'Home and bills');
+  await box(rentForm(page), 'Amount').fill('550');
+  await fillWhen(rentForm(page), { date: '2026-12-01' });
+  const phone = billOn(page, 'phone');
+  await phone.getByRole('checkbox', { name: 'Phone', exact: true }).check();
+  await box(phone, 'Amount').fill('18');
+  await fillWhen(phone, { date: '2026-11-20' });
+  await next(page);
+  await expectStep(page, 4, 'Debts');
+  await page.getByRole('button', { name: 'Add a debt' }).click();
+  const debt = lastForm(page, 'debt');
+  await box(debt, 'Name').fill('Sofa finance');
+  await box(debt, 'What you owe now').fill('300');
+  await box(debt, 'Each payment').fill('25');
+  await fillWhen(debt, { date: '2026-11-23', payments: '12' });
+  await next(page);
+  await expectStep(page, 5, 'Spending money');
+  await box(page.getByTestId('budget-form').first(), 'Amount').fill('200');
+  await next(page);
+  await expectStep(page, 6, "Here's your plan");
+  await addGoalOnPlan(page, { name: 'Holiday', target: '600' }, async (sheet) => {
+    await box(sheet, 'Name of the savings account').fill('Savings');
+  });
+}
+
+/** What each screen lists as added, from setUpEverything. */
+export const ADDED_ON: Readonly<Record<number, readonly string[]>> = {
+  1: ['Current account'],
+  2: ['Pay'],
+  3: ['Rent', 'Phone'],
+  4: ['Sofa finance'],
+  5: ['Food'],
+  6: ['Holiday'],
+};
+
+export async function expectAddedOn(page: Page, screen: number) {
+  const names = page.getByTestId('added').locator('li span:first-child');
+  for (const name of ADDED_ON[screen] ?? []) {
+    await expect(names.filter({ hasText: new RegExp(`^${name}$`) })).toHaveCount(1);
+  }
+}
+
+/** The old 8 steps' number for each kind of thing setup adds (step 2e). */
+const OLD_STEP_OF_KIND: Readonly<Record<string, number>> = {
+  account: 1,
+  income: 2,
+  'pay-details': 2,
+  rent: 3,
+  bill: 4,
+  debt: 5,
+  budget: 6,
+  goal: 7,
+};
+
+/** Items as the old 8 steps saved them, each with its old step's number. */
+export function asOldItems<T extends { readonly kind: string }>(items: readonly T[]) {
+  return items.map((item) => ({ ...item, step: OLD_STEP_OF_KIND[item.kind] }));
+}
+
+/** Each old step, and the new screen it opens: null for the welcome (D356). */
+export const OLD_STEP_OPENS = [
+  [0, null],
+  [1, 1],
+  [2, 2],
+  [3, 3],
+  [4, 3],
+  [5, 4],
+  [6, 5],
+  [7, 6],
+  [8, 6],
+] as const;
