@@ -522,6 +522,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // The first save reaches the server, but its answer is lost on the way back.
       const sent: string[] = [];
       let dropped = false;
+      let firstArrived = () => {};
+      const arrived = new Promise<void>((resolve) => {
+        firstArrived = resolve;
+      });
       await page.route('**/rest/v1/rpc/save_edit', async (route) => {
         const body = route.request().postDataJSON() as { edit: string; kind: string };
         if (body.kind !== 'add-payment') return route.continue();
@@ -529,14 +533,18 @@ for (const colorScheme of ['light', 'dark'] as const) {
         if (dropped) return route.continue();
         dropped = true;
         await route.fetch();
+        firstArrived();
         await route.abort('connectionreset');
       });
       await addPayment(page, { name: 'Car MOT', amount: '54.85', date: '2026-10-26' });
-      await expect.poll(() => sent.length).toBe(1);
+      // Waits for the server to have it (D400): looking at the database as
+      // soon as it was sent could look before it arrived.
+      await arrived;
       expect(
         Number(sql(`select count(*) from public.edits where id = ${quoted(sent[0] ?? '')}`)),
       ).toBe(1);
-      // The phone doesn't know it arrived, so it sends it again when it next looks.
+      // The phone doesn't know it arrived, so it sends it again: when the
+      // server's nudge for it comes (D339), or when it next looks (D400).
       await page.evaluate(() => window.dispatchEvent(new Event('online')));
       await allSent(page);
       expect(sent).toHaveLength(2);
