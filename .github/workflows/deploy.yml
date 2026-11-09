@@ -1,11 +1,17 @@
 name: Deploy
 
 # Puts the app online with Cloudflare Workers (D68):
-# - the live app, from main, only after the Check workflow has passed on it
-# - a preview link for every pull request, posted on it.
+# - the live app, from main, only after the Check workflow has passed on it,
+#   with the real Supabase project
+# - a preview link for every pull request, posted on it, with the preview
+#   Supabase project, which never holds real people's data (step 3e-2, D403):
+#   the pull request's database changes, sign-in settings and get-back-in
+#   function go there first, then the preview is tried on two phones.
 # Needs two secrets, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: see
 # "Putting PrePenny online" in README.md. Until they're added, it builds the
-# app and says plainly that nothing was put online.
+# app and says plainly that nothing was put online. Previews also need the
+# preview project's three secrets and two variables ("The preview database").
+# A preview never gets the real project's key, password or address.
 
 on:
   workflow_run:
@@ -47,6 +53,9 @@ jobs:
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false)
     env:
       WRANGLER_SEND_METRICS: "false"
+    # The preview's address, for the preview database's sign-in settings and the try on two phones.
+    outputs:
+      url: ${{ steps.preview.outputs.url }}
     steps:
       - name: Check out the code
         uses: actions/checkout@v5
@@ -69,16 +78,35 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
       - name: Build the app
-        # The real Supabase project, for signing in (step 3b). Both are
-        # public: they're in the app every phone downloads. Until they're
-        # added (README.md, "Signing in"), the app is built with signing in
-        # switched off, and says so.
+        # The live app uses the real Supabase project, for signing in (step
+        # 3b); a pull request's preview uses the preview project only, and
+        # says on every page it's a test version (step 3e-2, D403). All four
+        # are public: they're in the app every phone downloads. Until a pair
+        # is added (README.md), that version is built with signing in
+        # switched off, and says so. A preview never falls back to the real one.
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          IS_PREVIEW: ${{ github.event_name == 'pull_request' }}
+          LIVE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          LIVE_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          PREVIEW_SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
+          PREVIEW_SUPABASE_KEY: ${{ vars.PREVIEW_SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_KEY" ]; then
-            echo "::warning title=Signing in is off::The SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY variables aren't set yet, so this version can't sign anyone in. Follow 'Signing in' in README.md."
+          if [ "$IS_PREVIEW" = "true" ]; then
+            export NEXT_PUBLIC_PREVIEW=true
+            if [ -z "$PREVIEW_SUPABASE_URL" ] || [ -z "$PREVIEW_SUPABASE_KEY" ]; then
+              echo "::warning title=Signing in is off on this preview::The PREVIEW_SUPABASE_URL and PREVIEW_SUPABASE_PUBLISHABLE_KEY variables aren't set yet, so this preview can't sign anyone in. Follow 'The preview database' in README.md."
+              export NEXT_PUBLIC_SUPABASE_URL='' NEXT_PUBLIC_SUPABASE_KEY=''
+            elif [ "$PREVIEW_SUPABASE_URL" = "$LIVE_SUPABASE_URL" ] || [ "$PREVIEW_SUPABASE_KEY" = "$LIVE_SUPABASE_KEY" ]; then
+              echo "::error title=Preview not built::PREVIEW_SUPABASE_URL or PREVIEW_SUPABASE_PUBLISHABLE_KEY is the real project's. A preview never uses the real project: copy them from the prepenny-preview project (README.md, 'The preview database')."
+              exit 1
+            else
+              export NEXT_PUBLIC_SUPABASE_URL="$PREVIEW_SUPABASE_URL" NEXT_PUBLIC_SUPABASE_KEY="$PREVIEW_SUPABASE_KEY"
+            fi
+          else
+            if [ -z "$LIVE_SUPABASE_URL" ] || [ -z "$LIVE_SUPABASE_KEY" ]; then
+              echo "::warning title=Signing in is off::The SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY variables aren't set yet, so this version can't sign anyone in. Follow 'Signing in' in README.md."
+            fi
+            export NEXT_PUBLIC_SUPABASE_URL="$LIVE_SUPABASE_URL" NEXT_PUBLIC_SUPABASE_KEY="$LIVE_SUPABASE_KEY"
           fi
           pnpm build
 
@@ -135,15 +163,386 @@ jobs:
           fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
+  preview:
+    # Step 3e-2 (D403 to D408): the pull request's database changes, its
+    # sign-in settings and the get-back-in function go to the preview
+    # Supabase project, which never holds real people's data; then the
+    # preview just put online is tried on two phones, and its link is posted.
+    # Only ever the preview project: this job is never given the real
+    # project's key, password or Project ID, and it stops unless the project
+    # it's given is called prepenny-preview.
+    name: Get the preview database ready, and try the preview
+    needs: deploy
+    if: github.event_name == 'pull_request' && needs.deploy.outputs.url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # One preview at a time changes the preview database, in turn, and is
+    # tried on it before the next starts (D405).
+    concurrency:
+      group: preview-database
+      cancel-in-progress: false
+    env:
+      PREVIEW_URL: ${{ needs.deploy.outputs.url }}
+      NUMBER: ${{ github.event.number }}
+      PREVIEW_SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: Check the preview project is set up
+        id: supabase
+        env:
+          HAS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN != '' }}
+          HAS_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF != '' }}
+          HAS_PASSWORD: ${{ secrets.PREVIEW_SUPABASE_DB_PASSWORD != '' }}
+          HAS_KEY: ${{ vars.PREVIEW_SUPABASE_PUBLISHABLE_KEY != '' }}
+        run: |
+          missing=()
+          [ "$HAS_TOKEN" = "true" ] || missing+=("the secret PREVIEW_SUPABASE_ACCESS_TOKEN")
+          [ "$HAS_REF" = "true" ] || missing+=("the secret PREVIEW_SUPABASE_PROJECT_REF")
+          [ "$HAS_PASSWORD" = "true" ] || missing+=("the secret PREVIEW_SUPABASE_DB_PASSWORD")
+          [ -n "$PREVIEW_SUPABASE_URL" ] || missing+=("the variable PREVIEW_SUPABASE_URL")
+          [ "$HAS_KEY" = "true" ] || missing+=("the variable PREVIEW_SUPABASE_PUBLISHABLE_KEY")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            list=$(printf '%s, ' "${missing[@]}"); list=${list%, }
+            echo "::warning title=Preview database not set up::The preview database isn't set up yet, so nothing was changed and this preview can't sign anyone in. Missing: $list. Follow 'The preview database' in README.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check the preview key has every permission this run needs, before anything changes
+        # The same check as the Database workflow's (D406), on the preview key.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+          KEY_NAME: PREVIEW_SUPABASE_ACCESS_TOKEN
+          PROJECT_NAME: prepenny-preview
+        run: node scripts/check-supabase-key.ts
+
+      - name: Check it's the preview project, never the real one
+        # Starting the preview database again empties it, so this job changes
+        # only a project called prepenny-preview, at the address the preview
+        # app is built with (D405).
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+        run: |
+          name=$(curl --silent --show-error "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '.name // ""')
+          if [ "$name" != "prepenny-preview" ]; then
+            echo "::error title=Not the preview project::The project in PREVIEW_SUPABASE_PROJECT_REF is called '$name', not prepenny-preview. Previews only ever change the project called prepenny-preview, so nothing was changed. Check PREVIEW_SUPABASE_PROJECT_REF (README.md, 'The preview database')."
+            exit 1
+          fi
+          if [ "$PREVIEW_SUPABASE_URL" != "https://$SUPABASE_PROJECT_REF.supabase.co" ]; then
+            echo "::error title=Preview address::PREVIEW_SUPABASE_URL isn't the prepenny-preview project's address (https://<its Project ID>.supabase.co), so nothing was changed. Copy it again from the prepenny-preview project (README.md, 'The preview database')."
+            exit 1
+          fi
+          echo "The preview project is prepenny-preview."
+
+      - name: Set up the Supabase command line (2.122.0, as in the Check workflow)
+        if: steps.supabase.outputs.ready == 'true'
+        run: npm install --global supabase@2.122.0
+
+      - name: Connect to the preview project
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PREVIEW_SUPABASE_DB_PASSWORD }}
+        run: |
+          if ! supabase link --project-ref "$SUPABASE_PROJECT_REF"; then
+            echo "::error title=Couldn't reach the preview database::Check PREVIEW_SUPABASE_DB_PASSWORD (README.md, 'The preview database'). A free project pauses after a week without use: open prepenny-preview on supabase.com and tap Restore project, then run this again."
+            exit 1
+          fi
+
+      - name: Look at what the preview database has
+        # Its database changes, their fingerprints and the pull request it
+        # follows, then what to do: nothing, add this pull request's new
+        # changes, or start again with exactly this pull request's (D405).
+        id: has
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+        run: |
+          query() {
+            local status
+            status=$(jq -n --arg query "$1" '{query: $query}' | curl --silent --show-error \
+              --output "$RUNNER_TEMP/answer.json" --write-out '%{http_code}' --request POST \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+              --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+            if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+              echo "::error title=Preview database::Supabase answered $status when asked what the preview database has."
+              exit 1
+            fi
+            cat "$RUNNER_TEMP/answer.json"
+          }
+          there=$(query "select to_regclass('supabase_migrations.schema_migrations') is not null as applied, to_regclass('preview.migrations') is not null as fingerprints, to_regclass('preview.following') is not null as following")
+          applied='[]'; fingerprints='[]'; following=''
+          if [ "$(jq -r '.[0].applied' <<< "$there")" = "true" ]; then
+            applied=$(query "select coalesce(jsonb_agg(version order by version), '[]'::jsonb) as v from supabase_migrations.schema_migrations" | jq -c '.[0].v')
+          fi
+          if [ "$(jq -r '.[0].fingerprints' <<< "$there")" = "true" ]; then
+            fingerprints=$(query "select coalesce(jsonb_agg(jsonb_build_object('version', version, 'sha256', sha256)), '[]'::jsonb) as v from preview.migrations" | jq -c '.[0].v')
+          fi
+          if [ "$(jq -r '.[0].following' <<< "$there")" = "true" ]; then
+            following=$(query "select pull_request from preview.following" | jq -r '.[0].pull_request // empty')
+          fi
+          decision=$(node scripts/preview-database.ts decide "$(jq -nc --argjson a "$applied" --argjson f "$fingerprints" '{applied: $a, fingerprints: $f}')")
+          echo "$(jq -r '.why' <<< "$decision")"
+          {
+            echo "action=$(jq -r '.action' <<< "$decision")"
+            echo "why=$(jq -r '.why' <<< "$decision")"
+            echo "following=$following"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Give the preview database this pull request's database changes
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PREVIEW_SUPABASE_DB_PASSWORD }}
+          ACTION: ${{ steps.has.outputs.action }}
+        run: |
+          case "$ACTION" in
+            nothing) echo "Nothing to change." ;;
+            add)
+              supabase db push --linked --dry-run
+              supabase db push --linked ;;
+            start-again)
+              # Empties the preview database, test accounts too, and gives it
+              # exactly this pull request's database changes. Never the seed:
+              # the tests' made-up people stay on GitHub's own machine.
+              supabase db reset --linked --no-seed --yes ;;
+            *) echo "::error title=Preview database::No decision was made."; exit 1 ;;
+          esac
+          sql=$(node scripts/preview-database.ts record "$NUMBER")
+          status=$(jq -n --arg query "$sql" '{query: $query}' | curl --silent --show-error \
+            --output "$RUNNER_TEMP/answer.json" --write-out '%{http_code}' --request POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Preview database::Supabase answered $status when the preview database's fingerprints were noted."
+            exit 1
+          fi
+          echo "The preview database has this pull request's database changes."
+
+      - name: Put the get-back-in function online on the preview project
+        # As the Database workflow does on the real project (step 3e hardening).
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+        run: supabase functions deploy get-back-in --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
+
+      - name: Check the preview's Data API shows PrePenny's public part only
+        # As the Database workflow does on the real project (D341).
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+        run: |
+          status=$(curl --silent --show-error --output "$RUNNER_TEMP/data-api.json" --write-out '%{http_code}' \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/postgrest" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Data API settings::Supabase answered $status when asked for them: $(jq -r '.message // .msg // "no message"' "$RUNNER_TEMP/data-api.json")"
+            exit 1
+          fi
+          schemas=$(jq -r '.db_schema' "$RUNNER_TEMP/data-api.json")
+          echo "The preview's Data API shows: $schemas"
+          if tr ',' '\n' <<< "$schemas" | tr -d ' ' | grep -qx 'app'; then
+            echo "::error title=The preview's Data API shows app::Take it off by hand: on supabase.com open prepenny-preview, then Project Settings, Data API, and under Exposed schemas remove app, keeping public and graphql_public. Then run this again."
+            exit 1
+          fi
+          if ! tr ',' '\n' <<< "$schemas" | tr -d ' ' | grep -qx 'public'; then
+            echo "::warning title=Data API settings::public isn't on the preview's Data API list, so the preview can't save plans. On supabase.com, prepenny-preview: Project Settings, Data API, Exposed schemas: add public."
+          fi
+
+      - name: Set the preview's sign-in settings
+        # The real project's settings (supabase/sign-in-settings.json), but
+        # the sign-in email's link opens this preview, only previews may be
+        # sent back to, the emails say they're from a test version, and
+        # Google stays off: its sign-in is set up for the real project only.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          host=${PREVIEW_URL#https://}
+          others="https://*-${host#pr-"$NUMBER"-}/**"
+          settings=$(jq --rawfile email supabase/templates/sign-in-code.html \
+            --rawfile change supabase/templates/email-change.html \
+            --arg site "$PREVIEW_URL" --arg others "$others" \
+            '. + {site_url: $site, uri_allow_list: $others, external_google_enabled: false,
+              mailer_templates_confirmation_content: $email, mailer_templates_magic_link_content: $email,
+              mailer_templates_email_change_content: $change}' \
+            supabase/sign-in-settings.json)
+          if [ -n "$RESEND_API_KEY" ]; then
+            settings=$(jq --arg key "$RESEND_API_KEY" '. + {smtp_host: "smtp.resend.com", smtp_port: "465",
+              smtp_user: "resend", smtp_pass: $key, smtp_admin_email: "hello@prepenny.co.uk",
+              smtp_sender_name: "PrePenny (test version)", smtp_max_frequency: 60, rate_limit_email_sent: 30}' <<< "$settings")
+          else
+            echo "::warning title=Sign-in emails::RESEND_API_KEY isn't set, so Supabase's own test sender sends the preview's sign-in emails, only to its team."
+          fi
+          status=$(curl --silent --show-error --output "$RUNNER_TEMP/answer.json" --write-out '%{http_code}' \
+            --request PATCH "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/auth" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" \
+            --data @- <<< "$settings")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Sign-in settings refused::Supabase answered $status: $(jq -r '.message // .msg // "no message"' "$RUNNER_TEMP/answer.json")"
+            exit 1
+          fi
+          echo "The preview's sign-in settings are set, with links to $PREVIEW_URL."
+
+      - name: Let the preview database send PrePenny's own emails
+        # Through Resend with the key GitHub already has (the owner's
+        # instruction), from "PrePenny (test version)", with its links to
+        # this preview.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "::warning title=Backup emails::RESEND_API_KEY isn't set, so backup emails can't be added or used on previews."
+            exit 0
+          fi
+          if ! [[ "$RESEND_API_KEY" =~ ^re_[A-Za-z0-9_]+$ ]]; then
+            echo "::error title=Backup emails::RESEND_API_KEY doesn't look like a Resend key (it starts with re_). Check it in GitHub's secrets."
+            exit 1
+          fi
+          query="select app.use_resend('$RESEND_API_KEY'); update app.email_sender set site = '$PREVIEW_URL', from_name = 'PrePenny (test version)';"
+          status=$(jq -n --arg query "$query" '{query: $query}' | curl --silent --show-error \
+            --output "$RUNNER_TEMP/answer.json" --write-out '%{http_code}' --request POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Backup emails::Supabase answered $status when the preview database was given the Resend key."
+            exit 1
+          fi
+          echo "The preview's own emails go through Resend, with links to $PREVIEW_URL."
+
+      - name: Set up pnpm (the version in package.json)
+        if: steps.supabase.outputs.ready == 'true'
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0, 13 Mar 2026: runs on Node 24
+
+      - name: Install
+        if: steps.supabase.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Find the test browser's version
+        id: playwright
+        if: steps.supabase.outputs.ready == 'true'
+        run: echo "version=$(node -p "require('./apps/web/node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Bring back the test browser kept from an earlier run
+        id: browser
+        if: steps.supabase.outputs.ready == 'true'
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0, 26 Jun 2026: runs on Node 24
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ steps.playwright.outputs.version }}-chromium-shell-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Download the test browser (only when it isn't kept yet)
+        if: steps.supabase.outputs.ready == 'true' && steps.browser.outputs.cache-hit != 'true'
+        timeout-minutes: 15
+        run: pnpm --filter @prepenny/web exec playwright install --only-shell chromium
+
+      - name: Try the preview on two phones, on the preview project only
+        # Signs in, saves a plan and keeps it in step on two phones, and
+        # checks neither phone asks the real project anything and the live
+        # app hasn't changed (apps/web/e2e/preview.spec.ts, D408). Signing in
+        # uses links the preview project makes with its own secret key, read
+        # here and never printed, so no email is sent.
+        id: tried
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+          REAL_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          LIVE_SITE: https://prepenny.co.uk
+        run: |
+          curl --silent --show-error --fail --output "$RUNNER_TEMP/keys.json" \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=true" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN"
+          secret=$(jq -r '(map(select(.type == "secret" and (.api_key // "") != "")) + map(select(.name == "service_role" and (.api_key // "") != "")))[0].api_key // empty' "$RUNNER_TEMP/keys.json")
+          rm -f "$RUNNER_TEMP/keys.json"
+          if [ -z "$secret" ]; then
+            echo "::error title=Preview not tried::The preview project has no secret key to make sign-in links with."
+            exit 1
+          fi
+          echo "::add-mask::$secret"
+          # The tests get the preview's secret key for sign-in links, never the Supabase key.
+          env -u SUPABASE_ACCESS_TOKEN -u SUPABASE_PROJECT_REF PREVIEW_SECRET_KEY="$secret" \
+            pnpm --filter @prepenny/web exec playwright test --project=preview --reporter=list
+
+      - name: Remove the try's test accounts from the preview database
+        if: always() && steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+        run: |
+          query="delete from public.plans where owner in (select id from auth.users where email like 'preview-check-%@example.com'); delete from auth.users where email like 'preview-check-%@example.com';"
+          jq -n --arg query "$query" '{query: $query}' | curl --silent --show-error --output /dev/null --request POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @- || true
+
+      - name: Keep the test report when the try fails
+        if: failure() && steps.tried.outcome == 'failure'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0, 12 Dec 2025: runs on Node 24
+        with:
+          name: playwright-report-preview
+          path: apps/web/playwright-report
+          retention-days: 7
+
       - name: Post the preview link on the pull request
-        if: steps.preview.outputs.url != ''
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          NUMBER: ${{ github.event.number }}
-          URL: ${{ steps.preview.outputs.url }}
+          READY: ${{ steps.supabase.outputs.ready }}
+          OUTCOME: ${{ job.status }}
+          WHY: ${{ steps.has.outputs.why }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          body="Preview of this pull request: $URL/app/
+          if [ "$READY" != "true" ]; then
+            more="The preview database isn't set up yet, so signing in is off on this preview. Follow 'The preview database' in README.md."
+          elif [ "$OUTCOME" = "success" ]; then
+            more="It has its own test database, never the real one: don't use real details. Sign in with any email address you can read. $WHY It was tried on two phones: signed in, saved a plan and kept it in step."
+          else
+            more="The preview database couldn't be got ready, or the try on two phones didn't pass, so signing in may not work on this preview. The Deploy run says why: $RUN"
+          fi
+          body="Preview of this pull request: $PREVIEW_URL/app/
+
+          $more
 
           Open it on your phone to try it. It updates with every new commit."
           gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" \
             || gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"
+
+      - name: Tell the pull request whose database changes the preview database no longer has
+        # Its preview now says "Changes can't be sent right now", and nothing
+        # on a phone is lost; it's tried again from its next commit, or by
+        # running its Deploy again (D405).
+        if: always() && steps.has.outputs.action != 'nothing' && steps.has.outputs.following != '' && steps.has.outputs.following != github.event.number
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OTHER: ${{ steps.has.outputs.following }}
+        run: |
+          if [ "$(gh pr view "$OTHER" --repo "$GITHUB_REPOSITORY" --json state --jq .state)" != "OPEN" ]; then
+            exit 0
+          fi
+          gh pr comment "$OTHER" --repo "$GITHUB_REPOSITORY" --body "The preview database now has pull request #$NUMBER's database changes, so this pull request's preview can't send changes for now: it says \"Changes can't be sent right now.\" Nothing on a phone is lost. To try this one again, open Actions, then Deploy, then this pull request's newest run, and tap Re-run all jobs."
