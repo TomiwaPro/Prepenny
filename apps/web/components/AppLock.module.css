@@ -1,0 +1,99 @@
+/* The lock screen and the cover while away (step 3e): the whole screen in
+   paper, so nothing of the plan shows behind it, with the sign-in page's
+   column, card and type (DESIGN.md). */
+
+.lock,
+.cover {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: var(--space-6) var(--gutter);
+  border: 0;
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.lock::backdrop {
+  background: var(--paper);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.wordmark {
+  margin: 0;
+  color: var(--accent-text);
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+}
+
+.coverLine {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--size-second);
+}
+
+.heading {
+  margin: var(--space-2) 0 0;
+  font-size: var(--size-wordmark);
+  font-weight: 700;
+}
+
+.purpose,
+.line {
+  margin: 0;
+  font-size: var(--size-body);
+  line-height: 1.5;
+}
+
+.purpose {
+  color: var(--ink-muted);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+
+.card[hidden] {
+  display: none;
+}
+
+.forgot {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  font-size: var(--size-body);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

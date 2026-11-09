@@ -8,6 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
+import { AppLock } from './AppLock.tsx';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
 import { ClashSheet } from './ClashSheet.tsx';
@@ -129,9 +130,16 @@ function Column({ children }: { readonly children: ReactNode }) {
   );
 }
 
+/** The app lock over every screen, when it's on (step 3e). */
+function Lock() {
+  const { ownPlan } = usePlanActions();
+  return <AppLock ownPlan={ownPlan} />;
+}
+
 export function AppShell({ children }: { readonly children: ReactNode }) {
   return (
     <PlanProvider>
+      <Lock />
       <ToSetup />
       <KeepInStep />
       <ClashSheet />

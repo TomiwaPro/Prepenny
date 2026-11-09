@@ -9,7 +9,8 @@
 // The difference is kept in the phone's database with everything else, so
 // signing out removes it too (D308). It holds no money data.
 
-import type { PrePennyDb } from './db.ts';
+import { setClockOffset } from '../lib/clock-offset.ts';
+import { openDb, type PrePennyDb } from './db.ts';
 
 /** Where the difference is kept, in the phone's own settings (the `device` table). */
 export const CLOCK_KEY = 'server-clock';
@@ -30,6 +31,8 @@ const SLOWEST_USEFUL_MS = 10_000;
 export async function clockOn(db: PrePennyDb): Promise<ServerClock | null> {
   const value = (await db.device.get(CLOCK_KEY))?.value as Partial<ServerClock> | undefined;
   if (typeof value?.offsetMs !== 'number' || typeof value.roundTripMs !== 'number') return null;
+  // The times written inside the plan follow it too (D378).
+  setClockOffset(value.offsetMs);
   return {
     offsetMs: value.offsetMs,
     roundTripMs: value.roundTripMs,
@@ -79,6 +82,21 @@ export function betterClock(kept: ServerClock | null, next: ServerClock): boolea
 export async function rememberClock(db: PrePennyDb, clock: ServerClock): Promise<void> {
   if (!betterClock(await clockOn(db), clock)) return;
   await db.device.put({ key: CLOCK_KEY, value: clock });
+  setClockOffset(clock.offsetMs);
+}
+
+/** Loads the difference kept on this phone, when PrePenny opens, for the times written inside the plan (D378). */
+export async function loadClock(): Promise<void> {
+  try {
+    const db = openDb();
+    try {
+      await clockOn(db);
+    } finally {
+      db.close();
+    }
+  } catch {
+    // No database on this phone: the phone's own clock, as before signing in.
+  }
 }
 
 /** A time on this phone, corrected against the server's, as the engine writes times. */

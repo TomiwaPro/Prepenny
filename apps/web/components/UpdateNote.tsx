@@ -7,6 +7,7 @@
 // the note loads the new version straight away.
 
 import { useSyncExternalStore } from 'react';
+import { useUpdateWanted } from '../lib/update.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './UpdateNote.module.css';
 
@@ -59,9 +60,16 @@ export function useUpdated(): boolean {
   );
 }
 
-/** The note, inside a live region that's always there, so screen readers hear it appear. */
+/**
+ * The note, inside a live region that's always there, so screen readers hear
+ * it appear. Since step 3e it also shows while a signed-in phone waits for a
+ * safe moment to load the new version itself (lib/update.ts): a tap loads it
+ * at once.
+ */
 export function UpdateNote() {
-  const ready = useUpdated();
+  const updated = useUpdated();
+  const wanted = useUpdateWanted();
+  const ready = updated || wanted;
   return (
     <div role="status">
       {ready ? (

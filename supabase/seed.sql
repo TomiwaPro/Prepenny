@@ -397,3 +397,53 @@ end;
 $$;
 
 grant execute on all functions in schema tests to anon, authenticated;
+
+-- PrePenny's own emails (step 3e: the backup email) go to the local test
+-- inbox (Mailpit, supabase/config.toml), whose address inside Supabase's
+-- own network is its container's name. The real project sends through
+-- Resend instead (app.use_resend, from the Database workflow).
+insert into app.email_sender (kind, url)
+values ('test-inbox', 'http://supabase_inbucket_prepenny:8025/api/v1/send');
+
+-- Acts as a person who has passed the second step of two-step sign-in on
+-- this session, as Supabase's token says once the authenticator app's code
+-- is checked: "aal2" in the token and on the session.
+create function tests.as_person_with_second_step(name text) returns void
+language plpgsql as $$
+begin
+  perform set_config('prepenny.edit', '', true);
+  perform set_config('request.jwt.claims', json_build_object(
+    'sub', tests.id(name), 'session_id', tests.id(name || '-session'), 'role', 'authenticated',
+    'aal', 'aal2')::text, true);
+  perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+-- Turns on two-step sign-in for a person, as checking their authenticator
+-- app's first code does: a checked factor. With `passed`, their session has
+-- passed the second step just now, as the code being typed makes it.
+create function tests.turn_on_two_step(name text, passed boolean default false) returns void
+language plpgsql as $$
+begin
+  insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
+  values (tests.id(name || '-factor'), tests.id(name), '', 'totp', 'verified', now(), now(), 'TEST');
+  if passed then
+    update auth.sessions set aal = 'aal2' where id = tests.id(name || '-session');
+    insert into auth.mfa_amr_claims (id, session_id, created_at, updated_at, authentication_method)
+    values (gen_random_uuid(), tests.id(name || '-session'), now(), now(), 'totp');
+  end if;
+end;
+$$;
+
+-- Acts as a person's phone through the Data API, which names the version of
+-- the database the app was built for (step 3e): the right one unless told.
+create function tests.through_the_data_api(version text default null) returns void
+language plpgsql security definer as $$
+begin
+  perform set_config('request.path', '/rpc/save_edit', true);
+  perform set_config('request.headers', json_build_object('x-prepenny-version',
+    coalesce(version, app.database_version()))::text, true);
+end;
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated;

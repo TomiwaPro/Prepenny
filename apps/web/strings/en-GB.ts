@@ -1724,6 +1724,14 @@ export const strings = {
     /** The other phone removed the payment: it can't be changed, whichever came first. */
     cantRemoved: (who: string, what: string) =>
       `${who} removed ${what}, so your change to it can't be made. Make it again if you still want it.`,
+    /**
+     * A change made on another of the person's devices, told on this one once
+     * that device has signed out (step 3e, PLAN.md item 39): "Tom changed Rent
+     * on Tue 1 Dec after you changed it on Chrome on an Android phone."
+     */
+    elsewhere: (who: string, what: string, device: string) =>
+      `${who} changed ${what} after you changed it on ${device}.`,
+    anotherDevice: 'another phone or computer',
     /** When a record has no name of its own. */
     unnamed: 'your plan',
     putBack: 'Put mine back',
@@ -1788,6 +1796,11 @@ export const strings = {
     /** When a sign-in ended by itself, as after "Sign out everywhere" (step 3c, PLAN.md item 29). */
     signInEnded:
       "Your sign-in has ended, so your plan was removed from this phone. It's saved in your account: sign in to bring it back.",
+    /** Signed out by another phone, with a change here not sent yet (D348, step 3e). */
+    endedUnsent: (count: number) =>
+      count === 1
+        ? "Your sign-in has ended. 1 change on this phone hasn't been sent to your account yet: sign in again to send it."
+        : `Your sign-in has ended. ${count} changes on this phone haven't been sent to your account yet: sign in again to send them.`,
     /** On the welcome. */
     haveAccount: 'Already have an account?',
     signIn: 'Sign in',
@@ -1885,6 +1898,285 @@ export const strings = {
       "It's removed from this phone only. It's saved in that account, so nothing of it is lost.",
     removeOtherNotSaved:
       "It's removed from this phone. Some of it hasn't been saved in that account, and that part will be lost.",
+  },
+
+  /** Keeping the account safe, on More (brief 4.13, step 3e). */
+  security: {
+    heading: 'Security',
+    /** The first line of the card (D213). */
+    purpose: 'Keep your account and this phone safe.',
+    lock: 'App lock',
+    lockOn: 'On. PrePenny asks for your PIN when it opens.',
+    lockOff: 'Ask for a PIN when PrePenny opens on this phone',
+    devices: 'Signed-in devices',
+    devicesLine: "See where you're signed in, and sign out of any of them",
+    twoStep: 'Two-step sign-in',
+    twoStepOn: 'On. Signing in needs a code from your authenticator app.',
+    twoStepOff: 'Ask for a code from an authenticator app when you sign in',
+    emails: 'Email addresses',
+    emailsLine: 'Change the address you sign in with, or add a backup',
+    backToMore: 'Back to More',
+    /** A code from the authenticator app, asked for before something that needs the second step just now. */
+    appCodeLabel: 'Code from your authenticator app',
+    appCodeHint: 'Open your authenticator app and type the 6-digit code it shows for PrePenny.',
+    appCodeMissing: 'Type the 6 numbers from your authenticator app, for example 123456.',
+    appCodeWrong:
+      "That code doesn't match. The code changes every 30 seconds: type the one your authenticator app shows now.",
+    emailCodeMissing: 'Type the 6 numbers from the email, for example 123456.',
+    emailCodeWrong: "That code doesn't match. Check the 6 numbers in the email from PrePenny.",
+    emailCodeRanOut: 'This code has run out. Start again to get a new one.',
+    offline: "You're offline. Connect to the internet, then try again.",
+    server: "PrePenny couldn't reach its server. Try again in a minute.",
+    tooMany: 'Too many codes have been sent. Wait an hour, then try again.',
+    wait: (seconds: number) =>
+      seconds === 1
+        ? 'You can ask for a new code in 1 second.'
+        : `You can ask for a new code in ${seconds} seconds.`,
+    emailOff: "Emails from PrePenny aren't switched on yet, so this can't be done for now.",
+  },
+
+  /** The list of signed-in devices (brief 4.13, D21, step 3e). */
+  devices: {
+    heading: 'Signed-in devices',
+    purpose:
+      "Every phone and computer signed in to your account. Sign out of any you don't use or don't know.",
+    loading: 'Finding your signed-in devices.',
+    browsers: {
+      chrome: 'Chrome',
+      safari: 'Safari',
+      firefox: 'Firefox',
+      edge: 'Edge',
+      samsung: 'Samsung Internet',
+      opera: 'Opera',
+    } as Record<string, string>,
+    kinds: {
+      iphone: 'an iPhone',
+      ipad: 'an iPad',
+      'android-phone': 'an Android phone',
+      'android-tablet': 'an Android tablet',
+      chromebook: 'a Chromebook',
+      windows: 'a Windows computer',
+      mac: 'a Mac',
+      linux: 'a Linux computer',
+    } as Record<string, string>,
+    someDevice: 'a phone or computer',
+    /** "Chrome on an Android phone". */
+    browserOn: (browser: string, kind: string) => `${browser} on ${kind}`,
+    thisDevice: 'This device',
+    lastUsedToday: 'Last used today',
+    lastUsedYesterday: 'Last used yesterday',
+    lastUsedOn: (day: string) => `Last used ${day}`,
+    signOutOfIt: 'Sign out of this device',
+    /** For screen readers: which device the button signs out (WCAG 2.5.3: the words on it first). */
+    signOutOfItLabel: (name: string) => `Sign out of this device: ${name}`,
+    endTitle: (name: string) => `Sign out of ${name}`,
+    endIntro:
+      "It gets nothing more from your account straight away, and removes your plan within a minute. It's saved in your account, so nothing is lost.",
+    endYes: 'Yes, sign it out',
+    endNo: 'No, keep it signed in',
+    ended: (name: string) => `${name} is signed out.`,
+    everywhere: 'Sign out everywhere',
+    everywhereLine:
+      'Signs out every phone and computer, this one too. Each removes your plan within a minute.',
+    everywhereTitle: 'Sign out everywhere',
+    everywhereIntro:
+      'Every phone and computer signed in to your account is signed out, this one too, and each removes your plan within a minute. Your plan is saved in your account, and comes back when you sign in again.',
+    everywhereCodeIntro:
+      'Every phone and computer signed in to your account is signed out, this one too. Type the code from your authenticator app first.',
+    everywhereYes: 'Sign out everywhere',
+    everywhereNo: 'Stay signed in',
+    everywhereUnsent: (count: number) =>
+      count === 1
+        ? "1 change on this phone hasn't been sent to your account yet. Once it has, you can sign out everywhere."
+        : `${count} changes on this phone haven't been sent to your account yet. Once they have, you can sign out everywhere.`,
+    signingOut: 'Signing out everywhere.',
+    none: 'No devices are signed in.',
+    couldNotLoad:
+      "PrePenny couldn't reach its server, so the list can't be shown. Try again in a minute.",
+    tryAgain: 'Try again',
+  },
+
+  /** Two-step sign-in with an authenticator app (brief 4.13, step 3e). */
+  twoStep: {
+    heading: 'Two-step sign-in',
+    purpose:
+      "When it's on, signing in needs a code from an authenticator app on your phone as well as the code by email, so someone who gets into your email still can't get into PrePenny.",
+    isOff: 'Two-step sign-in is off.',
+    isOn: 'Two-step sign-in is on.',
+    checking: 'Checking whether two-step sign-in is on.',
+    turnOn: 'Turn on two-step sign-in',
+    getApp:
+      "1. Get an authenticator app from your phone's app store, if you haven't one already, such as Google Authenticator or Microsoft Authenticator.",
+    addToApp: '2. Add PrePenny to it.',
+    openApp: 'Add PrePenny to my authenticator app',
+    openAppHint: 'Opens the authenticator app on this phone, with PrePenny ready to add.',
+    orScan: 'Or, with the app on another phone, scan this picture with it:',
+    qrAlt: 'A picture for an authenticator app to scan',
+    orType: 'Or type this key into the app:',
+    typeCode: '3. Type the 6-digit code the app now shows for PrePenny.',
+    otherDevices:
+      'Turning it on signs you out of your other phones and computers. Each needs a code from the app to sign in again.',
+    finish: 'Turn on',
+    starting: 'Getting PrePenny ready for your authenticator app.',
+    turningOn: 'Turning on two-step sign-in.',
+    turnedOn:
+      'Two-step sign-in is on. From now on, signing in needs a code from your authenticator app.',
+    turnOff: 'Turn off two-step sign-in',
+    turnOffTitle: 'Turn off two-step sign-in',
+    turnOffIntro:
+      'Signing in will need only the code by email again. Type the code from your authenticator app to turn it off.',
+    turnOffConfirm: 'Turn it off',
+    turnOffKeep: 'Keep it on',
+    turnedOff: 'Two-step sign-in is off.',
+    lostApp:
+      "If you lose the phone with your authenticator app, you can't sign in. Keep the key somewhere safe, or turn two-step sign-in off before you change phones.",
+  },
+
+  /** The email address you sign in with, and a backup (brief 4.13, step 3e). */
+  emails: {
+    heading: 'Email addresses',
+    purpose:
+      "The address you sign in with, and a backup address to get back in if you can't get into it.",
+    signInHeading: 'Sign-in email',
+    signInIs: (email: string) => `You sign in with ${email}.`,
+    google: 'If you sign in with Google, this is the address PrePenny has for you.',
+    change: 'Change email address',
+    newLabel: 'New email address',
+    newHint: 'We email a code to it, and another to the address you sign in with now.',
+    newMissing: 'Type the new email address, for example sam@example.com.',
+    sameAsNow: "That's the address you sign in with now. Type a different one.",
+    sendCodes: 'Send the codes',
+    sending: 'Sending the codes.',
+    codesSent: (now: string, next: string) =>
+      `We've sent a 6-digit code to ${now} and another to ${next}. Each lasts 10 minutes. Type both to change your address.`,
+    currentCodeLabel: (email: string) => `Code sent to ${email}`,
+    newCodeLabel: (email: string) => `Code sent to ${email}`,
+    finishChange: 'Change email address',
+    changing: 'Changing your email address.',
+    changed: (email: string) => `Your sign-in email is now ${email}.`,
+    cancel: 'Keep my address',
+    inUse: 'That address is already used for another PrePenny account. Use a different one.',
+    backupHeading: 'Backup email',
+    backupNone:
+      "You haven't added a backup email. It lets you get back in if you can't get into the address you sign in with.",
+    backupIs: (email: string) => `Your backup email is ${email}.`,
+    backupAdd: 'Add a backup email',
+    backupChange: 'Change backup email',
+    backupLabel: 'Backup email address',
+    backupHint: "Use one only you can get into, that isn't the address you sign in with.",
+    backupMissing: 'Type the backup email address, for example sam@example.com.',
+    backupSameAsSignIn: "That's the address you sign in with. Use a different one for your backup.",
+    backupSend: 'Send me a code',
+    backupSending: 'Sending your code.',
+    backupSent: (email: string) => `We've sent a 6-digit code to ${email}. It lasts 10 minutes.`,
+    backupCodeLabel: '6-digit code',
+    backupFinish: 'Add backup email',
+    backupAdding: 'Adding your backup email.',
+    backupAdded: (email: string) => `${email} is your backup email.`,
+    backupInUse:
+      "That address is already used for another PrePenny account, so it can't be your backup. Use a different one.",
+    backupRemove: 'Remove backup email',
+    backupRemoveTitle: 'Remove backup email',
+    backupRemoveIntro:
+      "You won't be able to use it to get back in. You can add another at any time.",
+    backupRemoveCodeIntro:
+      "You won't be able to use it to get back in. Type the code from your authenticator app to remove it.",
+    backupRemoveYes: 'Yes, remove it',
+    backupRemoveNo: 'No, keep it',
+    backupRemoved: 'Your backup email is removed.',
+    couldNotLoad:
+      "PrePenny couldn't reach its server, so your addresses can't be shown. Try again in a minute.",
+  },
+
+  /** Getting back in with the backup email, signed out (brief 4.13, step 3e). */
+  getBackIn: {
+    heading: 'Get back in with your backup email',
+    purpose:
+      "If you can't get into the email address you sign in with, use the backup email you added in PrePenny.",
+    link: "Can't get into your email? Use your backup email",
+    emailLabel: 'Backup email address',
+    emailHint: "We'll email it a 6-digit code, if it's the backup for a PrePenny account.",
+    emailMissing: 'Type your backup email address, for example sam@example.com.',
+    send: 'Send me a code',
+    sending: 'Sending your code.',
+    sent: (email: string) =>
+      `If ${email} is the backup for a PrePenny account, we've sent it a 6-digit code. It lasts 10 minutes.`,
+    codeLabel: '6-digit code',
+    codeHint:
+      "It's in an email from PrePenny. If it isn't there, look in your junk or spam folder.",
+    whatHappens:
+      'Once you type it, your backup email becomes the address you sign in with, and every phone and computer signed in to your account is signed out.',
+    finish: 'Get back in',
+    checking: 'Checking your code.',
+    codeWrong:
+      "That code doesn't match. Check the 6 numbers in the email from PrePenny, or tap Send a new code.",
+    codeRanOut: "This code has run out. Tap Send a new code and we'll email you another.",
+    sendNew: 'Send a new code',
+    otherEmail: 'Use a different email address',
+    signInNow:
+      'Your backup email is now the address you sign in with. We sent a sign-in code to it.',
+    noBackup:
+      'No backup email? Write to hello@prepenny.co.uk from any address, and say which address you signed up with.',
+    backToSignIn: 'Back to signing in',
+  },
+
+  /** Signing in with two-step sign-in on (step 3e). */
+  secondStep: {
+    heading: 'Type the code from your authenticator app',
+    purpose:
+      'Two-step sign-in is on for this account. Open your authenticator app and type the 6-digit code it shows for PrePenny.',
+    finish: 'Sign in',
+    checking: 'Checking your code.',
+  },
+
+  /** The optional app lock: "Open with your PIN" (brief 4.13, D35, step 3e). */
+  lock: {
+    heading: 'App lock',
+    purpose:
+      'Ask for a PIN each time PrePenny opens, and after 5 minutes away, so nobody else can see your plan on this phone.',
+    isOff: 'App lock is off.',
+    isOn: 'App lock is on. PrePenny asks for your PIN when it opens, and after 5 minutes away.',
+    turnOn: 'Turn on Open with your PIN',
+    pinLabel: 'Choose a PIN',
+    pinHint: '4 to 8 numbers. Only this phone keeps it, scrambled.',
+    againLabel: 'Type it again',
+    pinMissing: 'Type 4 to 8 numbers, for example 2580.',
+    pinsDiffer: "The two PINs don't match. Type the same numbers in both.",
+    finishOn: 'Turn on',
+    turnedOn: 'App lock is on.',
+    turnOff: 'Turn off app lock',
+    turnOffTitle: 'Turn off app lock',
+    turnOffIntro: 'Type your PIN to turn it off.',
+    turnOffConfirm: 'Turn it off',
+    turnedOff: 'App lock is off.',
+    changePin: 'Change PIN',
+    changeTitle: 'Change PIN',
+    changeIntro: 'Type your PIN now, then the new one.',
+    currentLabel: 'Your PIN now',
+    newLabel: 'New PIN',
+    finishChange: 'Change PIN',
+    changed: 'Your PIN is changed.',
+    preview:
+      'When you switch apps, PrePenny covers your plan, but your phone may still show an older picture of it. Phone apps from the app stores will hide it fully.',
+    /** The lock screen (D35: "Open with your PIN", never "unlock"). */
+    screenHeading: 'Open with your PIN',
+    screenPurpose: 'Type your PIN to see your plan.',
+    screenLabel: 'PIN',
+    open: 'Open',
+    wrong: "That PIN doesn't match. Try again.",
+    waitTries: (seconds: number) => `Too many tries. Wait ${seconds} seconds, then try again.`,
+    forgot: 'Forgot your PIN?',
+    forgotSignedIn:
+      'Sign out to remove PrePenny from this phone, then sign in again. Your plan comes back from your account, and the lock is off.',
+    forgotLocal:
+      "Your plan is only on this phone, so removing PrePenny from this phone removes your plan too. If you have the PIN, it's kept as it is.",
+    removeEverything: 'Remove everything from this phone',
+    removeTitle: 'Remove everything from this phone',
+    removeIntro:
+      "Your plan, and everything else PrePenny keeps on this phone, goes for good. This can't be undone.",
+    removeYes: 'Yes, remove everything',
+    removeNo: 'No, go back',
+    covered: 'PrePenny is hidden while you are away.',
   },
 
   parts: {

@@ -192,3 +192,47 @@ export async function whatThePhoneKeeps(page: Page) {
     };
   });
 }
+
+/**
+ * Waits for an email with this subject to an address, and reads the 6-digit
+ * code from it (step 3e: changing the email address, the backup email).
+ * `after` leaves out emails from before that moment.
+ */
+export async function codeIn(address: string, subject: string, after = 0): Promise<string> {
+  let code: string | undefined;
+  await expect
+    .poll(
+      async () => {
+        for (const found of await emailsTo(address)) {
+          if (Date.parse(found.Created) < after) continue;
+          const response = await fetch(`${INBOX}/api/v1/message/${found.ID}`);
+          const message = (await response.json()) as {
+            Subject: string;
+            HTML: string;
+            To: { Address: string }[];
+          };
+          if (message.Subject !== subject) continue;
+          // Exactly this address: the inbox's search also finds addresses that contain it.
+          if (!message.To.some((one) => one.Address === address)) continue;
+          code = />\s*(\d{6})\s*</.exec(message.HTML)?.[1];
+          if (code !== undefined) return true;
+        }
+        return false;
+      },
+      { message: `"${subject}" to ${address}`, timeout: 20_000 },
+    )
+    .toBe(true);
+  return code as string;
+}
+
+/** The emails with this subject sent to exactly this address. */
+export async function countEmails(address: string, subject: string): Promise<number> {
+  let count = 0;
+  for (const found of await emailsTo(address)) {
+    const response = await fetch(`${INBOX}/api/v1/message/${found.ID}`);
+    const message = (await response.json()) as { Subject: string; To: { Address: string }[] };
+    if (message.Subject === subject && message.To.some((one) => one.Address === address))
+      count += 1;
+  }
+  return count;
+}

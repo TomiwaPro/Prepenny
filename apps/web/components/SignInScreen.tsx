@@ -15,6 +15,10 @@
 //    phone has a plan of its own and the account another, they choose which
 //    to keep, and a confirm says the other will be removed (D324).
 //
+// With two-step sign-in on, the authenticator app's code comes after the
+// email's (step 3e): the account's plan data stays out of reach until then.
+// "Can't get into your email?" opens the backup email page (/get-back-in/).
+//
 // Every mistake says what to do (VOICE.md). Nothing about money is sent,
 // and nothing is written to the console (PLAN.md item 20).
 
@@ -36,10 +40,12 @@ import {
   startGoogle,
 } from '../lib/account.ts';
 import { formatDay } from '../lib/dates.ts';
+import { passSecondStep, twoStep } from '../lib/security.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
 import { localToday } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
+import { CodeBox, sixDigits } from './CodeBox.tsx';
 import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { describedBy, Field } from './Fields.tsx';
 import formStyles from './Form.module.css';
@@ -51,7 +57,15 @@ const t = strings.signIn;
 
 type Mode = 'sign-in' | 'sign-up';
 type From = 'more' | 'welcome';
-type Busy = 'sending' | 'checking' | 'google' | 'link' | 'saving' | 'keeping' | null;
+type Busy =
+  | 'sending'
+  | 'checking'
+  | 'google'
+  | 'link'
+  | 'saving'
+  | 'keeping'
+  | 'second-step'
+  | null;
 
 /** What's happening while the person waits, read out as it changes. */
 const BUSY_WORDS: Record<Exclude<Busy, null>, string> = {
@@ -61,6 +75,7 @@ const BUSY_WORDS: Record<Exclude<Busy, null>, string> = {
   google: t.openingGoogle,
   saving: t.saving,
   keeping: t.keeping,
+  'second-step': strings.secondStep.checking,
 };
 
 type Choice = Extract<Connection, { kind: 'choose' }>;
@@ -145,7 +160,10 @@ export function SignInScreen() {
   const id = useId();
   const [mode, setMode] = useState<Mode>('sign-in');
   const [from, setFrom] = useState<From>('welcome');
-  const [step, setStep] = useState<'email' | 'code' | 'link' | 'choose'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'link' | 'choose' | 'second-step'>('email');
+  const [appCode, setAppCode] = useState('');
+  const [appCodeError, setAppCodeError] = useState<string | undefined>();
+  const [gotBackIn, setGotBackIn] = useState(false);
   const [choice, setChoice] = useState<Choice | null>(null);
   const [keep, setKeep] = useState<'saved' | 'phone' | ''>('');
   const [confirming, setConfirming] = useState(false);
@@ -164,6 +182,7 @@ export function SignInScreen() {
   const heading = useRef<HTMLHeadingElement>(null);
   const emailBox = useRef<HTMLInputElement>(null);
   const codeBox = useRef<HTMLInputElement>(null);
+  const appCodeBox = useRef<HTMLInputElement>(null);
   const firstStep = useRef(true);
   // The address is read once, even where React runs the first effect twice
   // (its development mode), so a link's one-time key is never used twice.
@@ -208,6 +227,10 @@ export function SignInScreen() {
       // From the app: a plan of this phone's own beside the account's (D324).
       window.history.replaceState(null, '', pageAddress(opened, cameFrom));
       void signedInNow(cameFrom);
+    } else if (search.has('second-step')) {
+      // From the app: two-step sign-in is on and this sign-in hasn't passed it (step 3e).
+      window.history.replaceState(null, '', pageAddress(opened, cameFrom));
+      setStep('second-step');
     } else if (tokenHash !== null) {
       // Used only when the person taps "Finish signing in" (D312).
       linkKey.current = tokenHash;
@@ -222,6 +245,11 @@ export function SignInScreen() {
         setEmail(sent.email);
         setSentAt(sent.at);
         setStep('code');
+        // Just back in with the backup email, which is now the sign-in address (step 3e).
+        if (search.has('got-back-in')) {
+          setGotBackIn(true);
+          window.history.replaceState(null, '', pageAddress(opened, cameFrom));
+        }
       }
     }
     (async () => {
@@ -266,6 +294,15 @@ export function SignInScreen() {
    * goes up later.
    */
   async function signedInNow(cameFrom: From) {
+    // Two-step sign-in on: the authenticator app's code first (step 3e).
+    const state = await twoStep();
+    if (state.ok && state.value.on && !state.value.passed) {
+      setBusy(null);
+      setAppCode('');
+      setAppCodeError(undefined);
+      setStep('second-step');
+      return;
+    }
     setBusy('saving');
     const connection = await connectPlan();
     if (connection.kind === 'choose') {
@@ -373,6 +410,32 @@ export function SignInScreen() {
     }
   }
 
+  async function checkSecondStep(event: FormEvent) {
+    event.preventDefault();
+    if (busy !== null) return;
+    setProblem(null);
+    const typed = sixDigits(appCode);
+    if (typed === null) {
+      setAppCodeError(strings.security.appCodeMissing);
+      appCodeBox.current?.focus();
+      return;
+    }
+    setAppCodeError(undefined);
+    setBusy('second-step');
+    const passed = await passSecondStep(typed);
+    if (!passed.ok) {
+      setBusy(null);
+      if (passed.problem === 'code-wrong') {
+        setAppCodeError(strings.security.appCodeWrong);
+        appCodeBox.current?.focus();
+      } else {
+        setProblem(passed.problem === 'offline' ? t.offline : t.server);
+      }
+      return;
+    }
+    await signedInNow(from);
+  }
+
   async function finishLink() {
     const key = linkKey.current;
     if (busy !== null || key === null) return;
@@ -413,7 +476,7 @@ export function SignInScreen() {
       </a>
       <main className={styles.main}>
         <header className={screenStyles.header}>
-          {step === 'choose' ? null : step === 'code' ? (
+          {step === 'choose' || step === 'second-step' ? null : step === 'code' ? (
             <button
               type="button"
               className={`${screenStyles.back} ${styles.textButton}`}
@@ -434,29 +497,36 @@ export function SignInScreen() {
           <h1 ref={heading} tabIndex={-1} className={screenStyles.heading}>
             {step === 'choose'
               ? t.chooseHeading
-              : step === 'code'
-                ? t.codeHeading
-                : step === 'link'
-                  ? t.linkHeading
-                  : signUp
-                    ? t.signUpHeading
-                    : t.signInHeading}
+              : step === 'second-step'
+                ? strings.secondStep.heading
+                : step === 'code'
+                  ? t.codeHeading
+                  : step === 'link'
+                    ? t.linkHeading
+                    : signUp
+                      ? t.signUpHeading
+                      : t.signInHeading}
           </h1>
           <p className={screenStyles.purpose}>
             {step === 'choose'
               ? t.choosePurpose
-              : step === 'code'
-                ? resent
-                  ? t.newCodeSentTo(email)
-                  : t.sentTo(email)
-                : step === 'link'
-                  ? t.linkPurpose
-                  : signUp
-                    ? t.signUpPurpose
-                    : t.signInPurpose}
+              : step === 'second-step'
+                ? strings.secondStep.purpose
+                : step === 'code'
+                  ? resent
+                    ? t.newCodeSentTo(email)
+                    : t.sentTo(email)
+                  : step === 'link'
+                    ? t.linkPurpose
+                    : signUp
+                      ? t.signUpPurpose
+                      : t.signInPurpose}
           </p>
           {step === 'email' && hasPlan ? (
             <p className={screenStyles.purpose}>{t.planBecomesYours}</p>
+          ) : null}
+          {step === 'code' && gotBackIn ? (
+            <p className={screenStyles.purpose}>{strings.getBackIn.signInNow}</p>
           ) : null}
         </header>
 
@@ -502,6 +572,25 @@ export function SignInScreen() {
             )}
             <button type="submit" className={formStyles.main} aria-disabled={busy !== null}>
               {t.keepThisPlan}
+            </button>
+          </form>
+        ) : step === 'second-step' ? (
+          <form
+            className={styles.card}
+            onSubmit={checkSecondStep}
+            noValidate
+            data-testid="second-step"
+          >
+            <CodeBox
+              id={`${id}-app-code`}
+              label={strings.security.appCodeLabel}
+              error={appCodeError}
+              value={appCode}
+              onChange={setAppCode}
+              inputRef={appCodeBox}
+            />
+            <button type="submit" className={formStyles.main} aria-disabled={busy !== null}>
+              {strings.secondStep.finish}
             </button>
           </form>
         ) : step === 'link' ? (
@@ -567,6 +656,10 @@ export function SignInScreen() {
                 {t.googleHint}
               </p>
             </div>
+            {/* A plain link, so nothing is fetched ahead of a tap. */}
+            <a className={styles.backupLink} href="/get-back-in/">
+              {strings.getBackIn.link}
+            </a>
           </>
         ) : (
           <form className={styles.card} onSubmit={check} noValidate>
@@ -618,7 +711,7 @@ export function SignInScreen() {
           </button>
         )}
         {/* Signing out, instead of choosing now, is always there too (D353). */}
-        {step === 'choose' && choice !== null ? <SignedInLine /> : null}
+        {(step === 'choose' && choice !== null) || step === 'second-step' ? <SignedInLine /> : null}
       </main>
       <ConfirmSheet
         open={confirming}

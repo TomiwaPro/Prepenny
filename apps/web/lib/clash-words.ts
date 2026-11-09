@@ -7,6 +7,7 @@ import type { ClashToShow } from '../data/clashes.ts';
 import { strings } from '../strings/en-GB.ts';
 import type { Action, ClashFacts } from './clash.ts';
 import { formatDay } from './dates.ts';
+import { deviceInSentence } from './device-words.ts';
 import { formatMoney } from './money.ts';
 
 const t = strings.clash;
@@ -98,6 +99,22 @@ export function clashWords(clash: ClashToShow, today: string): ClashWords {
         ? t.partner
         : clash.who.nickname;
   const whose = t.whose(who);
+  if (clash.kind === 'elsewhere') {
+    // Made on another of the person's devices (step 3e, PLAN.md item 39).
+    const name = facts.name === '' ? t.unnamed : facts.name;
+    const what = facts.on === null ? name : t.refusedOn(name, formatDay(facts.on, today));
+    const device =
+      clash.madeOn === undefined
+        ? t.anotherDevice
+        : deviceInSentence(clash.madeOn.browser, clash.madeOn.device);
+    return {
+      title: t.title,
+      purpose: t.purpose,
+      message: `${t.elsewhere(who, what, device)} ${t.kept(capital(whose))}`,
+      putBack: null,
+      keep: t.gotIt,
+    };
+  }
   const first = sentence(clash, facts, today);
   if (clash.kind === 'cant' && facts.theirs.kind === 'removed') {
     const name = facts.name === '' ? t.unnamed : facts.name;

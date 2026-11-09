@@ -3,6 +3,8 @@
 // made later sort later. The engine can't make ids, so they come in with
 // each command (D87).
 
+import { serverNow } from './clock-offset.ts';
+
 const hex = (bytes: Uint8Array) => [...bytes].map((byte) => byte.toString(16).padStart(2, '0'));
 
 /** A new UUID version 7. `now` and `random` are only for tests. */
@@ -22,8 +24,12 @@ export function newId(
   return `${h.slice(0, 4).join('')}-${h.slice(4, 6).join('')}-${h.slice(6, 8).join('')}-${h.slice(8, 10).join('')}-${h.slice(10).join('')}`;
 }
 
-/** The time now as the engine stores it, a UTC time such as "2026-10-30T09:14:05.123Z" (D33). */
-export function timeNow(now: Date = new Date()): string {
+/**
+ * The time now as the engine stores it, a UTC time such as
+ * "2026-10-30T09:14:05.123Z" (D33), by this phone's clock corrected against
+ * the server's (D378).
+ */
+export function timeNow(now: Date = new Date(serverNow())): string {
   return now.toISOString();
 }
 
@@ -34,7 +40,7 @@ let lastMoment = 0;
  * records made one after another in the same moment keep the order they
  * were made in, for the same-day order (D12, step 2e).
  */
-export function timeInOrder(now: number = Date.now()): string {
+export function timeInOrder(now: number = serverNow()): string {
   lastMoment = Math.max(now, lastMoment + 1);
   return new Date(lastMoment).toISOString();
 }

@@ -8,7 +8,8 @@ export default {
   swDest: 'out/sw.js',
   globDirectory: 'out',
   globPatterns: ['**/*.{html,js,css,woff2,png,svg,webmanifest,json,txt}'],
-  globIgnores: ['sw.js', '**/*.map', '404/**', '_not-found/**'],
+  // version.json says which version is live now, so it's always fetched fresh (lib/version.ts).
+  globIgnores: ['sw.js', 'version.json', '**/*.map', '404/**', '_not-found/**'],
   // Turbopack's file names already change with their contents.
   dontCacheBustURLsMatching: /^_next\/static\//,
   maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

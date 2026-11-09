@@ -39,6 +39,12 @@ export function AccountCard() {
       {account.status === 'checking' ? <p className={styles.line}>{t.checking}</p> : null}
       {account.status === 'signed-out' ? (
         <>
+          {sync.unsent > 0 ? (
+            // Signed out by another phone, with a change here not sent yet (D348, step 3e).
+            <p className={styles.line} data-testid="where-kept">
+              {t.endedUnsent(sync.unsent)}
+            </p>
+          ) : null}
           <p className={styles.line}>{t.signedOutLine}</p>
           {/* A plain link, so nothing is fetched ahead of a tap. */}
           <a className={styles.outlined} href="/sign-in/?to=sign-up&from=more">

@@ -109,3 +109,16 @@
   overflow: hidden;
   clip-path: inset(50%);
 }
+
+/* "Can't get into your email? Use your backup email" (step 3e): a link,
+   with the 44px tap area every control has. */
+.backupLink {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent-text);
+  font-size: var(--size-body);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

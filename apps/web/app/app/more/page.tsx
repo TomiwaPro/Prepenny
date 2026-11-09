@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AccountCard } from '../../../components/AccountCard.tsx';
 import { ColourChoice } from '../../../components/ColourChoice.tsx';
 import { MoreLinks } from '../../../components/MoreLinks.tsx';
+import { SecurityCard } from '../../../components/SecurityCard.tsx';
 import { SimplePage } from '../../../components/SimplePage.tsx';
 import { StartAgain } from '../../../components/StartAgain.tsx';
 import { strings } from '../../../strings/en-GB.ts';
@@ -17,6 +18,7 @@ export default function MorePage() {
     >
       <MoreLinks />
       <AccountCard />
+      <SecurityCard />
       <ColourChoice />
       <StartAgain />
     </SimplePage>

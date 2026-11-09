@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en-GB">
+<!--
+  The email for changing the sign-in email address (step 3e). Supabase sends
+  it twice for one change, once to the current address and once to the new
+  one, each with its own 6-digit code, and the change happens only once both
+  codes are typed into PrePenny ("secure email change"). There's no link:
+  the change was started inside PrePenny, on a phone that's signed in, so
+  that's where the codes go. No amount, no payment name and no note is ever
+  in an email (ARCHITECTURE.md 1.3). Supabase fills in {{ .Token }},
+  {{ .Email }} (the current address), {{ .NewEmail }} and {{ .SendingTo }}.
+-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your PrePenny code</title>
+</head>
+<body style="margin:0;padding:24px 16px;background:#F4EFE6;color:#1A2238;font-family:Figtree,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:480px;margin:0 auto;background:#FFFDF8;border:1px solid #E3D9C6;border-radius:16px;padding:24px 20px;">
+    <p style="margin:0 0 16px;font-size:17px;font-weight:700;color:#14213D;">PrePenny</p>
+    {{ if eq .SendingTo .Email }}
+    <p style="margin:0 0 8px;font-size:16px;">The code for your current address is</p>
+    {{ else }}
+    <p style="margin:0 0 8px;font-size:16px;">The code for your new address is</p>
+    {{ end }}
+    <p style="margin:0 0 16px;font-size:34px;font-weight:700;letter-spacing:6px;font-variant-numeric:tabular-nums;">{{ .Token }}</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Someone asked to change the email address you sign in to PrePenny with, from {{ .Email }} to {{ .NewEmail }}. Type this code into PrePenny, with the code sent to the other address. It lasts 10 minutes.</p>
+    <p style="margin:0;font-size:14px;line-height:1.5;color:#4A5060;">If you didn't ask for this, don't type the code anywhere, and nothing changes. The address changes only once both codes are typed in.</p>
+  </div>
+  <p style="max-width:480px;margin:16px auto 0;font-size:13px;color:#4A5060;text-align:center;">PrePenny. Plan every penny before payday.</p>
+</body>
+</html>

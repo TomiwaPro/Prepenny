@@ -123,8 +123,11 @@ select is((select edit_id from public.notices where for_person = tests.id('jess'
   'naming the change that replaced hers');
 select is((select data from public.notices where for_person = tests.id('jess')),
   jsonb_build_object('lost', tests.id('jess-rent'), 'by', tests.id('tom'), 'made_at', '2026-11-08T09:30:00Z',
-    'rows', jsonb_build_array(jsonb_build_object('table', 'series', 'id', tests.id('rent')))),
-  'with her change it replaced, who replaced it and when, and only the rent: no amount, name or note');
+    'rows', jsonb_build_array(jsonb_build_object('table', 'series', 'id', tests.id('rent'))),
+    -- Since step 3e, the device her change was made on, so another phone of
+    -- hers can say which (PLAN.md item 39): the test's session describes no browser.
+    'from', jsonb_build_object('session', tests.id('jess-session'), 'browser', '', 'device', '')),
+  'with her change it replaced, who replaced it and when, the device hers was made on, and only the rent: no amount, name or note');
 
 -- An edit it didn't replace, or one made after it, leaves no notice.
 select tests.as_person('tom');
