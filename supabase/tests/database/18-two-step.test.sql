@@ -4,7 +4,7 @@
 --   refuses, not just the screen.
 -- - The second step counts only when both Supabase's record of the session
 --   and its token say so.
--- - Signing out everywhere needs the second step in the last 5 minutes, and
+-- - Signing out of all other devices needs the second step in the last 5 minutes, and
 --   so do turning it off and changing the email address, whatever asks.
 -- - Someone without it, such as their partner, carries on as before.
 
@@ -53,18 +53,18 @@ select isnt_empty($$ select * from tests.readable_rows() $$, 'and Jess reads her
 -- Tom has no two-step sign-in, and carries on.
 select tests.as_person('tom');
 select isnt_empty($$ select * from tests.readable_rows() $$, 'Tom, without two-step sign-in, reads the shared plan');
-select is((public.end_every_device() ->> 'ended')::integer, 1,
-  'and can sign out everywhere without a second step he doesn''t have');
+select is((public.end_other_devices() ->> 'ended')::integer, 0,
+  'and can sign out of all other devices without a second step he doesn''t have');
 
--- Signing out everywhere needs the second step in the last 5 minutes.
+-- Signing out of all other devices needs the second step in the last 5 minutes.
 select tests.as_person_with_second_step('jess');
-select throws_ok($$ select public.end_every_device() $$, '42501', 'second-step-needed',
-  'Jess can''t sign out everywhere without typing a code from her authenticator app just now');
+select throws_ok($$ select public.end_other_devices() $$, '42501', 'second-step-needed',
+  'Jess can''t sign out of her other devices without typing a code from her authenticator app just now');
 select tests.as_test();
 insert into auth.mfa_amr_claims (id, session_id, created_at, updated_at, authentication_method)
 values (gen_random_uuid(), tests.id('jess-session'), now() - interval '6 minutes', now() - interval '6 minutes', 'totp');
 select tests.as_person_with_second_step('jess');
-select throws_ok($$ select public.end_every_device() $$, '42501', 'second-step-needed',
+select throws_ok($$ select public.end_other_devices() $$, '42501', 'second-step-needed',
   'A code typed 6 minutes ago is too long ago');
 
 -- Turning it off and changing the email address, as Supabase's sign-in
@@ -86,7 +86,7 @@ values (tests.id('jess-factor-2'), tests.id('jess'), 'Second', 'totp', 'verified
 select lives_ok($$ delete from auth.mfa_factors where id = tests.id('jess-factor-2') $$,
   'and an authenticator app can be turned off');
 select tests.as_person_with_second_step('jess');
-select is((public.end_every_device() ->> 'ended')::integer, 1, 'and Jess can sign out everywhere');
+select is((public.end_other_devices() ->> 'ended')::integer, 0, 'and Jess can sign out of her other devices');
 
 -- Removing a whole account is never held up by it.
 select tests.as_test();

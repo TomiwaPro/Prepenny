@@ -401,9 +401,11 @@ grant execute on all functions in schema tests to anon, authenticated;
 -- PrePenny's own emails (step 3e: the backup email) go to the local test
 -- inbox (Mailpit, supabase/config.toml), whose address inside Supabase's
 -- own network is its container's name. The real project sends through
--- Resend instead (app.use_resend, from the Database workflow).
-insert into app.email_sender (kind, url)
-values ('test-inbox', 'http://supabase_inbucket_prepenny:8025/api/v1/send');
+-- Resend instead (app.use_resend, from the Database workflow). Links in the
+-- emails, such as the stop link (step 3e hardening), open the local app the
+-- end-to-end tests use; the real project's open prepenny.co.uk.
+insert into app.email_sender (kind, url, site)
+values ('test-inbox', 'http://supabase_inbucket_prepenny:8025/api/v1/send', 'http://127.0.0.1:4173');
 
 -- Acts as a person who has passed the second step of two-step sign-in on
 -- this session, as Supabase's token says once the authenticator app's code
@@ -447,3 +449,17 @@ end;
 $$;
 
 grant execute on all functions in schema tests to anon, authenticated;
+
+-- Acts as the get-back-in function, with Supabase's admin key (step 3e
+-- hardening): the role and token every request made with that key has.
+create function tests.as_supabase_admin() returns void
+language plpgsql as $$
+begin
+  perform set_config('prepenny.edit', '', true);
+  perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+  perform set_config('role', 'service_role', true);
+end;
+$$;
+
+grant execute on function tests.as_supabase_admin() to anon, authenticated, service_role;
+grant usage on schema tests to service_role;

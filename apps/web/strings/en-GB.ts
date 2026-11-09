@@ -1793,7 +1793,7 @@ export const strings = {
     signingOut: 'Signing out.',
     /** On the welcome, after signing out. */
     signedOut: "You're signed out. Nothing of yours is left on this phone.",
-    /** When a sign-in ended by itself, as after "Sign out everywhere" (step 3c, PLAN.md item 29). */
+    /** When a sign-in ended by itself, as after "Sign out of all other devices" on another phone (step 3c, PLAN.md item 29). */
     signInEnded:
       "Your sign-in has ended, so your plan was removed from this phone. It's saved in your account: sign in to bring it back.",
     /** Signed out by another phone, with a change here not sent yet (D348, step 3e). */
@@ -1975,21 +1975,23 @@ export const strings = {
     endYes: 'Yes, sign it out',
     endNo: 'No, keep it signed in',
     ended: (name: string) => `${name} is signed out.`,
-    everywhere: 'Sign out everywhere',
-    everywhereLine:
-      'Signs out every phone and computer, this one too. Each removes your plan within a minute.',
-    everywhereTitle: 'Sign out everywhere',
-    everywhereIntro:
-      'Every phone and computer signed in to your account is signed out, this one too, and each removes your plan within a minute. Your plan is saved in your account, and comes back when you sign in again.',
-    everywhereCodeIntro:
-      'Every phone and computer signed in to your account is signed out, this one too. Type the code from your authenticator app first.',
-    everywhereYes: 'Sign out everywhere',
-    everywhereNo: 'Stay signed in',
-    everywhereUnsent: (count: number) =>
-      count === 1
-        ? "1 change on this phone hasn't been sent to your account yet. Once it has, you can sign out everywhere."
-        : `${count} changes on this phone haven't been sent to your account yet. Once they have, you can sign out everywhere.`,
-    signingOut: 'Signing out everywhere.',
+    /** "Sign out of all other devices" (step 3e hardening): this one stays signed in. */
+    others: 'Sign out of all other devices',
+    othersLine:
+      'Signs out every phone and computer but this one, and each removes your plan within a minute. This one stays signed in.',
+    othersTitle: 'Sign out of all other devices',
+    othersIntro:
+      'Every other phone and computer signed in to your account is signed out, and each removes your plan within a minute. This one stays signed in. Your plan is saved in your account, so nothing is lost.',
+    othersCodeIntro:
+      'Every other phone and computer signed in to your account is signed out. This one stays signed in. Type the code from your authenticator app first.',
+    othersYes: 'Sign them out',
+    othersNo: 'Keep them signed in',
+    othersDone: (count: number) =>
+      count === 0
+        ? 'No other phone or computer was signed in.'
+        : count === 1
+          ? '1 other phone or computer is signed out.'
+          : `${count} other phones and computers are signed out.`,
     none: 'No devices are signed in.',
     couldNotLoad:
       "PrePenny couldn't reach its server, so the list can't be shown. Try again in a minute.",
@@ -2088,14 +2090,18 @@ export const strings = {
       "PrePenny couldn't reach its server, so your addresses can't be shown. Try again in a minute.",
   },
 
-  /** Getting back in with the backup email, signed out (brief 4.13, step 3e). */
+  /**
+   * Getting back in with the backup email, signed out (brief 4.13, step 3e),
+   * with a 24-hour wait and a way to stop it (step 3e hardening).
+   */
   getBackIn: {
     heading: 'Get back in with your backup email',
     purpose:
       "If you can't get into the email address you sign in with, use the backup email you added in PrePenny.",
     link: "Can't get into your email? Use your backup email",
     emailLabel: 'Backup email address',
-    emailHint: "We'll email it a 6-digit code, if it's the backup for a PrePenny account.",
+    emailHint:
+      "We'll email it a 6-digit code, if it's the backup for a PrePenny account. We can send 3 codes a day to one address.",
     emailMissing: 'Type your backup email address, for example sam@example.com.',
     send: 'Send me a code',
     sending: 'Sending your code.',
@@ -2105,19 +2111,76 @@ export const strings = {
     codeHint:
       "It's in an email from PrePenny. If it isn't there, look in your junk or spam folder.",
     whatHappens:
-      'Once you type it, your backup email becomes the address you sign in with, and every phone and computer signed in to your account is signed out.',
-    finish: 'Get back in',
+      'For your safety, getting back in takes 24 hours. Your first code starts the wait, and we tell the address you sign in with now. After 24 hours, a new code finishes it.',
+    /** Under the code box, once the 24 hours have passed. */
+    finishWhatHappens:
+      'Once you type it, your backup email becomes the address you sign in with. Every phone and computer signed in to your account is signed out, and any Google sign-in is removed.',
+    useCode: 'Use this code',
     checking: 'Checking your code.',
     codeWrong:
       "That code doesn't match. Check the 6 numbers in the email from PrePenny, or tap Send a new code.",
     codeRanOut: "This code has run out. Tap Send a new code and we'll email you another.",
+    newCodeNeeded:
+      "It's been 24 hours, so you can finish now, with a new code. Tap Send a new code and we'll email you one to finish.",
+    inUse:
+      "That address now signs in to another PrePenny account, so it can't become yours. Write to hello@prepenny.co.uk and we'll help.",
     sendNew: 'Send a new code',
     otherEmail: 'Use a different email address',
+    /** The wait, after the first code (step 3e hardening). */
+    waitingHeading: "You've asked to get back in",
+    waitingPurpose: 'For your safety, nothing changes on your account for 24 hours.',
+    finishFrom: (when: string) => `You can finish from ${when}.`,
+    finishNow: 'You can finish now.',
+    thenWhat: (email: string) =>
+      `Then come back to this page, and we'll send a new code to ${email} to finish. From then on, you sign in with ${email}.`,
+    told: "We've told the address you sign in with now. If it wasn't you who asked, it can be stopped from there, or on any phone or computer signed in to your account.",
+    sendFinishCode: 'Send me a code to finish',
+    /** "2:05pm on Tue 10 Nov". */
+    when: (time: string, day: string) => `${time} on ${day}`,
     signInNow:
-      'Your backup email is now the address you sign in with. We sent a sign-in code to it.',
+      'Your backup email is now the address you sign in with. We sent a sign-in code to it. For your safety, any Google sign-in was removed: to use Google again, choose Continue with Google with a Google account that has this address.',
     noBackup:
       'No backup email? Write to hello@prepenny.co.uk from any address, and say which address you signed up with.',
     backToSignIn: 'Back to signing in',
+  },
+
+  /**
+   * The notice on every signed-in device while someone is getting back in
+   * with the backup email (step 3e hardening).
+   */
+  getBackInNotice: {
+    heading: 'Someone asked to get into your account',
+    waiting: (when: string) =>
+      `They used your backup email. Unless it's stopped, from ${when} they can sign in with it, and every phone and computer will be signed out.`,
+    ready:
+      "They used your backup email. Unless it's stopped, they can now sign in with it, and every phone and computer will be signed out.",
+    whatToDo: "If it wasn't you, stop it now. If it was you, you don't need to do anything.",
+    stop: 'Stop it',
+    stopping: 'Stopping it.',
+    stopped:
+      "It's stopped. Nothing on your account changed, and we've told your backup email. If you don't know who has your backup email, change it: More, then Email addresses.",
+    notStopped:
+      "There was nothing to stop: it had already ended, or was just finishing. If you're signed out in the next minute, write to hello@prepenny.co.uk.",
+    gotIt: 'Got it',
+  },
+
+  /** The page the stop link in the email opens (step 3e hardening). */
+  stopGetBackIn: {
+    heading: 'Stop someone getting into your account',
+    purpose:
+      "Someone asked to get into your PrePenny account with your backup email. If it wasn't you, stop it here.",
+    stop: 'Stop it',
+    stopping: 'Stopping it.',
+    stoppedHeading: "It's stopped",
+    stopped:
+      "Nobody can use that request to get in, and this link doesn't work any more. We've told your backup email.",
+    changeBackup:
+      "If you don't know who has your backup email, sign in and change it: More, then Email addresses.",
+    notStopped:
+      "This link has been used already, or the request it was for has ended, so there's nothing to stop. If you think someone got into your account, write to hello@prepenny.co.uk.",
+    noLink:
+      'This page needs the whole link from the email. Open the link in the email from PrePenny again.',
+    goToPrePenny: 'Go to PrePenny',
   },
 
   /** Signing in with two-step sign-in on (step 3e). */

@@ -4,7 +4,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(13);
 
 select is_empty(
   $$ select tablename from pg_tables where schemaname = 'public' and not rowsecurity $$,
@@ -95,8 +95,9 @@ select set_eq(
     'refuse', 'from_a_person', 'check_chosen_privacy', 'check_link', 'account_privacy', 'family_problem',
     'record_tables', 'begin_edit', 'nudge', 'send_nudge', 'family_rules_problem', 'sent_columns', 'may_hear',
     'server_time', 'tell_clashes', 'save_edit', 'plan_changes', 'start_plan', 'remove_plan',
-    'hello', 'my_devices', 'end_device', 'end_every_device', 'backup_email', 'add_backup_email',
-    'confirm_backup_email', 'remove_backup_email', 'send_get_in_code', 'use_get_in_code'],
+    'hello', 'my_devices', 'end_device', 'end_other_devices', 'backup_email', 'add_backup_email',
+    'confirm_backup_email', 'remove_backup_email', 'send_get_in_code', 'stop_get_back_in',
+    'stop_get_back_in_with_link'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -105,18 +106,34 @@ select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute') $$,
   array['save_edit', 'plan_changes', 'start_plan', 'remove_plan',
-    'hello', 'my_devices', 'end_device', 'end_every_device', 'backup_email', 'add_backup_email',
-    'confirm_backup_email', 'remove_backup_email', 'send_get_in_code', 'use_get_in_code'],
+    'hello', 'my_devices', 'end_device', 'end_other_devices', 'backup_email', 'add_backup_email',
+    'confirm_backup_email', 'remove_backup_email', 'send_get_in_code', 'stop_get_back_in',
+    'stop_get_back_in_with_link'],
   'The Data API''s part holds only the steps the phone calls'
 );
 
 -- Since step 3e, someone who isn't signed in can ask for a code to get back
--- in with their backup email, and use it: nothing else.
+-- in with their backup email; since step 3e hardening, use the stop link
+-- too, and nothing else. Typing the code goes through the get-back-in
+-- function, with Supabase's admin key (supabase/functions/get-back-in).
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('anon', p.oid, 'execute') $$,
-  array['send_get_in_code', 'use_get_in_code'],
-  'Someone who isn''t signed in can use only the two steps for getting back in'
+  array['send_get_in_code', 'stop_get_back_in_with_link'],
+  'Someone who isn''t signed in can only ask for a code at a backup email, and use a stop link'
+);
+
+-- The three steps that finish getting back in are for the get-back-in
+-- function alone, with Supabase's admin key, and each checks it's that key.
+select is_empty(
+  $$ select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('get_back_in_with_code', 'get_back_in_finished', 'get_back_in_not_finished')
+       and (has_function_privilege('anon', p.oid, 'execute')
+         or has_function_privilege('authenticated', p.oid, 'execute')
+         or not has_function_privilege('service_role', p.oid, 'execute')
+         or position('app.from_supabase_admin()' in p.prosrc) = 0) $$,
+  'Only Supabase''s admin key can finish getting back in, and each step checks it'
 );
 
 select * from finish();

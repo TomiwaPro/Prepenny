@@ -122,3 +122,19 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* The line that matters most on a card, such as when getting back in can be
+   finished (step 3e hardening). */
+.strong {
+  font-size: var(--size-name);
+  font-weight: 600;
+}
+
+/* A link that looks like a button, such as "Back to signing in" while
+   getting back in waits, or "Go to PrePenny" once it's stopped. */
+.linkButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}

@@ -4,15 +4,14 @@
 // computer signed in to the person's account, each by a plain name such as
 // "Chrome on an Android phone", "This device" for this one, and when the
 // others were last used. Never an IP address or a place. Each can be signed
-// out, and "Sign out everywhere" signs out every one, this one too. An ended
-// device gets nothing more from the account at once, and removes the plan
-// within a minute (data/sync.ts).
+// out, and "Sign out of all other devices" signs out every one but this one,
+// which stays signed in (step 3e hardening); signing out of this one is its
+// own "Sign out". An ended device gets nothing more from the account at
+// once, and removes the plan within a minute (data/sync.ts).
 
 import { useCallback, useEffect, useState } from 'react';
-import { allSent, useSync } from '../data/sync.ts';
-import { signOutAndForget } from '../lib/account.ts';
 import { deviceName, lastUsedWords } from '../lib/device-words.ts';
-import { type Device, endDevice, endEveryDevice, myDevices, twoStep } from '../lib/security.ts';
+import { type Device, endDevice, endOtherDevices, myDevices, twoStep } from '../lib/security.ts';
 import { strings } from '../strings/en-GB.ts';
 import formStyles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';
@@ -30,14 +29,12 @@ type Loaded =
 
 export function DevicesScreen() {
   const { ownPlan } = usePlanActions();
-  const sync = useSync();
   const [loaded, setLoaded] = useState<Loaded>({ kind: 'loading' });
   const [ending, setEnding] = useState<Device | null>(null);
   const [signingOutHere, setSigningOutHere] = useState(false);
-  const [everywhere, setEverywhere] = useState(false);
+  const [others, setOthers] = useState(false);
   const [needsCode, setNeedsCode] = useState(false);
   const [said, setSaid] = useState('');
-  const [unsentWords, setUnsentWords] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const answer = await myDevices();
@@ -103,32 +100,19 @@ export function DevicesScreen() {
           })}
         </ul>
       )}
-      <section className={styles.card} aria-labelledby="everywhere-heading">
-        <h2 id="everywhere-heading" className={styles.cardTitle}>
-          {t.everywhere}
+      <section className={styles.card} aria-labelledby="others-heading">
+        <h2 id="others-heading" className={styles.cardTitle}>
+          {t.others}
         </h2>
-        <p className={styles.second}>{t.everywhereLine}</p>
-        {unsentWords === null ? null : (
-          <p className={formStyles.problem} role="alert">
-            {unsentWords}
-          </p>
-        )}
+        <p className={styles.second}>{t.othersLine}</p>
         <div className={styles.actions}>
           <button
             type="button"
             className={formStyles.outlined}
             aria-haspopup="dialog"
-            onClick={async () => {
-              // Nothing waiting to be sent is lost by signing out everywhere (D325).
-              if (!(await allSent())) {
-                setUnsentWords(t.everywhereUnsent(Math.max(1, sync.unsent)));
-                return;
-              }
-              setUnsentWords(null);
-              setEverywhere(true);
-            }}
+            onClick={() => setOthers(true)}
           >
-            {t.everywhere}
+            {t.others}
           </button>
         </div>
       </section>
@@ -149,24 +133,22 @@ export function DevicesScreen() {
         }}
       />
       <SecondStepSheet
-        open={everywhere}
-        title={t.everywhereTitle}
-        intro={t.everywhereIntro}
-        codeIntro={t.everywhereCodeIntro}
+        open={others}
+        title={t.othersTitle}
+        intro={t.othersIntro}
+        codeIntro={t.othersCodeIntro}
         needsCode={needsCode}
-        confirm={t.everywhereYes}
-        keep={t.everywhereNo}
+        confirm={t.othersYes}
+        keep={t.othersNo}
         onConfirm={async () => {
-          const done = await endEveryDevice();
-          if (!done.ok) return done;
-          setSaid(t.signingOut);
-          // This phone too: the plan and everything else goes, as signing out does.
-          await signOutAndForget();
-          window.location.replace('/?signed-out');
+          // This phone stays signed in, so nothing waiting to be sent here is at risk.
+          const done = await endOtherDevices();
+          if (done.ok) setSaid(t.othersDone(done.value));
           return done;
         }}
         onClose={(done) => {
-          if (!done) setEverywhere(false);
+          setOthers(false);
+          if (done) void load();
         }}
       />
       <SignOutSheet

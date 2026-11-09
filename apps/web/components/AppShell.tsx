@@ -1,7 +1,8 @@
 'use client';
 
-// Every screen of the app: the example plan banner and the offline note at
-// the top, the screen in a centred column, the undo bar after a change, and
+// Every screen of the app: the example plan banner, the offline note and,
+// while someone is getting back in with the backup email, its notice at the
+// top (step 3e hardening), the screen in a centred column, the undo bar after a change, and
 // the bottom navigation.
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -12,6 +13,7 @@ import { AppLock } from './AppLock.tsx';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
 import { ClashSheet } from './ClashSheet.tsx';
+import { GetBackInNotice } from './GetBackInNotice.tsx';
 import { KeepInStep } from './KeepInStep.tsx';
 import { ExampleBanner, OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlan, usePlanActions } from './PlanProvider.tsx';
@@ -35,6 +37,7 @@ function Notes() {
         />
       ) : null}
       <OfflineNote />
+      <GetBackInNotice />
     </div>
   );
 }

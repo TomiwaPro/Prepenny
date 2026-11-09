@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -4518,3 +4518,181 @@ Decided 9 Nov 2026 in step 3e.
 - The local Supabase here is started with its images from Docker Hub (`SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io`), because this computer can't reach GitHub's own store of them. GitHub's machines start it as before.
 
 Why: each follows from the owner's instructions where they didn't say exactly.
+
+## From the owner's instructions for step 3e hardening
+
+D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, on 9 Nov 2026. D397 and D398 were decided while building it, the same day. Points marked "decided in step 3e hardening" weren't in the owner's words.
+
+### D391. Getting back in with a backup email waits 24 hours, with a stop
+
+The owner's decision, 9 Nov 2026. Replaces D384's "Getting back in" (the backup became the sign-in address as soon as its code was typed).
+
+- **Typing the code sent to the backup email starts a 24-hour wait.** Nothing changes on the account: not its sign-in address, its email sign-in, its devices, its sign-ins' refresh tokens, its authenticator apps, its backup email or its plan.
+- **Straight away, the address the account signs in with is told,** in an email with a "Stop it" link, and **every signed-in device shows a notice** on every screen, with a "Stop it" button. The devices hear of it at once from a nudge (D339), and anyway within a minute, when they ask the server whether their sign-in stands (`hello`, D381).
+- **The stop link** is single-use, unguessable and can only stop. Decided in step 3e hardening: 32 bytes from the database's secure random numbers, kept only scrambled (SHA-256), after a "#" in the address so it never reaches a server's logs, and taken out of the address bar as soon as the page opens. The page stops nothing until "Stop it" is tapped, so an email service that opens links to check them can't use it, as for the sign-in link (D312). It works once, and not at all once the request has ended. It signs nobody in or out, and the page says nothing about the account.
+- **"Stop it" on a signed-in device** stops only the person's own request.
+- **When it's stopped,** by either, the backup email is told, and the notice goes from every device.
+- **After 24 hours, if nobody stopped it,** the person asks for a fresh code at the backup email, and typing it finishes: the backup becomes the address the account signs in with, every device is signed out, and the old address is told. Then they sign in as usual with a sign-in code sent to the backup address, and **two-step sign-in still applies**: the authenticator app's code is asked for when it's on (D382).
+- Decided in step 3e hardening: **the code that finishes it must have been sent after the 24 hours.** A code asked for at 23 hours 59 minutes says to ask for a new one.
+- Decided in step 3e hardening: **once the finishing code is accepted, it can no longer be stopped,** for the second or so it takes to finish.
+- Decided in step 3e hardening: **a request that's ready can be finished for 7 days,** and then it runs out and has to start again, so one nobody finished can't be used weeks later. One request at a time for each account. **Changing or removing the backup email stops it.**
+
+Test: `supabase/tests/database/21-safer-recovery.test.sql` and `apps/web/e2e/recovery.spec.ts`. Screenshots: `docs/screens/3e-hardening`.
+
+Why: the owner's decision: someone who gets into the backup inbox shouldn't take over the account before its owner can say no.
+
+### D392. Codes are capped and locked, and say the same either way
+
+The owner's decision, 9 Nov 2026. Replaces D384's "one a minute and 5 an hour".
+
+- **3 codes a day for an address,** for "get back in" codes and "add a backup email" codes, each counted on its own. "A day" is the last 24 hours (decided in step 3e hardening). Once a minute still applies.
+- **After 10 wrong tries in a day, the address is locked for 24 hours,** for that kind of code: no code is sent to it, and every code typed for it is wrong, the right one too. Every wrong try counts, for any address typed, whoever types it and whether or not a code was ever sent to it. Decided in step 3e hardening: tries made while it's locked don't count, so the lock ends 24 hours after it began, and the tries start again from nothing. Each code still takes 5 tries at most and lasts 10 minutes.
+- **A locked address gets the same answers as any other**: "If ... is the backup for a PrePenny account, we've sent it a 6-digit code." and, for a code, the same as a wrong code. So nobody can tell an address is locked, or that it's a backup. For "add a backup email", a capped or locked address gets "We've sent a 6-digit code", as any other, and the screen says 3 codes can be sent a day.
+- Decided in step 3e hardening: the tries are kept against the address scrambled (SHA-256), so an address someone typed that isn't anyone's is never kept as typed, and they're cleared after a day.
+- **Accepted:** someone who knows a person's backup address can keep it locked by typing 10 wrong codes a day, which stops that person getting back in with it until they stop. The owner chose the lock; support (Phase 4) can help.
+
+Test: `supabase/tests/database/21-safer-recovery.test.sql`.
+
+Why: the owner's decision: a 6-digit code can't be guessed in 10 tries a day.
+
+### D393. The sign-in address changes through Supabase's own admin route
+
+The owner's instruction to check whether changing Supabase's own sign-in tables is supported and safe, 9 Nov 2026, and what was found and decided in step 3e hardening. Replaces D384's change of `auth.users` and `auth.identities` by the database itself.
+
+**What was found** (Supabase's docs and the source code of Supabase's sign-in service, version 2.197.0, which the local Supabase runs, on 9 Nov 2026):
+
+- Supabase doesn't forbid writing to its sign-in tables, but its docs say "Columns, indices, constraints or other database objects managed by Supabase may change at any time". Since 21 Apr 2025 projects can't change those tables' shape, but can still change their rows and put triggers on them.
+- **Identities.** The database's own change updated only an existing "email" sign-in. For someone who had only ever used "Continue with Google", it left no email sign-in at all. Supabase's admin route (`PUT /auth/v1/admin/users/{id}`, "update a user") updates the email sign-in, and makes one when there's none (tried here: it does).
+- **Email uniqueness.** Supabase keeps one account per sign-in address with an index on its own table, which refuses a duplicate whichever way the change is made. The admin route doesn't check other accounts' Google sign-ins, so the database checks those itself before finishing, and an account never confirmed that's in the way is removed through the admin route.
+- **Refresh tokens.** Supabase has no admin route that signs one person's devices out: its own sign-out deletes their rows from `auth.sessions`, and each sign-in's refresh tokens go with it (a database rule, "on delete cascade"). A token whose sign-in row is gone is refused by Supabase's sign-in service ("session_not_found"), and PrePenny's own rules refuse it too (D21).
+- The admin route writes the change to Supabase's own log of sign-in events, with the new address, as signing up does.
+
+**So:**
+
+- **Finishing goes through the admin route,** from a small function Supabase runs, `supabase/functions/get-back-in` (an "Edge Function"). The phone sends it the backup address and code; it asks the database what the code does (`get_back_in_with_code`, which only Supabase's own secret key can call); and only when the database says it can finish, it makes the backup the sign-in address with the admin route, then the database signs every device out, uses the backup up and tells the old address (`get_back_in_finished`). If the admin route can't, the request is as it was, still open and still able to be stopped (`get_back_in_not_finished`).
+- **Signing devices out still deletes their rows from `auth.sessions`,** as Supabase's own sign-out does, for "Sign out of this device", "Sign out of all other devices" and finishing. The database tests check that a sign-in's refresh tokens go with it (`17-devices`, `21-safer-recovery`), so a Supabase update that changed it would fail GitHub's checks before reaching the real project.
+- **What the owner sets up: nothing.** Supabase gives every function the project's own secret key, so no key is copied anywhere. The Database workflow puts the function online after the database changes, with the Supabase key it already has (README.md, part F). The function reads Supabase's newer secret keys first, so it keeps working when Supabase retires its older keys at the end of 2026.
+- The function writes nothing to its log, and holds no amount, payment name or note. The function is reached at the same Supabase address as everything else, so the security policy is unchanged (D309).
+
+Test: `supabase/tests/database/21-safer-recovery.test.sql` (the database's part), and `apps/web/e2e/recovery.spec.ts` (the whole of it, through the function and Supabase's admin route, against the local Supabase). Tried by hand here too: an account with only a Google sign-in gets an email sign-in, and a never-confirmed sign-up with the backup address is removed first.
+
+Why: the owner's instruction: "If Supabase's own admin route is safer, use it". It is, for the address: it's Supabase's supported way to change it, and it keeps the email sign-in right for Google accounts, which the database's own change didn't.
+
+### D394. "Sign out everywhere" becomes "Sign out of all other devices"
+
+The owner's decision, 9 Nov 2026. Replaces D381's "Sign out everywhere" (PLAN.md question 3).
+
+- Under More, Signed-in devices: "Sign out of all other devices" keeps this device signed in, and signs out every other one; each removes the plan within a minute, or keeps it with a change not sent yet (D348).
+- Signing out of this device stays under "Sign out" (D325), and "Sign out of this device" on this one opens the same sheet.
+- It still asks for the authenticator app's code when two-step sign-in is on, and the database checks it was typed in the last 5 minutes (`end_other_devices`, D382). A change on this phone not sent yet no longer stops it, as this phone stays signed in.
+- Brief 8.7 test 6's "ends every other session within 1 minute" is what it does.
+
+Test: `supabase/tests/database/17-devices.test.sql`, `18-two-step.test.sql`, and `apps/web/e2e/devices.spec.ts` test 2.
+
+Why: the owner's decision.
+
+### D395. No backup phone for now: asked again before launch
+
+The owner's answer to PLAN.md question 2, 9 Nov 2026. Confirms D379.
+
+There's no backup phone number for now. The owner is asked again before launch: it's on the launch checklist in PLAN.md.
+
+Why: the owner's answer. Text messages cost money.
+
+### D396. No backup email: write to hello@prepenny.co.uk until support comes
+
+The owner's answer to PLAN.md question 4, 9 Nov 2026. Confirms D384's line.
+
+Someone with no backup email sees "No backup email? Write to hello@prepenny.co.uk from any address, and say which address you signed up with." until support is built in Phase 4 (brief 4.16). The owner has set up hello@ to reach them.
+
+Why: the owner's answer.
+
+## Made during step 3e hardening
+
+### D397. The words for getting back in, the notice and the stop link
+
+Decided 9 Nov 2026 in step 3e hardening, in VOICE.md's style. Times are "2:05pm on Tue 10 Nov", in UK time in emails and by the phone's clock on screen, with the year only when it isn't this year.
+
+- **Get back in** (`/get-back-in/`): the address's hint adds "We can send 3 codes a day to one address."; under the code: "For your safety, getting back in takes 24 hours. Your first code starts the wait, and we tell the address you sign in with now. After 24 hours, a new code finishes it.", with "Use this code".
+- **The wait:** "You've asked to get back in", "For your safety, nothing changes on your account for 24 hours.", "You can finish from 2:05pm on Tue 10 Nov.", "Then come back to this page, and we'll send a new code to sam.backup@example.com to finish. From then on, you sign in with sam.backup@example.com.", "We've told the address you sign in with now. If it wasn't you who asked, it can be stopped from there, or on any phone or computer signed in to your account.", with "Back to signing in". After 24 hours: "You can finish now." with "Send me a code to finish". The phone remembers the wait, so the page shows it again when opened again.
+- **The notice on a signed-in device:** "Someone asked to get into your account", "They used your backup email. Unless it's stopped, from 2:05pm on Tue 10 Nov they can sign in with it, and every phone and computer will be signed out.", "If it wasn't you, stop it now. If it was you, you don't need to do anything.", with "Stop it". Then: "It's stopped. Nothing on your account changed, and we've told your backup email. If you don't know who has your backup email, change it: More, then Email addresses." with "Got it". It's a card with a brass edge, like the example banner: red and amber are for money only (DESIGN.md).
+- **The stop link's page** (`/stop-get-back-in/`): "Stop someone getting into your account", "Someone asked to get into your PrePenny account with your backup email. If it wasn't you, stop it here. Nothing on your account has changed.", "Stop it"; then "It's stopped", "Nobody can use that request to get in, and this link doesn't work any more. We've told your backup email.", "If you don't know who has your backup email, sign in and change it: More, then Email addresses.", "Go to PrePenny". A used link: "This link has been used already, or the request it was for has ended, so there's nothing to stop. If you think someone got into your account, write to hello@prepenny.co.uk."
+- **The emails** are in `supabase/migrations/20261111100000_safer_recovery.sql`, laid out as step 3e's: the code to ask to get back in, the code while it waits, the code to finish, "Someone asked to get into your PrePenny account" with the "Stop it" button, "Getting back into PrePenny was stopped", and "Your PrePenny sign-in email has changed".
+- **Signed-in devices:** "Sign out of all other devices", "Signs out every phone and computer but this one, and each removes your plan within a minute. This one stays signed in.", the sheet's "Sign them out" and "Keep them signed in", then "2 other phones and computers are signed out."
+
+Why: the owner asked for the wording of each screen and email in VOICE.md's style.
+
+### D398. How safer recovery is built and tested
+
+Decided 9 Nov 2026 in step 3e hardening.
+
+- The database: `supabase/migrations/20261111100000_safer_recovery.sql`. `app.get_back_in` holds each request; `app.email_codes` notes what each "get back in" code was sent to do; `app.code_tries` and `app.code_locks` hold the caps. `hello` adds the open request's times. `use_get_in_code` is gone; `get_back_in_with_code`, `get_back_in_finished` and `get_back_in_not_finished` are for Supabase's secret key only, and each checks it; `stop_get_back_in`, `stop_get_back_in_with_link` and `end_other_devices` are new, and `end_every_device` is gone.
+- The function runs in Supabase's own function runner, on the local Supabase as on the real one. GitHub's end-to-end parts now start it too, which adds its download, under a minute, to each part. The database tests leave it out.
+- "Let 24 hours pass", in the tests: the database's times for the request and its codes move back 24 hours, as `makeCodeRunOut` moves a code's (step 3b), and the phone's clock moves on 24 hours with Playwright's clock.
+- A new test file, `21-safer-recovery.test.sql` (82 checks, 99 after the outside review, D399), proves what the owner listed: nothing changes in the 24 hours (everything about the account compared before and after), a stop from the link or a signed-in device stops it, the link works once and does nothing else, the caps and lock hold for both kinds of code, a locked address or one that isn't a backup gets the same answers, and nobody can stop, finish or use a code for someone else's account. 624 database checks pass in all.
+- Each new rule was broken on purpose, one at a time, to see `21-safer-recovery` fail, then put back: the account changing as the wait starts (23 of 82 checks failed), no 24-hour wait (3), a stop link that works twice (10), no daily cap (5), no lock (9), "Stop it" stopping anyone's request (12), anyone able to type a code or finish without Supabase's secret key (3), and a locked address answering differently (37). With nothing broken, all 82 pass.
+- Decided in step 3e hardening: if Supabase's admin route can't finish, the request opens again with the same stop link, so the email's link still works (`get_back_in_not_finished`).
+- The step 3e tests that used the old way now use the new one: `19-backup-email` (the code starts the wait), `17-devices` and `18-two-step` (signing out of other devices), and `e2e/emails.spec.ts` test 5 (adding a backup, and the same words for an address that isn't one).
+- Screenshots are in `docs/screens/3e-hardening`; step 3e's stay as they were, as its record.
+
+Why: each follows from the owner's instructions where they didn't say exactly.
+
+## From the outside review of step 3e hardening
+
+### D399. What the outside review of step 3e hardening changed
+
+Decided 9 Nov 2026 in step 3e hardening, from an outside review of the whole change. Adds to D391 to D398.
+
+- **A finish that stops part-way is never left half done.** If the get-back-in function stopped between the database saying "finish" and the end (Supabase's admin route not answering, or the database's last step lost), the request could stay "finishing" for good: no notice, no stop, never running out. Now the function asks the database to settle it whenever it isn't sure, and the database settles any left after 5 minutes by itself, the next time it's looked at (every signed-in phone looks every minute): finished, if the address did change, or open again as before, with the same stop link, if it didn't. The old address is always the one from before the finish.
+- **A stop at the very moment of finishing wins.** The database marks a request as finishing only if it hasn't been stopped meanwhile, and a stop only if it isn't finishing, one at a time, so a stop is never lost and a stopped request can't finish.
+- **"Stop it" says when there was nothing to stop:** "There was nothing to stop: it had already ended, or was just finishing. If you're signed out in the next minute, write to hello@prepenny.co.uk."
+- **"Add a backup email" no longer shows that an address is locked.** Its once-a-minute answer was worked out from codes actually sent, so asking for a locked address, then another straight away, gave a different answer from an address that wasn't locked. Now it's worked out from the person's own asks, whether or not a code went.
+- **The limits hold for requests made at the same moment.** Asking for codes, typing them and counting tries happen one at a time for each address, and a code can only be used once, so sending many requests at once can't get past 3 codes a day, 5 tries a code or 10 tries a day.
+- **The stop link's page works when it's loaded again.** The token is kept for that tab only until it's used. Opened without the whole link, the page says "This page needs the whole link from the email. Open the link in the email from PrePenny again." and asks the server nothing. Its first sentence no longer says nothing has changed before anything has been checked.
+- **Smaller:** the scrambled addresses use a secret of the database's own (HMAC-SHA-256), so they can't be checked against guesses without it; the stop link works from a page kept from before an update (stopping touches no plan); stopping a request, or removing the backup, uses up its codes; the wait is remembered in the tab only, so nothing of it is left on a shared computer once the tab is closed; the code box says what the finishing code does; and two indexes were added.
+- **Tests added:** two-step sign-in still applies after getting back in (`e2e/recovery.spec.ts` test 3); the 7-day run-out; a finish settled both ways; a stopped request can't be finished; the once-a-minute answer the same for a locked address; the stop page loaded again and without its link. 99 checks in `21-safer-recovery`, 641 database checks in all. Three more rules broken on purpose, each caught: a half-done finish never settled (6 checks failed), no run-out (3), and the once-a-minute answer from codes sent (2).
+- **For the owner** (PLAN.md): someone who also signed in with Google keeps that Google sign-in after getting back in with the backup email.
+- **Accepted:** anyone holding a phone that's signed in to the account can stop any request to get back in, with one tap, as the owner asked ("one plain way to cancel"). The account's owner can sign that phone out with "Sign out of all other devices" from another device that's signed in, or write to hello@prepenny.co.uk.
+
+Test: `supabase/tests/database/21-safer-recovery.test.sql`, `apps/web/e2e/recovery.spec.ts`.
+
+Why: each was shown by the review with a case that went wrong.
+
+### D400. Step 3d's "same change sent twice" test waits for the first save to arrive
+
+Decided 9 Nov 2026 in step 3e hardening, while running every end-to-end test on the computer it was built on.
+
+- `apps/web/e2e/clashes.spec.ts` test 4 failed here at random, on `main` as it was before this step too (1 run in 2 there), so it wasn't caused by this step. The test had two races of its own:
+  - it looked in the database as soon as the first save had been sent, so it could look before the server had it;
+  - after the first save arrived, the server's nudge (D339) makes the phone send it again within half a second, so a check that exactly one had been sent so far could miss it.
+- Now the test waits until the first save has reached the server, then checks the database, and lets the phone send it again either way. Every check of the outcome is as it was: the same edit sent twice, one edit and one Car MOT saved once, at version 1. Nothing in the app changed.
+- It passed 12 runs in 12 at 320px and 360px, in light and dark, afterwards.
+- Also found while running every test here: "Continue with Google" test 6 can't reach Google from the local Supabase on this computer, whose network re-signs secure connections; once the local sign-in service was given that certificate, it passed at both widths in light and dark. GitHub's machines reach Google directly, as on every earlier step.
+
+Why: the owner's rule that everything passes on this computer before the pull request is ready, and that no expected number is changed to make a test pass.
+
+## From the owner's answers to step 3e hardening
+
+D401 and D402 are the owner's answers of 9 Nov 2026 to the two questions in step 3e hardening's report, with the owner's reviewer's finding about GitHub's Supabase key, recorded in README.md.
+
+### D401. A finished wait stays open for 7 days: confirmed
+
+Agreed 9 Nov 2026. Confirms D391.
+
+After the 24 hours, the person can finish getting back in for 7 days. After that the request runs out, and they start again, with the sign-in address told again. Nothing changes: it's how step 3e hardening built it.
+
+Why: the owner's answer, as suggested.
+
+### D402. Getting back in removes the Google sign-in too
+
+Agreed 9 Nov 2026. Adds to D391 and D393.
+
+- When getting back in with the backup email finishes, every way of signing in other than the email address is removed from the account: "Continue with Google" now, and anything added later, such as Apple in Phase 6. Whoever has the old Google account can no longer use it to get in. The email sign-in, set to the backup by Supabase's admin route, stays, and the account's list of ways to sign in says email only.
+- It happens in the same step that signs every device out, so it's never part-way, and never before the 24 hours (`app.complete_get_back_in`).
+- Supabase has no admin route that removes one way of signing in (tried here: none answers). Its only way, "unlink", needs the person signed in and an extra setting on. So the database removes it itself, as Supabase's own unlink does: it deletes that sign-in's row and updates the account's list.
+- The person is told: the finishing code's email and the code box say "any Google sign-in is removed"; the sign-in page afterwards says "For your safety, any Google sign-in was removed: to use Google again, choose Continue with Google with a Google account that has this address."; and the old address's email adds "and Continue with Google no longer signs in to it" when there was one.
+- Adding it back: choosing "Continue with Google" with a Google account that has the account's sign-in address joins it to the same account, as Supabase joins sign-ins with the same confirmed address. That's Supabase's documented behaviour; it can't be tried here, as the local Supabase can't finish a sign-in with Google. A Google account with another address would make a separate account; a "Add Google" button for that would need Supabase's manual linking switched on, and is for later if wanted.
+
+Test: `supabase/tests/database/21-safer-recovery.test.sql` (Jess's Google sign-in removed, only email left, Tom's kept; with the removal stopped on purpose, 2 checks fail), and `apps/web/e2e/recovery.spec.ts` test 1 (Sam's Google sign-in is there through the 24 hours, and gone once it's finished).
+
+Why: the owner's answer: the old email, and the Google account with it, can't be trusted once someone has had to get back in without them.

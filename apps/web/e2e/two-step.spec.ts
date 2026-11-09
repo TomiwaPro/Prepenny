@@ -6,8 +6,9 @@
 //
 // The owner's test 3: turning two-step sign-in on, signing in with it, and a
 // sign-in without the second step getting no data. Also: turning it on signs
-// out the other devices; changing the email address and signing out
-// everywhere ask for the app's code; turning it off needs a code too.
+// out the other devices; changing the email address and signing out of all
+// other devices (step 3e hardening) ask for the app's code; turning it off
+// needs a code too.
 
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
@@ -210,18 +211,18 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(signInEmail.getByText(s.appCodeMissing)).toBeVisible();
       await signInEmail.getByRole('button', { name: strings.emails.cancel }).click();
 
-      // And so does signing out everywhere.
+      // And so does signing out of all other devices.
       await openMore(page);
       await page
         .getByTestId('security')
         .getByRole('link', { name: /Signed-in devices/ })
         .click();
-      await page.getByRole('button', { name: strings.devices.everywhere, exact: true }).click();
-      const everywhere = page.getByRole('dialog', { name: strings.devices.everywhereTitle });
-      await expect(everywhere).toContainText(strings.devices.everywhereCodeIntro);
-      await expect(box(everywhere, s.appCodeLabel)).toBeVisible();
-      await everywhere.getByRole('button', { name: strings.devices.everywhereNo }).click();
-      await expect(everywhere).toBeHidden();
+      await page.getByRole('button', { name: strings.devices.others, exact: true }).click();
+      const others = page.getByRole('dialog', { name: strings.devices.othersTitle });
+      await expect(others).toContainText(strings.devices.othersCodeIntro);
+      await expect(box(others, s.appCodeLabel)).toBeVisible();
+      await others.getByRole('button', { name: strings.devices.othersNo }).click();
+      await expect(others).toBeHidden();
 
       // Turning it off needs the app's code.
       await openTwoStep(page);

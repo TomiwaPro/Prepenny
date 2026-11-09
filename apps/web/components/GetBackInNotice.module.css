@@ -1,0 +1,27 @@
+/*
+ * Someone getting back in with the backup email (step 3e hardening): a card
+ * with a brass edge, as the example banner, never red or amber, which are for
+ * money only (DESIGN.md). The words say what's happening; the navy button stops it.
+ */
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--size-body);
+  line-height: 1.45;
+}
+
+.heading {
+  font-size: var(--size-heading);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.notice button {
+  width: 100%;
+}

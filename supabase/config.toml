@@ -419,8 +419,11 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# On from step 3e hardening: the get-back-in function, which finishes getting
+# back in with a backup email through Supabase's own admin route
+# (supabase/functions/get-back-in). The database tests on GitHub leave it out.
 [edge_runtime]
-enabled = false
+enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
 # `oneshot` — fallback mode if hot reload causes issues (e.g. in large repos or with symlinks).
@@ -432,6 +435,14 @@ deno_version = 2
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
+
+# Getting back in with a backup email (step 3e hardening). Anyone can call it,
+# signed in or not, as anyone can ask for a code: the database decides what a
+# code does, with its own limits (3 codes a day for an address, a lock after
+# 10 wrong tries). Supabase gives it its own secret key; it holds no other.
+[functions.get-back-in]
+enabled = true
+verify_jwt = false
 
 [analytics]
 enabled = false

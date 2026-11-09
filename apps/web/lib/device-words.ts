@@ -3,7 +3,7 @@
 // server gives only the kind of browser and device, as codes.
 
 import { strings } from '../strings/en-GB.ts';
-import { formatDay } from './dates.ts';
+import { formatDay, formatTime } from './dates.ts';
 import { localToday } from './today.ts';
 
 const t = strings.devices;
@@ -35,4 +35,16 @@ export function lastUsedWords(lastUsedAt: string, now: Date = new Date()): strin
   if (used >= today) return t.lastUsedToday;
   if (used === dayBefore(today)) return t.lastUsedYesterday;
   return t.lastUsedOn(formatDay(used, today));
+}
+
+/**
+ * "2:05pm on Tue 10 Nov": when something about the account happens, by this
+ * phone's own clock and dates, as for getting back in with a backup email
+ * (step 3e hardening). The year only when it isn't this year.
+ */
+export function momentWords(time: string, now: Date = new Date()): string {
+  return strings.getBackIn.when(
+    formatTime(time),
+    formatDay(localToday(new Date(time)), localToday(now)),
+  );
 }
