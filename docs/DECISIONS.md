@@ -4696,3 +4696,114 @@ Agreed 9 Nov 2026. Adds to D391 and D393.
 Test: `supabase/tests/database/21-safer-recovery.test.sql` (Jess's Google sign-in removed, only email left, Tom's kept; with the removal stopped on purpose, 2 checks fail), and `apps/web/e2e/recovery.spec.ts` test 1 (Sam's Google sign-in is there through the 24 hours, and gone once it's finished).
 
 Why: the owner's answer: the old email, and the Google account with it, can't be trusted once someone has had to get back in without them.
+
+## From the owner's instructions for step 3e-2
+
+D403 is the owner's instructions for step 3e-2, a preview database, on 9 Nov 2026, with the owner's report from testing the live app (D404). Points marked "decided in step 3e-2" weren't in the owner's words.
+
+### D403. A preview database, its own key, and the live app untouched
+
+The owner's instruction, 9 Nov 2026. Builds D346; replaces D340.
+
+- A second, free Supabase project, **prepenny-preview**, in London, used only by pull request previews. It never holds real people's data, and the preview says so on every page: "Test version: don't use real details." (D407).
+- When a pull request is ready, its database changes, the sign-in settings and the get-back-in function go to the preview project, and its preview app is built to use it.
+- The preview project has its own GitHub key, kept separately from the real project's. The real project's key (`SUPABASE_ACCESS_TOKEN`) is never changed, replaced or widened. Sign-in emails on previews come through Resend with the key GitHub already has.
+- The live app and the real database are untouched by all of this.
+- From now on, anything that needs a new permission, secret, variable or setting goes under "What you need to set up" in the step's report, with exact steps, checked against Supabase's and GitHub's own lists.
+- Decided in step 3e-2:
+  - The Deploy workflow does it, in a job of its own after the preview is online, "Get the preview database ready, and try the preview". It's given the preview project's three secrets (`PREVIEW_SUPABASE_ACCESS_TOKEN`, `PREVIEW_SUPABASE_PROJECT_REF`, `PREVIEW_SUPABASE_DB_PASSWORD`), each only in the steps that use it, and never the real project's key, password or Project ID. The preview app is built with two variables, `PREVIEW_SUPABASE_URL` and `PREVIEW_SUPABASE_PUBLISHABLE_KEY`; a preview never falls back to the real project's, and isn't built at all if they name the real one.
+  - It changes a project only if Supabase says it's called `prepenny-preview` and its address is the preview app's, so a mistyped Project ID can't empty the real database.
+  - The preview's sign-in settings are the real project's (`supabase/sign-in-settings.json`), except that the sign-in email's link opens this preview, only preview addresses may be sent back to, emails come from "PrePenny (test version)" and Google is off: Google's sign-in is set up for the real project only. The database's own emails (backup email, getting back in) go through Resend from "PrePenny (test version)" too, with their links to the preview.
+  - Until the preview project is set up, previews go online with signing in off, as before step 3b.
+
+Test: `.github/workflows/deploy.yml`, tried on this step's own pull request (D408). README.md, "The preview database", has the owner's steps.
+
+Why: the owner's instruction. Steps 3c, 3d and 3e could only be tried on the live app after merging, and two problems were found that way.
+
+## Made during step 3e-2
+
+D404 to D409 were decided on 9 Nov 2026 while building step 3e-2.
+
+### D404. Why "Someone asked to get into your account" needed a refresh, and the fix
+
+The owner's report from testing the live app, 9 Nov 2026: the notice appeared on their signed-in phone only after the page was refreshed. It should appear by itself within a minute, on every signed-in device. Adds to D381 and D391.
+
+**What was found.** Every situation a phone is in was tried here against the local Supabase, timing how long the notice took with no reload: on screen with live updates (under a second), on screen with no live updates (57 seconds, the look every minute), in the background or frozen as Chrome freezes a background tab (seconds after coming back), and with the sign-in's hour-long token run out on screen, in the background and frozen (seconds after coming back). All showed it. Two things didn't:
+
+- **One request with no answer stopped everything after it.** A phone that sleeps, or moves between Wi-Fi and mobile data, part-way through a request can be left waiting for an answer that never comes, for many minutes. Supabase's sign-in code shares one request to renew the sign-in between every request that needs it, and PrePenny's looks at the account run one at a time. So one request to renew the sign-in, or to bring the plan down, left with no answer held up every look after it, the notice included, until the page was loaded again. Played here by leaving one request unanswered: the notice never came in 2.5 minutes, and nothing more was asked of the server. A reload starts afresh, which is why refreshing showed it. This is the only way found that gives exactly what the owner saw; their phone can't be seen from here.
+- **A phone on the previous version got no notice.** `hello` gave the request only to an app built for the very same database, so for a while after every update, until a phone loaded the new version at a safe moment (D386), it was told nothing.
+
+**The fix.**
+
+- Every request PrePenny sends has a time limit of 30 seconds (`lib/time-limit.ts`): one with no answer by then is given up, as with no signal, and the next look asks again. Supabase's own code uses it too, renewing the sign-in included, and so do the get-back-in function and the check of which version is live.
+- The notice is asked for on its own (`lookForGetBackIn` in `data/sync.ts`) every minute, whether PrePenny is on screen or not, when it comes back on screen or gets a signal, and on every live nudge, so a look at the account under way can never hold it up.
+- `hello` tells any version whose sign-in stands about an open request (migration `20261112100000_notice_for_every_version.sql`): it's about the person's own account and holds no plan data. Plan data still goes only to the version the database is (D386).
+- So the notice shows within a minute of the request; after a request with no answer, the look waits for that request's 30 seconds at most first.
+
+Test: `apps/web/e2e/recovery.spec.ts` test 4: the phone's live updates are cut off and one of its requests is left with no answer, then someone starts getting back in on another phone, and the notice shows without the page loading again, within a minute and the time the look takes, at 320px and 360px in light and dark. It fails without the fix. `supabase/tests/database/22-notice-for-every-version.test.sql`, 12 checks, 4 of which fail with the old `hello`; `apps/web/test/unit/time-limit.test.ts`.
+
+Why: the owner's report, and their instruction to find the cause.
+
+### D405. Two open pull requests and one preview database
+
+Decided 9 Nov 2026 in step 3e-2, from the owner's instruction to decide how two open pull requests don't get in each other's way.
+
+- **One at a time.** Only one pull request's preview changes the preview database, and is tried on it, at a time; the next waits its turn (a GitHub concurrency group, `preview-database`).
+- **It follows the pull request whose preview went online last.** Each database change is known by its version and a fingerprint of its words (SHA-256), kept in the preview database itself, in a schema of its own the Data API never shows (`preview`). Then (`scripts/preview-database.ts`):
+  - it already has exactly the pull request's database changes: nothing changes, and anyone signed up on it stays signed up. Most pull requests don't change the database, so they all share it;
+  - it has every one but the pull request's newest: those are added (`supabase db push`);
+  - anything else, such as another pull request's change it doesn't have, or a change written differently in a later commit: it starts again, empty, with exactly this pull request's changes (`supabase db reset --linked --no-seed`), never the tests' made-up people. Tried here on the local database by its other address, the way a hosted one is reset: it removed every account and plan and put back all 14 database changes in about a second.
+- **The other pull request's preview** then has a different database from the one it was built for, so it says "Changes can't be sent right now. They're saved on this phone." and loses nothing (D386), until its preview is put online again. GitHub comments on it to say so, and how to re-run it.
+- Chosen over a database for each pull request, which needs Supabase's paid branching, and over starting again at every push, which would sign the owner out of every preview after each small fix.
+
+Test: `scripts/preview-database.test.ts`; the workflow, on this step's own pull request.
+
+Why: the owner's instruction.
+
+### D406. The key check
+
+Decided 9 Nov 2026 in step 3e-2, from the owner's instruction: the owner had to make the Supabase key four times, one missing permission at a time.
+
+- At the start of the Database workflow, and of the preview's job, before anything changes, `scripts/check-supabase-key.ts` tries each of the eleven permissions on Supabase's token page: Project Settings, Auth Config, Database, Migrations and Edge Functions: Read-write; API Keys, API Key Secrets, Data API Config, Database Config, Connection Pooling and Storage Config: Read. Missing any, it stops with one message listing all of them, as the token page names them, and says what to do.
+- Supabase has no way to ask a key what it may do, so each permission is tried with a call that needs it and changes nothing: a read; the project's name set to what it is already; "select 1"; or a change to something that can't exist (a sign-in provider with the nil id, which Supabase's description allows; a migration from 1970; a function never made), which Supabase answers "not found" only once the key may make it. Which call needs which permission is from Supabase's own description of its API ("x-fga-permissions", from github.com/supabase/supabase on 9 Nov 2026). It shows, for example, that changing the sign-in settings needs Project Settings: Read-write as well as Auth Config: Read-write. The revealed API keys are never kept or printed, and nor is the key.
+- What Supabase's command line asks for was watched here against a pretend Supabase: connecting asks for the project, its API keys with their secrets, its storage settings and its connection pooling; putting the function online, Edge Functions: Read-write. Its database changes go over the database connection itself, which couldn't be watched here, so the list is the owner's own, which works on the real project.
+- A key Supabase doesn't accept, a project it can't find, and a Supabase that doesn't answer clearly each say so instead, never "missing".
+- README.md, "The database", step 5, lists the eleven exactly as the token page names them, and "The preview database" the same for the preview key.
+
+Test: `scripts/check-supabase-key.test.ts`, against a pretend Supabase that refuses each call the key lacks a permission for, as the description says: a key with every permission passes and nothing changes; keys missing two (Migrations: Read only and no Edge Functions; Project Settings: Read only and no API Key Secrets) stop with both listed in one message and nothing changed; a key with none lists all eleven; and run as a command it fails the step and never prints the key. The real calls are tried on this step's own pull request, with the preview key.
+
+Why: the owner's instruction.
+
+### D407. The preview's line
+
+Decided 9 Nov 2026 in step 3e-2. Builds D403.
+
+"Test version: don't use real details." in small muted words over a brass line at the very top of every page of a preview, the welcome and sign-in pages included, written into each page when it's built (`NEXT_PUBLIC_PREVIEW=true`, given by the Deploy workflow to previews only). Never red or amber, which are for money only (DESIGN.md). The live app and the tests' own copy never have it.
+
+Test: `apps/web/e2e/preview.spec.ts` on the real preview; here, every screen check (`checks.spec.ts`, `screens.spec.ts`, 179 checks with axe at 320px and 360px) passed on a preview copy, with no sideways scroll. Screenshots: `docs/screens/3e-2`.
+
+Why: the owner's instruction, in the owner's words.
+
+### D408. A preview is tried on two phones
+
+Decided 9 Nov 2026 in step 3e-2, from the owner's test: a pull request preview signs in, saves a plan and syncs between two devices on the preview project, and the live app and real database don't change.
+
+- After the preview database is ready, `apps/web/e2e/preview.spec.ts` runs against the preview just put online, on two phones, one 320px wide in light and one 360px in dark: the first makes a plan and signs in, the plan goes up, the second signs in and brings it down, and a balance updated on the second shows on the first.
+- Every address each phone asks is noted: the only Supabase project either asks is the preview's, never the real one's. The live app says the same version (`/version.json` at prepenny.co.uk) before and after. And the job is never given the real project's key, password or Project ID, so it couldn't change the real database if it tried.
+- Signing in uses links the preview project makes with its own secret key, read by the job when it needs it and never printed, so no email is sent. The test's accounts and their plans are removed from the preview database afterwards, by their address: removing a person with a plan isn't built yet (step 3h).
+- It adds about 3 to 4 minutes to each push of a ready pull request (D300).
+
+Test: the workflow, on this step's own pull request. Here, the same test passed against a preview copy served on this computer with the local Supabase.
+
+Why: the owner's test.
+
+### D409. Smaller choices in step 3e-2
+
+Decided 9 Nov 2026 in step 3e-2.
+
+- The preview's Data API is checked as the real one's is, but never changed: the key reads those settings only (Data API Config: Read).
+- The preview job's link comment says what happened to the preview database ("nothing changes and test accounts stay", "the new one is added", or that it started again) and whether the try on two phones passed.
+- The database tests ran here through pgTAP inside the local database, file by file, as `supabase test db` does, because Docker Hub refused to send its test runner's image (too many requests). GitHub runs `supabase test db` as before.
+- Screenshots of step 3e-2 are in `docs/screens/3e-2`.
+
+Why: each follows from the owner's instructions where they didn't say exactly.
