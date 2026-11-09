@@ -4794,7 +4794,7 @@ Decided 9 Nov 2026 in step 3e-2, from the owner's test: a pull request preview s
 - Signing in uses links the preview project makes with its own secret key, read by the job when it needs it and never printed, so no email is sent. The test's accounts and their plans are removed from the preview database afterwards, by their address: removing a person with a plan isn't built yet (step 3h).
 - It adds about 3 to 4 minutes to each push of a ready pull request (D300).
 
-Test: the workflow, on this step's own pull request. Here, the same test passed against a preview copy served on this computer with the local Supabase.
+Test: the workflow, on this step's own pull request. Here, the same test passed against a preview copy served on this computer with the local Supabase, and a stand-in for the live site, which this computer can't reach.
 
 Why: the owner's test.
 
@@ -4807,7 +4807,7 @@ Decided 9 Nov 2026 in step 3e-2.
 
 - The preview's Data API is checked as the real one's is, but never changed: the key reads those settings only (Data API Config: Read).
 - The preview job's link comment says what happened to the preview database ("nothing changes and test accounts stay", "the new one is added", or that it started again) and whether the try on two phones passed.
-- The database tests ran here through pgTAP inside the local database, file by file, as `supabase test db` does, because Docker Hub refused to send its test runner's image (too many requests). GitHub runs `supabase test db` as before.
+- The database tests ran here first through pgTAP inside the local database, file by file, as `supabase test db` does, while Docker Hub refused to send its test runner's image (too many requests), then with `supabase test db` itself on a fresh database: 656 checks either way.
 - Screenshots of step 3e-2 are in `docs/screens/3e-2`.
 
 Why: each follows from the owner's instructions where they didn't say exactly.

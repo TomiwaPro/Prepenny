@@ -126,7 +126,7 @@ Found in step 3e:
 44. **Getting back in with nothing left** (Phase 4, brief 4.16): someone who has lost their sign-in email with no backup, or their authenticator app, writes to hello@prepenny.co.uk for now (D384, confirmed by the owner in D396). Support's own steps come with the support tools, including for someone whose backup address is kept locked by someone else typing wrong codes (D392).
 45. **Fingerprint and face** for the app lock (Phase 6, D35): the phone apps add them, and hide the app switcher's picture fully (D385).
 46. **A step 3e preview can't be tried before merging** (D340). Done in step 3e-2: previews have their own database (D403).
-47. **Item 37's offline test needed more than 5 seconds once** (any time): on the computer step 3e was built on, running three tests at a time, the offline helper took longer than the test's 5 seconds to take charge of the first page. It passed 10 runs in 10 on its own at 320px and 360px. GitHub runs one test at a time (D343). If it ever fails there, look at how long the helper takes to keep the app's files: step 3e added five pages.
+47. **Item 37's offline test needed more than 5 seconds once** (any time): on the computer step 3e was built on, running three tests at a time, the offline helper took longer than the test's 5 seconds to take charge of the first page. It passed 10 runs in 10 on its own at 320px and 360px. GitHub runs one test at a time (D343). If it ever fails there, look at how long the helper takes to keep the app's files: step 3e added five pages. It did the same in step 3e-2, at both widths with four tests at a time, and passed 10 runs in 10 on its own again.
 
 Found in step 3e hardening:
 
