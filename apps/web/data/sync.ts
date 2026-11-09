@@ -290,6 +290,32 @@ export async function lookAtSignInOnly(): Promise<void> {
   if ((await lookAtStanding(client)) === 'ended') await signInEndedOnServer();
 }
 
+let lookingForGetBackIn: Promise<void> | null = null;
+
+/**
+ * Asks the server only whether someone is getting back into this account
+ * with its backup email, on its own, so the notice never waits behind
+ * sending or bringing down the plan (D404). Only the notice changes here:
+ * everything else the answer says is acted on by the next look at the
+ * account, in turn.
+ */
+export function lookForGetBackIn(): Promise<void> {
+  lookingForGetBackIn ??= (async () => {
+    try {
+      const client = await signedInClient();
+      if (client === null) return;
+      const answer = await rpc<{ sign_in?: unknown; get_back_in?: unknown }>(client, 'hello', {});
+      if (!answer.ok) return;
+      setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
+    } catch {
+      // No answer: the next look, within a minute, asks again.
+    } finally {
+      lookingForGetBackIn = null;
+    }
+  })();
+  return lookingForGetBackIn;
+}
+
 // ---------------------------------------------------------------------------
 // The server's rows on this phone.
 
@@ -1545,7 +1571,10 @@ function startListening(client: SupabaseClient, link: PlanLink) {
       for (const topic of [`plan:${link.planId}`, `plan:${link.planId}:${link.personId}`]) {
         client
           .channel(topic, { config: { private: true } })
-          .on('broadcast', { event: 'changed' }, () => syncSoon())
+          .on('broadcast', { event: 'changed' }, () => {
+            void lookForGetBackIn();
+            syncSoon();
+          })
           .subscribe();
       }
     } catch {
@@ -1565,6 +1594,10 @@ const LOOK_EVERY_MS = 60_000;
  */
 export function keepInStep(): () => void {
   const look = () => {
+    // Someone getting back in with the backup email: asked on its own, so
+    // a look at the account under way, or a request of its that never got an
+    // answer, can't hold the notice up (D404).
+    void lookForGetBackIn();
     if (document.visibilityState === 'visible') void syncNow();
     // Not on screen, it still looks at its sign-in every minute, so one
     // ended on another phone removes the plan here within a minute (D21).

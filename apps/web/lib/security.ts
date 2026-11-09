@@ -11,6 +11,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { anyClient, signedInClient } from './account.ts';
 import { signInConfig } from './sign-in-config.ts';
+import { fetchWithTimeLimit } from './time-limit.ts';
 import { appVersion } from './version.ts';
 
 /** Why something didn't work, as a code the screens turn into words. */
@@ -435,7 +436,7 @@ export async function getInWithCode(email: string, code: string): Promise<Done<G
   const config = signInConfig();
   if (config === null) return { ok: false, problem: 'server' };
   try {
-    const response = await fetch(`${config.url}/functions/v1/get-back-in`, {
+    const response = await fetchWithTimeLimit()(`${config.url}/functions/v1/get-back-in`, {
       method: 'POST',
       headers: {
         apikey: config.key,

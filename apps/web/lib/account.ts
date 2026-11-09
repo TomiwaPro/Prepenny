@@ -19,6 +19,7 @@ import { useSyncExternalStore } from 'react';
 import { claimOwnPlan, openDb } from '../data/db.ts';
 import { forgetEverything, planSafelyKept } from '../data/forget.ts';
 import { signInConfig } from './sign-in-config.ts';
+import { fetchWithTimeLimit } from './time-limit.ts';
 import { appVersion } from './version.ts';
 
 /** Where Supabase keeps the sign-in on this phone, in the browser's small store. */
@@ -129,7 +130,12 @@ function supabase(): Promise<SupabaseClient> {
       // Every request names the version of the database this app was built
       // for, and the database gives plan data only to its own (step 3e,
       // lib/version.ts), so an old phone can't quietly keep a different plan.
-      global: { headers: { 'x-prepenny-version': appVersion().database } },
+      // Every request has a time limit, so one that never gets an answer, as
+      // when the phone slept part-way through it, can't hold up the rest (D404).
+      global: {
+        headers: { 'x-prepenny-version': appVersion().database },
+        fetch: fetchWithTimeLimit(),
+      },
       auth: {
         // Google comes back with a one-time code, checked against a secret
         // only this browser holds (PKCE).
@@ -437,7 +443,7 @@ export async function startGoogle(back: string): Promise<Outcome> {
   try {
     // Asked first, so nobody is sent to a bare error page when Google isn't
     // set up yet. Only Supabase's public settings come back: nothing is sent.
-    const response = await fetch(`${config.url}/auth/v1/settings`, {
+    const response = await fetchWithTimeLimit()(`${config.url}/auth/v1/settings`, {
       headers: { apikey: config.key },
     });
     const settings = (await response.json()) as { external?: { google?: unknown } };
