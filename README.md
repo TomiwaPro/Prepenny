@@ -25,7 +25,7 @@ GitHub checks every change, once for each commit, on its pull request and again 
 GitHub runs two sets of checks:
 
 - **Lint, type checks, tests and the database** checks the code, runs every engine and app test, and builds a fresh copy of the database on GitHub's machine to test who can see and change what (see "The database" below). About 2 minutes, on every push.
-- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Each part also takes a third of the tests that sign up, sign in and sign out, send plans up and bring them down on second phones, make changes with no signal and on two phones at once, and from step 3e sign out other devices, use two-step sign-in, change email addresses, get back in with a backup email and update an old version, against a copy of Supabase on GitHub's machine, which catches the emails instead of sending them. Each part runs one test at a time (D343, D389).
+- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Each part also takes a third of the tests that sign up, sign in and sign out, send plans up and bring them down on second phones, make changes with no signal and on two phones at once, and from step 3e sign out other devices, use two-step sign-in, change email addresses, get back in with a backup email (with its 24-hour wait and its stop link, from step 3e hardening) and update an old version, against a copy of Supabase on GitHub's machine, with its function runner, which catches the emails instead of sending them. Each part runs one test at a time (D343, D389).
 
 GitHub's minutes cost money once the free ones are used, so the end-to-end tests wait until a pull request is ready. Claude Code opens each step's pull request as a **draft**, which gets the first set on every push, and marks it **Ready for review** when the step is done, which starts the end-to-end tests and the preview link. Every push after that runs both, and so does `main`, always, before anything goes live. A newer push stops the older checks on a pull request, never on `main`.
 
@@ -243,7 +243,18 @@ To check it worked, after merging: open **Actions**, then **Database**, then the
    `select app.use_resend('re_YOUR_KEY');`
 4. It should say **Success. No rows returned**. Close the query without saving it, so the key isn't kept there, and tell Claude Code.
 
-Resend's free plan sends 100 emails a day and 3,000 a month. Adding a backup email sends 2 (the code, and a note to the sign-in address), and getting back in sends 3 (the code, a sign-in code, and a note to the old address).
+Resend's free plan sends 100 emails a day and 3,000 a month. Adding a backup email sends 2 (the code, and a note to the sign-in address), and getting back in sends 5 (the code that starts the wait, the note with the stop link to the sign-in address, the code that finishes it a day later, a sign-in code, and a note to the old address), or 3 when it's stopped (the code, the note, and a note to the backup that it was stopped).
+
+### G. Step 3e hardening: getting back in waits 24 hours
+
+There's nothing new to set up. When the pull request is merged, the **Database** workflow changes the database, then puts a small function online on Supabase, **get-back-in**, which finishes getting back in through Supabase's own admin route (D393). Supabase gives the function the project's own secret key, so no key is copied anywhere, and the Supabase key GitHub already has can put functions online.
+
+To check it worked, after merging:
+
+1. On GitHub, open **Actions**, then **Database**, then the newest run. It should have a green tick, with a step called **Put the get-back-in function online**.
+2. On supabase.com, open the **prepenny** project, then **Edge Functions** in the menu on the left. **get-back-in** should be listed.
+
+**If the function step fails** (a red cross on that step only; the database is changed already): open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Until it's online, a code typed on the **Get back in** page can't be used, and the page says PrePenny couldn't reach its server. Nothing on anyone's account changes meanwhile. If it fails twice, tell Claude Code what the step says.
 
 ## Bank holidays
 
