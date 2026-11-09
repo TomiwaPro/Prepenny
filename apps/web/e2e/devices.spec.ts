@@ -5,9 +5,10 @@
 // The owner's tests:
 // 1. The device list shows two devices; "Sign out of this device" on one
 //    ends only that one.
-// 2. "Sign out everywhere": the other device stops within a minute and
-//    removes the plan, and a device with a change not sent yet keeps it, as
-//    D348 says, and sends it once signed in again (PLAN.md item 29, end to end).
+// 2. "Sign out of all other devices" (step 3e hardening): this device stays
+//    signed in; the others stop within a minute, one with everything sent
+//    removes the plan, and one with a change not sent yet keeps it, as D348
+//    says, and sends it once signed in again (PLAN.md item 29, end to end).
 
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
@@ -28,6 +29,7 @@ import {
 const t = strings.devices;
 const a = strings.account;
 const SCREENS = '../../docs/screens/3e';
+const HARDENING = '../../docs/screens/3e-hardening';
 /** D21: a signed-out device stops within a minute. */
 const A_MINUTE = 60_000;
 
@@ -132,7 +134,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await iphone.context.close();
     });
 
-    test('2. "Sign out everywhere": the other devices stop within a minute; one with everything sent removes the plan, one with a change not sent keeps it and sends it once signed in again', async ({
+    test('2. "Sign out of all other devices" keeps this one signed in; the others stop within a minute, one with everything sent removes the plan, one with a change not sent keeps it and sends it once signed in again', async ({
       page,
       browser,
     }, info) => {
@@ -166,17 +168,26 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openMore(iphone.page);
       await expect(iphone.page.getByTestId('where-kept')).toHaveText(a.unsent(1));
 
-      // From this phone: Sign out everywhere, this one too.
+      // From this phone: Sign out of all other devices.
       await openDevices(page, 3);
-      await page.getByRole('button', { name: t.everywhere, exact: true }).click();
-      const sheet = page.getByRole('dialog', { name: t.everywhereTitle });
+      const others = page.getByRole('region', { name: t.others });
+      await expect(others).toContainText(t.othersLine);
+      await noSidewaysScroll(page);
+      if (shoots(info, colorScheme)) {
+        await page.screenshot({ path: `${HARDENING}/devices-360-light.png`, fullPage: true });
+      }
+      await others.getByRole('button', { name: t.others, exact: true }).click();
+      const sheet = page.getByRole('dialog', { name: t.othersTitle });
       await expect(sheet).toBeVisible();
-      await expect(sheet).toContainText(t.everywhereIntro);
+      await expect(sheet).toContainText(t.othersIntro);
       await noAxeProblems(page);
-      await sheet.getByRole('button', { name: t.everywhereYes }).click();
-      // The welcome, with nothing of Sam's left on this phone.
-      await expect(page.getByText(a.signedOut)).toBeVisible();
-      expect(sessionsOf(person)).toBe(0);
+      await sheet.getByRole('button', { name: t.othersYes }).click();
+      await expect(sheet).toBeHidden();
+      await expect(page.getByTestId('devices-said')).toHaveText(t.othersDone(2));
+      // This one stays signed in, alone in the list.
+      await expect(page.getByTestId('device')).toHaveCount(1);
+      await expect(page.getByTestId('device')).toContainText(t.thisDevice);
+      expect(sessionsOf(person)).toBe(1);
 
       // The laptop, with everything sent, stops within a minute and removes the plan.
       await expect(laptop.page.getByText(a.signInEnded)).toBeVisible({ timeout: A_MINUTE });
@@ -214,6 +225,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
           ),
         ),
       ).toBe(1);
+      // And this phone was never signed out: it has the iPhone's change too.
+      await openMore(page);
+      await expect(page.getByTestId('account')).toContainText(a.signedInAs(address));
+      await openHome(page);
+      await expect(page.getByTestId('balance')).toContainText('£240.00', { timeout: A_MINUTE });
+      expect(sessionsOf(person)).toBe(2);
       await laptop.context.close();
       await iphone.context.close();
     });

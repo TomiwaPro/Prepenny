@@ -129,6 +129,13 @@ const SCREENS = [
     heading: 'Sign up',
     purpose: strings.signIn.signUpPurpose,
   },
+  // Getting back in with a backup email, and the stop link's page (step 3e hardening).
+  { path: '/get-back-in/', heading: strings.getBackIn.heading, purpose: strings.getBackIn.purpose },
+  {
+    path: '/stop-get-back-in/',
+    heading: strings.stopGetBackIn.heading,
+    purpose: strings.stopGetBackIn.purpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

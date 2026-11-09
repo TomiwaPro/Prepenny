@@ -4,9 +4,10 @@
 //
 // The owner's tests:
 // 4. Changing the email address, confirmed from both the old and the new one.
-// 5. Getting back in with the backup email: added with a code sent to it,
-//    then used, signed out, from another phone. An address that isn't
-//    anyone's backup gets the same words and no email.
+// 5. The backup email: added with a code sent to it. On another phone,
+//    signed out, an address that isn't anyone's backup gets the same words
+//    and no email, and a wrong code changes nothing. Getting back in with it,
+//    which takes 24 hours since step 3e hardening, is in recovery.spec.ts.
 
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
@@ -27,13 +28,12 @@ import {
 const e = strings.emails;
 const g = strings.getBackIn;
 const s = strings.security;
-const SCREENS = '../../docs/screens/3e';
+const HARDENING = '../../docs/screens/3e-hardening';
 
 const CHANGE_SUBJECT = 'Your PrePenny code to change your email address';
 const ADD_SUBJECT = 'Your PrePenny code to add a backup email';
 const ADDED_SUBJECT = 'A backup email was added to your PrePenny account';
 const GET_IN_SUBJECT = 'Your PrePenny code to get back in';
-const CHANGED_SUBJECT = 'Your PrePenny sign-in email has changed';
 
 /** True for the one run that saves the screenshots: 360px, light. */
 const shoots = (info: TestInfo, colorScheme: string) =>
@@ -119,7 +119,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await laptop.context.close();
     });
 
-    test('5. getting back in with the backup email', async ({ page, browser }, info) => {
+    test("5. adding a backup email, and the same words for an address that isn't one", async ({
+      page,
+      browser,
+    }, info) => {
       test.slow();
       const main = newEmail('sam');
       const backup = newEmail('backup');
@@ -145,9 +148,6 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(card).toContainText(e.backupIs(backup));
       await noAxeProblems(page);
       await noSidewaysScroll(page);
-      if (shoots(info, colorScheme)) {
-        await page.screenshot({ path: `${SCREENS}/backup-email-360-light.png`, fullPage: true });
-      }
       // The sign-in address is told.
       await expect.poll(() => countEmails(main, ADDED_SUBJECT), { timeout: 20_000 }).toBe(1);
 
@@ -156,10 +156,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await phone.page.goto('/sign-in/');
       await phone.page.getByRole('link', { name: g.link }).click();
       await expect(phone.page.getByRole('heading', { level: 1, name: g.heading })).toBeVisible();
+      await expect(phone.page.getByText(g.emailHint)).toBeVisible();
       await noAxeProblems(phone.page);
+      await noSidewaysScroll(phone.page);
       if (shoots(info, colorScheme)) {
         await phone.page.screenshot({
-          path: `${SCREENS}/get-back-in-360-light.png`,
+          path: `${HARDENING}/get-back-in-360-light.png`,
           fullPage: true,
         });
       }
@@ -169,46 +171,27 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(phone.page, g.emailLabel).fill(nobody);
       await phone.page.getByRole('button', { name: g.send }).click();
       await expect(phone.page.getByText(g.sent(nobody))).toBeVisible();
+      await expect(phone.page.getByText(g.whatHappens)).toBeVisible();
       await box(phone.page, g.codeLabel).fill('123456');
-      await phone.page.getByRole('button', { name: g.finish }).click();
+      await phone.page.getByRole('button', { name: g.useCode }).click();
       await expect(phone.page.getByText(g.codeWrong)).toBeVisible();
       expect(await countEmails(nobody, GET_IN_SUBJECT)).toBe(0);
-      await phone.page.getByRole('button', { name: g.otherEmail }).click();
+      await noAxeProblems(phone.page);
 
-      // The backup gets a code, and a wrong one gets nobody in.
+      // The backup's address gets the same words, and a wrong code changes nothing.
+      await phone.page.getByRole('button', { name: g.otherEmail }).click();
       const gettingIn = Date.now() - 1000;
       await box(phone.page, g.emailLabel).fill(backup);
       await phone.page.getByRole('button', { name: g.send }).click();
       await expect(phone.page.getByText(g.sent(backup))).toBeVisible();
-      await expect(phone.page.getByText(g.whatHappens)).toBeVisible();
-      await noAxeProblems(phone.page);
       const code = await codeIn(backup, GET_IN_SUBJECT, gettingIn);
       await box(phone.page, g.codeLabel).fill(code === '000000' ? '111111' : '000000');
-      await phone.page.getByRole('button', { name: g.finish }).click();
+      await phone.page.getByRole('button', { name: g.useCode }).click();
       await expect(phone.page.getByText(g.codeWrong)).toBeVisible();
       expect(emailOf(person)).toBe(main);
-
-      // The right code: the backup is now the sign-in address, and a sign-in code is sent to it.
-      await box(phone.page, g.codeLabel).fill(code);
-      await phone.page.getByRole('button', { name: g.finish }).click();
-      await expect(phone.page.getByText(g.signInNow)).toBeVisible();
-      await expect(
-        phone.page.getByRole('heading', { level: 1, name: strings.signIn.codeHeading }),
-      ).toBeVisible();
-      expect(emailOf(person)).toBe(backup);
-      await box(phone.page, strings.signIn.codeLabel).fill(
-        await codeIn(backup, 'Your PrePenny sign-in code', gettingIn),
-      );
-      await phone.page
-        .getByRole('button', { name: strings.signIn.finishSignIn, exact: true })
-        .click();
-      await expect(phone.page).toHaveURL(/\/app\/$/);
-      await expect(phone.page.getByTestId('balance')).toContainText('£267.54');
-      expect(await personOn(phone.page)).toBe(person);
-
-      // The old address is told, and the first phone was signed out.
-      await expect.poll(() => countEmails(main, CHANGED_SUBJECT), { timeout: 20_000 }).toBe(1);
-      await expect(page.getByText(strings.account.signInEnded)).toBeVisible({ timeout: 60_000 });
+      expect(
+        Number(sql(`select count(*) from app.get_back_in where person_id = ${quoted(person)}`)),
+      ).toBe(0);
       await phone.context.close();
     });
   });

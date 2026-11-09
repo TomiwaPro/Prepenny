@@ -1,0 +1,323 @@
+// Getting back in with a backup email, with a 24-hour wait and a way to stop
+// it (step 3e hardening), at 320px and 360px wide (the sign-in-320 and
+// sign-in-360 projects), in light and dark, checked by axe, against the local
+// Supabase with its get-back-in function and its test inbox. Start it first
+// (README.md, "Checks").
+//
+// The owner's tests:
+// 1. Start getting back in, see the notice on a signed-in device and stop it
+//    there; start again, let 24 hours pass (the clock is moved: the
+//    database's times back 24 hours, and the phone's clock on 24 hours),
+//    finish, and sign in with the backup address.
+// 2. The stop link in the email to the sign-in address stops it, once, and
+//    does nothing else.
+// "Sign out of all other devices" is devices.spec.ts test 2.
+
+import { expect, type Page, type TestInfo, test } from '@playwright/test';
+import { strings } from '../strings/en-GB.ts';
+import { noSidewaysScroll } from './journeys.ts';
+import { box, noAxeProblems } from './setup.ts';
+import { codeIn, countEmails, makeAPlan, newEmail } from './sign-in-helpers.ts';
+import {
+  DEVICES,
+  openMore,
+  personOn,
+  quoted,
+  secondPhone,
+  signUpFromMore,
+  sql,
+} from './two-phones.ts';
+
+const g = strings.getBackIn;
+const n = strings.getBackInNotice;
+const st = strings.stopGetBackIn;
+const SCREENS = '../../docs/screens/3e-hardening';
+/** D21: a signed-out device stops within a minute; the notice shows as fast. */
+const A_MINUTE = 60_000;
+
+const CODE_SUBJECT = 'Your PrePenny code to get back in';
+const FINISH_SUBJECT = 'Your PrePenny code to finish getting back in';
+const ASKED_SUBJECT = 'Someone asked to get into your PrePenny account';
+const STOPPED_SUBJECT = 'Getting back into PrePenny was stopped';
+const CHANGED_SUBJECT = 'Your PrePenny sign-in email has changed';
+
+/** True for the one run that saves the screenshots: 360px, light. */
+const shoots = (info: TestInfo, colorScheme: string) =>
+  colorScheme === 'light' && info.project.name === 'sign-in-360';
+
+test.use({ userAgent: DEVICES.androidChrome });
+
+/** Everything about the account getting back in could change, from the local database. */
+function accountOf(person: string): string {
+  return sql(`select concat_ws(' | ',
+      (select email from auth.users where id = ${quoted(person)}),
+      (select string_agg(provider || ':' || coalesce(email, ''), ',' order by provider)
+        from auth.identities where user_id = ${quoted(person)}),
+      (select string_agg(id::text, ',' order by id) from auth.sessions where user_id = ${quoted(person)}),
+      (select email from app.backup_emails where person_id = ${quoted(person)}))`);
+}
+
+/** A backup email for the person, as adding one with its code leaves it (emails.spec.ts test 5). */
+function addBackup(person: string, backup: string) {
+  sql(
+    `insert into app.backup_emails (person_id, email) values (${quoted(person)}, ${quoted(backup)})`,
+  );
+}
+
+/**
+ * Lets the next code to an address be asked for straight away, as if a
+ * minute had passed: PrePenny sends one a minute.
+ */
+function aMinuteLater(address: string) {
+  sql(`update app.email_codes set sent_at = sent_at - interval '61 seconds'
+    where email = ${quoted(address)}`);
+}
+
+/** 24 hours pass, for the database: the request and its codes move back a day. */
+function aDayPasses(person: string) {
+  sql(`update app.get_back_in set started_at = started_at - interval '24 hours 1 minute'
+      where person_id = ${quoted(person)};
+    update app.email_codes set sent_at = sent_at - interval '24 hours 1 minute',
+      used_at = used_at - interval '24 hours 1 minute'
+      where person_id = ${quoted(person)};`);
+}
+
+/** The stop link in the email to an address, as the email has it. */
+async function stopLinkTo(address: string): Promise<string> {
+  let link: string | undefined;
+  await expect
+    .poll(
+      async () => {
+        const found = await fetch(
+          `http://127.0.0.1:54324/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}`,
+        );
+        const { messages } = (await found.json()) as {
+          messages: { ID: string; Subject: string }[];
+        };
+        for (const message of messages) {
+          if (message.Subject !== ASKED_SUBJECT) continue;
+          const read = await fetch(`http://127.0.0.1:54324/api/v1/message/${message.ID}`);
+          const { HTML } = (await read.json()) as { HTML: string };
+          link = /href="([^"]*\/stop-get-back-in\/#[A-Za-z0-9_-]{43})"/.exec(HTML)?.[1];
+          if (link !== undefined) return true;
+        }
+        return false;
+      },
+      { message: `the stop link to ${address}`, timeout: 20_000 },
+    )
+    .toBe(true);
+  return link as string;
+}
+
+/** On a signed-out phone: asks for a code at the backup email, and types it. */
+async function useBackup(phone: Page, backup: string, subject: string) {
+  const asked = Date.now() - 1000;
+  await box(phone, g.emailLabel).fill(backup);
+  await phone.getByRole('button', { name: g.send }).click();
+  await expect(phone.getByText(g.sent(backup))).toBeVisible();
+  await box(phone, g.codeLabel).fill(await codeIn(backup, subject, asked));
+  await phone.getByRole('button', { name: g.useCode }).click();
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(`Getting back in, in ${colorScheme} mode`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+    });
+
+    test('1. getting back in waits 24 hours: a signed-in phone shows the notice and stops it; started again, 24 hours later a new code finishes it and the backup signs in', async ({
+      page,
+      browser,
+    }, info) => {
+      test.slow();
+      const main = newEmail('sam');
+      const backup = newEmail('backup');
+      await makeAPlan(page);
+      await signUpFromMore(page, main);
+      const person = await personOn(page);
+      addBackup(person, backup);
+      const before = accountOf(person);
+
+      // Another phone, signed out: the main address can't be reached. Its
+      // clock is under the test's control, to let 24 hours pass.
+      const phone = await secondPhone(browser, info, colorScheme, undefined, DEVICES.iphoneSafari);
+      await phone.page.clock.install();
+      await phone.page.goto('/get-back-in/');
+      await useBackup(phone.page, backup, CODE_SUBJECT);
+      const waiting = phone.page.getByTestId('get-back-in-waiting');
+      await expect(
+        phone.page.getByRole('heading', { level: 1, name: g.waitingHeading }),
+      ).toBeVisible();
+      await expect(phone.page.getByText(g.waitingPurpose)).toBeVisible();
+      await expect(waiting).toContainText(/You can finish from \d{1,2}:\d\d(am|pm) on /);
+      await expect(waiting).toContainText(g.thenWhat(backup));
+      await expect(waiting).toContainText(g.told);
+      await noAxeProblems(phone.page);
+      await noSidewaysScroll(phone.page);
+      if (shoots(info, colorScheme)) {
+        await phone.page.screenshot({ path: `${SCREENS}/waiting-360-light.png`, fullPage: true });
+      }
+
+      // Nothing on the account has changed, and the sign-in address is told.
+      expect(accountOf(person)).toBe(before);
+      await expect.poll(() => countEmails(main, ASKED_SUBJECT), { timeout: 20_000 }).toBe(1);
+
+      // The signed-in phone shows the notice, on every screen, within a minute.
+      const notice = page.getByTestId('get-back-in-notice');
+      await expect(notice).toBeVisible({ timeout: A_MINUTE });
+      await expect(notice.getByRole('heading', { name: n.heading })).toBeVisible();
+      await expect(notice).toContainText(/Unless it's stopped, from \d{1,2}:\d\d(am|pm) on /);
+      await expect(notice).toContainText(n.whatToDo);
+      await noAxeProblems(page);
+      await noSidewaysScroll(page);
+      if (shoots(info, colorScheme)) {
+        await page.screenshot({ path: `${SCREENS}/notice-360-light.png`, fullPage: true });
+      }
+      await page
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('link', { name: 'Home', exact: true })
+        .click();
+      await expect(page.getByTestId('get-back-in-notice')).toBeVisible();
+
+      // "Stop it", on the signed-in phone.
+      await notice.getByRole('button', { name: n.stop }).click();
+      const stopped = page.getByTestId('get-back-in-stopped');
+      await expect(stopped).toContainText(n.stopped);
+      await noAxeProblems(page);
+      if (shoots(info, colorScheme)) {
+        await page.screenshot({ path: `${SCREENS}/notice-stopped-360-light.png`, fullPage: true });
+      }
+      await stopped.getByRole('button', { name: n.gotIt }).click();
+      await expect(stopped).toBeHidden();
+      await expect(page.getByTestId('get-back-in-notice')).toBeHidden();
+      await expect.poll(() => countEmails(backup, STOPPED_SUBJECT), { timeout: 20_000 }).toBe(1);
+      expect(accountOf(person)).toBe(before);
+
+      // Started again.
+      await phone.page.getByRole('button', { name: g.otherEmail }).click();
+      aMinuteLater(backup);
+      await useBackup(phone.page, backup, CODE_SUBJECT);
+      await expect(waiting).toBeVisible();
+      await expect(page.getByTestId('get-back-in-notice')).toBeVisible({ timeout: A_MINUTE });
+      expect(accountOf(person)).toBe(before);
+
+      // 24 hours pass, for the database and for the phone, and nobody stops it.
+      aDayPasses(person);
+      await phone.page.clock.fastForward('24:01:00');
+      await expect(waiting).toContainText(g.finishNow);
+      expect(accountOf(person)).toBe(before);
+
+      // A new code finishes it, and the backup is the address it signs in with.
+      const finishing = Date.now() - 1000;
+      await waiting.getByRole('button', { name: g.sendFinishCode }).click();
+      await expect(phone.page.getByText(g.sent(backup))).toBeVisible();
+      await box(phone.page, g.codeLabel).fill(await codeIn(backup, FINISH_SUBJECT, finishing));
+      await phone.page.getByRole('button', { name: g.useCode }).click();
+      await expect(phone.page.getByText(g.signInNow)).toBeVisible();
+      await expect(
+        phone.page.getByRole('heading', { level: 1, name: strings.signIn.codeHeading }),
+      ).toBeVisible();
+      expect(sql(`select email from auth.users where id = ${quoted(person)}`)).toBe(backup);
+      expect(
+        sql(
+          `select email from auth.identities where user_id = ${quoted(person)} and provider = 'email'`,
+        ),
+      ).toBe(backup);
+
+      // Signing in with the backup address, as usual, brings the plan.
+      await box(phone.page, strings.signIn.codeLabel).fill(
+        await codeIn(backup, 'Your PrePenny sign-in code', finishing),
+      );
+      await phone.page
+        .getByRole('button', { name: strings.signIn.finishSignIn, exact: true })
+        .click();
+      await expect(phone.page).toHaveURL(/\/app\/$/);
+      await expect(phone.page.getByTestId('balance')).toContainText('£267.54');
+      expect(await personOn(phone.page)).toBe(person);
+      await openMore(phone.page);
+      await expect(phone.page.getByTestId('account')).toContainText(
+        strings.account.signedInAs(backup),
+      );
+
+      // The old address is told, and the first phone was signed out.
+      await expect.poll(() => countEmails(main, CHANGED_SUBJECT), { timeout: 20_000 }).toBe(1);
+      await expect(page.getByText(strings.account.signInEnded)).toBeVisible({ timeout: A_MINUTE });
+      await phone.context.close();
+    });
+
+    test('2. the stop link in the email stops it, once, and does nothing else', async ({
+      page,
+      browser,
+    }, info) => {
+      test.slow();
+      const main = newEmail('sam');
+      const backup = newEmail('backup');
+      await makeAPlan(page);
+      await signUpFromMore(page, main);
+      const person = await personOn(page);
+      addBackup(person, backup);
+      const before = accountOf(person);
+
+      // Someone with the backup starts getting in, on another phone.
+      const phone = await secondPhone(browser, info, colorScheme, undefined, DEVICES.iphoneSafari);
+      await phone.page.goto('/get-back-in/');
+      await useBackup(phone.page, backup, CODE_SUBJECT);
+      await expect(phone.page.getByTestId('get-back-in-waiting')).toBeVisible();
+      await expect(page.getByTestId('get-back-in-notice')).toBeVisible({ timeout: A_MINUTE });
+
+      // The link in the email to the sign-in address, opened on a laptop.
+      const link = await stopLinkTo(main);
+      const laptop = await secondPhone(browser, info, colorScheme, undefined, DEVICES.macSafari);
+      await laptop.page.goto(link);
+      await expect(laptop.page.getByRole('heading', { level: 1, name: st.heading })).toBeVisible();
+      await expect(laptop.page.getByText(st.purpose)).toBeVisible();
+      // The token is taken out of the address bar straight away.
+      await expect(laptop.page).toHaveURL(/\/stop-get-back-in\/$/);
+      // Opening the link stops nothing by itself.
+      expect(
+        sql(
+          `select count(*) from app.get_back_in where person_id = ${quoted(person)} and stopped_at is null`,
+        ),
+      ).toBe('1');
+      await noAxeProblems(laptop.page);
+      await noSidewaysScroll(laptop.page);
+      if (shoots(info, colorScheme)) {
+        await laptop.page.screenshot({
+          path: `${SCREENS}/stop-link-360-light.png`,
+          fullPage: true,
+        });
+      }
+      await laptop.page.getByRole('button', { name: st.stop }).click();
+      await expect(
+        laptop.page.getByRole('heading', { level: 1, name: st.stoppedHeading }),
+      ).toBeVisible();
+      await expect(laptop.page.getByTestId('stop-outcome')).toContainText(st.stopped);
+      await noAxeProblems(laptop.page);
+      if (shoots(info, colorScheme)) {
+        await laptop.page.screenshot({
+          path: `${SCREENS}/stop-link-stopped-360-light.png`,
+          fullPage: true,
+        });
+      }
+      expect(
+        sql(`select stopped_how from app.get_back_in where person_id = ${quoted(person)}`),
+      ).toBe('link');
+      await expect.poll(() => countEmails(backup, STOPPED_SUBJECT), { timeout: 20_000 }).toBe(1);
+
+      // It did nothing else: nobody signed in or out, nothing changed, and
+      // the signed-in phone's notice goes.
+      expect(accountOf(person)).toBe(before);
+      await expect(page.getByTestId('get-back-in-notice')).toBeHidden({ timeout: A_MINUTE });
+
+      // It works once: opened again from the email, in a new tab.
+      const again = await laptop.context.newPage();
+      await again.goto(link);
+      await again.getByRole('button', { name: st.stop }).click();
+      await expect(again.getByTestId('stop-outcome')).toContainText(st.notStopped);
+      await noAxeProblems(again);
+      expect(accountOf(person)).toBe(before);
+      await laptop.context.close();
+      await phone.context.close();
+    });
+  });
+}
