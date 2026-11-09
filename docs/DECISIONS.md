@@ -4503,7 +4503,9 @@ Decided 9 Nov 2026 in step 3e. Adds to D300 and D343.
 
 Step 3e adds about 20 minutes of tests that sign in, which only part 3 ran. Part 3 took about 22 of its 35 minutes already, so it would have run out of time. Now each part starts its own local Supabase in the background and runs a third of them (`--shard`), as it does with the other tests. The minutes billed stay about the same: each part pays a minute or so to start Supabase, while its other tests run.
 
-Why: no part may run past its time, and the owner pays for every minute (D300).
+Measured on step 3e's pull request: part 1 took 21 minutes, part 2 34 and part 3 23, all passing (78 minutes in all). Part 2 came within a minute and a half of its 35, so each part now has 45 minutes, for a slower day. Sharing out by time rather than by number of tests would even them up; that's for when the minutes are looked at again.
+
+Why: no part may run past its time, which would stop the live app and the database updating after a merge (D297), and the owner pays for every minute (D300).
 
 ### D390. Smaller choices in step 3e
 
