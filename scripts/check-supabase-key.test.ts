@@ -78,6 +78,9 @@ function needs(method: string, path: string, query: string, body: unknown): stri
   return null;
 }
 
+/** How the pretend Supabase answers a call it could let through in a weaker way. */
+type Behaviour = 'refuses' | 'weaker' | 'brand-new';
+
 interface Pretend {
   readonly url: string;
   /** Every call made, as "METHOD path". */
@@ -86,6 +89,13 @@ interface Pretend {
   readonly changes: string[];
   give(token: string, permissions: readonly string[]): void;
   answerEverythingWith(status: number | null): void;
+  /**
+   * "refuses": a call without its permission is refused (403), as the
+   * description reads. "weaker": a query is run read-only and the secret keys
+   * hidden, instead of refusing. "brand-new": a project with no database
+   * changes yet, whose list of them fails (500).
+   */
+  behave(behaviour: Behaviour): void;
 }
 
 let server: Server;
@@ -96,6 +106,7 @@ before(async () => {
   const calls: string[] = [];
   const changes: string[] = [];
   let forced: number | null = null;
+  let behaviour: Behaviour = 'refuses';
   server = createServer((request, response) => {
     let text = '';
     request.on('data', (chunk) => {
@@ -120,8 +131,33 @@ before(async () => {
         changes.push(`an unknown call: ${method} ${path}`);
         return send(404);
       }
-      if (!needed.every((one) => granted.has(one))) return send(403, { message: 'Forbidden' });
       const call = path.slice(`/v1/projects/${REF}`.length);
+      const sql = (body as { query?: unknown }).query;
+      if (
+        behaviour === 'weaker' &&
+        method === 'POST' &&
+        call === '/database/query' &&
+        granted.has('database_read') &&
+        !granted.has('database_write')
+      ) {
+        // Run read-only rather than refused: making a table fails.
+        if (typeof sql === 'string' && sql.startsWith('create')) {
+          return send(400, { message: 'cannot execute CREATE TABLE in a read-only transaction' });
+        }
+      } else if (
+        behaviour === 'weaker' &&
+        call === '/api-keys' &&
+        granted.has('api_gateway_keys_read') &&
+        !granted.has('api_gateway_keys_secret_read')
+      ) {
+        // Secret keys hidden rather than refused.
+        return send(200, [{ type: 'secret', name: 'default', api_key: 'sb_secret_Qxyz····' }]);
+      } else if (!needed.every((one) => granted.has(one))) {
+        return send(403, { message: 'Forbidden' });
+      }
+      if (behaviour === 'brand-new' && call.startsWith('/database/migrations')) {
+        return send(500, { message: 'the list of database changes does not exist yet' });
+      }
       if (method === 'GET' && call === '') return send(200, { ref: REF, name: PROJECT_NAME });
       if (method === 'PATCH' && call === '') {
         if ((body as { name?: unknown }).name !== PROJECT_NAME) changes.push('the project renamed');
@@ -131,13 +167,27 @@ before(async () => {
       if (method === 'DELETE' || (method === 'PATCH' && call !== ''))
         return send(404, { message: 'Not found' });
       if (method === 'POST' && call.startsWith('/database/query')) {
-        if ((body as { query?: unknown }).query !== 'select 1') changes.push(`a query: ${text}`);
-        return send(201, [{ '?column?': 1 }]);
+        // A table made "on commit drop" is gone when its query ends.
+        if (
+          sql !== 'select 1' &&
+          !/^create temporary table \w+ \(.*\) on commit drop$/.test(String(sql))
+        ) {
+          changes.push(`a query: ${text}`);
+        }
+        return send(201, []);
       }
-      if (call === '/api-keys')
+      if (call === '/api-keys') {
         return send(200, [
-          { name: 'secret', api_key: query.includes('reveal') ? 'sb_secret_SHOWN' : null },
+          { type: 'publishable', name: 'default', api_key: 'sb_publishable_abcdefghijklmnop' },
+          {
+            type: 'secret',
+            name: 'default',
+            api_key: query.includes('reveal')
+              ? `sb_secret_${'Q'.repeat(32)}`
+              : 'sb_secret_Qxyz····',
+          },
         ]);
+      }
       return send(200, {});
     });
   });
@@ -151,6 +201,9 @@ before(async () => {
     give: (token, permissions) => keys.set(token, new Set(permissions)),
     answerEverythingWith: (status) => {
       forced = status;
+    },
+    behave: (chosen) => {
+      behaviour = chosen;
     },
   };
 });
@@ -273,6 +326,63 @@ describe('The Supabase key check', () => {
     }
   });
 
+  it("isn't fooled when Supabase runs a query read-only, or hides the secret keys, instead of refusing", async () => {
+    pretend.behave('weaker');
+    try {
+      const token = keyWith(
+        'sbp_weaker',
+        EVERY.filter((one) => one !== 'API Key Secrets: Read').map((one) =>
+          one === 'Database: Read-write' ? 'Database: Read' : one,
+        ),
+      );
+      assert.deepEqual(await check(token), {
+        kind: 'missing',
+        missing: [
+          { name: 'Database', level: 'Read-write' },
+          { name: 'API Key Secrets', level: 'Read' },
+        ],
+      });
+      assert.deepEqual(await check(keyWith('sbp_weaker_every', EVERY)), { kind: 'ok' });
+      assert.deepEqual(pretend.changes, []);
+    } finally {
+      pretend.behave('refuses');
+    }
+  });
+
+  it('passes a key with every permission on a brand-new project, whose list of database changes fails', async () => {
+    pretend.behave('brand-new');
+    try {
+      assert.deepEqual(await check(keyWith('sbp_new', EVERY)), { kind: 'ok' });
+      // A refusal is still a refusal.
+      const token = keyWith(
+        'sbp_new_missing',
+        EVERY.map((one) => (one === 'Migrations: Read-write' ? 'Migrations: Read' : one)),
+      );
+      assert.deepEqual(await check(token), {
+        kind: 'missing',
+        missing: [{ name: 'Migrations', level: 'Read-write' }],
+      });
+    } finally {
+      pretend.behave('refuses');
+    }
+  });
+
+  it('stops before trying anything that writes on a project with the wrong name', async () => {
+    const before = pretend.calls.length;
+    const result = await checkKey({
+      token: keyWith('sbp_wrong_project', EVERY),
+      ref: REF,
+      apiUrl: pretend.url,
+      expectName: 'prepenny',
+    });
+    assert.deepEqual(result, { kind: 'wrong-project', name: PROJECT_NAME });
+    assert.deepEqual(pretend.calls.slice(before), [`GET /v1/projects/${REF}`]);
+    assert.equal(
+      report(result, 'PREVIEW_SUPABASE_ACCESS_TOKEN', 'prepenny'),
+      'Nothing was changed. The project with this Project ID is called "prepenny-preview", not prepenny, so nothing more was tried on it. Put the prepenny project\'s Project ID in GitHub\'s secrets.',
+    );
+  });
+
   it("as a command: says what's missing, fails the step, and never prints the key", async () => {
     const token = keyWith(
       'sbp_SECRET_never_printed',
@@ -289,6 +399,8 @@ describe('The Supabase key check', () => {
           SUPABASE_API_URL: pretend.url,
           KEY_NAME: 'PREVIEW_SUPABASE_ACCESS_TOKEN',
           PROJECT_NAME: 'prepenny-preview',
+          EXPECT_PROJECT_NAME: 'prepenny-preview',
+          README_PART: '"The preview database", steps 6 to 8',
         },
       },
     );
@@ -298,6 +410,10 @@ describe('The Supabase key check', () => {
       assert.match(
         error.stdout ?? '',
         /missing 2 permissions this run needs: Database: Read-write, Storage Config: Read\./,
+      );
+      assert.match(
+        error.stdout ?? '',
+        /README\.md, "The preview database", steps 6 to 8, on the prepenny-preview project/,
       );
       assert.doesNotMatch(`${error.stdout}${error.stderr}`, /SECRET|sb_secret/);
       return true;

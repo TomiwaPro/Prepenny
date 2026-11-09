@@ -5,14 +5,20 @@
 //
 // Supabase has no way to ask a key what it may do, so each permission is
 // tried with a call that needs it and changes nothing: a read, a write that
-// sets a value to what it is already, or a change to something that can't
-// exist, which Supabase answers "not found" only once the key may make it.
+// sets a value to what it is already, a table that lasts only for its own
+// query, or a change to something that can't exist, which Supabase answers
+// "not found" only once the key may make it. Where Supabase might let a call
+// through without the permission and answer in a weaker way, the answer
+// itself must show the permission: the table made, the secret keys revealed.
 // Which call needs which permission is from Supabase's own description of its
 // API (its "x-fga-permissions"), read on 9 Nov 2026 from
 // github.com/supabase/supabase, apps/docs/spec/api_v1_openapi.json.
 //
 // Usage: SUPABASE_ACCESS_TOKEN=sbp_... SUPABASE_PROJECT_REF=abcdefghijklmnopqrst \
 //   KEY_NAME=SUPABASE_ACCESS_TOKEN PROJECT_NAME=prepenny node scripts/check-supabase-key.ts
+// For the preview's key, also EXPECT_PROJECT_NAME=prepenny-preview, so it
+// stops before anything that writes on a project with another name, and
+// README_PART, where README.md lists its permissions.
 // The key is never printed, and nor is anything Supabase answers.
 
 /** How Supabase's token page names a permission, and the level a run needs. */
@@ -33,6 +39,32 @@ interface Probe {
   readonly write?: true;
   /** Needs another permission too: checked only when that one has passed. */
   readonly alsoNeeds?: string;
+  /**
+   * Allowed only when the answer shows it, not just when it isn't refused:
+   * Supabase may answer a call it lets through without the permission in a
+   * weaker way (D406).
+   */
+  readonly shows?: (status: number, answer: unknown) => boolean;
+  /**
+   * Any answer but a refusal counts as allowed: on a brand-new project the
+   * list of database changes may not exist yet, and Supabase can fail asking
+   * for it.
+   */
+  readonly anyAnswer?: true;
+}
+
+/** A secret key, revealed in full: Supabase's newer kind, or its older one. */
+function hasRevealedSecret(answer: unknown): boolean {
+  if (!Array.isArray(answer)) return false;
+  return answer.some(
+    (key: { readonly type?: unknown; readonly name?: unknown; readonly api_key?: unknown }) => {
+      const value = typeof key.api_key === 'string' ? key.api_key : '';
+      return (
+        (key.type === 'secret' && /^sb_secret_[A-Za-z0-9_-]{16,}$/.test(value)) ||
+        (key.name === 'service_role' && /^eyJ[\w-]+\.[\w-]+\.[\w-]+$/.test(value))
+      );
+    },
+  );
 }
 
 /**
@@ -74,7 +106,8 @@ const PROBES: readonly Probe[] = [
     path: `/config/auth/third-party-auth/${NOTHING}`,
     write: true,
   },
-  // database_read, then database_write: "select 1", read-only, then not.
+  // database_read, then database_write: "select 1" read-only, then a table that
+  // lasts only for this one query, which a read-only query can't make.
   {
     permission: 'Database',
     method: 'POST',
@@ -86,16 +119,20 @@ const PROBES: readonly Probe[] = [
     method: 'POST',
     path: '/database/query',
     write: true,
-    body: () => ({ query: 'select 1' }),
+    body: () => ({
+      query: 'create temporary table prepenny_key_check (checked boolean) on commit drop',
+    }),
+    shows: (status) => status >= 200 && status < 300,
   },
   // database_migrations_read, then database_migrations_write: nothing changed on a migration that can't exist.
-  { permission: 'Migrations', method: 'GET', path: '/database/migrations' },
+  { permission: 'Migrations', method: 'GET', path: '/database/migrations', anyAnswer: true },
   {
     permission: 'Migrations',
     method: 'PATCH',
     path: '/database/migrations/19700101000000',
     write: true,
     body: () => ({}),
+    anyAnswer: true,
   },
   // edge_functions_read, then edge_functions_write: nothing changed on a function that can't exist.
   { permission: 'Edge Functions', method: 'GET', path: '/functions' },
@@ -113,6 +150,7 @@ const PROBES: readonly Probe[] = [
     method: 'GET',
     path: '/api-keys?reveal=true',
     alsoNeeds: 'API Keys',
+    shows: (status, answer) => status >= 200 && status < 300 && hasRevealedSecret(answer),
   },
   // data_api_config_read, database_config_read, database_pooling_config_read, storage_config_read.
   { permission: 'Data API Config', method: 'GET', path: '/postgrest' },
@@ -129,6 +167,8 @@ export type KeyCheck =
   | { readonly kind: 'not-accepted' }
   /** No project with this Project ID that the key can reach. */
   | { readonly kind: 'no-project' }
+  /** The project isn't the one this run is for: nothing more is tried on it. */
+  | { readonly kind: 'wrong-project'; readonly name: string }
   /** Supabase didn't answer clearly, so nothing can be said: try again. */
   | { readonly kind: 'no-answer'; readonly status: number };
 
@@ -140,6 +180,11 @@ interface Options {
   readonly send?: typeof fetch;
   /** How long to wait before asking again after "too many requests". */
   readonly pauseMs?: number;
+  /**
+   * The name the project must have, read first: any other, and the check
+   * stops before trying anything that writes (the preview's, D405).
+   */
+  readonly expectName?: string;
 }
 
 /** Tries every permission, changing nothing, and says what's missing. */
@@ -186,15 +231,27 @@ export async function checkKey(options: Options): Promise<KeyCheck> {
         project = (await answer.json().catch(() => ({}))) as { readonly name?: unknown };
         // Without the name, the next call couldn't set it to what it is.
         if (typeof project.name !== 'string') return { kind: 'no-answer', status };
+        if (options.expectName !== undefined && project.name !== options.expectName) {
+          return { kind: 'wrong-project', name: project.name };
+        }
       }
-    } else {
-      // Nothing Supabase answers is kept, the revealed keys above all.
+    }
+    let shown: unknown = null;
+    if (probe.shows !== undefined && answer !== null && status >= 200 && status < 300) {
+      // Read only to see its shape: nothing Supabase answers is kept or printed.
+      shown = await answer.json().catch(() => null);
+    } else if (!(probe.method === 'GET' && probe.path === '')) {
       await answer?.body?.cancel().catch(() => undefined);
     }
     if (status === 403) missing.add(probe.permission);
+    else if (status === 0 || status === 429) return { kind: 'no-answer', status };
+    else if (probe.shows !== undefined) {
+      if (status >= 500) return { kind: 'no-answer', status };
+      if (!probe.shows(status, shown)) missing.add(probe.permission);
+    }
     // "Not found" for something that can't exist means the key may change it;
     // anything else but a refusal or a failure means the call was allowed.
-    else if (status === 0 || status === 429 || status >= 500) return { kind: 'no-answer', status };
+    else if (status >= 500 && probe.anyAnswer !== true) return { kind: 'no-answer', status };
   }
   if (missing.size === 0) return { kind: 'ok' };
   return { kind: 'missing', missing: NEEDED.filter((one) => missing.has(one.name)) };
@@ -204,8 +261,14 @@ export async function checkKey(options: Options): Promise<KeyCheck> {
 export const named = (permission: Permission) => `${permission.name}: ${permission.level}`;
 
 /** What the run says, in plain words, with what to do. */
-export function report(check: KeyCheck, keyName: string, projectName: string): string {
-  const fix = `make a new key with every permission in README.md, "The database", step 5, on the ${projectName} project, and replace ${keyName} in GitHub's secrets with it. Then run this again.`;
+export function report(
+  check: KeyCheck,
+  keyName: string,
+  projectName: string,
+  /** Where README.md says which permissions to give the key. */
+  where = '"The database", step 5',
+): string {
+  const fix = `make a new key with every permission in README.md, ${where}, on the ${projectName} project, and replace ${keyName} in GitHub's secrets with it. Then run this again.`;
   switch (check.kind) {
     case 'ok':
       return `GitHub's Supabase key (${keyName}) has every permission this run needs: ${NEEDED.map(named).join(', ')}.`;
@@ -218,6 +281,8 @@ export function report(check: KeyCheck, keyName: string, projectName: string): s
       return `Nothing was changed. Supabase doesn't accept GitHub's Supabase key (${keyName}): it may have run out or been deleted. On Supabase's token page, ${fix}`;
     case 'no-project':
       return `Nothing was changed. Supabase can't find the ${projectName} project with this key: check the Project ID in GitHub's secrets, and that the key was made for the ${projectName} project.`;
+    case 'wrong-project':
+      return `Nothing was changed. The project with this Project ID is called "${check.name}", not ${projectName}, so nothing more was tried on it. Put the ${projectName} project's Project ID in GitHub's secrets.`;
     case 'no-answer':
       return `Nothing was changed. Supabase didn't answer the check of its key clearly (${check.status === 0 ? 'no answer' : `it answered ${check.status}`}). Run this again in a few minutes. On the free plan, a project that hasn't been used for a week is paused: restore it on supabase.com first.`;
   }
@@ -228,6 +293,9 @@ async function main() {
   const ref = process.env.SUPABASE_PROJECT_REF ?? '';
   const keyName = process.env.KEY_NAME ?? 'SUPABASE_ACCESS_TOKEN';
   const projectName = process.env.PROJECT_NAME ?? 'prepenny';
+  const where = process.env.README_PART;
+  // Only a preview's check insists on the name: the real project's is whatever the owner chose.
+  const expectName = process.env.EXPECT_PROJECT_NAME;
   if (token === '' || !/^[a-z]{20}$/.test(ref)) {
     console.log(
       `::error title=Supabase key::The key or the Project ID for the ${projectName} project isn't in GitHub's secrets. Nothing was changed.`,
@@ -238,8 +306,9 @@ async function main() {
     token,
     ref,
     ...(process.env.SUPABASE_API_URL === undefined ? {} : { apiUrl: process.env.SUPABASE_API_URL }),
+    ...(expectName === undefined || expectName === '' ? {} : { expectName }),
   });
-  const words = report(check, keyName, projectName);
+  const words = report(check, keyName, projectName, where);
   if (check.kind === 'ok') {
     console.log(words);
     return;
