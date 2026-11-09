@@ -33,14 +33,15 @@
 -- Words and times for the emails.
 
 -- "2:05pm on Tue 10 Nov", in UK time, with the year only when it isn't this
--- year (docs/VOICE.md).
+-- year (docs/VOICE.md). The date's parts are joined with non-breaking
+-- spaces, so it stays on one line, as in the app.
 create function app.when_words(moment timestamptz) returns text
 language sql stable set search_path = '' as $$
   select to_char(moment at time zone 'Europe/London', 'FMHH12:MIam')
-    || ' on ' || to_char(moment at time zone 'Europe/London', 'Dy FMDD Mon')
+    || ' on ' || replace(to_char(moment at time zone 'Europe/London', 'Dy FMDD Mon')
     || case when extract(year from moment at time zone 'Europe/London')
         <> extract(year from now() at time zone 'Europe/London')
-      then to_char(moment at time zone 'Europe/London', ' YYYY') else '' end
+      then to_char(moment at time zone 'Europe/London', ' YYYY') else '' end, ' ', chr(160))
 $$;
 
 -- One of PrePenny's emails, as step 3e's, with a button: the heading, a code
