@@ -125,11 +125,30 @@ $$;
 -- 2. Guess-proofing: 3 codes a day for an address, and a 24-hour lock after
 -- 10 wrong tries in a day.
 
--- An address as the tries and locks keep it: scrambled, so addresses typed
--- by people who aren't anyone's are never kept as they were typed.
+-- A secret of this database's own, made once, for scrambling addresses: so
+-- the scrambled addresses can't be checked against guesses without it.
+create table app.address_secret (
+  only_one boolean primary key default true check (only_one),
+  secret text not null default encode(extensions.gen_random_bytes(32), 'hex')
+);
+insert into app.address_secret default values;
+alter table app.address_secret enable row level security;
+revoke all on app.address_secret from public, anon, authenticated;
+
+-- An address as the tries and locks keep it: scrambled with the secret
+-- (HMAC-SHA-256), so addresses typed by people who aren't anyone's are never
+-- kept as they were typed.
 create function app.address_key(address text) returns text
-language sql immutable set search_path = '' as $$
-  select encode(extensions.digest('prepenny-address:' || coalesce(address, ''), 'sha256'), 'hex')
+language sql stable security definer set search_path = '' as $$
+  select encode(extensions.hmac(coalesce(address, ''), (select s.secret from app.address_secret s), 'sha256'), 'hex')
+$$;
+
+-- One at a time for an address and a purpose, until the request ends:
+-- codes asked for, typed and counted at the same moment can't get past the
+-- limits, and a code can't be used twice.
+create function app.one_at_a_time(address text, which text) returns void
+language sql volatile set search_path = '' as $$
+  select pg_advisory_xact_lock(hashtextextended('prepenny-code:' || which || ':' || coalesce(address, ''), 0))
 $$;
 
 -- Each wrong try of a code, for an address and a purpose, for a day.
@@ -140,6 +159,7 @@ create table app.code_tries (
 );
 
 create index code_tries_by_address on app.code_tries (address_key, purpose, tried_at desc);
+create index code_tries_by_time on app.code_tries (tried_at);
 
 -- An address locked for a purpose, after 10 wrong tries in a day.
 create table app.code_locks (
@@ -216,6 +236,7 @@ begin
   if address is null then
     return 'wrong';
   end if;
+  perform app.one_at_a_time(address, which);
   if app.address_locked(address, which) then
     return 'wrong';
   end if;
@@ -228,8 +249,10 @@ begin
     if newest.sent_at < now() - app.code_lasts() then
       return 'ran-out';
     end if;
-    update app.email_codes c set used_at = now() where c.id = newest.id;
-    return 'ok';
+    update app.email_codes c set used_at = now() where c.id = newest.id and c.used_at is null;
+    if found then
+      return 'ok';
+    end if;
   end if;
   if found then
     update app.email_codes c set tries = c.tries + 1 where c.id = newest.id;
@@ -239,19 +262,30 @@ begin
 end;
 $$;
 
+-- Each time a person asks for a code to add a backup email, for the
+-- once-a-minute answer, kept for a day.
+create table app.code_asks (
+  person_id uuid not null references auth.users (id) on delete cascade,
+  purpose text not null check (purpose in ('add-backup')),
+  asked_at timestamptz not null default now()
+);
+create index code_asks_by_person on app.code_asks (person_id, purpose, asked_at desc);
+alter table app.code_asks enable row level security;
+revoke all on app.code_asks from public, anon, authenticated;
+
 -- Sends a code to an address the person wants as their backup email, as in
 -- step 3e. Now the answer is "sent" whenever the address is one, even when
 -- it's had its 3 codes today or is locked, so nobody can tell either; the
--- screen says a code may take a minute, and that 3 can be sent a day.
--- Asking again within a minute still says how long to wait: that's about
--- this person's own last request, never anyone else's.
+-- screen says 3 can be sent a day. Asking again within a minute still says
+-- how long to wait, counted from this person's last ask, whether or not a
+-- code went: so it says nothing about the address either.
 create or replace function public.add_backup_email(email text) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
   address text := app.email_address(email);
   code text := app.new_code();
   code_id uuid := gen_random_uuid();
-  last_sent timestamptz;
+  last_asked timestamptz;
 begin
   if not app.session_ok() then
     perform app.refuse('not-allowed', '42501');
@@ -265,12 +299,16 @@ begin
   if exists (select 1 from auth.users u where u.id = auth.uid() and lower(u.email) = address) then
     perform app.refuse('same-as-sign-in');
   end if;
-  select max(c.sent_at) into last_sent from app.email_codes c
-    where c.person_id = auth.uid() and c.purpose = 'add-backup';
-  if last_sent > now() - interval '1 minute' then
+  perform app.one_at_a_time(auth.uid()::text, 'ask');
+  select max(a.asked_at) into last_asked from app.code_asks a
+    where a.person_id = auth.uid() and a.purpose = 'add-backup';
+  if last_asked > now() - interval '1 minute' then
     return jsonb_build_object('sent', false,
-      'wait', ceil(extract(epoch from last_sent + interval '1 minute' - now()))::integer);
+      'wait', ceil(extract(epoch from last_asked + interval '1 minute' - now()))::integer);
   end if;
+  delete from app.code_asks a where a.asked_at < now() - interval '1 day';
+  insert into app.code_asks (person_id, purpose) values (auth.uid(), 'add-backup');
+  perform app.one_at_a_time(address, 'add-backup');
   if not app.may_send_code(address, 'add-backup') then
     return jsonb_build_object('sent', true);
   end if;
@@ -331,22 +369,7 @@ language sql immutable set search_path = '' as $$ select interval '7 days' $$;
 -- ("start", "wait" or "finish"), and a code to finish names its request.
 alter table app.email_codes add column stage text check (stage in ('start', 'wait', 'finish'));
 alter table app.email_codes add column request_id uuid references app.get_back_in (id) on delete cascade;
-
--- The person's open request, or null: not stopped, not done, and not run
--- out. One that has run out is marked so, and its stop link stops working.
-create function app.open_get_back_in(person uuid) returns app.get_back_in
-language plpgsql volatile security definer set search_path = '' as $$
-declare
-  found_one app.get_back_in;
-begin
-  update app.get_back_in r set stopped_at = now(), stopped_how = 'ran-out', stop_hash = null
-    where r.person_id = person and r.stopped_at is null and r.done_at is null and r.finishing_at is null
-      and r.started_at <= now() - app.get_back_in_wait() - app.get_back_in_lasts();
-  select * into found_one from app.get_back_in r
-    where r.person_id = person and r.stopped_at is null and r.done_at is null;
-  return found_one;
-end;
-$$;
+create index email_codes_by_request on app.email_codes (request_id);
 
 -- When a request can be finished.
 create function app.ready_at(request app.get_back_in) returns timestamptz
@@ -356,7 +379,7 @@ $$;
 
 -- A time as the phone reads it: UTC, to the second.
 create function app.utc_words(moment timestamptz) returns text
-language sql immutable set search_path = '' as $$
+language sql stable set search_path = '' as $$
   select to_char(moment at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
 $$;
 
@@ -387,6 +410,84 @@ begin
       end,
       'If you asked to get back in and still can''t get into the address you sign in with, write to hello@prepenny.co.uk.'],
     'If you didn''t ask to get back in, you can ignore this email.');
+end;
+$$;
+
+-- Finishes a request once Supabase's admin route has made the backup the
+-- sign-in address: every device is nudged and signed out (each one's
+-- refresh tokens go with it, as with Supabase's own sign-out), the backup is
+-- used up, and the old address is told. False when there's nothing to
+-- finish: already done, stopped, or the address hasn't changed.
+create function app.complete_get_back_in(request uuid) returns boolean
+language plpgsql security definer set search_path = '' as $$
+declare
+  done app.get_back_in;
+begin
+  update app.get_back_in r set done_at = now(), stop_hash = null
+    where r.id = request and r.finishing_at is not null and r.done_at is null and r.stopped_at is null
+      and exists (select 1 from auth.users u where u.id = r.person_id and lower(u.email) = r.backup_email)
+    returning * into done;
+  if not found then
+    return false;
+  end if;
+  delete from app.backup_emails b where b.person_id = done.person_id;
+  update app.email_codes c set used_at = now() where c.person_id = done.person_id and c.used_at is null;
+  perform app.nudge_my_phones(done.person_id);
+  delete from auth.sessions s where s.user_id = done.person_id;
+  delete from app.devices d where d.person_id = done.person_id;
+  if done.old_email is not null and done.old_email <> '' and lower(done.old_email) <> done.backup_email then
+    perform app.send_email(done.old_email, 'Your PrePenny sign-in email has changed',
+      'Your PrePenny sign-in email has changed', null,
+      array['Your backup email, ' || done.backup_email || ', was used to get back into your PrePenny account, so it''s now the address you sign in with, in place of this one.',
+        'It was asked for at ' || app.when_words(done.started_at) || ', and nobody stopped it in the 24 hours after.',
+        'Every phone and computer that was signed in to your account has been signed out.'],
+      'If this wasn''t you, reply to this email straight away.');
+  end if;
+  return true;
+end;
+$$;
+
+-- A finish that didn't complete, as when the get-back-in function stopped
+-- part-way: if Supabase's admin route did change the address, it's
+-- finished now; if not, the request is as it was before the finishing code,
+-- still open and still able to be stopped with the same link. True when
+-- it's finished.
+create function app.settle_finishing(request uuid) returns boolean
+language plpgsql security definer set search_path = '' as $$
+begin
+  perform 1 from app.get_back_in r where r.id = request for update;
+  if app.complete_get_back_in(request) then
+    return true;
+  end if;
+  update app.get_back_in r set finishing_at = null, old_email = null
+    where r.id = request and r.finishing_at is not null and r.done_at is null and r.stopped_at is null;
+  return exists (select 1 from app.get_back_in r where r.id = request and r.done_at is not null);
+end;
+$$;
+
+-- The person's open request, or null: not stopped, not done, and not run
+-- out. A finish that didn't complete within 5 minutes is settled first, so
+-- none is left part-way; one that has run out is marked so, and its stop
+-- link stops working.
+create function app.open_get_back_in(person uuid) returns app.get_back_in
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  found_one app.get_back_in;
+  stuck uuid;
+begin
+  for stuck in
+    select r.id from app.get_back_in r
+    where r.person_id = person and r.finishing_at < now() - interval '5 minutes'
+      and r.done_at is null and r.stopped_at is null
+  loop
+    perform app.settle_finishing(stuck);
+  end loop;
+  update app.get_back_in r set stopped_at = now(), stopped_how = 'ran-out', stop_hash = null
+    where r.person_id = person and r.stopped_at is null and r.done_at is null and r.finishing_at is null
+      and r.started_at <= now() - app.get_back_in_wait() - app.get_back_in_lasts();
+  select * into found_one from app.get_back_in r
+    where r.person_id = person and r.stopped_at is null and r.done_at is null;
+  return found_one;
 end;
 $$;
 
@@ -438,6 +539,10 @@ begin
     perform app.tell_stopped(stopped, how);
     how_many := how_many + 1;
   end loop;
+  if how_many > 0 then
+    update app.email_codes c set used_at = now()
+      where c.person_id = person and c.purpose = 'get-in' and c.used_at is null;
+  end if;
   return how_many;
 end;
 $$;
@@ -467,6 +572,7 @@ begin
   if address is null then
     perform app.refuse('bad-email');
   end if;
+  perform app.one_at_a_time(address, 'get-in');
   select * into backup from app.backup_emails b where b.email = address;
   if found
     and app.may_send_code(address, 'get-in')
@@ -582,9 +688,14 @@ begin
   select u.id into in_the_way from auth.users u
     where lower(u.email) = address and u.id <> backup.person_id and u.email_confirmed_at is null
     limit 1;
+  -- Stopped at this very moment: the stop wins. From here on it can't be stopped.
   update app.get_back_in r set finishing_at = now(),
-      old_email = (select u.email from auth.users u where u.id = backup.person_id)
-    where r.id = open_one.id;
+      old_email = coalesce(r.old_email, (select u.email from auth.users u where u.id = backup.person_id))
+    where r.id = open_one.id and r.stopped_at is null and r.done_at is null
+    returning * into open_one;
+  if not found then
+    return jsonb_build_object('in', false);
+  end if;
   return jsonb_build_object('in', true, 'state', 'finish', 'request', open_one.id,
     'person', backup.person_id, 'email', address, 'in_the_way', in_the_way);
 end;
@@ -595,50 +706,25 @@ $$;
 -- address is told. Called once; a second call does nothing.
 create function public.get_back_in_finished(request uuid) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
-declare
-  done app.get_back_in;
 begin
   if not app.from_supabase_admin() then
     perform app.refuse('not-allowed', '42501');
   end if;
-  update app.get_back_in r set done_at = now(), stop_hash = null
-    where r.id = request and r.finishing_at is not null and r.done_at is null
-      and exists (select 1 from auth.users u where u.id = r.person_id and lower(u.email) = r.backup_email)
-    returning * into done;
-  if not found then
-    return jsonb_build_object('done', false);
-  end if;
-  delete from app.backup_emails b where b.person_id = done.person_id;
-  update app.email_codes c set used_at = now() where c.person_id = done.person_id and c.used_at is null;
-  -- Every device is nudged to look at once, and finds it's signed out. Its
-  -- refresh tokens go with its session, as with Supabase's own sign-out.
-  perform app.nudge_my_phones(done.person_id);
-  delete from auth.sessions s where s.user_id = done.person_id;
-  delete from app.devices d where d.person_id = done.person_id;
-  if done.old_email is not null and done.old_email <> '' and lower(done.old_email) <> done.backup_email then
-    perform app.send_email(done.old_email, 'Your PrePenny sign-in email has changed',
-      'Your PrePenny sign-in email has changed', null,
-      array['Your backup email, ' || done.backup_email || ', was used to get back into your PrePenny account, so it''s now the address you sign in with, in place of this one.',
-        'It was asked for at ' || app.when_words(done.started_at) || ', and nobody stopped it in the 24 hours after.',
-        'Every phone and computer that was signed in to your account has been signed out.'],
-      'If this wasn''t you, reply to this email straight away.');
-  end if;
-  return jsonb_build_object('done', true);
+  return jsonb_build_object('done', app.complete_get_back_in(request));
 end;
 $$;
 
--- When Supabase's admin route couldn't make the change, the request is as
--- it was before the finishing code: still open, and still able to be
--- stopped, with the same link.
+-- When the get-back-in function couldn't be sure Supabase's admin route
+-- made the change: settled now, as `app.settle_finishing` says. {done: true}
+-- when the address had changed after all and it's finished; otherwise it's
+-- open again, with the same stop link.
 create function public.get_back_in_not_finished(request uuid) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 begin
   if not app.from_supabase_admin() then
     perform app.refuse('not-allowed', '42501');
   end if;
-  update app.get_back_in r set finishing_at = null, old_email = null
-    where r.id = request and r.finishing_at is not null and r.done_at is null;
-  return jsonb_build_object('reopened', found);
+  return jsonb_build_object('done', app.settle_finishing(request));
 end;
 $$;
 
@@ -664,9 +750,8 @@ language plpgsql volatile security definer set search_path = '' as $$
 declare
   stopped app.get_back_in;
 begin
-  if app.version_problem() is not null then
-    perform app.refuse(app.version_problem());
-  end if;
+  -- No version check: stopping touches no plan, and must work even from a
+  -- page of PrePenny kept from before an update.
   if token is null or token !~ '^[A-Za-z0-9_-]{43}$' then
     return jsonb_build_object('stopped', false);
   end if;
@@ -730,8 +815,7 @@ begin
   end if;
   perform app.stop_get_back_in_for(auth.uid(), 'backup-changed');
   delete from app.backup_emails b where b.person_id = auth.uid();
-  update app.email_codes c set used_at = now()
-    where c.person_id = auth.uid() and c.purpose = 'add-backup' and c.used_at is null;
+  update app.email_codes c set used_at = now() where c.person_id = auth.uid() and c.used_at is null;
   return jsonb_build_object('removed', true);
 end;
 $$;

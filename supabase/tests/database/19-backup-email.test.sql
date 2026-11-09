@@ -39,7 +39,8 @@ create function tests.wrong_code(address text) returns text language sql as $$
 $$;
 -- Lets the next code be asked for straight away, as if a minute had passed.
 create function tests.a_minute_later() returns void language sql security definer as $$
-  update app.email_codes set sent_at = sent_at - interval '61 seconds'
+  update app.email_codes set sent_at = sent_at - interval '61 seconds';
+  update app.code_asks set asked_at = asked_at - interval '61 seconds';
 $$;
 grant execute on all functions in schema tests to anon, authenticated;
 

@@ -15,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(82);
+select plan(99);
 
 select tests.make_jess_and_tom('editor');
 update auth.users set email_confirmed_at = now() where id in (tests.id('jess'), tests.id('tom'), tests.id('alex'));
@@ -63,7 +63,8 @@ create function tests.stop_token_sent_to(address text) returns text language sql
 $$;
 -- Lets the next code be asked for straight away, as if a minute had passed.
 create function tests.a_minute_later() returns void language sql security definer as $$
-  update app.email_codes set sent_at = sent_at - interval '61 seconds'
+  update app.email_codes set sent_at = sent_at - interval '61 seconds';
+  update app.code_asks set asked_at = asked_at - interval '61 seconds';
 $$;
 -- Time passing, for the database: every time it keeps moves back by `span`.
 create function tests.time_passes(span interval) returns void language sql security definer as $$
@@ -72,6 +73,7 @@ create function tests.time_passes(span interval) returns void language sql secur
   update app.email_codes set sent_at = sent_at - span, used_at = used_at - span;
   update app.code_tries set tried_at = tried_at - span;
   update app.code_locks set locked_until = locked_until - span;
+  update app.code_asks set asked_at = asked_at - span;
 $$;
 -- Everything about a person's account that getting back in could change:
 -- their sign-in address, email sign-in, sessions and refresh tokens,
@@ -88,6 +90,10 @@ create function tests.account_of(name text) returns jsonb language sql security 
     'devices', (select jsonb_agg(d.session_id order by d.session_id) from app.devices d where d.person_id = tests.id(name)),
     'plans', (select jsonb_agg(m.plan_id order by m.plan_id) from public.plan_members m
       where m.person_id = tests.id(name) and m.left_at is null))
+$$;
+-- A person's newest request to get back in, stopped or not, by name.
+create function tests.newest_request_of(who text) returns uuid language sql security definer as $$
+  select r.id from app.get_back_in r where r.person_id = tests.id($1) order by r.started_at desc limit 1
 $$;
 -- A person's open request to get back in, or the one finished, by name.
 create function tests.request_of(who text) returns uuid language sql security definer as $$
@@ -378,7 +384,7 @@ select tests.as_nobody();
 select is(public.stop_get_back_in_with_link(tests.stop_token_sent_to('alex@example.test')), '{"stopped": false}'::jsonb,
   'While it finishes, the stop link does nothing');
 select tests.as_supabase_admin();
-select is(public.get_back_in_not_finished(tests.request_of('alex')) ->> 'reopened', 'true',
+select is(public.get_back_in_not_finished(tests.request_of('alex')) ->> 'done', 'false',
   'Supabase''s admin route couldn''t make the change, so it''s opened again');
 select tests.as_nobody();
 select is(public.stop_get_back_in_with_link(tests.stop_token_sent_to('alex@example.test')), '{"stopped": true}'::jsonb,
@@ -409,6 +415,8 @@ select is(tests.emails_to('tom.new@example.test'), 3::bigint, 'but isn''t sent')
 
 -- Tom asks for a code to add tom.locked; Alex types 10 wrong codes for the
 -- same address, which locks it, whoever types them.
+select tests.as_test();
+select tests.a_minute_later();
 select tests.as_person('tom');
 select public.add_backup_email('tom.locked@example.test');
 select tests.as_person('alex');
@@ -439,6 +447,92 @@ select tests.as_person('tom');
 select ok(public.hello() -> 'get_back_in' <> 'null'::jsonb, 'Someone starts getting into Tom''s account again');
 select public.remove_backup_email();
 select ok(public.hello() -> 'get_back_in' = 'null'::jsonb, 'Removing his backup email stops it');
+select tests.as_supabase_admin();
+select is(public.get_back_in_finished(tests.newest_request_of('tom')) ->> 'done', 'false',
+  'and a stopped request can''t be finished');
+
+-- "Add a backup email": asking again within a minute says to wait, whether
+-- or not a code went, so it doesn't show an address is locked.
+select tests.as_test();
+select tests.time_passes(interval '1 day 1 minute');
+select tests.as_person('alex');
+select public.confirm_backup_email('locked.again@example.test', '000000') from generate_series(1, 10);
+select tests.as_person('tom');
+select is(public.add_backup_email('locked.again@example.test'), '{"sent": true}'::jsonb,
+  'Tom asks for a code for an address that''s locked: the usual answer');
+select is(public.add_backup_email('tom.other@example.test') ->> 'sent', 'false',
+  'and asking for another address straight away says to wait');
+select tests.as_test();
+select tests.a_minute_later();
+select tests.as_person('tom');
+select is(public.add_backup_email('tom.unlocked@example.test'), '{"sent": true}'::jsonb,
+  'An address that isn''t locked: the same answer');
+select is(public.add_backup_email('tom.other@example.test') ->> 'sent', 'false',
+  'and the same wait after it');
+
+-- 7 days after it could be finished, a request runs out. (Alex's phone has
+-- said hello, which notes when it was last used, before his account is kept.)
+select tests.as_test();
+select tests.time_passes(interval '1 day 1 minute');
+select tests.as_person('alex');
+select public.hello();
+select tests.as_test();
+select tests.keep('alex');
+select tests.as_nobody();
+select public.send_get_in_code('alex.backup@example.test');
+select tests.as_supabase_admin();
+select public.get_back_in_with_code('alex.backup@example.test', tests.code_sent_to('alex.backup@example.test'));
+select tests.as_test();
+select tests.time_passes(interval '8 days 1 minute');
+select tests.as_person('alex');
+select ok(public.hello() -> 'get_back_in' = 'null'::jsonb, '8 days on, nobody finished it, and it has run out');
+select tests.as_test();
+select is((select stopped_how from app.get_back_in where id = tests.newest_request_of('alex')), 'ran-out',
+  'marked as run out');
+select tests.as_nobody();
+select is(public.stop_get_back_in_with_link(tests.stop_token_sent_to('alex@example.test')), '{"stopped": false}'::jsonb,
+  'and its stop link does nothing');
+select public.send_get_in_code('alex.backup@example.test');
+select tests.as_test();
+select is((select stage from app.email_codes where email = 'alex.backup@example.test' and used_at is null), 'start',
+  'A code now asks afresh, rather than finishing');
+select ok(tests.as_kept('alex'), 'and Alex''s account is as it was');
+
+-- A finish that stops part-way is settled within minutes: opened again if
+-- the address didn't change, finished if it did. Never left half done.
+select tests.as_supabase_admin();
+select public.get_back_in_with_code('alex.backup@example.test', tests.code_sent_to('alex.backup@example.test'));
+select tests.as_test();
+select tests.time_passes(interval '1 day 1 minute');
+select tests.as_nobody();
+select public.send_get_in_code('alex.backup@example.test');
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('alex.backup@example.test', tests.code_sent_to('alex.backup@example.test')) ->> 'state',
+  'finish', 'Alex''s next request starts finishing, and the function stops there');
+select tests.as_person('alex');
+select ok(public.hello() -> 'get_back_in' = 'null'::jsonb, 'While it''s finishing, the notice isn''t shown');
+select tests.as_test();
+select tests.time_passes(interval '6 minutes');
+select tests.as_person('alex');
+select ok(public.hello() -> 'get_back_in' <> 'null'::jsonb,
+  '6 minutes on, with the address unchanged, it''s open again, and the notice shows');
+select tests.as_test();
+select ok(tests.as_kept('alex'), 'with nothing on the account changed');
+select tests.a_minute_later();
+select tests.as_nobody();
+select public.send_get_in_code('alex.backup@example.test');
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('alex.backup@example.test', tests.code_sent_to('alex.backup@example.test')) ->> 'state',
+  'finish', 'A new code starts finishing again');
+-- This time Supabase's admin route makes the change, and the function stops before telling the database.
+select tests.as_test();
+update auth.users set email = 'alex.backup@example.test' where id = tests.id('alex');
+select tests.time_passes(interval '6 minutes');
+select app.open_get_back_in(tests.id('alex'));
+select is((select count(*) from auth.sessions where user_id = tests.id('alex')), 0::bigint,
+  '6 minutes on, with the address changed, it''s finished: every device of Alex''s is signed out');
+select is(tests.newest_subject_to('alex@example.test'), 'Your PrePenny sign-in email has changed',
+  'and the old address is told');
 
 select * from finish();
 rollback;

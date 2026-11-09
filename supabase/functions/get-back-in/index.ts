@@ -70,6 +70,9 @@ Deno.serve(async (request) => {
   let email: unknown;
   let code: unknown;
   try {
+    if (Number(request.headers.get('content-length') ?? '0') > 1000) {
+      return answer(400, { problem: 'bad-email' });
+    }
     const text = await request.text();
     if (text.length > 1000) return answer(400, { problem: 'bad-email' });
     ({ email, code } = JSON.parse(text) as { email?: unknown; code?: unknown });
@@ -114,13 +117,27 @@ Deno.serve(async (request) => {
         headers,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
+    // Whenever it isn't sure the finish completed, the database settles it:
+    // finished if the address did change, otherwise open again as before,
+    // with the same stop link. Anything left part-way is settled by the
+    // database itself within 5 minutes anyway.
+    const settle = async (): Promise<boolean> => {
+      try {
+        const settled = await rpc('get_back_in_not_finished', { request: finish.request });
+        return settled.ok && ((await settled.json()) as { done?: unknown }).done === true;
+      } catch {
+        return false;
+      }
+    };
 
     // A sign-up with the backup address that was never confirmed holds
     // nothing, and is in the way: Supabase's admin route removes it.
     if (finish.in_the_way !== null) {
-      const removed = await admin(encodeURIComponent(finish.in_the_way), 'DELETE');
-      if (!removed.ok && removed.status !== 404) {
-        await rpc('get_back_in_not_finished', { request: finish.request });
+      const removed = await admin(encodeURIComponent(finish.in_the_way), 'DELETE').catch(
+        () => null,
+      );
+      if (removed === null || (!removed.ok && removed.status !== 404)) {
+        await settle();
         return answer(503, { problem: 'server' });
       }
     }
@@ -129,29 +146,32 @@ Deno.serve(async (request) => {
     const changed = await admin(encodeURIComponent(finish.person), 'PUT', {
       email: finish.email,
       email_confirm: true,
-    });
-    if (!changed.ok) {
+    }).catch(() => null);
+    if (changed === null || !changed.ok) {
       // Taken by another account since the database looked: Supabase's
-      // admin route refuses it (its database says "23505").
-      const refusal = (await changed.json().catch(() => ({}))) as { code?: unknown };
-      const inUse = changed.status === 422 || refusal.code === '23505';
-      await rpc('get_back_in_not_finished', { request: finish.request });
+      // admin route refuses it ("email_exists", or its database's "23505").
+      const refusal = (changed === null ? {} : await changed.json().catch(() => ({}))) as {
+        code?: unknown;
+        error_code?: unknown;
+      };
+      const inUse =
+        refusal.code === '23505' ||
+        refusal.code === 'email_exists' ||
+        refusal.error_code === 'email_exists';
+      if (await settle()) return answer(200, { in: true, state: 'finished' });
       return answer(inUse ? 409 : 503, { problem: inUse ? 'in-use' : 'server' });
     }
     // Every device signed out, the backup used up and the old address told.
-    // Tried twice, as the change above is made already: on the second try,
-    // "nothing to do" means the first did it and its answer was lost.
-    for (let tries = 0; tries < 2; tries += 1) {
-      try {
-        const done = await rpc('get_back_in_finished', { request: finish.request });
-        const said = (await done.json()) as { done?: unknown };
-        if (done.ok && (said.done === true || tries > 0)) {
-          return answer(200, { in: true, state: 'finished' });
-        }
-      } catch {
-        // Tried again below.
+    // If that answer is lost, the database settles it, as the address has changed.
+    try {
+      const done = await rpc('get_back_in_finished', { request: finish.request });
+      if (done.ok && ((await done.json()) as { done?: unknown }).done === true) {
+        return answer(200, { in: true, state: 'finished' });
       }
+    } catch {
+      // Settled below.
     }
+    if (await settle()) return answer(200, { in: true, state: 'finished' });
     return answer(503, { problem: 'server' });
   } catch {
     return answer(503, { problem: 'server' });
