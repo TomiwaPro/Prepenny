@@ -276,6 +276,12 @@ content_path = "./supabase/templates/sign-in-code.html"
 subject = "Your PrePenny sign-in code"
 content_path = "./supabase/templates/sign-in-code.html"
 
+# Changing the sign-in email address (step 3e): one email to each address,
+# each with its own code (double_confirm_changes above).
+[auth.email.template.email_change]
+subject = "Your PrePenny code to change your email address"
+content_path = "./supabase/templates/email-change.html"
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
@@ -329,8 +335,8 @@ max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]
