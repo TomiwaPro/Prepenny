@@ -72,7 +72,7 @@ import {
   setShowing,
   type UnsentEdit,
 } from './db.ts';
-import { setGetBackInNotice } from './get-back-in-notice.ts';
+import { getBackInNoticeChanges, setGetBackInNotice } from './get-back-in-notice.ts';
 
 // ---------------------------------------------------------------------------
 // What the screens show.
@@ -291,22 +291,33 @@ export async function lookAtSignInOnly(): Promise<void> {
 }
 
 let lookingForGetBackIn: Promise<void> | null = null;
+let lookAgain = false;
 
 /**
  * Asks the server only whether someone is getting back into this account
  * with its backup email, on its own, so the notice never waits behind
  * sending or bringing down the plan (D404). Only the notice changes here:
  * everything else the answer says is acted on by the next look at the
- * account, in turn.
+ * account, in turn. Asked again while it asks, as by a nudge, it asks once
+ * more straight after, and an answer that comes back after the notice was
+ * changed meanwhile, as by "Stop it", is left out.
  */
 export function lookForGetBackIn(): Promise<void> {
-  lookingForGetBackIn ??= (async () => {
+  if (lookingForGetBackIn !== null) {
+    lookAgain = true;
+    return lookingForGetBackIn;
+  }
+  lookingForGetBackIn = (async () => {
     try {
-      const client = await signedInClient();
-      if (client === null) return;
-      const answer = await rpc<{ sign_in?: unknown; get_back_in?: unknown }>(client, 'hello', {});
-      if (!answer.ok) return;
-      setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
+      do {
+        lookAgain = false;
+        const client = await signedInClient();
+        if (client === null) return;
+        const before = getBackInNoticeChanges();
+        const answer = await rpc<{ sign_in?: unknown; get_back_in?: unknown }>(client, 'hello', {});
+        if (!answer.ok || getBackInNoticeChanges() !== before) continue;
+        setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
+      } while (lookAgain);
     } catch {
       // No answer: the next look, within a minute, asks again.
     } finally {

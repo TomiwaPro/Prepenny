@@ -139,8 +139,18 @@ test('a preview signs in, saves a plan and keeps it in step on two phones, on th
       ).toEqual([preview]);
       if (REAL_SUPABASE !== '') expect(asked.has(new URL(REAL_SUPABASE).origin)).toBe(false);
     }
-    // And the live app is the same version as before.
-    expect(await liveVersion()).toBe(liveBefore);
+    // And the live app isn't this preview: the same version as before, or,
+    // if main was put online meanwhile, still not this one.
+    const liveAfter = await liveVersion();
+    const thisPreview = await (await first.page.request.get('/version.json')).text();
+    expect(liveAfter).not.toBe(thisPreview);
+    if (liveAfter !== liveBefore) {
+      test.info().annotations.push({
+        type: 'live app',
+        description:
+          'The live app was updated from main during the try, and is still not this preview.',
+      });
+    }
   } finally {
     await first.context.close();
     await second.context.close();
