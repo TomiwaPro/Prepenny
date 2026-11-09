@@ -19,7 +19,8 @@
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info, x-prepenny-version',
+  'Access-Control-Allow-Headers':
+    'authorization, apikey, content-type, x-client-info, x-prepenny-version',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -98,7 +99,9 @@ Deno.serve(async (request) => {
     if (!checked.ok) {
       const refusal = (await checked.json().catch(() => ({}))) as { message?: unknown };
       const problem =
-        typeof refusal.message === 'string' && KNOWN.has(refusal.message) ? refusal.message : 'server';
+        typeof refusal.message === 'string' && KNOWN.has(refusal.message)
+          ? refusal.message
+          : 'server';
       return answer(problem === 'server' ? 503 : 409, { problem });
     }
     const found = (await checked.json()) as { in: boolean; state?: string } | Finish;
