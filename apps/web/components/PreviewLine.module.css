@@ -1,0 +1,15 @@
+/*
+ * A small, plain line on previews only (D407): muted words on the paper with
+ * a brass line under them, as the example banner's edge. Never red or amber,
+ * which are for money only (DESIGN.md).
+ */
+.line {
+  margin: 0;
+  padding: var(--space-2) var(--gutter);
+  border-bottom: 1px solid var(--brass);
+  color: var(--ink-muted);
+  font-size: var(--size-second);
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+}

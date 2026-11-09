@@ -447,6 +447,11 @@ export const strings = {
     updated: 'PrePenny has been updated. Tap to reload.',
   },
 
+  /** On every page of a pull request's preview, never the live app (step 3e-2, D407). */
+  preview: {
+    line: "Test version: don't use real details.",
+  },
+
   status: {
     tight: 'Tight',
     short: 'Short',
