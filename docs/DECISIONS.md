@@ -4712,8 +4712,8 @@ The owner's instruction, 9 Nov 2026. Builds D346; replaces D340.
 - From now on, anything that needs a new permission, secret, variable or setting goes under "What you need to set up" in the step's report, with exact steps, checked against Supabase's and GitHub's own lists.
 - Decided in step 3e-2:
   - The Deploy workflow does it, in a job of its own after the preview is online, "Get the preview database ready, and try the preview". It's given the preview project's three secrets (`PREVIEW_SUPABASE_ACCESS_TOKEN`, `PREVIEW_SUPABASE_PROJECT_REF`, `PREVIEW_SUPABASE_DB_PASSWORD`), each only in the steps that use it, and never the real project's key, password or Project ID. The preview app is built with two variables, `PREVIEW_SUPABASE_URL` and `PREVIEW_SUPABASE_PUBLISHABLE_KEY`; a preview never falls back to the real project's, and isn't built at all if they name the real one.
-  - It changes a project only if Supabase says it's called `prepenny-preview` and its address is the preview app's, so a mistyped Project ID can't empty the real database.
-  - The preview's sign-in settings are the real project's (`supabase/sign-in-settings.json`), except that the sign-in email's link opens this preview, only preview addresses may be sent back to, emails come from "PrePenny (test version)" and Google is off: Google's sign-in is set up for the real project only. The database's own emails (backup email, getting back in) go through Resend from "PrePenny (test version)" too, with their links to the preview.
+  - It asks nothing of a project until its address is the preview app's and isn't the real project's, and changes nothing on it unless Supabase says it's called `prepenny-preview`, so a mistyped Project ID can't empty the real database (D410).
+  - The preview's sign-in settings are the real project's (`supabase/sign-in-settings.json`), except that the sign-in email's link opens the preview put online last, only preview addresses may be sent back to, emails come from "PrePenny (test version)" and Google is off: Google's sign-in is set up for the real project only. The database's own emails (backup email, getting back in) go through Resend from "PrePenny (test version)" too, with their links to the preview put online last. Signing in by typing the code works on every preview; the link comment and README.md say to type it.
   - Until the preview project is set up, previews go online with signing in off, as before step 3b.
 
 Test: `.github/workflows/deploy.yml`, tried on this step's own pull request (D408). README.md, "The preview database", has the owner's steps.
@@ -4753,7 +4753,8 @@ Decided 9 Nov 2026 in step 3e-2, from the owner's instruction to decide how two 
   - it already has exactly the pull request's database changes: nothing changes, and anyone signed up on it stays signed up. Most pull requests don't change the database, so they all share it;
   - it has every one but the pull request's newest: those are added (`supabase db push`);
   - anything else, such as another pull request's change it doesn't have, or a change written differently in a later commit: it starts again, empty, with exactly this pull request's changes (`supabase db reset --linked --no-seed`), never the tests' made-up people. Tried here on the local database by its other address, the way a hosted one is reset: it removed every account and plan and put back all 14 database changes in about a second.
-- **The other pull request's preview** then has a different database from the one it was built for, so it says "Changes can't be sent right now. They're saved on this phone." and loses nothing (D386), until its preview is put online again. GitHub comments on it to say so, and how to re-run it.
+- **The other pull requests' previews** then have a different database from the one they were built for, so they say "Changes can't be sent right now. They're saved on this phone." and lose nothing (D386), until theirs are put online again. The preview database notes every pull request sharing it (`preview.pull_requests`), and GitHub comments on each still open to say so, and how to re-run it.
+- **GitHub keeps only one waiting in line.** A third preview put online while one changes the preview database and another waits cancels the one waiting. Its link is posted already, by the job that put it online, and README.md says to re-run it.
 - Chosen over a database for each pull request, which needs Supabase's paid branching, and over starting again at every push, which would sign the owner out of every preview after each small fix.
 
 Test: `scripts/preview-database.test.ts`; the workflow, on this step's own pull request.
@@ -4765,7 +4766,7 @@ Why: the owner's instruction.
 Decided 9 Nov 2026 in step 3e-2, from the owner's instruction: the owner had to make the Supabase key four times, one missing permission at a time.
 
 - At the start of the Database workflow, and of the preview's job, before anything changes, `scripts/check-supabase-key.ts` tries each of the eleven permissions on Supabase's token page: Project Settings, Auth Config, Database, Migrations and Edge Functions: Read-write; API Keys, API Key Secrets, Data API Config, Database Config, Connection Pooling and Storage Config: Read. Missing any, it stops with one message listing all of them, as the token page names them, and says what to do.
-- Supabase has no way to ask a key what it may do, so each permission is tried with a call that needs it and changes nothing: a read; the project's name set to what it is already; "select 1"; or a change to something that can't exist (a sign-in provider with the nil id, which Supabase's description allows; a migration from 1970; a function never made), which Supabase answers "not found" only once the key may make it. Which call needs which permission is from Supabase's own description of its API ("x-fga-permissions", from github.com/supabase/supabase on 9 Nov 2026). It shows, for example, that changing the sign-in settings needs Project Settings: Read-write as well as Auth Config: Read-write. The revealed API keys are never kept or printed, and nor is the key.
+- Supabase has no way to ask a key what it may do, so each permission is tried with a call that needs it and changes nothing: a read; the project's name set to what it is already; a table that lasts only for its own query ("on commit drop"), which a read-only query can't make; or a change to something that can't exist (a sign-in provider with the nil id, which Supabase's description allows; a migration from 1970; a function never made), which Supabase answers "not found" only once the key may make it. Where Supabase might let a call through without the permission and answer in a weaker way, the answer must show it: the table made, and a secret key revealed in full (never kept or printed). On a brand-new project, the list of database changes may not exist yet, so any answer but a refusal counts there. Which call needs which permission is from Supabase's own description of its API ("x-fga-permissions", from github.com/supabase/supabase on 9 Nov 2026). It shows, for example, that changing the sign-in settings needs Project Settings: Read-write as well as Auth Config: Read-write. The revealed API keys are never kept or printed, and nor is the key.
 - What Supabase's command line asks for was watched here against a pretend Supabase: connecting asks for the project, its API keys with their secrets, its storage settings and its connection pooling; putting the function online, Edge Functions: Read-write. Its database changes go over the database connection itself, which couldn't be watched here, so the list is the owner's own, which works on the real project.
 - A key Supabase doesn't accept, a project it can't find, and a Supabase that doesn't answer clearly each say so instead, never "missing".
 - README.md, "The database", step 5, lists the eleven exactly as the token page names them, and "The preview database" the same for the preview key.
@@ -4799,6 +4800,9 @@ Why: the owner's test.
 
 ### D409. Smaller choices in step 3e-2
 
+- A pull request's preview is never put online as the live app. Until step 3e-2, the very first preview was, because Cloudflare needs a live app to make previews of; now that would be a test version with the preview database, so the job stops instead and says to put `main` online first.
+- The preview database gets the Resend key as a value beside its query, never written into the query's words, so no log of them holds it. The Database workflow's own step is left as it is: it changes the real project.
+
 Decided 9 Nov 2026 in step 3e-2.
 
 - The preview's Data API is checked as the real one's is, but never changed: the key reads those settings only (Data API Config: Read).
@@ -4807,3 +4811,23 @@ Decided 9 Nov 2026 in step 3e-2.
 - Screenshots of step 3e-2 are in `docs/screens/3e-2`.
 
 Why: each follows from the owner's instructions where they didn't say exactly.
+
+## From the outside review of step 3e-2
+
+### D410. What the outside review of step 3e-2 changed
+
+Decided 9 Nov 2026 in step 3e-2, from an outside review of the whole change. Adds to D403 to D409.
+
+- **Nothing is asked of a project before it's known to be the preview one.** The key check's calls, which change nothing but do write, ran before the project's name was checked, and removing the try's test accounts ran even when the checks had failed. Now the preview's address is checked against its Project ID and against the real project's address first, with no call to Supabase; the key check reads the project's name first and stops before anything else if it isn't `prepenny-preview` (`EXPECT_PROJECT_NAME`); and the test accounts are removed only after the key check passed.
+- **The key check can't be fooled by a weaker answer.** If Supabase ran a query read-only, or hid the secret keys, rather than refusing, the check would have passed a key without Database: Read-write or API Key Secrets: Read. Now the answer must show the permission (D406). And a brand-new project, whose list of database changes may fail before its first change, no longer stops the very first run.
+- **A preview waiting its turn keeps its link.** GitHub cancels all but one waiting job, which took the link with it; now the link is posted when the preview goes online, and the next job updates it (D405).
+- **Every pull request sharing the preview database is told,** not just the last one (D405).
+- **The sign-in email's link opens the preview put online last,** so the comment and README.md say to type the code (D403).
+- **The preview can't ever go live,** even the first time (D409).
+- **Smaller:** the look at the preview database shows its own errors; the try's report and traces are kept when it fails; the key check points the preview key to "The preview database", steps 6 to 8; the set-up message says what's true when only some secrets are there; a merge to `main` during the try no longer fails it, as long as the live app isn't the preview; and the notice's own look asks again when a nudge comes while it's asking, and leaves out an answer that comes back after "Stop it".
+- **For the owner:** the real project's key must have all eleven permissions, or the Database run after merging stops before changing anything, and phones wait to send changes until it has run (README.md, "The database"). The owner's list is the one the real key was made with.
+- **Accepted:** the real project's secrets are repository secrets, so keeping them from the preview job relies on the workflow, which every pull request's review can see. Moving them to a GitHub environment for `main` only would make GitHub enforce it; it's for later, as it changes how the real key is kept.
+
+Test: `scripts/check-supabase-key.test.ts` (11 checks: a weaker answer, a brand-new project and a wrong project added), `scripts/preview-database.test.ts`.
+
+Why: each was shown by the review with a case that went wrong.

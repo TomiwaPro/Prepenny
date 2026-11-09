@@ -147,17 +147,20 @@ A second, free Supabase project, **prepenny-preview**, in London, used only by p
 
 When a pull request is marked ready, and at every push after that, GitHub's **Deploy** workflow:
 
-1. puts the preview online, built to use prepenny-preview only;
-2. checks the preview key has every permission it needs, and that the project it's changing is called prepenny-preview, before changing anything;
-3. gives prepenny-preview the pull request's database changes, its sign-in settings (the sign-in email's link opens the preview, and emails come through Resend from "PrePenny (test version)", with the key GitHub already has) and the get-back-in function;
-4. tries the preview on two phones: signs in, saves a plan and keeps it in step between them, checking neither phone asks the real project anything and the live app hasn't changed;
-5. posts the preview link on the pull request, saying how that went.
+1. puts the preview online, built to use prepenny-preview only, and posts its link on the pull request;
+2. checks, before changing anything, that the project is prepenny-preview and not the real one, and that the preview key has every permission it needs;
+3. gives prepenny-preview the pull request's database changes, its sign-in settings (emails come through Resend from "PrePenny (test version)", with the key GitHub already has) and the get-back-in function;
+4. tries the preview on two phones: signs in, saves a plan and keeps it in step between them, checking neither phone asks the real project anything and the live app isn't the preview;
+5. updates the link's comment, saying how that went.
+
+On a preview, sign in by typing the 6-digit code from the email. The email's link opens whichever preview was put online last, which may be another pull request's.
 
 **Two pull requests open at once** (D405). There's one preview database, so it follows the pull request whose preview went online last, one at a time:
 
 - Most pull requests don't change the database. When the preview database already has exactly a pull request's database changes, nothing in it changes, and anyone signed up on it stays signed up. Any number of these share it.
 - A pull request with database changes of its own takes the preview database over: it gets that pull request's changes, adding them when it can and otherwise starting again, empty. Starting again removes test accounts too, so sign up again on the preview.
-- The other pull request's preview then says "Changes can't be sent right now. They're saved on this phone." until its preview is put online again, and GitHub comments on it to say so. To try it again: **Actions**, then **Deploy**, then its newest run, then **Re-run all jobs**.
+- The other pull requests' previews then say "Changes can't be sent right now. They're saved on this phone." until theirs are put online again, and GitHub comments on each to say so. To try one again: **Actions**, then **Deploy**, then its newest run, then **Re-run all jobs**.
+- GitHub keeps only one waiting in line: if three are put online at once, the middle one's "Get the preview database ready, and try the preview" check is cancelled. Its link is still there; tap **Re-run all jobs** on it as above.
 
 Supabase's free plan allows two projects, and pauses one that hasn't been used for a week, as it does the real one (D19).
 
@@ -207,16 +210,17 @@ Give GitHub the secrets and variables. Don't change `SUPABASE_ACCESS_TOKEN` or a
     - Name `PREVIEW_SUPABASE_PUBLISHABLE_KEY`, with the publishable key from step 5.
 11. Tell Claude Code it's done.
 
-Until all five are there, previews are still put online, with signing in off, and the pull request's comment says the preview database isn't set up yet. Nothing changes on the real project either way.
+Until the two variables are there, previews are put online with signing in off. Until the three secrets are there too, the preview database isn't got ready, and the pull request's comment says so. Nothing changes on the real project either way.
 
 ### If something goes wrong with the preview database
 
 Open **Actions**, then **Deploy**, then the pull request's newest run, then **Get the preview database ready, and try the preview**. The first step with a red cross says what to do:
 
 - **The key is missing permissions.** It lists every one missing. Make a new key for prepenny-preview with all eleven (steps 6 to 8), replace `PREVIEW_SUPABASE_ACCESS_TOKEN` with it, and tap **Re-run all jobs**.
-- **"Not the preview project".** `PREVIEW_SUPABASE_PROJECT_REF` holds another project's ID: put prepenny-preview's in (step 3).
+- **"Not the preview project", "Preview address", or a project "called" something else.** `PREVIEW_SUPABASE_PROJECT_REF` or `PREVIEW_SUPABASE_URL` holds another project's: put prepenny-preview's in (steps 3 and 4). Nothing was changed on any project.
+- **The check says cancelled.** Another pull request's preview took its turn (see above): tap **Re-run all jobs**.
 - **"Couldn't reach the preview database".** The free project has paused after a week without use, or the password is wrong. On supabase.com, open prepenny-preview and tap **Restore project**, wait a few minutes, then **Re-run all jobs**; or reset its database password under **Project Settings**, then **Database**, and replace `PREVIEW_SUPABASE_DB_PASSWORD`.
-- **The try on two phones failed.** The step says which part, and a report is kept with the run. Tell Claude Code.
+- **The try on two phones failed.** The step says which part, and a report is kept with the run, under **Artifacts**. Tell Claude Code.
 
 Resend's free plan sends 100 emails a day, shared between the live app and previews.
 
