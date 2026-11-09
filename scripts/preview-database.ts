@@ -17,7 +17,7 @@
 //
 // Usage, from the Deploy workflow:
 //   node scripts/preview-database.ts decide <what the preview database has, as JSON>
-//   node scripts/preview-database.ts record <pull request number>
+//   node scripts/preview-database.ts record <pull request number> <changed: true or false>
 
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -94,19 +94,28 @@ export function decide(has: PreviewHas, wanted: readonly Migration[]): Decision 
 
 /**
  * The SQL that notes, in the preview database, the fingerprints of the
- * changes it now has and which pull request it follows. Its own schema, which
- * the Data API never shows, and which starting again removes with the rest.
+ * changes it now has and the pull requests whose previews use it: this one
+ * alone when its changes were just made, or added to the others when nothing
+ * changed. Its own schema, which the Data API never shows, and which starting
+ * again removes with the rest.
  */
-export function recordSql(migrations: readonly Migration[], pullRequest: number): string {
+export function recordSql(
+  migrations: readonly Migration[],
+  pullRequest: number,
+  changed: boolean,
+): string {
   const rows = migrations.map((one) => `('${one.version}', '${one.sha256}')`).join(', ');
+  const number = Math.trunc(pullRequest);
   return [
     'create schema if not exists preview',
     'revoke all on schema preview from public, anon, authenticated',
     'create table if not exists preview.migrations (version text primary key, sha256 text not null)',
-    'create table if not exists preview.following (only_one boolean primary key default true check (only_one), pull_request integer not null, since timestamptz not null default now())',
+    'drop table if exists preview.following',
+    'create table if not exists preview.pull_requests (pull_request integer primary key, since timestamptz not null default now())',
     'delete from preview.migrations',
     ...(rows === '' ? [] : [`insert into preview.migrations (version, sha256) values ${rows}`]),
-    `insert into preview.following (pull_request) values (${Math.trunc(pullRequest)}) on conflict (only_one) do update set pull_request = excluded.pull_request, since = case when preview.following.pull_request = excluded.pull_request then preview.following.since else now() end`,
+    ...(changed ? [`delete from preview.pull_requests where pull_request <> ${number}`] : []),
+    `insert into preview.pull_requests (pull_request) values (${number}) on conflict (pull_request) do nothing`,
   ].join(';\n');
 }
 
@@ -118,11 +127,18 @@ function main() {
     console.log(JSON.stringify(decide(has, migrationsIn(folder))));
     return;
   }
-  if (command === 'record' && /^\d+$/.test(argument)) {
-    console.log(recordSql(migrationsIn(folder), Number(argument)));
+  const changed = process.argv[4];
+  if (
+    command === 'record' &&
+    /^\d+$/.test(argument) &&
+    (changed === 'true' || changed === 'false')
+  ) {
+    console.log(recordSql(migrationsIn(folder), Number(argument), changed === 'true'));
     return;
   }
-  console.error('Usage: preview-database.ts decide <json> | record <pull request number>');
+  console.error(
+    'Usage: preview-database.ts decide <json> | record <pull request number> <true|false>',
+  );
   process.exit(2);
 }
 

@@ -69,11 +69,15 @@ describe('What happens to the preview database for a pull request', () => {
     assert(migrationsIn(join(import.meta.dirname, '..', 'supabase', 'migrations')).length >= 14);
   });
 
-  it('notes the fingerprints and the pull request in a schema of its own, which nobody signed in can reach', () => {
-    const sql = recordSql(withOneMore, 31);
-    assert.match(sql, /create schema if not exists preview/);
-    assert.match(sql, /revoke all on schema preview from public, anon, authenticated/);
-    assert.match(sql, /\('20261112100000', 'c{64}'\)/);
-    assert.match(sql, /values \(31\)/);
+  it('notes the fingerprints and the pull requests in a schema of its own, which nobody signed in can reach', () => {
+    const changed = recordSql(withOneMore, 31, true);
+    assert.match(changed, /create schema if not exists preview/);
+    assert.match(changed, /revoke all on schema preview from public, anon, authenticated/);
+    assert.match(changed, /\('20261112100000', 'c{64}'\)/);
+    // Changed for this one: the others' previews no longer match, and are forgotten once told.
+    assert.match(changed, /delete from preview\.pull_requests where pull_request <> 31/);
+    assert.match(changed, /insert into preview\.pull_requests \(pull_request\) values \(31\)/);
+    // Nothing changed: this one joins the others.
+    assert.doesNotMatch(recordSql(withOneMore, 32, false), /delete from preview\.pull_requests/);
   });
 });
