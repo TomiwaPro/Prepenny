@@ -2,8 +2,8 @@
 -- - Added only with a code sent to it, from a sign-in that has passed the
 --   second step when two-step sign-in is on.
 -- - Never someone else's backup, or the address someone else signs in with.
--- - Getting back in needs a code sent to the backup: then it becomes the
---   sign-in address, every device is signed out, and the old address is told.
+-- - Getting back in needs a code sent to the backup, which starts a 24-hour
+--   wait (21-safer-recovery.test.sql has the rest, since step 3e hardening).
 -- - A code is bound to its person and address, lasts 10 minutes, takes 5
 --   tries at most and works once.
 -- - Asking for a code, or trying one, says the same for an address that
@@ -13,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(48);
+select plan(43);
 
 select tests.make_jess_and_tom('editor');
 update auth.users set email_confirmed_at = now() where id in (tests.id('jess'), tests.id('tom'), tests.id('alex'));
@@ -131,47 +131,40 @@ select tests.as_person('tom');
 select throws_ok($$ select public.add_backup_email('tom.backup@example.test') $$, '42501', 'not-allowed',
   'and not at all from a sign-in that hasn''t passed the second step');
 
--- Getting back in, with the same answers whoever asks.
+-- Getting back in, with the same answers whoever asks. Typing the code goes
+-- through the get-back-in function, with Supabase's admin key, since step 3e
+-- hardening; what follows the code is in 21-safer-recovery.test.sql.
 select tests.as_nobody();
 select is(public.send_get_in_code('nobodys.backup@example.test') ->> 'sent', 'true',
   'Asking for a code for an address that isn''t a backup says a code was sent');
 select tests.as_test();
 select is(tests.emails_to('nobodys.backup@example.test'), 0::bigint, 'though none is');
-select tests.as_nobody();
-select is(public.use_get_in_code('nobodys.backup@example.test', '123456') ->> 'in', 'false',
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('nobodys.backup@example.test', '123456') ->> 'in', 'false',
   'and trying a code for it says the same as a wrong code');
+select tests.as_nobody();
 select is(public.send_get_in_code('Jess.Backup@example.test') ->> 'sent', 'true', 'Asking for Jess''s backup');
 select tests.as_test();
 select is(tests.emails_to('jess.backup@example.test'), 3::bigint, 'sends a code to it');
-select tests.as_nobody();
-select is(public.use_get_in_code('jess.backup@example.test', tests.wrong_code('jess.backup@example.test')) ->> 'in',
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('jess.backup@example.test', tests.wrong_code('jess.backup@example.test')) ->> 'in',
   'false', 'A wrong code gets nobody in');
-select is(public.use_get_in_code('tom.backup@example.test', tests.code_sent_to('jess.backup@example.test')) ->> 'in',
+select is(public.get_back_in_with_code('tom.backup@example.test', tests.code_sent_to('jess.backup@example.test')) ->> 'in',
   'false', 'Jess''s code does nothing for another address');
+select tests.as_nobody();
 select is(public.send_get_in_code('jess.backup@example.test') ->> 'sent', 'true',
   'Asking again within a minute says the same');
 select tests.as_test();
 select is(tests.emails_to('jess.backup@example.test'), 3::bigint, 'but sends nothing more');
-select tests.as_nobody();
-select is(public.use_get_in_code('jess.backup@example.test', tests.code_sent_to('jess.backup@example.test')) ->> 'in',
-  'true', 'The right code gets Jess back in');
-
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('jess.backup@example.test', tests.code_sent_to('jess.backup@example.test')) ->> 'state',
+  'waiting', 'The right code starts the 24-hour wait');
 select tests.as_test();
-select is((select email from auth.users where id = tests.id('jess')), 'jess.backup@example.test',
-  'Her backup address is now the one she signs in with');
-select is((select email from auth.identities where user_id = tests.id('jess') and provider = 'email'),
-  'jess.backup@example.test', 'and her email sign-in names it too');
-select is((select count(*) from auth.sessions where user_id = tests.id('jess')), 0::bigint,
-  'Every device of hers is signed out');
-select ok(not exists (select 1 from app.backup_emails where person_id = tests.id('jess')),
-  'and the backup is used up: she can add a new one');
--- Her old address had the email saying a backup was added, and the code
--- for Tom's try to add it as his backup; now it's told she got back in.
-select is(tests.emails_to('jess@example.test'), 3::bigint, 'Her old address is told');
-select is((select email from auth.users where id = tests.id('tom')), 'tom@example.test', 'Tom''s account is as it was');
-select ok(exists (select 1 from auth.sessions where user_id = tests.id('tom')), 'and he''s still signed in');
-select tests.as_nobody();
-select is(public.use_get_in_code('jess.backup@example.test', tests.code_sent_to('jess.backup@example.test')) ->> 'in',
+select is((select email from auth.users where id = tests.id('jess')), 'jess@example.test',
+  'and her sign-in address is as it was');
+select ok(exists (select 1 from auth.sessions where user_id = tests.id('jess')), 'and she''s still signed in');
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('jess.backup@example.test', tests.code_sent_to('jess.backup@example.test')) ->> 'in',
   'false', 'The code works once');
 
 -- With nothing to send emails, the steps that send one say so.

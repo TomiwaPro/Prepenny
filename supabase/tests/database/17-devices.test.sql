@@ -3,7 +3,9 @@
 --   device, never by IP address or place, with when each was last used.
 -- - "Sign out of this device" ends one of the person's own devices only:
 --   nobody can see or end anyone else's.
--- - "Sign out everywhere" ends every device of the person's, and nobody else's.
+-- - "Sign out of all other devices" ends every device of the person's but
+--   the one asking, and nobody else's (step 3e hardening), and each one's
+--   refresh tokens go with it, as with Supabase's own sign-out.
 -- - An ended device gets nothing at all from its very next request, and its
 --   look at its sign-in (hello) says it has ended, so the phone removes the
 --   plan within a minute; the person's phones are nudged to look at once.
@@ -11,7 +13,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(30);
 
 select tests.make_jess_and_tom('editor');
 
@@ -103,13 +105,22 @@ select throws_ok($$ select public.plan_changes(tests.id('plan'), 0, 0) $$, '4250
   'can''t bring the plan down');
 select throws_ok($$ select public.my_devices() $$, '42501', 'not-allowed', 'or see the devices');
 
--- "Sign out everywhere".
-select tests.as_person('tom');
-select is((public.end_every_device() ->> 'ended')::integer, 1, 'Tom signs out everywhere');
+-- "Sign out of all other devices" (step 3e hardening). Tom has signed in on
+-- a tablet too, which can renew its sign-in with its refresh token.
 select tests.as_test();
-select is((select count(*) from auth.sessions where user_id = tests.id('tom')), 0::bigint,
-  'Every device of Tom''s is signed out');
-select ok(exists (select 1 from auth.sessions where id = tests.id('jess-session')), 'and Jess still isn''t');
+insert into auth.sessions (id, user_id, user_agent, created_at)
+values (tests.id('tom-tablet-session'), tests.id('tom'),
+  'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', now());
+insert into auth.refresh_tokens (token, user_id, session_id, revoked, created_at, updated_at)
+values ('tom-tablet-refresh', tests.id('tom')::text, tests.id('tom-tablet-session'), false, now(), now());
+select tests.as_person('tom');
+select is((public.end_other_devices() ->> 'ended')::integer, 1, 'Tom signs out of all his other devices');
+select tests.as_test();
+select results_eq($$ select id from auth.sessions where user_id = tests.id('tom') $$,
+  $$ values (tests.id('tom-session')) $$, 'Only the device he did it on is still signed in');
+select ok(not exists (select 1 from auth.refresh_tokens where token = 'tom-tablet-refresh'),
+  'and the tablet''s refresh token went with its sign-in, so it can''t renew it');
+select ok(exists (select 1 from auth.sessions where id = tests.id('jess-session')), 'and Jess still isn''t signed out');
 
 select * from finish();
 rollback;
