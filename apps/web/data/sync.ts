@@ -32,7 +32,12 @@
 import type { RecordWrite } from '@prepenny/engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
-import { finishBeforeSigningOut, signedInClient, stillSignedIn } from '../lib/account.ts';
+import {
+  finishBeforeSigningOut,
+  signedInClient,
+  signInEndedOnServer,
+  stillSignedIn,
+} from '../lib/account.ts';
 import type { ClashFacts, QueuedChange } from '../lib/clash.ts';
 import { newId } from '../lib/ids.ts';
 import { SETUP_LAYOUT, type SetupProgress, setupDone } from '../lib/setup-progress.ts';
@@ -43,6 +48,8 @@ import {
   savedRows,
   type Table,
 } from '../lib/sync-rows.ts';
+import { updateWhenSafe } from '../lib/update.ts';
+import { differs, liveVersion } from '../lib/version.ts';
 import {
   clashFactsInBackground,
   settleInBackground,
@@ -205,6 +212,81 @@ async function withDb<T>(task: (db: PrePennyDb) => Promise<T>): Promise<T> {
 }
 
 // ---------------------------------------------------------------------------
+// Before anything is sent or brought down: does this phone's sign-in still
+// stand, and is it on the version the server expects (step 3e)?
+
+/** What the server says about this phone before anything else happens. */
+type Standing =
+  /** All's well: send what's queued and bring down what's new. */
+  | 'ok'
+  /** The sign-in has ended, as after "Sign out everywhere" on another phone (D21). */
+  | 'ended'
+  /** Two-step sign-in is on and this sign-in hasn't passed the second step yet. */
+  | 'second-step'
+  /** A newer version of PrePenny is live: this phone updates itself first. */
+  | 'update'
+  /** The server is part-way through an update, or can't be reached: nothing goes for now. */
+  | 'wait';
+
+/**
+ * Asks the server whether this phone's sign-in stands and whether it's on
+ * the version the server expects, and the live site which version is live.
+ * A phone on an older version updates itself before it sends anything, so it
+ * never keeps a different plan; the database gives it nothing until then
+ * anyway (supabase/migrations, step 3e).
+ */
+async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
+  const answer = await withDb((db) =>
+    rpc<{ sign_in?: unknown; version?: unknown }>(client, 'hello', {}, db),
+  );
+  // A database from before step 3e has no `hello`: it's still being updated.
+  if (!answer.ok) return 'wait';
+  if (answer.data.sign_in === 'ended') return 'ended';
+  if (answer.data.sign_in === 'second-step') return 'second-step';
+  if (answer.data.sign_in !== 'ok') return 'wait';
+  const live = await liveVersion();
+  const newerLive = live !== null && differs(live);
+  if (answer.data.version === 'update-needed') return newerLive ? 'update' : 'wait';
+  if (answer.data.version !== 'ok') return 'wait';
+  return newerLive ? 'update' : 'ok';
+}
+
+/**
+ * Acts on what the server said. True when the phone can go on to send and
+ * bring down; otherwise the plan stays as it is on the phone, every change
+ * kept in the queue.
+ */
+async function actOn(standing: Standing, person: string | null): Promise<boolean> {
+  if (standing === 'ok') return true;
+  if (standing === 'ended') {
+    await signInEndedOnServer();
+    return false;
+  }
+  if (standing === 'second-step') tell('second-step');
+  if (standing === 'update') updateWhenSafe();
+  if (person !== null) {
+    await withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      if (own !== undefined && own.owner === person) {
+        await publish(db, own.id, standing === 'wait');
+      }
+    });
+  }
+  return false;
+}
+
+/**
+ * Looks only at whether this phone's sign-in still stands, as PrePenny does
+ * every minute when it's not on screen, so an ended sign-in removes the plan
+ * within a minute even then (D21).
+ */
+export async function lookAtSignInOnly(): Promise<void> {
+  const client = await signedInClient();
+  if (client === null) return;
+  if ((await lookAtStanding(client)) === 'ended') await signInEndedOnServer();
+}
+
+// ---------------------------------------------------------------------------
 // The server's rows on this phone.
 
 async function rowsOn(db: PrePennyDb, planId: string): Promise<MirrorRow[]> {
@@ -233,10 +315,19 @@ interface PlanChanges {
 
 interface Notice {
   readonly id: string;
+  /** The change that replaced the person's. */
+  readonly edit?: string;
   readonly data: {
     readonly lost?: string;
     readonly by?: string;
     readonly made_at?: string;
+    readonly rows?: readonly { readonly table?: string; readonly id?: string }[];
+    /** The device the replaced change was made on (step 3e). */
+    readonly from?: {
+      readonly session?: string;
+      readonly browser?: string;
+      readonly device?: string;
+    } | null;
   } | null;
 }
 
@@ -350,12 +441,19 @@ async function hearNotices(
   notices: readonly Notice[],
 ) {
   const heard: string[] = [];
+  // The person's devices still signed in, asked for only when a notice is about another one (step 3e).
+  let devices: Set<string> | null = null;
   for (const notice of notices) {
     if (!stillSignedIn()) return;
     const lost = notice.data?.lost;
     if (typeof lost !== 'string') continue;
     const sent = await db.sent.get([link.planId, lost]);
-    if (sent === undefined) continue;
+    if (sent === undefined) {
+      // Made on another phone of the person's (PLAN.md item 39).
+      devices ??= await devicesNow(client);
+      if (await heardElsewhere(db, link, notice, devices)) heard.push(notice.id);
+      continue;
+    }
     if ((await db.clashes.get(notice.id)) === undefined) {
       const facts = await clashFactsInBackground({
         rows: await rowsOn(db, link.planId),
@@ -380,6 +478,82 @@ async function hearNotices(
   } catch {
     // Heard again next time, and shown once: the clash is kept on the phone.
   }
+}
+
+/** The ids of the person's devices still signed in, or null when the server can't say for now. */
+async function devicesNow(client: SupabaseClient): Promise<Set<string> | null> {
+  const answer = await rpc<{ devices?: readonly { id?: unknown }[] }>(client, 'my_devices', {});
+  if (!answer.ok) return null;
+  return new Set(
+    (answer.data.devices ?? [])
+      .map((one) => one.id)
+      .filter((id): id is string => typeof id === 'string'),
+  );
+}
+
+/** A notice about a change made on another device is shown here once it has waited this long unread. */
+const WAITED_MS = 60 * 60 * 1000;
+
+/**
+ * A notice about a change the person made on another of their devices, which
+ * a newer change replaced (PLAN.md item 39, step 3e). The device that made
+ * it tells them, as in step 3d. This phone tells them instead when that
+ * device has signed out since, or the notice has waited an hour unread,
+ * naming the device: "Tom changed Rent on Tue 1 Dec after you changed it on
+ * Chrome on an Android phone." This phone doesn't hold the change itself, so
+ * it says what was changed but not to what. When this phone made the newer
+ * change, there's nothing to tell: the person has just made it. True when
+ * the notice is dealt with.
+ */
+async function heardElsewhere(
+  db: PrePennyDb,
+  link: PlanLink,
+  notice: Notice,
+  devices: Set<string> | null,
+): Promise<boolean> {
+  if (
+    typeof notice.edit === 'string' &&
+    (await db.sent.get([link.planId, notice.edit])) !== undefined
+  ) {
+    return true;
+  }
+  const from = notice.data?.from ?? null;
+  const madeAt = Date.parse(notice.data?.made_at ?? '');
+  const gone = devices !== null && typeof from?.session === 'string' && !devices.has(from.session);
+  const waited = Number.isFinite(madeAt) && Date.now() - madeAt > WAITED_MS;
+  if (!gone && !waited) return false;
+  if ((await db.clashes.get(notice.id)) === undefined) {
+    const rows = await rowsOn(db, link.planId);
+    const first = notice.data?.rows?.[0];
+    const row = rows.find((one) => one.table === first?.table && one.id === first?.id);
+    const seriesId = row?.values.series_id;
+    const series =
+      typeof seriesId === 'string'
+        ? rows.find((one) => one.table === 'series' && one.id === seriesId)
+        : row?.table === 'series'
+          ? row
+          : undefined;
+    const name = series?.values.name ?? row?.values.name;
+    const on = row?.values.original_date;
+    await db.clashes.put({
+      id: notice.id,
+      planId: link.planId,
+      kind: 'elsewhere',
+      facts: {
+        by: notice.data?.by ?? null,
+        name: typeof name === 'string' ? name : '',
+        on: typeof on === 'string' ? on : null,
+        theirs: { kind: 'changed' },
+        ours: { kind: 'changed' },
+      },
+      ...(from === null
+        ? {}
+        : { madeOn: { browser: from.browser ?? '', device: from.device ?? '' } }),
+      at: Date.now(),
+    });
+    clashesChanged();
+  }
+  return true;
 }
 
 /** A change as lib/clash.ts takes it. */
@@ -943,6 +1117,7 @@ export async function connectPlan(): Promise<Connection> {
   if (client === null) return NOT_NOW;
   const person = await personOf(client);
   if (person === null) return NOT_NOW;
+  if (!(await actOn(await lookAtStanding(client), person))) return NOT_NOW;
   const found = await inTurn(() => lookAtAccount(client, person));
   accountLooked = found.kind !== 'not-now' && found.kind !== 'choose';
   if (found.kind === 'kept') await syncNow();
@@ -1214,8 +1389,12 @@ export function syncNow(): Promise<void> {
   return running;
 }
 
-/** What a look at the account found that the screen showing has to act on. */
-export type AccountNews = 'choose' | 'brought-down';
+/**
+ * What a look at the account found that the screen showing has to act on:
+ * choosing which plan to keep, the account's plan brought down in place of
+ * what was showing, or the second step of two-step sign-in (step 3e).
+ */
+export type AccountNews = 'choose' | 'brought-down' | 'second-step';
 
 const newsListeners = new Set<(news: AccountNews) => void>();
 
@@ -1236,11 +1415,21 @@ function tell(news: AccountNews) {
 async function syncOnce(): Promise<void> {
   const client = await signedInClient();
   if (client === null) {
-    setState(NOTHING);
+    // Signed out, a plan that was kept in an account, with changes here not
+    // sent yet, stays on the phone (D348): More says how many, so the person
+    // knows to sign in again to send them (step 3e).
+    await withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      const link = own === undefined ? undefined : await db.links.get(own.id);
+      await publish(db, link === undefined ? null : link.planId);
+    }).catch(() => setState(NOTHING));
     return;
   }
   const person = await personOf(client);
   if (person === null) return;
+  // Nothing is sent or brought down until the server says this phone's
+  // sign-in stands and it's on the version expected (step 3e).
+  if (!(await actOn(await lookAtStanding(client), person))) return;
   for (let pass = 0; pass < 2; pass += 1) {
     const due = !accountLooked || (await withDb(async (db) => !(await keptHere(db, person))));
     if (due) {
@@ -1371,6 +1560,9 @@ const LOOK_EVERY_MS = 60_000;
 export function keepInStep(): () => void {
   const look = () => {
     if (document.visibilityState === 'visible') void syncNow();
+    // Not on screen, it still looks at its sign-in every minute, so one
+    // ended on another phone removes the plan here within a minute (D21).
+    else void inTurn(lookAtSignInOnly);
   };
   const timer = setInterval(look, LOOK_EVERY_MS);
   window.addEventListener('online', look);

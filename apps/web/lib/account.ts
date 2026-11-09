@@ -19,6 +19,7 @@ import { useSyncExternalStore } from 'react';
 import { claimOwnPlan, openDb } from '../data/db.ts';
 import { forgetEverything, planSafelyKept } from '../data/forget.ts';
 import { signInConfig } from './sign-in-config.ts';
+import { appVersion } from './version.ts';
 
 /** Where Supabase keeps the sign-in on this phone, in the browser's small store. */
 export const SIGN_IN_KEY = 'prepenny-sign-in';
@@ -123,6 +124,10 @@ function supabase(): Promise<SupabaseClient> {
   if (config === null) return Promise.reject(new Error('off'));
   client ??= import('@supabase/supabase-js').then(({ createClient }) => {
     const made = createClient(config.url, config.key, {
+      // Every request names the version of the database this app was built
+      // for, and the database gives plan data only to its own (step 3e,
+      // lib/version.ts), so an old phone can't quietly keep a different plan.
+      global: { headers: { 'x-prepenny-version': appVersion().database } },
       auth: {
         // Google comes back with a one-time code, checked against a secret
         // only this browser holds (PKCE).
@@ -160,6 +165,14 @@ export async function signedInClient(): Promise<SupabaseClient | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Supabase's client whether or not this phone is signed in, for the steps
+ * that work signed out too: getting back in with a backup email (step 3e).
+ */
+export function anyClient(): Promise<SupabaseClient> {
+  return supabase();
 }
 
 /** Who's signed in on this phone, as far as it knows now. */
@@ -233,6 +246,18 @@ async function signInEnded(): Promise<void> {
   if (!(await planSafelyKept())) return;
   await forgetEverything();
   window.location.replace('/?sign-in-ended');
+}
+
+/**
+ * The server says this phone's sign-in has ended, as after "Sign out of this
+ * device" or "Sign out everywhere" on another phone (D21, step 3e): the
+ * sign-in is removed from this phone, then the plan too, once it's safely in
+ * the account (D326). A plan with a change not sent yet stays, so nothing is
+ * lost (D348).
+ */
+export async function signInEndedOnServer(): Promise<void> {
+  await signOutHere();
+  await signInEnded();
 }
 
 /** True when the phone says it has no signal. */

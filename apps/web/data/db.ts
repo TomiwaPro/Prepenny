@@ -166,8 +166,13 @@ export interface SentEdit extends MadeChange {
 export interface StoredClash {
   readonly id: string;
   readonly planId: string;
-  readonly kind: 'kept-theirs' | 'replaced' | 'cant' | 'refused';
+  readonly kind: 'kept-theirs' | 'replaced' | 'cant' | 'refused' | 'elsewhere';
   readonly facts: ClashFacts;
+  /**
+   * For `elsewhere` (step 3e, PLAN.md item 39): the device the replaced
+   * change was made on, which isn't this phone, as codes (lib/device-words.ts).
+   */
+  readonly madeOn?: { readonly browser: string; readonly device: string };
   /** For `refused`: the server's code. */
   readonly code?: string;
   /** What "Put mine back" makes again. */
