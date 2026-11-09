@@ -2114,7 +2114,7 @@ export const strings = {
       'For your safety, getting back in takes 24 hours. Your first code starts the wait, and we tell the address you sign in with now. After 24 hours, a new code finishes it.',
     /** Under the code box, once the 24 hours have passed. */
     finishWhatHappens:
-      'Once you type it, your backup email becomes the address you sign in with, and every phone and computer signed in to your account is signed out.',
+      'Once you type it, your backup email becomes the address you sign in with. Every phone and computer signed in to your account is signed out, and any Google sign-in is removed.',
     useCode: 'Use this code',
     checking: 'Checking your code.',
     codeWrong:
@@ -2138,7 +2138,7 @@ export const strings = {
     /** "2:05pm on Tue 10 Nov". */
     when: (time: string, day: string) => `${time} on ${day}`,
     signInNow:
-      'Your backup email is now the address you sign in with. We sent a sign-in code to it.',
+      'Your backup email is now the address you sign in with. We sent a sign-in code to it. For your safety, any Google sign-in was removed: to use Google again, choose Continue with Google with a Google account that has this address.',
     noBackup:
       'No backup email? Write to hello@prepenny.co.uk from any address, and say which address you signed up with.',
     backToSignIn: 'Back to signing in',

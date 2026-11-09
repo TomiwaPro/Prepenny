@@ -15,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(99);
+select plan(102);
 
 select tests.make_jess_and_tom('editor');
 update auth.users set email_confirmed_at = now() where id in (tests.id('jess'), tests.id('tom'), tests.id('alex'));
@@ -31,6 +31,14 @@ values ('jess-phone-refresh', tests.id('jess')::text, tests.id('jess-session'), 
   ('tom-phone-refresh', tests.id('tom')::text, tests.id('tom-session'), false, now(), now());
 insert into app.devices (session_id, person_id) values (tests.id('jess-session'), tests.id('jess')),
   (tests.id('jess-laptop-session'), tests.id('jess'));
+-- Jess and Tom also sign in with Google (D402).
+insert into auth.identities (provider_id, user_id, identity_data, provider, created_at, updated_at)
+values ('google-jess', tests.id('jess'),
+    jsonb_build_object('sub', 'google-jess', 'email', 'jess@example.test', 'email_verified', true), 'google', now(), now()),
+  ('google-tom', tests.id('tom'),
+    jsonb_build_object('sub', 'google-tom', 'email', 'tom@example.test', 'email_verified', true), 'google', now(), now());
+update auth.users set raw_app_meta_data = '{"provider": "email", "providers": ["email", "google"]}'::jsonb
+  where id in (tests.id('jess'), tests.id('tom'));
 -- Each has added a backup email.
 insert into app.backup_emails (person_id, email) values (tests.id('jess'), 'jess.backup@example.test'),
   (tests.id('tom'), 'tom.backup@example.test'), (tests.id('alex'), 'alex.backup@example.test');
@@ -279,6 +287,12 @@ select is((select count(*) from auth.sessions where user_id = tests.id('jess')),
 select is((select count(*) from auth.refresh_tokens where user_id = tests.id('jess')::text), 0::bigint,
   'and none can renew its sign-in');
 select ok(not exists (select 1 from app.backup_emails where person_id = tests.id('jess')), 'Her backup is used up');
+select is((select array_agg(provider) from auth.identities where user_id = tests.id('jess')), array['email'],
+  'Her Google sign-in is removed, and only her email sign-in is left (D402)');
+select is((select raw_app_meta_data -> 'providers' from auth.users where id = tests.id('jess')), '["email"]'::jsonb,
+  'and her account lists email as its only way to sign in');
+select ok(exists (select 1 from auth.identities where user_id = tests.id('tom') and provider = 'google'),
+  'Tom''s Google sign-in is as it was');
 select is(tests.newest_subject_to('jess@example.test'), 'Your PrePenny sign-in email has changed', 'Her old address is told');
 select ok(exists (select 1 from auth.sessions where user_id = tests.id('tom')), 'Tom is still signed in');
 select ok(exists (select 1 from auth.refresh_tokens where token = 'tom-phone-refresh'), 'with his refresh token');

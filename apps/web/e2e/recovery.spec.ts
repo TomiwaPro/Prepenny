@@ -139,7 +139,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await signUpFromMore(page, main);
       const person = await personOn(page);
       addBackup(person, backup);
+      // Sam signs in with Google too (D402).
+      sql(`insert into auth.identities (provider_id, user_id, identity_data, provider, created_at, updated_at)
+        values (${quoted(`google-${person}`)}, ${quoted(person)},
+          jsonb_build_object('sub', ${quoted(`google-${person}`)}, 'email', ${quoted(main)}, 'email_verified', true),
+          'google', now(), now());
+        update auth.users set raw_app_meta_data = raw_app_meta_data
+          || '{"providers": ["email", "google"]}'::jsonb where id = ${quoted(person)};`);
       const before = accountOf(person);
+      expect(before).toContain('google:');
 
       // Another phone, signed out: the main address can't be reached. Its
       // clock is under the test's control, to let 24 hours pass.
@@ -226,6 +234,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
           `select email from auth.identities where user_id = ${quoted(person)} and provider = 'email'`,
         ),
       ).toBe(backup);
+      // The Google sign-in is removed, and the screen says how to use Google again (D402).
+      expect(
+        sql(
+          `select string_agg(provider, ',') from auth.identities where user_id = ${quoted(person)}`,
+        ),
+      ).toBe('email');
+      expect(
+        sql(`select raw_app_meta_data -> 'providers' from auth.users where id = ${quoted(person)}`),
+      ).toBe('["email"]');
 
       // Signing in with the backup address, as usual, brings the plan.
       await box(phone.page, strings.signIn.codeLabel).fill(

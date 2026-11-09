@@ -415,13 +415,16 @@ $$;
 
 -- Finishes a request once Supabase's admin route has made the backup the
 -- sign-in address: every device is nudged and signed out (each one's
--- refresh tokens go with it, as with Supabase's own sign-out), the backup is
--- used up, and the old address is told. False when there's nothing to
--- finish: already done, stopped, or the address hasn't changed.
+-- refresh tokens go with it, as with Supabase's own sign-out), every way of
+-- signing in other than the email address, such as "Continue with Google",
+-- is removed (D402), the backup is used up, and the old address is told.
+-- False when there's nothing to finish: already done, stopped, or the
+-- address hasn't changed.
 create function app.complete_get_back_in(request uuid) returns boolean
 language plpgsql security definer set search_path = '' as $$
 declare
   done app.get_back_in;
+  other_sign_ins integer;
 begin
   update app.get_back_in r set done_at = now(), stop_hash = null
     where r.id = request and r.finishing_at is not null and r.done_at is null and r.stopped_at is null
@@ -435,12 +438,27 @@ begin
   perform app.nudge_my_phones(done.person_id);
   delete from auth.sessions s where s.user_id = done.person_id;
   delete from app.devices d where d.person_id = done.person_id;
+  -- "Continue with Google", and any other way of signing in but the email
+  -- address, is removed (D402): whoever has the old Google account can't
+  -- use it to get in. Supabase has no admin route for this; its own
+  -- "unlink" deletes the sign-in's row and updates the account's list of
+  -- ways to sign in, as here. The email sign-in, which Supabase's admin
+  -- route has just set to the backup, stays.
+  delete from auth.identities i where i.user_id = done.person_id and i.provider <> 'email';
+  get diagnostics other_sign_ins = row_count;
+  if other_sign_ins > 0 then
+    update auth.users u set raw_app_meta_data = coalesce(u.raw_app_meta_data, '{}'::jsonb)
+        || jsonb_build_object('provider', 'email', 'providers', coalesce((
+          select jsonb_agg(distinct i.provider) from auth.identities i where i.user_id = u.id), '["email"]'::jsonb))
+      where u.id = done.person_id;
+  end if;
   if done.old_email is not null and done.old_email <> '' and lower(done.old_email) <> done.backup_email then
     perform app.send_email(done.old_email, 'Your PrePenny sign-in email has changed',
       'Your PrePenny sign-in email has changed', null,
       array['Your backup email, ' || done.backup_email || ', was used to get back into your PrePenny account, so it''s now the address you sign in with, in place of this one.',
         'It was asked for at ' || app.when_words(done.started_at) || ', and nobody stopped it in the 24 hours after.',
-        'Every phone and computer that was signed in to your account has been signed out.'],
+        'Every phone and computer that was signed in to your account has been signed out'
+          || case when other_sign_ins > 0 then ', and Continue with Google no longer signs in to it.' else '.' end],
       'If this wasn''t you, reply to this email straight away.');
   end if;
   return true;
@@ -605,7 +623,7 @@ begin
       perform app.send_email(address, 'Your PrePenny code to finish getting back in',
         'Your PrePenny code is', code,
         array['Type it into PrePenny to finish getting back into your account. It lasts 10 minutes.',
-          'Once it''s typed, this address becomes the one you sign in with, and every phone and computer signed in to your account is signed out.'],
+          'Once it''s typed, this address becomes the one you sign in with. Every phone and computer signed in to your account is signed out, and any Google sign-in is removed.'],
         'If you didn''t ask for this, you can ignore this email, and tell us at hello@prepenny.co.uk.');
     end if;
   end if;
