@@ -502,8 +502,8 @@ const WAITED_MS = 60 * 60 * 1000;
  * naming the device: "Tom changed Rent on Tue 1 Dec after you changed it on
  * Chrome on an Android phone." This phone doesn't hold the change itself, so
  * it says what was changed but not to what. When this phone made the newer
- * change, there's nothing to tell: the person has just made it. True when
- * the notice is dealt with.
+ * change, there's nothing to tell here: the person has just made it, and the
+ * notice is left for their other phones. True when the notice is dealt with.
  */
 async function heardElsewhere(
   db: PrePennyDb,
@@ -511,11 +511,13 @@ async function heardElsewhere(
   notice: Notice,
   devices: Set<string> | null,
 ): Promise<boolean> {
+  // This phone made the newer change: nothing to tell here, and the notice is
+  // left for the person's other phones.
   if (
     typeof notice.edit === 'string' &&
     (await db.sent.get([link.planId, notice.edit])) !== undefined
   ) {
-    return true;
+    return false;
   }
   const from = notice.data?.from ?? null;
   const madeAt = Date.parse(notice.data?.made_at ?? '');

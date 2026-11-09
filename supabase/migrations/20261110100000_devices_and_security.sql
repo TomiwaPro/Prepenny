@@ -740,6 +740,8 @@ begin
     where i.user_id = backup.person_id and i.provider = 'email';
   delete from app.backup_emails b where b.person_id = backup.person_id;
   update app.email_codes c set used_at = now() where c.person_id = backup.person_id and c.used_at is null;
+  -- Every device is nudged to look at once, and finds it's signed out.
+  perform app.nudge_my_phones(backup.person_id);
   delete from auth.sessions s where s.user_id = backup.person_id;
   delete from app.devices d where d.person_id = backup.person_id;
   if old_email is not null and old_email <> '' and lower(old_email) <> address then

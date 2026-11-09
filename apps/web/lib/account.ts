@@ -74,7 +74,9 @@ function setAccount(next: Account) {
   if (
     now !== null &&
     now.status === next.status &&
-    (now.status !== 'signed-in' || (next.status === 'signed-in' && now.id === next.id))
+    (now.status !== 'signed-in' ||
+      // The same person with the same address: a changed address shows at once (step 3e).
+      (next.status === 'signed-in' && now.id === next.id && now.email === next.email))
   ) {
     return;
   }
