@@ -15,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(77);
+select plan(82);
 
 select tests.make_jess_and_tom('editor');
 update auth.users set email_confirmed_at = now() where id in (tests.id('jess'), tests.id('tom'), tests.id('alex'));
@@ -363,6 +363,28 @@ select is(tests.emails_to('alex.backup@example.test'), 4::bigint, '24 hours afte
 select tests.as_supabase_admin();
 select is(public.get_back_in_with_code('alex.backup@example.test', tests.code_sent_to('alex.backup@example.test')) ->> 'state',
   'waiting', 'and the right code works');
+
+-- If Supabase's admin route can't make the change, the request is as it was,
+-- and the stop link still stops it.
+select tests.as_test();
+select tests.keep('alex');
+select tests.time_passes(interval '1 day 1 minute');
+select tests.as_nobody();
+select public.send_get_in_code('alex.backup@example.test');
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('alex.backup@example.test', tests.code_sent_to('alex.backup@example.test')) ->> 'state',
+  'finish', 'A day later, a new code starts finishing Alex''s');
+select tests.as_nobody();
+select is(public.stop_get_back_in_with_link(tests.stop_token_sent_to('alex@example.test')), '{"stopped": false}'::jsonb,
+  'While it finishes, the stop link does nothing');
+select tests.as_supabase_admin();
+select is(public.get_back_in_not_finished(tests.request_of('alex')) ->> 'reopened', 'true',
+  'Supabase''s admin route couldn''t make the change, so it''s opened again');
+select tests.as_nobody();
+select is(public.stop_get_back_in_with_link(tests.stop_token_sent_to('alex@example.test')), '{"stopped": true}'::jsonb,
+  'and the same stop link stops it');
+select tests.as_test();
+select ok(tests.as_kept('alex'), 'Alex''s account is as it was');
 
 -- The same caps for "add a backup email" codes.
 select tests.as_test();

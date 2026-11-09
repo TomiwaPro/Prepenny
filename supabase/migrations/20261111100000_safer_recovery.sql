@@ -299,7 +299,7 @@ create table app.get_back_in (
   backup_email text not null check (backup_email = lower(backup_email)),
   started_at timestamptz not null default now(),
   -- The stop link's token, scrambled. Gone once the request has ended, so
-  -- the link never works again.
+  -- the link never works again. While it's finishing, the link does nothing.
   stop_hash text unique,
   stopped_at timestamptz,
   stopped_how text check (stopped_how in ('link', 'device', 'backup-changed', 'ran-out')),
@@ -581,7 +581,7 @@ begin
   select u.id into in_the_way from auth.users u
     where lower(u.email) = address and u.id <> backup.person_id and u.email_confirmed_at is null
     limit 1;
-  update app.get_back_in r set finishing_at = now(), stop_hash = null,
+  update app.get_back_in r set finishing_at = now(),
       old_email = (select u.email from auth.users u where u.id = backup.person_id)
     where r.id = open_one.id;
   return jsonb_build_object('in', true, 'state', 'finish', 'request', open_one.id,
@@ -600,7 +600,7 @@ begin
   if not app.from_supabase_admin() then
     perform app.refuse('not-allowed', '42501');
   end if;
-  update app.get_back_in r set done_at = now()
+  update app.get_back_in r set done_at = now(), stop_hash = null
     where r.id = request and r.finishing_at is not null and r.done_at is null
       and exists (select 1 from auth.users u where u.id = r.person_id and lower(u.email) = r.backup_email)
     returning * into done;
@@ -627,16 +627,15 @@ end;
 $$;
 
 -- When Supabase's admin route couldn't make the change, the request is as
--- it was before the finishing code: still open, and still able to be stopped.
+-- it was before the finishing code: still open, and still able to be
+-- stopped, with the same link.
 create function public.get_back_in_not_finished(request uuid) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
-declare
-  token text := app.new_token();
 begin
   if not app.from_supabase_admin() then
     perform app.refuse('not-allowed', '42501');
   end if;
-  update app.get_back_in r set finishing_at = null, old_email = null, stop_hash = app.token_hash(token)
+  update app.get_back_in r set finishing_at = null, old_email = null
     where r.id = request and r.finishing_at is not null and r.done_at is null;
   return jsonb_build_object('reopened', found);
 end;
