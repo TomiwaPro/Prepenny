@@ -70,7 +70,8 @@ function watchTyping() {
 /** True while a box on the screen holds something typed that hasn't been sent. */
 function stillTyping(): boolean {
   for (const box of [...typedInto]) {
-    if (!box.isConnected) typedInto.delete(box);
+    // Gone with its screen, or in a sheet that has closed: finished with.
+    if (!box.isConnected || box.closest('dialog:not([open])') !== null) typedInto.delete(box);
   }
   return typedInto.size > 0;
 }
@@ -116,7 +117,12 @@ async function fetchNewVersion(): Promise<void> {
     const changed = new Promise<void>((resolve) => {
       navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
     });
-    await registration.update();
+    // On a weak signal, or just after it comes back, asking can take a long
+    // time: 10 seconds at most, then loading afresh fetches what it can.
+    await Promise.race([
+      registration.update().catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, 10_000)),
+    ]);
     if (registration.installing === null && registration.waiting === null) return;
     await Promise.race([changed, new Promise((resolve) => setTimeout(resolve, 30_000))]);
   } catch {

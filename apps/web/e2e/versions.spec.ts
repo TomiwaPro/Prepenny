@@ -101,6 +101,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         { version: { database: '20261109100000', build: 'step-3d' } },
       ] as const);
       await page.reload();
+      await openHome(page);
       await expect(page.getByTestId('balance')).toContainText('£267.54');
 
       // A change made on it waits on the phone.
