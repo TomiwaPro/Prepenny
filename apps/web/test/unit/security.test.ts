@@ -17,7 +17,7 @@ import {
 } from '../../lib/app-lock.ts';
 import { clashWords } from '../../lib/clash-words.ts';
 import { setClockOffset } from '../../lib/clock-offset.ts';
-import { deviceInSentence, deviceName, lastUsedWords } from '../../lib/device-words.ts';
+import { deviceInSentence, deviceName, lastUsedWords, momentWords } from '../../lib/device-words.ts';
 import { timeInOrder, timeNow } from '../../lib/ids.ts';
 import { differs } from '../../lib/version.ts';
 
@@ -64,6 +64,21 @@ describe('A signed-in device in plain words', () => {
     expect(lastUsedWords('2025-12-24T12:00:00Z', now).replaceAll('\u00a0', ' ')).toBe(
       'Last used Wed 24 Dec 2025',
     );
+  });
+});
+
+describe('When getting back in can be finished, in plain words (step 3e hardening)', () => {
+  const words = (time: string, now: string) =>
+    momentWords(time, new Date(now)).replaceAll('\u00a0', ' ');
+
+  it('says the time, then the day', () => {
+    expect(words('2026-11-10T14:05:00Z', '2026-11-09T14:05:00Z')).toBe('2:05pm on Tue 10 Nov');
+    expect(words('2026-11-10T00:05:00Z', '2026-11-09T00:05:00Z')).toBe('12:05am on Tue 10 Nov');
+    expect(words('2026-11-10T12:00:00Z', '2026-11-09T12:00:00Z')).toBe('12:00pm on Tue 10 Nov');
+  });
+
+  it("adds the year only when it isn't this year", () => {
+    expect(words('2027-01-01T09:00:00Z', '2026-12-31T09:00:00Z')).toBe('9:00am on Fri 1 Jan 2027');
   });
 });
 

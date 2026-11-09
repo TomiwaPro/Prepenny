@@ -20,7 +20,7 @@ export type SecurityProblem =
   /** The 6 numbers don't match: a wrong code, or one used already. */
   | 'code-wrong'
   | 'code-ran-out'
-  /** The second step is needed first, or again, as for signing out everywhere. */
+  /** The second step is needed first, or again, as for signing out of all other devices. */
   | 'second-step-needed'
   | 'bad-email'
   | 'same-as-sign-in'
@@ -136,7 +136,7 @@ async function factorId(made: SupabaseClient): Promise<string | null> {
 
 /**
  * Checks a code from the authenticator app, for signing in or for doing
- * something that needs the second step just now (signing out everywhere,
+ * something that needs the second step just now (signing out of other devices,
  * changing the email address, turning two-step sign-in off).
  */
 export async function passSecondStep(code: string): Promise<Done> {
@@ -274,9 +274,14 @@ export function endDevice(id: string): Promise<Done<unknown>> {
   return call('end_device', { device: id });
 }
 
-/** "Sign out everywhere": every device of the person's, this one included. */
-export function endEveryDevice(): Promise<Done<unknown>> {
-  return call('end_every_device');
+/**
+ * "Sign out of all other devices" (step 3e hardening): every device of the
+ * person's but this one, which stays signed in. How many were signed out.
+ */
+export async function endOtherDevices(): Promise<Done<number>> {
+  const answer = await call<{ ended: number }>('end_other_devices');
+  if (!answer.ok) return answer;
+  return { ok: true, value: answer.value.ended };
 }
 
 // ---------------------------------------------------------------------------
@@ -401,17 +406,85 @@ export function removeBackupEmail(): Promise<Done<unknown>> {
 }
 
 // ---------------------------------------------------------------------------
-// Getting back in with the backup email, signed out.
+// Getting back in with the backup email, signed out, with a 24-hour wait and
+// a way to stop it (step 3e hardening).
 
 /** Asks for a code at a backup email. The answer is the same whether or not it's anyone's backup. */
 export function sendGetInCode(email: string): Promise<Done<unknown>> {
   return call('send_get_in_code', { email }, true);
 }
 
-/** Uses the code: the backup becomes the address the account signs in with. */
-export async function getInWithCode(email: string, code: string): Promise<Done> {
-  const answer = await call<{ in: boolean }>('use_get_in_code', { email, code }, true);
+/** What typing the code at the backup email did. */
+export type GetIn =
+  /** The 24-hour wait has started, or is still going: it can be finished from `readyAt`, a UTC time. */
+  | { readonly state: 'waiting'; readonly readyAt: string }
+  /** The 24 hours have passed, but this code was sent before: a new one finishes it. */
+  | { readonly state: 'new-code' }
+  /** The backup now signs in to another account, so it can't become this one's. */
+  | { readonly state: 'in-use' }
+  /** Done: the backup is the address the account signs in with now. */
+  | { readonly state: 'finished' };
+
+/**
+ * Uses the code sent to a backup email, through the get-back-in function
+ * (supabase/functions/get-back-in), which finishes with Supabase's own admin
+ * route. A wrong code, an address that's nobody's backup and a locked one
+ * all say "code-wrong".
+ */
+export async function getInWithCode(email: string, code: string): Promise<Done<GetIn>> {
+  const config = signInConfig();
+  if (config === null) return { ok: false, problem: 'server' };
+  try {
+    const response = await fetch(`${config.url}/functions/v1/get-back-in`, {
+      method: 'POST',
+      headers: {
+        apikey: config.key,
+        'Content-Type': 'application/json',
+        'x-prepenny-version': appVersion().database,
+      },
+      body: JSON.stringify({ email, code }),
+    });
+    const answer = (await response.json().catch(() => ({}))) as {
+      in?: unknown;
+      state?: unknown;
+      ready_at?: unknown;
+      problem?: unknown;
+    };
+    if (!response.ok) {
+      return { ok: false, problem: answer.problem === 'in-use' ? 'in-use' : 'server' };
+    }
+    if (answer.in !== true) return { ok: false, problem: 'code-wrong' };
+    switch (answer.state) {
+      case 'waiting':
+        return typeof answer.ready_at === 'string'
+          ? { ok: true, value: { state: 'waiting', readyAt: answer.ready_at } }
+          : { ok: false, problem: 'server' };
+      case 'new-code':
+      case 'in-use':
+      case 'finished':
+        return { ok: true, value: { state: answer.state } };
+      default:
+        return { ok: false, problem: 'server' };
+    }
+  } catch (error) {
+    return { ok: false, problem: problemOf(error) };
+  }
+}
+
+/** "Stop it", on a signed-in phone: stops the person's own request to get back in. */
+export async function stopGetBackIn(): Promise<Done<boolean>> {
+  const answer = await call<{ stopped: boolean }>('stop_get_back_in');
   if (!answer.ok) return answer;
-  if (!answer.value.in) return { ok: false, problem: 'code-wrong' };
-  return { ok: true, value: true };
+  return { ok: true, value: answer.value.stopped };
+}
+
+/**
+ * The stop link from the email to the sign-in address: true when it stopped
+ * a request, false when it had been used, its request had ended, or it was
+ * never one. It can do nothing else.
+ */
+export async function stopWithLink(token: string): Promise<Done<boolean>> {
+  const answer = await call<{ stopped: boolean }>('stop_get_back_in_with_link', { token }, true);
+  if (!answer.ok) return answer;
+  return { ok: true, value: answer.value.stopped };
 }

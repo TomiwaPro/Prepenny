@@ -72,6 +72,7 @@ import {
   setShowing,
   type UnsentEdit,
 } from './db.ts';
+import { setGetBackInNotice } from './get-back-in-notice.ts';
 
 // ---------------------------------------------------------------------------
 // What the screens show.
@@ -219,7 +220,7 @@ async function withDb<T>(task: (db: PrePennyDb) => Promise<T>): Promise<T> {
 type Standing =
   /** All's well: send what's queued and bring down what's new. */
   | 'ok'
-  /** The sign-in has ended, as after "Sign out everywhere" on another phone (D21). */
+  /** The sign-in has ended, as after "Sign out of all other devices" on another phone (D21). */
   | 'ended'
   /** Two-step sign-in is on and this sign-in hasn't passed the second step yet. */
   | 'second-step'
@@ -237,10 +238,13 @@ type Standing =
  */
 async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
   const answer = await withDb((db) =>
-    rpc<{ sign_in?: unknown; version?: unknown }>(client, 'hello', {}, db),
+    rpc<{ sign_in?: unknown; version?: unknown; get_back_in?: unknown }>(client, 'hello', {}, db),
   );
   // A database from before step 3e has no `hello`: it's still being updated.
   if (!answer.ok) return 'wait';
+  // Someone getting back in with the backup email: every screen says so,
+  // with "Stop it" (step 3e hardening).
+  setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
   if (answer.data.sign_in === 'ended') return 'ended';
   if (answer.data.sign_in === 'second-step') return 'second-step';
   if (answer.data.sign_in !== 'ok') return 'wait';

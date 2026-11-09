@@ -12,6 +12,7 @@ import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { AppLock } from '../AppLock.tsx';
 import { Problem } from '../Fields.tsx';
+import { GetBackInNotice } from '../GetBackInNotice.tsx';
 import { KeepInStep } from '../KeepInStep.tsx';
 import { UpdateNote } from '../UpdateNote.tsx';
 import styles from './Setup.module.css';
@@ -72,6 +73,10 @@ function Steps() {
           <Problem text={strings.setup.notSaved} />
         </div>
       ) : null}
+      {/* Someone getting back in with the backup email, on a signed-in phone (step 3e hardening). */}
+      <div className={`${styles.notice} ${styles.noticeIfAny}`}>
+        <GetBackInNotice />
+      </div>
       {/* A fresh screen for each step, so its boxes start afresh. */}
       <div key={String(step)}>{screen}</div>
     </>
