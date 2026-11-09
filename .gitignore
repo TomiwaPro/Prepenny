@@ -11,6 +11,7 @@ apps/web/playwright-report/
 apps/web/.wrangler/
 *.tsbuildinfo
 apps/web/public/engine-worker*.js
+apps/web/public/version.json
 apps/web/.env*.local
 # The Supabase command line's own working files (step 3a).
 supabase/.temp/

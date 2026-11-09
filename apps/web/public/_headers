@@ -14,3 +14,7 @@
 # The offline helper is checked for a new version on every visit.
 /sw.js
   Cache-Control: no-cache
+
+# Which version of PrePenny is live now (step 3e): never kept by a browser.
+/version.json
+  Cache-Control: no-store
