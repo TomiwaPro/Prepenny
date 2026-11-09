@@ -109,7 +109,14 @@ GitHub needs permission to change your Supabase project. Supabase changes its me
    - **Region:** the one that says **London** (its code is `eu-west-2`).
    - Leave everything else as it is, then tap **Create new project**. It takes a minute or two; wait until the project's page no longer says it's being set up.
 4. Copy the **Project ID**. Tap the gear icon at the bottom of the menu on the left (**Project Settings**), then **General**. The Project ID is 20 letters, such as `abcdefghijklmnopqrst`. It's also in the web address of every page of your project.
-5. Make a key for GitHub. Go to https://supabase.com/dashboard/account/tokens and tap **Generate new token**. Call it `GitHub, PrePenny`. If it asks when the token should expire, choose the longest time offered. Tap **Generate token**, and copy it straight away: Supabase shows it only once. It starts with `sbp_`.
+5. Make a key for GitHub. Go to https://supabase.com/dashboard/account/tokens and tap **Generate new token**. Call it `GitHub, PrePenny`. If it asks when the token should expire, choose the longest time offered. If it asks which permissions to give it, give it these on the **prepenny** project. Each is what a step of the Database workflow needs; the names in brackets are Supabase's own, as its API lists them, in case the menu words differ:
+   - **Projects: Read-write** (`project_admin_read`, `project_admin_write`): to find the project, and, with Auth below, to send the sign-in settings.
+   - **Database: Read-write** (`database_read`, `database_write`): to send the database changes, and to give the database the Resend key.
+   - **Auth: Read-write** (`auth_config_read`, `auth_config_write`): to send the sign-in settings.
+   - **Data API: Read-write** (`data_api_config_read`, `data_api_config_write`): to check the Data API shows only PrePenny's public part, and to put that right.
+   - **Edge Functions: Read-write** (`edge_functions_read`, `edge_functions_write`): to put the get-back-in function online (step 3e hardening, part G of "Signing in").
+
+   Tap **Generate token**, and copy it straight away: Supabase shows it only once. It starts with `sbp_`.
 6. In GitHub, open the repository, then **Settings**, then **Secrets and variables**, then **Actions**, then **New repository secret**. Add three secrets, one at a time:
    - Name `SUPABASE_ACCESS_TOKEN`, with the token from step 5.
    - Name `SUPABASE_PROJECT_REF`, with the Project ID from step 4.
@@ -118,9 +125,11 @@ GitHub needs permission to change your Supabase project. Supabase changes its me
 
 Until the three secrets are added, the Database workflow says "Supabase isn't set up yet, so the real database wasn't changed".
 
-Keep the token and the password only in GitHub's secrets and your password manager: anyone with the token can change your Supabase projects. PrePenny never needs Supabase's "service role" key in the app.
+Keep the token and the password only in GitHub's secrets and your password manager: anyone with the token can change your Supabase project. PrePenny never needs Supabase's "service role" key in the app.
 
 ### If something goes wrong with the database
+
+- **A Database step says Supabase refused it (403, "forbidden" or "not allowed").** GitHub's Supabase key is missing that step's permission. Make a new key with every permission in step 5 above, replace `SUPABASE_ACCESS_TOKEN` with it as in step 6, then run the workflow again: **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
 
 - **The Database workflow has a red cross saying it couldn't reach the database.** On the free plan, a project that hasn't been used for a week is paused, and Supabase emails you first. Open the project on supabase.com and tap **Restore project**, wait a few minutes, then open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Moving to Supabase's paid plan before launch stops the pausing (D19).
 - **It says a secret is wrong.** Make the token again (step 5) and replace `SUPABASE_ACCESS_TOKEN`, or reset the database password under **Project Settings**, then **Database**, and replace `SUPABASE_DB_PASSWORD`. Then run the workflow again as above.
@@ -231,7 +240,7 @@ To check it worked, once the step 3b pull request is merged: open https://prepen
 
 ### F. Step 3e: devices, two-step sign-in, email addresses and the backup email
 
-There's nothing new to set up: the Database workflow does it all at the merge, with the three Supabase secrets and the Resend key you added for steps 3a and 3b. It adds the new tables, switches on two-step sign-in with an authenticator app (Supabase's own, free), sends Supabase the email for changing an email address (`supabase/templates/email-change.html`), and gives the database the Resend key, kept in Supabase's Vault, so it can email the codes for a backup email (D384). GitHub's Supabase key needs no new permission: a Supabase access token can already do everything on your projects.
+There's nothing new to set up: the Database workflow does it all at the merge, with the three Supabase secrets and the Resend key you added for steps 3a and 3b. It adds the new tables, switches on two-step sign-in with an authenticator app (Supabase's own, free), sends Supabase the email for changing an email address (`supabase/templates/email-change.html`), and gives the database the Resend key, kept in Supabase's Vault, so it can email the codes for a backup email (D384). GitHub's Supabase key needs the permissions listed in "The database", step 5.
 
 To check it worked, after merging: open **Actions**, then **Database**, then the newest run. It should have a green tick, and its last step, **Let the database send PrePenny's own emails**, should say "PrePenny's own emails go through Resend."
 
@@ -247,14 +256,16 @@ Resend's free plan sends 100 emails a day and 3,000 a month. Adding a backup ema
 
 ### G. Step 3e hardening: getting back in waits 24 hours
 
-There's nothing new to set up. When the pull request is merged, the **Database** workflow changes the database, then puts a small function online on Supabase, **get-back-in**, which finishes getting back in through Supabase's own admin route (D393). Supabase gives the function the project's own secret key, so no key is copied anywhere, and the Supabase key GitHub already has can put functions online.
+When the pull request is merged, the **Database** workflow changes the database, then puts a small function online on Supabase, **get-back-in**, which finishes getting back in through Supabase's own admin route (D393). Supabase gives the function the project's own secret key, so no key is copied anywhere.
+
+The one thing to set up: putting a function online needs GitHub's Supabase key to have **Edge Functions: Read-write** (`edge_functions_write` in Supabase's API). Done by the owner on 9 Nov 2026, with a new key in `SUPABASE_ACCESS_TOKEN`. A key made later needs every permission in "The database", step 5.
 
 To check it worked, after merging:
 
 1. On GitHub, open **Actions**, then **Database**, then the newest run. It should have a green tick, with a step called **Put the get-back-in function online**.
 2. On supabase.com, open the **prepenny** project, then **Edge Functions** in the menu on the left. **get-back-in** should be listed.
 
-**If the function step fails** (a red cross on that step only; the database is changed already): open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Until it's online, a code typed on the **Get back in** page can't be used, and the page says PrePenny couldn't reach its server. Nothing on anyone's account changes meanwhile. If it fails twice, tell Claude Code what the step says.
+**If the function step fails** (a red cross on that step only; the database is changed already): if it says Supabase refused it (403), the key is missing **Edge Functions: Read-write**: make a new key as in "The database", step 5, and replace `SUPABASE_ACCESS_TOKEN`. Then open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Until it's online, a code typed on the **Get back in** page can't be used, and the page says PrePenny couldn't reach its server. Nothing on anyone's account changes meanwhile. If it fails twice, tell Claude Code what the step says.
 
 ## Bank holidays
 

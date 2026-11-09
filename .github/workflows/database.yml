@@ -105,8 +105,9 @@ jobs:
         # Step 3e hardening: getting back in with a backup email finishes
         # through Supabase's own admin route, from a small function Supabase
         # runs (supabase/functions/get-back-in), straight after the database
-        # it calls. Supabase gives it the project's own secret key, so nothing
-        # new is needed here. Anyone can call it, signed in or not
+        # it calls. Supabase gives it the project's own secret key; putting it
+        # online needs GitHub's Supabase key to have Edge Functions:
+        # Read-write (README.md, "The database"). Anyone can call it, signed in or not
         # (--no-verify-jwt, as supabase/config.toml says): the database
         # decides what each code does. Bundled on Supabase's side (--use-api).
         if: steps.supabase.outputs.ready == 'true'
