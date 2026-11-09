@@ -832,6 +832,7 @@ test('12. two phones sending their first copy at the same moment leave one plan 
   browserName: _browser,
 }, info) => {
   test.skip(info.project.name !== 'sign-in-360', 'Once, at 360px.');
+  const version = sql('select max(version) from supabase_migrations.schema_migrations');
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const address = newEmail('race');
     const { hashed_token: key } = await signInLink(address);
@@ -852,6 +853,8 @@ test('12. two phones sending their first copy at the same moment leave one plan 
           apikey: LOCAL_SUPABASE.key,
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          // The version of the database the app is built for, as every phone sends it (step 3e, D386).
+          'x-prepenny-version': version,
         },
         body: JSON.stringify({ plan: randomUUID(), nation: null }),
       });

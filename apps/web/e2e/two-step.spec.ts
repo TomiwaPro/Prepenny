@@ -111,10 +111,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(adding).toContainText(t.otherDevices);
       await noAxeProblems(page);
       if (shoots(info, colorScheme)) {
+        // Tall enough for the whole screen, so the tabs at the bottom don't cover the key.
+        const size = page.viewportSize();
+        await page.setViewportSize({ width: 360, height: 1200 });
         await page.screenshot({
           path: `${SCREENS}/two-step-turning-on-360-light.png`,
           fullPage: true,
         });
+        if (size !== null) await page.setViewportSize(size);
       }
       // A wrong code is refused, and says what to do.
       await box(adding, s.appCodeLabel).fill(wrongCode(key));

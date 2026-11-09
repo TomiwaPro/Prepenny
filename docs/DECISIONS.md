@@ -4512,6 +4512,7 @@ Decided 9 Nov 2026 in step 3e.
 - Screenshots are in `docs/screens/3e`. The tests describe their phones as Chrome on an Android phone, Safari on an iPhone and Safari on a Mac, as real ones would, for the device list.
 - The new tests are `apps/web/e2e/devices.spec.ts`, `two-step.spec.ts`, `emails.spec.ts` and `versions.spec.ts` (in the sign-in projects, with the local Supabase), and `app-lock.spec.ts` (with the others, since the lock needs no account). The authenticator app is played by `e2e/totp.ts`.
 - Step 3d's check of a notice's contents (`16-clashes.test.sql`, check 20) now includes the device the replaced change was made on, as D388 adds. Nothing else in it changed.
+- Each new rule was broken on purpose, one at a time, to see the database tests fail: the second step left out of `app.session_ok()` (21 of 22 checks in `18-two-step` failed), the version left out (`20-versions` failed), ending anyone's device (`17-devices` failed), a backup already in use allowed, any code taken (`19-backup-email` failed), and signing out everywhere without a code just then (9 of 22 in `18-two-step` failed). Each passed again once put back.
 - The local Supabase here is started with its images from Docker Hub (`SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io`), because this computer can't reach GitHub's own store of them. GitHub's machines start it as before.
 
 Why: each follows from the owner's instructions where they didn't say exactly.
