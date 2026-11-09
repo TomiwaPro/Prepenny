@@ -11,6 +11,8 @@
 //    finish, and sign in with the backup address.
 // 2. The stop link in the email to the sign-in address stops it, once, and
 //    does nothing else.
+// 3. Two-step sign-in still applies after getting back in: signing in with
+//    the backup address asks for the authenticator app's code.
 // "Sign out of all other devices" is devices.spec.ts test 2.
 
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
@@ -18,6 +20,7 @@ import { strings } from '../strings/en-GB.ts';
 import { noSidewaysScroll } from './journeys.ts';
 import { box, noAxeProblems } from './setup.ts';
 import { codeIn, countEmails, makeAPlan, newEmail } from './sign-in-helpers.ts';
+import { appCode } from './totp.ts';
 import {
   DEVICES,
   openMore,
@@ -287,6 +290,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
           fullPage: true,
         });
       }
+      // Loaded again, with the token gone from the address, it still works.
+      await laptop.page.reload();
+      await expect(laptop.page.getByRole('button', { name: st.stop })).toBeVisible();
       await laptop.page.getByRole('button', { name: st.stop }).click();
       await expect(
         laptop.page.getByRole('heading', { level: 1, name: st.stoppedHeading }),
@@ -315,8 +321,66 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await again.getByRole('button', { name: st.stop }).click();
       await expect(again.getByTestId('stop-outcome')).toContainText(st.notStopped);
       await noAxeProblems(again);
+      // Without the whole link, the page asks for it, and stops nothing.
+      const bare = await laptop.context.newPage();
+      await bare.goto('/stop-get-back-in/');
+      await expect(bare.getByTestId('stop-outcome')).toContainText(st.noLink);
+      await expect(bare.getByRole('button', { name: st.stop })).toHaveCount(0);
       expect(accountOf(person)).toBe(before);
       await laptop.context.close();
+      await phone.context.close();
+    });
+
+    test('3. two-step sign-in still applies after getting back in', async ({
+      page,
+      browser,
+    }, info) => {
+      test.slow();
+      const main = newEmail('sam');
+      const backup = newEmail('backup');
+      await makeAPlan(page);
+      await signUpFromMore(page, main);
+      const person = await personOn(page);
+      addBackup(person, backup);
+      // Two-step sign-in is on, with an authenticator app whose key the test knows.
+      const key = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+      sql(`insert into auth.mfa_factors (id, user_id, friendly_name, factor_type, status, created_at, updated_at, secret)
+        values (gen_random_uuid(), ${quoted(person)}, 'PrePenny', 'totp', 'verified', now(), now(), ${quoted(key)})`);
+
+      // Someone with the backup asks to get back in, and 24 hours pass.
+      const phone = await secondPhone(browser, info, colorScheme, undefined, DEVICES.iphoneSafari);
+      await phone.page.goto('/get-back-in/');
+      await useBackup(phone.page, backup, CODE_SUBJECT);
+      await expect(phone.page.getByTestId('get-back-in-waiting')).toBeVisible();
+      aDayPasses(person);
+
+      // They come back, ask for a code again, and it finishes.
+      await phone.page.getByRole('button', { name: g.otherEmail }).click();
+      await useBackup(phone.page, backup, FINISH_SUBJECT);
+      await expect(phone.page.getByText(g.signInNow)).toBeVisible();
+      expect(sql(`select email from auth.users where id = ${quoted(person)}`)).toBe(backup);
+
+      // Signing in with the backup address still needs the authenticator app.
+      const signingIn = Date.now() - 60_000;
+      await box(phone.page, strings.signIn.codeLabel).fill(
+        await codeIn(backup, 'Your PrePenny sign-in code', signingIn),
+      );
+      await phone.page
+        .getByRole('button', { name: strings.signIn.finishSignIn, exact: true })
+        .click();
+      await expect(
+        phone.page.getByRole('heading', { level: 1, name: strings.secondStep.heading }),
+      ).toBeVisible();
+      expect(
+        Number(sql(`select count(*) from auth.mfa_factors where user_id = ${quoted(person)}`)),
+      ).toBe(1);
+      await noAxeProblems(phone.page);
+      await box(phone.page, strings.security.appCodeLabel).fill(appCode(key));
+      await phone.page
+        .getByRole('button', { name: strings.secondStep.finish, exact: true })
+        .click();
+      await expect(phone.page).toHaveURL(/\/app\/$/);
+      await expect(phone.page.getByTestId('balance')).toContainText('£267.54');
       await phone.context.close();
     });
   });

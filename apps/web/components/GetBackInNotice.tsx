@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { setGetBackInNotice, useGetBackInNotice } from '../data/get-back-in-notice.ts';
+import { syncSoon } from '../data/sync.ts';
 import { momentWords } from '../lib/device-words.ts';
 import { stopGetBackIn } from '../lib/security.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -30,21 +31,21 @@ function usePassed(time: string | null): boolean {
 export function GetBackInNotice() {
   const notice = useGetBackInNotice();
   const [busy, setBusy] = useState(false);
-  const [stopped, setStopped] = useState(false);
+  const [stopped, setStopped] = useState<'stopped' | 'nothing' | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const ready = usePassed(notice?.readyAt ?? null);
 
   // A new request after one was stopped shows afresh.
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the request changes
   useEffect(() => {
-    if (notice !== null) setStopped(false);
+    if (notice !== null) setStopped(null);
   }, [notice?.startedAt]);
 
-  if (stopped) {
+  if (stopped !== null) {
     return (
       <div className={styles.notice} data-testid="get-back-in-stopped" role="status">
-        <p>{t.stopped}</p>
-        <button type="button" className={formStyles.outlined} onClick={() => setStopped(false)}>
+        <p>{stopped === 'stopped' ? t.stopped : t.notStopped}</p>
+        <button type="button" className={formStyles.outlined} onClick={() => setStopped(null)}>
           {t.gotIt}
         </button>
       </div>
@@ -76,8 +77,11 @@ export function GetBackInNotice() {
             setProblem(securityWords(done.problem));
             return;
           }
+          // Nothing to stop: it had ended, or was finishing. Either way the
+          // notice goes, and the phone looks at its sign-in again now.
           setGetBackInNotice(null);
-          setStopped(true);
+          setStopped(done.value ? 'stopped' : 'nothing');
+          if (!done.value) syncSoon();
         }}
       >
         {busy ? t.stopping : t.stop}

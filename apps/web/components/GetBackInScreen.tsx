@@ -10,8 +10,8 @@
 // 2. The code starts a 24-hour wait. Nothing on the account changes. The
 //    address the account signs in with is told, with a link that stops it,
 //    and every signed-in device shows a notice with "Stop it".
-// 3. The wait: when it can be finished, remembered on this phone so the page
-//    shows it again when it's opened again.
+// 3. The wait: when it can be finished, remembered in this tab so the page
+//    shows it again when it's loaded again.
 // 4. After 24 hours, a new code finishes it (supabase/functions/get-back-in):
 //    the backup becomes the address the account signs in with, and every
 //    phone and computer signed in to it is signed out. Then signing in as
@@ -36,7 +36,11 @@ const t = strings.getBackIn;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Where this phone remembers a wait it started, until it's finished. */
+/**
+ * Where this tab remembers a wait it started, until it's finished. Only this
+ * tab: on a shared computer, nothing of it is left once the tab is closed.
+ * Coming back later, the person types their backup email again.
+ */
 const WAITING_KEY = 'prepenny-get-back-in';
 
 interface Waiting {
@@ -47,7 +51,9 @@ interface Waiting {
 
 function rememberedWait(): Waiting | null {
   try {
-    const kept = JSON.parse(localStorage.getItem(WAITING_KEY) ?? 'null') as Partial<Waiting> | null;
+    const kept = JSON.parse(
+      sessionStorage.getItem(WAITING_KEY) ?? 'null',
+    ) as Partial<Waiting> | null;
     return typeof kept?.email === 'string' && typeof kept.readyAt === 'string'
       ? { email: kept.email, readyAt: kept.readyAt }
       : null;
@@ -58,10 +64,10 @@ function rememberedWait(): Waiting | null {
 
 function rememberWait(waiting: Waiting | null) {
   try {
-    if (waiting === null) localStorage.removeItem(WAITING_KEY);
-    else localStorage.setItem(WAITING_KEY, JSON.stringify(waiting));
+    if (waiting === null) sessionStorage.removeItem(WAITING_KEY);
+    else sessionStorage.setItem(WAITING_KEY, JSON.stringify(waiting));
   } catch {
-    // A phone that keeps nothing shows the wait until the page closes.
+    // A tab that keeps nothing shows the wait until the page closes.
   }
 }
 
@@ -94,7 +100,7 @@ export function GetBackInScreen() {
   const off = signInConfig() === null;
   const ready = usePassed(readyAt);
 
-  // A wait started on this phone shows again when the page is opened again.
+  // A wait started in this tab shows again when the page is loaded again.
   useEffect(() => {
     const waiting = rememberedWait();
     if (waiting === null) return;
@@ -272,7 +278,7 @@ export function GetBackInScreen() {
               onChange={setCode}
               inputRef={codeBox}
             />
-            <p className={styles.line}>{t.whatHappens}</p>
+            <p className={styles.line}>{ready ? t.finishWhatHappens : t.whatHappens}</p>
             <button type="submit" className={formStyles.main} aria-disabled={busy !== null}>
               {t.useCode}
             </button>

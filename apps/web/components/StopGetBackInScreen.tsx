@@ -7,9 +7,10 @@
 // it signs nobody in or out, and says nothing about the account.
 //
 // The token is after "#", so it never reaches any server in the page's
-// address, and it's taken out of the address bar as soon as the page opens.
-// Nothing happens until "Stop it" is tapped, so an email service that opens
-// links to check them can't use it up (as D312).
+// address, and it's taken out of the address bar as soon as the page opens,
+// kept for this tab only until it's used, so the page still works if it's
+// loaded again. Nothing happens until "Stop it" is tapped, so an email
+// service that opens links to check them can't use it up (as D312).
 
 import { useEffect, useRef, useState } from 'react';
 import { stopWithLink } from '../lib/security.ts';
@@ -22,19 +23,46 @@ import styles from './SignInScreen.module.css';
 
 const t = strings.stopGetBackIn;
 
+/** Where this tab keeps the link's token until it's used. */
+const TOKEN_KEY = 'prepenny-stop-link';
+/** A whole token: 32 bytes, as the database makes them. */
+const WHOLE = /^[A-Za-z0-9_-]{43}$/;
+
+function keptToken(): string {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function keepToken(token: string | null) {
+  try {
+    if (token === null) sessionStorage.removeItem(TOKEN_KEY);
+    else sessionStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    // A tab that keeps nothing needs the link opened again after a reload.
+  }
+}
+
 export function StopGetBackInScreen() {
   const token = useRef<string>('');
   const heading = useRef<HTMLHeadingElement>(null);
-  const [outcome, setOutcome] = useState<'asking' | 'stopped' | 'not-stopped'>('asking');
+  const [outcome, setOutcome] = useState<'asking' | 'stopped' | 'not-stopped' | 'no-link'>(
+    'asking',
+  );
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const off = signInConfig() === null;
 
   useEffect(() => {
-    token.current = window.location.hash.replace(/^#/, '');
+    const fromLink = window.location.hash.replace(/^#/, '');
     if (window.location.hash !== '') {
       window.history.replaceState(null, '', window.location.pathname);
     }
+    token.current = WHOLE.test(fromLink) ? fromLink : keptToken();
+    if (WHOLE.test(token.current)) keepToken(token.current);
+    else setOutcome('no-link');
   }, []);
 
   useEffect(() => {
@@ -51,6 +79,7 @@ export function StopGetBackInScreen() {
       setProblem(securityWords(done.problem));
       return;
     }
+    keepToken(null);
     setOutcome(done.value ? 'stopped' : 'not-stopped');
   }
 
@@ -64,7 +93,7 @@ export function StopGetBackInScreen() {
           <h1 ref={heading} tabIndex={-1} className={screenStyles.heading}>
             {outcome === 'stopped' ? t.stoppedHeading : t.heading}
           </h1>
-          <p className={screenStyles.purpose}>{outcome === 'asking' ? t.purpose : null}</p>
+          <p className={screenStyles.purpose}>{outcome === 'stopped' ? null : t.purpose}</p>
         </header>
         {off ? (
           <section className={styles.card}>
@@ -89,7 +118,7 @@ export function StopGetBackInScreen() {
                 <p className={styles.line}>{t.changeBackup}</p>
               </>
             ) : (
-              <p className={styles.strong}>{t.notStopped}</p>
+              <p className={styles.strong}>{outcome === 'no-link' ? t.noLink : t.notStopped}</p>
             )}
             <a className={`${formStyles.outlined} ${styles.linkButton}`} href="/">
               {t.goToPrePenny}

@@ -2112,6 +2112,9 @@ export const strings = {
       "It's in an email from PrePenny. If it isn't there, look in your junk or spam folder.",
     whatHappens:
       'For your safety, getting back in takes 24 hours. Your first code starts the wait, and we tell the address you sign in with now. After 24 hours, a new code finishes it.',
+    /** Under the code box, once the 24 hours have passed. */
+    finishWhatHappens:
+      'Once you type it, your backup email becomes the address you sign in with, and every phone and computer signed in to your account is signed out.',
     useCode: 'Use this code',
     checking: 'Checking your code.',
     codeWrong:
@@ -2156,6 +2159,8 @@ export const strings = {
     stopping: 'Stopping it.',
     stopped:
       "It's stopped. Nothing on your account changed, and we've told your backup email. If you don't know who has your backup email, change it: More, then Email addresses.",
+    notStopped:
+      "There was nothing to stop: it had already ended, or was just finishing. If you're signed out in the next minute, write to hello@prepenny.co.uk.",
     gotIt: 'Got it',
   },
 
@@ -2163,7 +2168,7 @@ export const strings = {
   stopGetBackIn: {
     heading: 'Stop someone getting into your account',
     purpose:
-      "Someone asked to get into your PrePenny account with your backup email. If it wasn't you, stop it here. Nothing on your account has changed.",
+      "Someone asked to get into your PrePenny account with your backup email. If it wasn't you, stop it here.",
     stop: 'Stop it',
     stopping: 'Stopping it.',
     stoppedHeading: "It's stopped",
@@ -2173,6 +2178,8 @@ export const strings = {
       "If you don't know who has your backup email, sign in and change it: More, then Email addresses.",
     notStopped:
       "This link has been used already, or the request it was for has ended, so there's nothing to stop. If you think someone got into your account, write to hello@prepenny.co.uk.",
+    noLink:
+      'This page needs the whole link from the email. Open the link in the email from PrePenny again.',
     goToPrePenny: 'Go to PrePenny',
   },
 

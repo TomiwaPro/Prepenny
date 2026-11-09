@@ -17,7 +17,12 @@ import {
 } from '../../lib/app-lock.ts';
 import { clashWords } from '../../lib/clash-words.ts';
 import { setClockOffset } from '../../lib/clock-offset.ts';
-import { deviceInSentence, deviceName, lastUsedWords, momentWords } from '../../lib/device-words.ts';
+import {
+  deviceInSentence,
+  deviceName,
+  lastUsedWords,
+  momentWords,
+} from '../../lib/device-words.ts';
 import { timeInOrder, timeNow } from '../../lib/ids.ts';
 import { differs } from '../../lib/version.ts';
 
