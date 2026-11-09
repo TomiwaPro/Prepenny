@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
+import { AppLock } from '../AppLock.tsx';
 import { Problem } from '../Fields.tsx';
 import { KeepInStep } from '../KeepInStep.tsx';
 import { UpdateNote } from '../UpdateNote.tsx';
@@ -82,6 +83,8 @@ function Steps() {
 export function SetupScreen() {
   return (
     <SetupProvider>
+      {/* The app lock over setup too, which shows the plan as it's made (step 3e). */}
+      <AppLock ownPlan="setting-up" />
       <KeepInStep />
       <Steps />
     </SetupProvider>
