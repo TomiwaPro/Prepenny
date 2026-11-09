@@ -39,7 +39,10 @@ test.use({ userAgent: DEVICES.androidChrome });
 
 async function openTwoStep(page: Page) {
   await openMore(page);
-  await page.getByTestId('security').getByRole('link', { name: /Two-step sign-in/ }).click();
+  await page
+    .getByTestId('security')
+    .getByRole('link', { name: /Two-step sign-in/ })
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: t.heading })).toBeVisible();
 }
 
@@ -108,7 +111,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(adding).toContainText(t.otherDevices);
       await noAxeProblems(page);
       if (shoots(info, colorScheme)) {
-        await page.screenshot({ path: `${SCREENS}/two-step-turning-on-360-light.png`, fullPage: true });
+        await page.screenshot({
+          path: `${SCREENS}/two-step-turning-on-360-light.png`,
+          fullPage: true,
+        });
       }
       // A wrong code is refused, and says what to do.
       await box(adding, s.appCodeLabel).fill(wrongCode(key));
@@ -120,7 +126,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByRole('status').filter({ hasText: t.turnedOn })).toBeVisible();
       await noAxeProblems(page);
       expect(
-        sql(`select count(*) from auth.mfa_factors where user_id = ${quoted(person)} and status = 'verified'`),
+        sql(
+          `select count(*) from auth.mfa_factors where user_id = ${quoted(person)} and status = 'verified'`,
+        ),
       ).toBe('1');
 
       // Supabase signs the other devices out: the laptop stops and removes the plan.
@@ -152,7 +160,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
             apikey: LOCAL_SUPABASE.key,
             authorization: `Bearer ${token}`,
             'content-type': 'application/json',
-            'x-prepenny-version': sql('select max(version) from supabase_migrations.schema_migrations'),
+            'x-prepenny-version': sql(
+              'select max(version) from supabase_migrations.schema_migrations',
+            ),
           },
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
@@ -171,16 +181,23 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // Typing the app's code signs it in, and the plan comes down.
       await box(iphone.page, s.appCodeLabel).fill(wrongCode(key));
-      await iphone.page.getByRole('button', { name: strings.secondStep.finish, exact: true }).click();
+      await iphone.page
+        .getByRole('button', { name: strings.secondStep.finish, exact: true })
+        .click();
       await expect(iphone.page.getByText(s.appCodeWrong)).toBeVisible();
       await box(iphone.page, s.appCodeLabel).fill(await freshCode(key, used));
-      await iphone.page.getByRole('button', { name: strings.secondStep.finish, exact: true }).click();
+      await iphone.page
+        .getByRole('button', { name: strings.secondStep.finish, exact: true })
+        .click();
       await expect(iphone.page).toHaveURL(/\/app\/$/);
       await expect(iphone.page.getByTestId('balance')).toContainText('£267.54');
 
       // With it on, changing the email address asks for the app's code first.
       await openMore(page);
-      await page.getByTestId('security').getByRole('link', { name: /Email addresses/ }).click();
+      await page
+        .getByTestId('security')
+        .getByRole('link', { name: /Email addresses/ })
+        .click();
       const signInEmail = page.getByTestId('sign-in-email');
       await signInEmail.getByRole('button', { name: strings.emails.change }).click();
       await box(signInEmail, strings.emails.newLabel).fill(newEmail('newsam'));
@@ -191,7 +208,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // And so does signing out everywhere.
       await openMore(page);
-      await page.getByTestId('security').getByRole('link', { name: /Signed-in devices/ }).click();
+      await page
+        .getByTestId('security')
+        .getByRole('link', { name: /Signed-in devices/ })
+        .click();
       await page.getByRole('button', { name: strings.devices.everywhere, exact: true }).click();
       const everywhere = page.getByRole('dialog', { name: strings.devices.everywhereTitle });
       await expect(everywhere).toContainText(strings.devices.everywhereCodeIntro);
@@ -212,7 +232,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(off).toBeHidden();
       await expect(page.getByTestId('two-step')).toContainText(t.isOff);
       expect(
-        sql(`select count(*) from auth.mfa_factors where user_id = ${quoted(person)} and status = 'verified'`),
+        sql(
+          `select count(*) from auth.mfa_factors where user_id = ${quoted(person)} and status = 'verified'`,
+        ),
       ).toBe('0');
       // Both phones carry on.
       await openHome(page);

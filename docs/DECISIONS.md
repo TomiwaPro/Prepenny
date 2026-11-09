@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -4356,3 +4356,162 @@ Agreed 8 Nov 2026. Adds to D366; to be built in step 3e.
 As well as the time a change was made (D366), the times written inside the plan are to be corrected against the server's clock: when a payment was ticked, when a balance was updated, when a spend was recorded and when a debt was updated from a statement (D33, D62). So two phones whose clocks disagree can't count a tick on the wrong side of a balance update. It changes no figure for anyone with one phone. It's in `PLAN.md` under step 3e.
 
 Why: the owner's answer.
+
+## From the owner's instructions for step 3e
+
+D379 is the owner's answer in the instructions for step 3e, on 9 Nov 2026. D380 to D390 were decided while building step 3e, signed-in devices and extra security, the same day. Points marked "decided in step 3e" weren't in the owner's words.
+
+### D379. A backup email only, for now
+
+The owner's answer, 9 Nov 2026. Replaces "a backup email or phone" in brief 4.13 and PLAN.md's step 3e, for now.
+
+- Getting back in uses a backup email only. There's no backup phone for now, because text messages cost money.
+- Whether to add a backup phone is a question for before launch (PLAN.md, "Waiting for the owner").
+
+Why: the owner's answer.
+
+## Made during step 3e
+
+### D380. The list of signed-in devices
+
+Decided 9 Nov 2026 in step 3e. Builds brief 4.13 and ARCHITECTURE.md 3.7.
+
+- More has a **Security** card, after Your account: App lock, and once signed in, Signed-in devices, Two-step sign-in and Email addresses, each a row that opens its screen (D213).
+- **Signed-in devices** lists every sign-in session of the person's, this one first, then the most recently used. Each has a plain name worked out on the server from the browser's own description of itself (its "user agent"), such as "Chrome on an Android phone", "Safari on an iPhone" or, where the browser can't be told, as for an app added to an iPhone's home screen, "An iPhone". Under it: "This device", or "Last used today", "Last used yesterday" or "Last used Tue 3 Nov".
+- Never an IP address or a place: the server keeps Supabase's record of the IP address, but `my_devices` gives back only an id, the kind of browser and device as codes, whether it's this one, and when it was last used.
+- "Last used" is when the device last asked the server anything (`hello`, at most once a minute), or renewed its sign-in. ARCHITECTURE.md 3.7 said "no last seen", meaning nothing a partner can read (brief 4.14): the list is only ever the person's own, and nobody else can read or end it. The owner asked for when each was last used.
+
+Test: `supabase/tests/database/17-devices.test.sql` (29 checks) and `apps/web/e2e/devices.spec.ts` test 1. Screenshot: `docs/screens/3e/devices-360-light.png`.
+
+Why: the owner's instruction, and the database rules decide who sees what, as everywhere else.
+
+### D381. Signing out of a device, and everywhere
+
+Decided 9 Nov 2026 in step 3e. Builds D21, D308, D326 and D348, and PLAN.md item 29.
+
+- **"Sign out of this device"** is on every device. On this one it opens the usual sign-out sheet (D325). On another it asks once, "Sign out of Safari on an iPhone", with "It gets nothing more from your account straight away, and removes your plan within a minute. It's saved in your account, so nothing is lost.", then ends that session on the server (`end_device`). Only the person's own sessions can be ended; anyone else's is refused exactly as one that doesn't exist.
+- **"Sign out everywhere"** ends every session of the person's, this one too, as its name says (`end_every_device`). This phone then forgets everything, as signing out does. While anything on this phone hasn't been sent, it says "1 change on this phone hasn't been sent to your account yet. Once it has, you can sign out everywhere." With two-step sign-in on, it asks for the authenticator app's code first (D382).
+- **The other devices stop within 1 minute.** An ended session's very next request gets nothing (D21, step 3a). The person's phones are nudged on their own private channel at once, and every signed-in phone also asks the server whether its sign-in stands every minute, even when PrePenny isn't on screen. Told it has ended, a phone removes the plan once it's safely in the account (D326); a phone with a change not sent yet keeps the plan, and More says "Your sign-in has ended. 1 change on this phone hasn't been sent to your account yet: sign in again to send it." Signing in again sends it (D348). Tried end to end, as item 29 asked.
+- **Accepted:** Supabase's own sign-in service lets any sign-in, even one that hasn't passed the second step, sign out every device of its person through Supabase's own address, outside PrePenny. Someone who got into the person's email could use it to sign their phones out; they'd see nothing, and the person signs in again. Stopping it would mean blocking Supabase's own sign-out. PrePenny's own "Sign out everywhere" does ask for the second step.
+- **Accepted:** Supabase's live updates keep a connection open after its session has ended, until its token runs out. The nudges carry nothing (D339), and the phone's next look finds the sign-in has ended.
+
+Test: `apps/web/e2e/devices.spec.ts` tests 1 and 2, `supabase/tests/database/17-devices.test.sql`.
+
+Why: the owner's instruction and D21; nothing not sent is ever lost (D348).
+
+### D382. Two-step sign-in with an authenticator app
+
+Decided 9 Nov 2026 in step 3e. Builds brief 4.13 and 7.1.
+
+- It's Supabase's own (TOTP), which is free, switched on in `supabase/sign-in-settings.json`.
+- **It's real.** Once someone has turned it on, a sign-in that hasn't passed the second step gets nothing from the database and can save nothing: `app.session_ok()`, which every privacy rule and every step the phone calls goes through, needs both Supabase's record of the session and its token to say the second step was passed. A sign-in waiting for it is sent to "Type the code from your authenticator app" on the sign-in page, wherever it is, with "Sign out" there too.
+- **Turning it on:** "1. Get an authenticator app...", "2. Add PrePenny to it." with "Add PrePenny to my authenticator app" (a link that opens the app on this phone, since a phone can't scan its own screen), a picture to scan from another phone, and the key to type in groups of 4, then "3. Type the 6-digit code the app now shows for PrePenny." Google Authenticator and Microsoft Authenticator are named as examples; they aren't money products.
+- **Supabase signs every other device out** as it's turned on, so each needs the code to sign in again. The screen says so before it happens.
+- **Turning it off, changing the email address, signing out everywhere, and adding or removing a backup email** each ask for the app's code just then. The server checks it too: Supabase's sign-in service refuses turning it off or changing the email address without the second step, and two triggers on Supabase's own tables (`fresh_second_step`) also need a code typed in the last 5 minutes; `end_every_device`, `add_backup_email` and `remove_backup_email` need one in the last 5 minutes on that very session.
+- **Getting back in with the backup email never gets past it** (D384).
+- "If you lose the phone with your authenticator app, you can't sign in." is on the screen once it's on, with what to do. Help for someone who has lost both is support, in Phase 4 (brief 4.16).
+
+Test: `supabase/tests/database/18-two-step.test.sql` (22 checks) and `apps/web/e2e/two-step.spec.ts` test 3, which also asks the database directly with the waiting sign-in's own token: no accounts, no plan members, `plan_changes` and `my_devices` refused. Screenshot: `docs/screens/3e/two-step-turning-on-360-light.png`.
+
+Why: the owner's instruction: "it must be real".
+
+### D383. Changing the email address
+
+Decided 9 Nov 2026 in step 3e.
+
+- Under More, Email addresses, "Change email address": the new address, then "Send the codes". Supabase emails a 6-digit code to the address now and another to the new one ("secure email change", on since step 3b), and both are typed into PrePenny: neither address alone can change it.
+- The email is PrePenny's own, laid out like the sign-in email (`supabase/templates/email-change.html`): "The code for your current address is" or "The code for your new address is", the code, then what was asked and "If you didn't ask for this, don't type the code anywhere, and nothing changes."
+- These emails have a code and no link: the change was started inside PrePenny, on a phone that's signed in, so that's where the codes go, and a link would open the browser rather than the app on the home screen (D20).
+- Once both codes are typed, Supabase starts a new sign-in. The codes are checked on a connection of PrePenny's own that keeps nothing, and that new sign-in is ended straight away, so this phone keeps its own, second step and all, and no extra device appears in the list.
+
+Test: `apps/web/e2e/emails.spec.ts` test 4: the new address's code typed twice changes nothing; both change it; there's still one device; another phone signs in with the new address and gets the same plan.
+
+Why: the owner's instruction: "confirmed from both the old and the new address".
+
+### D384. The backup email, and getting back in with it
+
+Decided 9 Nov 2026 in step 3e, from the owner's instruction to design it securely (D379).
+
+- **Adding it.** Under More, Email addresses: the backup address, then a 6-digit code sent to it, typed into PrePenny. With two-step sign-in on, the authenticator app's code first. It can't be the sign-in address. One each. Once added, the sign-in address is told: "jess.backup@example.com is now the backup email for your PrePenny account." with "If this wasn't you, reply to this email straight away."
+- **Never someone else's.** An address that's already someone else's backup, or the address another account signs in with, is refused ("in-use"), and that's checked only after the code from that inbox is typed, so it tells nobody anything they couldn't find out from the inbox itself.
+- **Getting back in.** On the sign-in page, "Can't get into your email? Use your backup email" opens `/get-back-in/`, signed out. The backup address gets a code, if it's someone's backup: the answer is the same either way ("If ... is the backup for a PrePenny account, we've sent it a 6-digit code."), and so is the answer to a code typed for an address that isn't, so nobody can find out which addresses are backups. Once the right code is typed: the backup becomes the address the account signs in with, every device signed in to it is signed out (and nudged, D381), the backup is used up, and the old address is told "Your backup email was used to get back into your PrePenny account...". Then the phone signs in as usual, with a sign-in code Supabase sends to that address, and with the authenticator app's code when two-step sign-in is on.
+- **The codes.** 6 digits from the database's secure random numbers, kept only scrambled (SHA-256), bound to their person, purpose and address, lasting 10 minutes, 5 tries at most, used once, one a minute and 5 an hour for each address. A new code uses up the one before.
+- **The emails** are sent by the database itself (`app.send_email`, with Supabase's pg_net), to Resend on the real project, from hello@prepenny.co.uk, as the sign-in emails are, and to the local test inbox here. Supabase's own sign-in service can only email the address someone signs in with, and PrePenny has no server functions yet; the database is where every other rule already is, and it can be tested here and on GitHub. The Database workflow keeps the Resend key in Supabase's Vault (README.md, part F). pg_net keeps each email's request until it's sent, a moment later, and Resend's answer for 6 hours, both readable only by the database's administrator; Resend keeps email text for 30 days, as for the sign-in emails (ARCHITECTURE.md 1.3). No email holds an amount, a payment name or a note, and no refusal or log line holds an email address: every refusal is a short code.
+- **Someone with no backup email** sees "No backup email? Write to hello@prepenny.co.uk from any address, and say which address you signed up with." until support comes in Phase 4 (brief 4.16).
+- **Accepted:** someone who gets into the backup inbox can get into the account, as with any backup; two-step sign-in still stops them, and the sign-in address is told. Someone with a few minutes on a phone left signed in, with two-step sign-in off, could add a backup of their own; the sign-in address is told at once.
+
+Test: `supabase/tests/database/19-backup-email.test.sql` (48 checks: nobody reads anyone's backup, Tom can't use Jess's addresses even with their codes, tries, time, the same answers for addresses that aren't backups, the swap, every device signed out, the old address told) and `apps/web/e2e/emails.spec.ts` test 5. Screenshots: `docs/screens/3e/backup-email-360-light.png` and `get-back-in-360-light.png`.
+
+Why: the owner's instruction, kept to email only (D379).
+
+### D385. The app lock: "Open with your PIN"
+
+Decided 9 Nov 2026 in step 3e. Builds brief 4.13 and 7.2, D35 and ARCHITECTURE.md 3.8.
+
+- Under More, Security, App lock: a PIN of 4 to 8 numbers, typed twice. It's for this phone only, and kept only scrambled (PBKDF2 with SHA-256, 310,000 rounds and a salt of its own, from the browser's own crypto), never sent anywhere. Signing out removes it with everything else (D308).
+- It's asked for when PrePenny opens, and when it comes back after 5 minutes or more away (brief 4.13), over the app and over setup, which both show the plan. Nothing behind it can be reached by touch, keyboard or screen reader.
+- While away with the lock on, a plain cover hides the plan, so the phone's picture of PrePenny in the app switcher shows nothing of it. The phone may still keep an older picture, and the App lock screen says so plainly (ARCHITECTURE.md 7). The phone apps in Phase 6 hide it fully, and add fingerprint and face (D35).
+- 5 wrong tries in a row make it wait 30 seconds, and 30 more for each wrong try after that.
+- "Forgot your PIN?" says what to do: signed in, sign out and sign in again, and the plan comes back from the account; with a plan on this phone only, "Remove everything from this phone", which says first that the plan goes too.
+- Turning it off and changing the PIN need the PIN.
+- An update that loads PrePenny afresh straight after the PIN was typed (D386) doesn't ask again.
+
+Test: `apps/web/e2e/app-lock.spec.ts` test 6. Screenshot: `docs/screens/3e/pin-screen-360-light.png`.
+
+Why: the owner's instruction (D35's words), and the brief.
+
+### D386. A phone on an older version never quietly keeps a different plan
+
+Decided 9 Nov 2026 in step 3e, from the owner's instruction after steps 3c and 3d, when a phone still on the version before stayed in setup, and two devices kept different amounts, until each was loaded again by hand.
+
+- **Every build says which version it is:** the database it was built for (the newest migration in `supabase/migrations`) and the commit (`scripts/build-worker.ts`), in the app and in `/version.json`, which the site never lets a browser or the offline helper keep.
+- **The database checks the version on every request.** The app names its database version on every request to the Data API (`x-prepenny-version`), and `app.session_ok()` gives nothing to any other version: an app built for an older database ("update-needed"), or for a newer one, in the minutes after an update while the database is still being changed ("server-behind"). So even an old version with a mistake in it can't send a change or bring the plan down.
+- **Before sending changes or bringing the plan down,** a signed-in phone asks the server (`hello`) whether its sign-in stands and whether it's on the version expected, and the site which version is live. On an older version, it sends nothing, fetches the new version and loads it at the first safe moment: no sheet open, and nothing typed that hasn't been sent, such as a setup screen half filled in. Every change made meanwhile stays in the queue on the phone, and the new version sends it. "PrePenny has been updated. Tap to reload." (D202) shows meanwhile, and a tap loads it at once. A phone loads afresh for an update no more than once every 2 minutes, so a site part-way through updating can't keep reloading it.
+- **When the database is newer than the site, or the other way round,** for the minutes after merging, phones wait, with "Changes can't be sent right now. They're saved on this phone.", and go on once both are updated.
+- **The PrePenny live now, from step 3d, sends no version,** so from the moment the database is updated it can't send or bring anything down: its changes wait on the phone, as with no signal, until it's loaded afresh, which the update note asks for, and opening PrePenny again does. Then the new version sends them. Nothing is lost.
+- Test 7 plays a phone on the old version with the tests' own setting (D201): it says it was built for the database from before step 3e, and is another build, until it has updated itself.
+
+Test: `supabase/tests/database/20-versions.test.sql` (16 checks) and `apps/web/e2e/versions.spec.ts` test 7: the old phone's change waits, the server gets nothing from it, it doesn't reload while a sheet has something typed, it does once the sheet closes, then sends the change, and both phones show the same balance and the other phone's new payment.
+
+Why: the owner's instruction: "Before sending changes or bringing the plan down, it should know it's on the version the server expects."
+
+### D387. D378 built: the times inside the plan by the server's clock
+
+Decided 9 Nov 2026 in step 3e. Builds D378.
+
+Every time PrePenny writes inside the plan (when a payment was ticked, a balance updated, a spend recorded, a debt updated from a statement, and when a record was made, for the same-day order) is the phone's clock corrected against the server's (`lib/clock-offset.ts`, from `data/clock.ts`), loaded when PrePenny opens. On a phone that has never heard from the server, the difference is 0, as before. It changes no figure for anyone with one phone.
+
+Test: `apps/web/e2e/versions.spec.ts` ("D378"): a phone an hour fast writes its balance update's and its tick's times within minutes of the server's own, not an hour ahead.
+
+Why: the owner's answer to step 3d (D378).
+
+### D388. PLAN.md item 39 built: a replaced change, told on another phone
+
+Decided 9 Nov 2026 in step 3e. Adds to D367 and D368.
+
+- Each change notes the device it was made on, by kind (`app.edit_devices`, outside what the Data API shows), and a notice about a replaced change names it.
+- The phone that made the replaced change tells the person, as in step 3d. Another phone of the same person tells them instead once that device has signed out, or the notice has waited an hour unread: "Your other phone changed Rent on Sun 1 Nov after you changed it on Chrome on an Android phone. Your other phone's change is kept.", with "Got it". It doesn't hold the change itself, so it says what was changed but not to what, and there's no "Put mine back".
+- The phone that made the newer change tells nothing, and leaves the notice for the person's other phones.
+
+Test: `apps/web/e2e/versions.spec.ts` ("item 39").
+
+Why: item 39, with the list of signed-in devices to name the device.
+
+### D389. The sign-in tests are shared between GitHub's three parts
+
+Decided 9 Nov 2026 in step 3e. Adds to D300 and D343.
+
+Step 3e adds about 20 minutes of tests that sign in, which only part 3 ran. Part 3 took about 22 of its 35 minutes already, so it would have run out of time. Now each part starts its own local Supabase in the background and runs a third of them (`--shard`), as it does with the other tests. The minutes billed stay about the same: each part pays a minute or so to start Supabase, while its other tests run.
+
+Why: no part may run past its time, and the owner pays for every minute (D300).
+
+### D390. Smaller choices in step 3e
+
+Decided 9 Nov 2026 in step 3e.
+
+- Screenshots are in `docs/screens/3e`. The tests describe their phones as Chrome on an Android phone, Safari on an iPhone and Safari on a Mac, as real ones would, for the device list.
+- The new tests are `apps/web/e2e/devices.spec.ts`, `two-step.spec.ts`, `emails.spec.ts` and `versions.spec.ts` (in the sign-in projects, with the local Supabase), and `app-lock.spec.ts` (with the others, since the lock needs no account). The authenticator app is played by `e2e/totp.ts`.
+- Step 3d's check of a notice's contents (`16-clashes.test.sql`, check 20) now includes the device the replaced change was made on, as D388 adds. Nothing else in it changed.
+- The local Supabase here is started with its images from Docker Hub (`SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io`), because this computer can't reach GitHub's own store of them. GitHub's machines start it as before.
+
+Why: each follows from the owner's instructions where they didn't say exactly.

@@ -151,8 +151,12 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
+          # The sign-in email, and since step 3e the email for changing the
+          # address, sent to the address now and to the new one, each with its code.
           settings=$(jq --rawfile email supabase/templates/sign-in-code.html \
-            '. + {mailer_templates_confirmation_content: $email, mailer_templates_magic_link_content: $email}' \
+            --rawfile change supabase/templates/email-change.html \
+            '. + {mailer_templates_confirmation_content: $email, mailer_templates_magic_link_content: $email,
+              mailer_templates_email_change_content: $change}' \
             supabase/sign-in-settings.json)
           if [ -n "$RESEND_API_KEY" ]; then
             # Sign-in emails from hello@prepenny.co.uk, sent by Resend (D56),
@@ -195,3 +199,35 @@ jobs:
           else
             echo "Signed out after 90 days without opening PrePenny: on."
           fi
+
+      - name: Let the database send PrePenny's own emails
+        # Step 3e: the codes for a backup email, and getting back in with it,
+        # are sent by the database itself (pg_net), through Resend, from
+        # hello@prepenny.co.uk, as the sign-in emails are. The key goes
+        # straight from GitHub's RESEND_API_KEY into Supabase's Vault, through
+        # the Supabase key this workflow has; it's never printed. Until it's
+        # set, backup emails say they aren't switched on yet.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "::warning title=Backup emails::RESEND_API_KEY isn't set yet, so backup emails can't be added or used. Follow 'Signing in' in README.md."
+            exit 0
+          fi
+          # Only the characters a Resend key has, so it can be written into the query as it is.
+          if ! [[ "$RESEND_API_KEY" =~ ^re_[A-Za-z0-9_]+$ ]]; then
+            echo "::error title=Backup emails::RESEND_API_KEY doesn't look like a Resend key (it starts with re_). Check it in GitHub's secrets."
+            exit 1
+          fi
+          status=$(jq -n --arg query "select app.use_resend('$RESEND_API_KEY');" '{query: $query}' | curl --silent --show-error \
+            --output "$RUNNER_TEMP/answer.json" --write-out '%{http_code}' --request POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Backup emails::Supabase answered $status. Follow 'If the backup email step fails' in README.md, 'Signing in'."
+            exit 1
+          fi
+          echo "PrePenny's own emails go through Resend."

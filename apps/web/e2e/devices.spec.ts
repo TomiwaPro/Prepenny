@@ -11,7 +11,7 @@
 
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
-import { openHome, noSidewaysScroll, updateBalance } from './journeys.ts';
+import { noSidewaysScroll, openHome, updateBalance } from './journeys.ts';
 import { noAxeProblems } from './setup.ts';
 import { makeAPlan, newEmail } from './sign-in-helpers.ts';
 import {
@@ -41,7 +41,10 @@ test.use({ userAgent: DEVICES.androidChrome });
 /** Opens Signed-in devices from More, and waits for the list. */
 async function openDevices(page: Page, count: number) {
   await openMore(page);
-  await page.getByTestId('security').getByRole('link', { name: /Signed-in devices/ }).click();
+  await page
+    .getByTestId('security')
+    .getByRole('link', { name: /Signed-in devices/ })
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: t.heading })).toBeVisible();
   await expect(page.getByTestId('device')).toHaveCount(count);
 }
@@ -103,7 +106,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // The iPhone stops within a minute and removes the plan, as it was all sent.
       await expect(iphone.page.getByText(a.signInEnded)).toBeVisible({ timeout: A_MINUTE });
-      await expect(iphone.page.getByRole('link', { name: `${a.haveAccount} ${a.signIn}` })).toBeVisible();
+      await expect(
+        iphone.page.getByRole('link', { name: `${a.haveAccount} ${a.signIn}` }),
+      ).toBeVisible();
 
       // Only that one: this phone is still signed in, and still saves to the account.
       await updateBalance(page, {
@@ -114,10 +119,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
         toTick: 0,
       });
       await openMore(page);
-      await expect(page.getByTestId('where-kept')).toHaveText(a.savedInAccount, { timeout: 20_000 });
+      await expect(page.getByTestId('where-kept')).toHaveText(a.savedInAccount, {
+        timeout: 20_000,
+      });
       expect(
         Number(
-          sql(`select count(*) from public.balance_updates where created_by = ${quoted(person)} and balance = 25000`),
+          sql(
+            `select count(*) from public.balance_updates where created_by = ${quoted(person)} and balance = 25000`,
+          ),
         ),
       ).toBe(1);
       await iphone.context.close();
@@ -184,7 +193,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(iphone.page.getByTestId('balance')).toContainText('£240.00');
       // Nothing of it reached the account while it was signed out.
       expect(
-        Number(sql(`select count(*) from public.balance_updates where balance = 24000 and created_by = ${quoted(person)}`)),
+        Number(
+          sql(
+            `select count(*) from public.balance_updates where balance = 24000 and created_by = ${quoted(person)}`,
+          ),
+        ),
       ).toBe(0);
 
       // Signed in again, the change goes up.
@@ -195,7 +208,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
         timeout: 20_000,
       });
       expect(
-        Number(sql(`select count(*) from public.balance_updates where balance = 24000 and created_by = ${quoted(person)}`)),
+        Number(
+          sql(
+            `select count(*) from public.balance_updates where balance = 24000 and created_by = ${quoted(person)}`,
+          ),
+        ),
       ).toBe(1);
       await laptop.context.close();
       await iphone.context.close();

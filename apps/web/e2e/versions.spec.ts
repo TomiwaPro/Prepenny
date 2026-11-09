@@ -71,7 +71,10 @@ async function allSent(page: Page) {
 
 /** The first payment with this name in Home's next three things due. */
 const due = (page: Page, name: string) =>
-  page.getByTestId('next-due').getByRole('button', { name: named(name) }).first();
+  page
+    .getByTestId('next-due')
+    .getByRole('button', { name: named(name) })
+    .first();
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Versions, clocks and other phones, in ${colorScheme} mode`, () => {
@@ -135,20 +138,32 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(await page.evaluate(() => Reflect.get(window, '__stillTheOldPage'))).toBe(true);
       await expect(sheet.getByLabel('Type what your bank shows now')).toHaveValue('24');
       expect(
-        sql(`select count(*) from public.balance_updates where created_by = ${quoted(person)} and balance = 25000`),
+        sql(
+          `select count(*) from public.balance_updates where created_by = ${quoted(person)} and balance = 25000`,
+        ),
       ).toBe('0');
 
       // The sheet is closed: that's a safe moment. The phone loads the new
       // version, and sends the change that was waiting.
       await sheet.getByRole('button', { name: strings.sheet.close }).click();
       await expect
-        .poll(() => page.evaluate(() => Reflect.get(window, '__stillTheOldPage') ?? false), {
-          timeout: 30_000,
-        })
+        .poll(
+          async () => {
+            try {
+              return await page.evaluate(() => Reflect.get(window, '__stillTheOldPage') ?? false);
+            } catch {
+              // Asked in the very moment the page loads afresh: not yet.
+              return 'loading';
+            }
+          },
+          { timeout: 30_000 },
+        )
         .toBe(false);
       await allSent(page);
       expect(
-        sql(`select count(*) from public.balance_updates where created_by = ${quoted(person)} and balance = 25000`),
+        sql(
+          `select count(*) from public.balance_updates where created_by = ${quoted(person)} and balance = 25000`,
+        ),
       ).toBe('1');
       await noAxeProblems(page);
 
@@ -161,7 +176,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await laptop.context.close();
     });
 
-    test('D378: a phone an hour fast writes the times inside the plan by the server\'s clock', async ({
+    test("D378: a phone an hour fast writes the times inside the plan by the server's clock", async ({
       page,
     }) => {
       test.slow();
@@ -185,11 +200,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet).toBeHidden();
       await expect(undoBar(page)).toBeVisible();
       await allSent(page);
-      const behind = (time: string) => Number(sql(`select extract(epoch from now() - ${quoted(time)}::timestamptz)`));
+      const behind = (time: string) =>
+        Number(sql(`select extract(epoch from now() - ${quoted(time)}::timestamptz)`));
       const checked = sql(
         `select checked_at from public.balance_updates where created_by = ${quoted(person)} and balance = 26000`,
       );
-      const ticked = sql(`select t.ticked_at from public.ticks t where t.created_by = ${quoted(person)}`);
+      const ticked = sql(
+        `select t.ticked_at from public.ticks t where t.created_by = ${quoted(person)}`,
+      );
       // Written within the last few minutes by the server's clock, not an hour ahead of it.
       for (const time of [checked, ticked]) {
         expect(behind(time)).toBeGreaterThan(-60);
@@ -234,7 +252,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // This phone signs out before it hears that its change was replaced.
       await openMore(page);
       await page.getByTestId('account').getByRole('button', { name: a.signOut }).click();
-      await page.getByRole('dialog', { name: a.signOut }).getByRole('button', { name: a.signOutConfirm }).click();
+      await page
+        .getByRole('dialog', { name: a.signOut })
+        .getByRole('button', { name: a.signOutConfirm })
+        .click();
       await expect(page.getByText(a.signedOut)).toBeVisible();
 
       // The iPhone's newer change wins when its signal is back.

@@ -25,7 +25,7 @@ GitHub checks every change, once for each commit, on its pull request and again 
 GitHub runs two sets of checks:
 
 - **Lint, type checks, tests and the database** checks the code, runs every engine and app test, and builds a fresh copy of the database on GitHub's machine to test who can see and change what (see "The database" below). About 2 minutes, on every push.
-- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Part 3 also signs up, signs in and signs out, sends plans up and brings them down on second phones, and makes changes with no signal and on two phones at once, against a copy of Supabase on GitHub's machine, which catches the emails instead of sending them. Each part runs one test at a time (D343).
+- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Each part also takes a third of the tests that sign up, sign in and sign out, send plans up and bring them down on second phones, make changes with no signal and on two phones at once, and from step 3e sign out other devices, use two-step sign-in, change email addresses, get back in with a backup email and update an old version, against a copy of Supabase on GitHub's machine, which catches the emails instead of sending them. Each part runs one test at a time (D343, D389).
 
 GitHub's minutes cost money once the free ones are used, so the end-to-end tests wait until a pull request is ready. Claude Code opens each step's pull request as a **draft**, which gets the first set on every push, and marks it **Ready for review** when the step is done, which starts the end-to-end tests and the preview link. Every push after that runs both, and so does `main`, always, before anything goes live. A newer push stops the older checks on a pull request, never on `main`.
 
@@ -228,6 +228,22 @@ Nothing else to change by hand: the Database workflow sets the sign-in settings 
 - **Supabase's custom domain add-on, just before launch** (D321, about US$10 a month, on the paid plan), so Google's page says a PrePenny address such as auth.prepenny.co.uk instead of the project's supabase.co one. The steps come with it.
 
 To check it worked, once the step 3b pull request is merged: open https://prepenny.co.uk/app/ on your phone, tap **More**, then **Sign up or sign in**, type your email address and tap **Send me a code**. The email comes from PrePenny, hello@prepenny.co.uk, with a 6-digit code.
+
+### F. Step 3e: devices, two-step sign-in, email addresses and the backup email
+
+There's nothing new to set up: the Database workflow does it all at the merge, with the three Supabase secrets and the Resend key you added for steps 3a and 3b. It adds the new tables, switches on two-step sign-in with an authenticator app (Supabase's own, free), sends Supabase the email for changing an email address (`supabase/templates/email-change.html`), and gives the database the Resend key, kept in Supabase's Vault, so it can email the codes for a backup email (D384). GitHub's Supabase key needs no new permission: a Supabase access token can already do everything on your projects.
+
+To check it worked, after merging: open **Actions**, then **Database**, then the newest run. It should have a green tick, and its last step, **Let the database send PrePenny's own emails**, should say "PrePenny's own emails go through Resend."
+
+**If the backup email step fails** (a red cross on that step only, the rest is done):
+
+1. In Resend, tap **API Keys**, then **Create API key**. Call it `Supabase database`, choose **Sending access** and the domain `prepenny.co.uk`, and tap **Add**. Copy the key; it starts with `re_`.
+2. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
+3. Paste this, putting your key between the two quote marks in place of `re_YOUR_KEY`, and tap **Run**:
+   `select app.use_resend('re_YOUR_KEY');`
+4. It should say **Success. No rows returned**. Close the query without saving it, so the key isn't kept there, and tell Claude Code.
+
+Resend's free plan sends 100 emails a day and 3,000 a month. Adding a backup email sends 2 (the code, and a note to the sign-in address), and getting back in sends 3 (the code, a sign-in code, and a note to the old address).
 
 ## Bank holidays
 

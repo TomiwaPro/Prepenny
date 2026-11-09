@@ -206,7 +206,11 @@ export async function codeIn(address: string, subject: string, after = 0): Promi
         for (const found of await emailsTo(address)) {
           if (Date.parse(found.Created) < after) continue;
           const response = await fetch(`${INBOX}/api/v1/message/${found.ID}`);
-          const message = (await response.json()) as { Subject: string; HTML: string; To: { Address: string }[] };
+          const message = (await response.json()) as {
+            Subject: string;
+            HTML: string;
+            To: { Address: string }[];
+          };
           if (message.Subject !== subject) continue;
           // Exactly this address: the inbox's search also finds addresses that contain it.
           if (!message.To.some((one) => one.Address === address)) continue;
@@ -227,7 +231,8 @@ export async function countEmails(address: string, subject: string): Promise<num
   for (const found of await emailsTo(address)) {
     const response = await fetch(`${INBOX}/api/v1/message/${found.ID}`);
     const message = (await response.json()) as { Subject: string; To: { Address: string }[] };
-    if (message.Subject === subject && message.To.some((one) => one.Address === address)) count += 1;
+    if (message.Subject === subject && message.To.some((one) => one.Address === address))
+      count += 1;
   }
   return count;
 }

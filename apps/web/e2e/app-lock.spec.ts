@@ -46,7 +46,10 @@ async function openLockSettings(page: Page) {
     .getByRole('navigation', { name: 'Main' })
     .getByRole('link', { name: 'More', exact: true })
     .click();
-  await page.getByTestId('security').getByRole('link', { name: /App lock/ }).click();
+  await page
+    .getByTestId('security')
+    .getByRole('link', { name: /App lock/ })
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: t.heading })).toBeVisible();
 }
 
@@ -118,12 +121,18 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await lock.getByRole('button', { name: t.open }).click();
       await expect(lock.getByText(t.wrong)).toBeVisible();
       await lock.getByRole('button', { name: t.forgot }).click();
-      await expect(lock.getByRole('button', { name: t.forgot })).toHaveAttribute('aria-expanded', 'true');
+      await expect(lock.getByRole('button', { name: t.forgot })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      );
       await expect(lock.getByText(t.forgotLocal)).toBeVisible();
       await box(lock, t.screenLabel).fill('2580');
       await lock.getByRole('button', { name: t.open }).click();
       await expect(lock).toBeHidden();
-      await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Home' }).click();
+      await page
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('link', { name: 'Home' })
+        .click();
       await expect(page.getByTestId('balance')).toContainText('£267.54');
 
       // Away for a moment: covered while away, open again on coming back.

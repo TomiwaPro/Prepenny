@@ -43,11 +43,15 @@ test.use({ userAgent: DEVICES.androidChrome });
 
 async function openEmails(page: Page) {
   await openMore(page);
-  await page.getByTestId('security').getByRole('link', { name: /Email addresses/ }).click();
+  await page
+    .getByTestId('security')
+    .getByRole('link', { name: /Email addresses/ })
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: e.heading })).toBeVisible();
 }
 
-const emailOf = (person: string) => sql(`select email from auth.users where id = ${quoted(person)}`);
+const emailOf = (person: string) =>
+  sql(`select email from auth.users where id = ${quoted(person)}`);
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Email addresses, in ${colorScheme} mode`, () => {
@@ -154,7 +158,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(phone.page.getByRole('heading', { level: 1, name: g.heading })).toBeVisible();
       await noAxeProblems(phone.page);
       if (shoots(info, colorScheme)) {
-        await phone.page.screenshot({ path: `${SCREENS}/get-back-in-360-light.png`, fullPage: true });
+        await phone.page.screenshot({
+          path: `${SCREENS}/get-back-in-360-light.png`,
+          fullPage: true,
+        });
       }
 
       // An address that's nobody's backup gets the same words, and no email.
@@ -185,12 +192,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(phone.page, g.codeLabel).fill(code);
       await phone.page.getByRole('button', { name: g.finish }).click();
       await expect(phone.page.getByText(g.signInNow)).toBeVisible();
-      await expect(phone.page.getByRole('heading', { level: 1, name: strings.signIn.codeHeading })).toBeVisible();
+      await expect(
+        phone.page.getByRole('heading', { level: 1, name: strings.signIn.codeHeading }),
+      ).toBeVisible();
       expect(emailOf(person)).toBe(backup);
       await box(phone.page, strings.signIn.codeLabel).fill(
         await codeIn(backup, 'Your PrePenny sign-in code', gettingIn),
       );
-      await phone.page.getByRole('button', { name: strings.signIn.finishSignIn, exact: true }).click();
+      await phone.page
+        .getByRole('button', { name: strings.signIn.finishSignIn, exact: true })
+        .click();
       await expect(phone.page).toHaveURL(/\/app\/$/);
       await expect(phone.page.getByTestId('balance')).toContainText('£267.54');
       expect(await personOn(phone.page)).toBe(person);
