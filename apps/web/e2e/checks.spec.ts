@@ -136,6 +136,14 @@ const SCREENS = [
     heading: strings.stopGetBackIn.heading,
     purpose: strings.stopGetBackIn.purpose,
   },
+  // Shared plans (step 3f), as the example plan and a phone with no invite see them.
+  { path: '/app/share/', heading: strings.share.heading, purpose: strings.share.purpose },
+  {
+    path: '/app/share/accounts/',
+    heading: strings.share.accountsTitle,
+    purpose: strings.share.accountsPurpose,
+  },
+  { path: '/join/', heading: strings.join.heading, purpose: strings.join.purpose },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

@@ -15,7 +15,7 @@
 
 import { type Browser, expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
-import { named } from './coming-up.ts';
+import { layoutProblems, named } from './coming-up.ts';
 import { addPayment, noSidewaysScroll, openHome, undoBar } from './journeys.ts';
 import { box, fillAccount, noAxeProblems, radio } from './setup.ts';
 import { askForCode, makeAPlan, newEmail, signInEmail } from './sign-in-helpers.ts';
@@ -164,6 +164,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       if (shoots(info, colorScheme)) {
         await page.screenshot({ path: `${SCREENS}/jess-wants-to-join-360-light.png` });
       }
+      // With text at 200%, the sheet still fits at this width.
+      const big = await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(page)).toEqual([]);
+      await big.evaluate((node) => (node as Element).remove());
       // Until he allows it, Jess's phone has nothing of his plan.
       await expect(jess.page.getByTestId('join-message')).toHaveText(j.waiting('Tom'));
 
@@ -222,6 +226,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(locked.getByTestId('locked-to')).toHaveText(s.lockedTo('Jess'));
       await noAxeProblems(page);
       await locked.getByRole('button', { name: strings.sheet.close }).click();
+
+      // With text at 200%, Share with my partner still fits at this width.
+      await openShare(page);
+      await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(page)).toEqual([]);
 
       // Tom's accounts: his own, shared, and never Jess's.
       await page.goto('/app/accounts/');
@@ -410,6 +419,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sam.page.getByRole('button', { name: j.ask })).toHaveCount(0);
       await noAxeProblems(sam.page);
       await noSidewaysScroll(sam.page);
+      await sam.page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(sam.page)).toEqual([]);
       await sam.context.close();
     });
   });
