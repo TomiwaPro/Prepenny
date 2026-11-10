@@ -14,6 +14,7 @@
 import type { EditCommand, JustThisOneEdits, Schedule, ThisAndLaterEdits } from '@prepenny/engine';
 import Link from 'next/link';
 import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { nameOf, useSharedPlan } from '../data/shared-plan.ts';
 import { amountForTyping, parseAmount } from '../lib/amount.ts';
 import type { ChangeWords } from '../lib/bar-words.ts';
 import { formatDay } from '../lib/dates.ts';
@@ -31,6 +32,7 @@ import { refusalMessage } from '../lib/refusals.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
+import { ClaimPay } from './ClaimPay.tsx';
 import { CheckOption } from './Fields.tsx';
 import styles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';
@@ -191,6 +193,19 @@ function EditForm({
   const canTick = canChange || row.editing === 'set-aside';
   const setAside = row.editing === 'set-aside' ? ({ setAside: true } as const) : {};
   const showNameAndNote = isPayment && !row.sharedHalf;
+  // What the plan's sharing says about this payment (step 3f).
+  const planId = loaded !== null && !loaded.plan.isExample ? loaded.plan.id : null;
+  const shared = useSharedPlan(planId, loaded?.version ?? 0);
+  const lockedBy = shared?.lockedTo.get(row.seriesId);
+  const paidBy = shared?.paidTo.get(row.seriesId);
+  const claimable =
+    shared !== null &&
+    isPayment &&
+    row.direction === 'in' &&
+    (row.type === 'pay' || row.type === 'benefits') &&
+    shared.sharedAccounts.has(row.accountId) &&
+    paidBy !== undefined &&
+    paidBy !== shared.personId;
   // Money coming into this account is marked as arrived, not paid (D278).
   const comingIn = row.flow === 'in' || row.flow === 'transfer-in';
   // A pattern on pay that isn't weekly goes round by payday, not by week (D280).
@@ -394,20 +409,43 @@ function EditForm({
     );
   }
 
-  return (
-    <div className={styles.form}>
-      <div className={styles.summary}>
-        <p className={styles.where}>{where}</p>
-        <p className={styles.figures}>
-          <span className={`${styles.amount} ${row.change > 0 ? styles.in : ''} num`}>
-            {formatMoney(row.change, { sign: 'always' })}
-          </span>
-          <span className={styles.leftLine}>
-            <span className="num">{strings.rows.left(formatMoney(row.leftAfter))}</span>
-            {row.status === 'ok' ? null : <StatusPill status={row.status} />}
-          </span>
+  const summary = (
+    <div className={styles.summary}>
+      <p className={styles.where}>{where}</p>
+      <p className={styles.figures}>
+        <span className={`${styles.amount} ${row.change > 0 ? styles.in : ''} num`}>
+          {formatMoney(row.change, { sign: 'always' })}
+        </span>
+        <span className={styles.leftLine}>
+          <span className="num">{strings.rows.left(formatMoney(row.leftAfter))}</span>
+          {row.status === 'ok' ? null : <StatusPill status={row.status} />}
+        </span>
+      </p>
+    </div>
+  );
+
+  // "From Jess" on Tom's phone: only Jess changes it (D16, D293).
+  if (lockedBy !== undefined) {
+    return (
+      <div className={styles.form}>
+        {summary}
+        <p className={styles.lede} data-testid="locked-to">
+          {strings.share.lockedTo(nameOf(shared, lockedBy) ?? strings.share.yourPartner)}
         </p>
       </div>
+    );
+  }
+
+  return (
+    <div className={styles.form}>
+      {summary}
+      {claimable && paidBy !== undefined ? (
+        <ClaimPay
+          planId={planId ?? ''}
+          familyId={shared?.familyOf.get(row.seriesId) ?? row.seriesId}
+          who={nameOf(shared, paidBy) ?? strings.clash.partner}
+        />
+      ) : null}
 
       {canTick ? (
         <div className={styles.actions}>

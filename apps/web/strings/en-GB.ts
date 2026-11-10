@@ -2003,6 +2003,184 @@ export const strings = {
     tryAgain: 'Try again',
   },
 
+  /**
+   * "Share with my partner" (brief 4.14, step 3f): who's in the plan, which
+   * accounts are shared, and the invite, by link or by email.
+   */
+  share: {
+    moreLink: 'Share with my partner',
+    moreLine: 'Plan together, each on your own phone',
+    heading: 'Share with my partner',
+    purpose:
+      'Plan money together, each on your own phone. You choose which accounts your partner sees, and the rest stay private.',
+    backToMore: 'Back to More',
+    signInFirst: 'Sign in first, so your plan is kept in your account. Then you can share it.',
+    signIn: 'Sign up or sign in',
+    onExample: "This is the example plan, which can't be shared. Go back to your own plan first.",
+    loading: "Finding who's in your plan.",
+    couldNotLoad:
+      "PrePenny couldn't reach its server, so this can't be shown. Try again in a minute.",
+    tryAgain: 'Try again',
+    whoHeading: "Who's in this plan",
+    /** "You (Tom)" for this person. */
+    you: (name: string) => (name === '' ? 'You' : `You (${name})`),
+    someone: 'Your partner',
+    roles: {
+      owner: 'Made this plan',
+      editor: 'Can edit',
+      viewer: 'Can view only',
+    } as Record<string, string>,
+    accountsHeading: 'Shared accounts',
+    accountsNone: 'No accounts are shared yet, so your partner sees nothing of your money.',
+    accountsShared: (names: string) => `Shared: ${names}.`,
+    accountsPrivate: (names: string) => `Only you see: ${names}.`,
+    chooseAccounts: 'Choose shared accounts',
+    inviteHeading: 'Invite your partner',
+    full: 'Two people are in this plan, so nobody else can join.',
+    notOwner: (name: string) => `Only ${name} can invite someone, as they made this plan.`,
+    nameLabel: 'Your name, as your partner will see it',
+    nameHint: 'A first name or nickname is enough.',
+    nameError: 'Type a name, for example Jess.',
+    nameTooLong: 'Keep it to 30 letters or fewer.',
+    roleLegend: 'What can your partner do?',
+    canEdit: 'Can edit',
+    canEditHint: 'See and change everything shared, and tick payments.',
+    canView: 'Can view only',
+    canViewHint:
+      'See everything shared, but change nothing. They can still keep their own pay up to date.',
+    howLegend: 'How do you want to send it?',
+    byLink: 'A link I send myself',
+    byLinkHint: 'Send it in a message, on WhatsApp or by text.',
+    byEmail: 'An email from PrePenny',
+    emailLabel: "Your partner's email address",
+    emailError: 'Type an email address, for example jess@example.com.',
+    makeLink: 'Make the invite link',
+    sendEmail: 'Send the invite',
+    making: 'Making the invite.',
+    linkHeading: 'Your invite link',
+    linkLine: 'Send this link to your partner. It lasts 7 days and works once.',
+    linkLabel: 'Invite link',
+    copy: 'Copy the link',
+    copied: 'Link copied.',
+    shareLink: 'Share the link',
+    shareText: 'Join my plan in PrePenny',
+    emailSent: (address: string) => `Invite sent to ${address}. It lasts 7 days and works once.`,
+    /** The invite made earlier, still open: "Can edit, until 3:14pm on Tue 17 Nov." */
+    openInvite: (role: string, until: string) => `Invite open: ${role}, until ${until}.`,
+    openInviteTo: (address: string, role: string, until: string) =>
+      `Invite sent to ${address}: ${role}, until ${until}.`,
+    afterAsk:
+      'When someone opens it and asks to join, PrePenny asks you to allow it first. Nobody joins without you.',
+    cancel: 'Cancel this invite',
+    cancelled: 'The invite is cancelled. Nobody can use it now.',
+    tooManyEmails:
+      'PrePenny has sent 3 invite emails for your plan today. Make an invite link instead, or try again tomorrow.',
+    problem: "PrePenny couldn't reach its server, so nothing was made. Try again in a minute.",
+    offline: "You're offline. Connect to the internet to invite your partner.",
+    /** Someone asked to join (step 3f): what the owner sees, on any screen and here. */
+    requestTitle: (name: string) => `${name} wants to join your plan`,
+    requestIntro:
+      "Someone opened your invite and asked to join. Only allow it if you know it's your partner.",
+    requestEmail: (email: string) => `Signed in as ${email}`,
+    requestAsked: (when: string) => `Asked at ${when}`,
+    requestCanEdit:
+      'If you allow it, they can see and change everything shared, and tick payments.',
+    requestCanView: 'If you allow it, they can see everything shared, but not change it.',
+    allow: 'Allow',
+    dontAllow: "Don't allow",
+    answering: 'Saving your answer.',
+    allowed: (name: string) => `${name} has joined your plan.`,
+    notAllowed: (name: string) => `${name} wasn't let in. The invite can't be used again.`,
+    answerRanOut: 'This invite has run out, so nobody can join with it. Make a new one.',
+    answerHasAPlan: (name: string) =>
+      `${name} has a plan of their own now, so they can't join yours yet.`,
+    answerGone: 'This has been answered already.',
+    gotIt: 'Got it',
+    /** "Choose shared accounts" (PLAN.md items 26 and 34). */
+    accountsTitle: 'Choose shared accounts',
+    accountsPurpose:
+      "Your partner sees each account you share: its balance and every payment in it. The ones you don't share stay private.",
+    backToShare: 'Back to Share with my partner',
+    accountsLegend: 'Which accounts do you want to share?',
+    alreadyShared: 'Already shared',
+    noPrivate: 'You have no private accounts left to share.',
+    shareThese: 'Share these accounts',
+    chooseOne: 'Tick at least one account to share.',
+    confirmTitle: (names: string) => `Share ${names}?`,
+    confirmIntro: (partner: string) =>
+      `${partner} will see the balance and every payment in each one. Your savings goals, debts and job details stay private. You can't make a shared account private again.`,
+    partnerFallback: 'Your partner',
+    confirmYes: 'Yes, share',
+    confirmNo: 'No, go back',
+    sharing: 'Sharing.',
+    sharedDone: (names: string) => `Shared: ${names}.`,
+    shareTogether: (names: string) =>
+      `Money moves between these and ${names}, which you're keeping private. Tick ${names} too, or leave them all private.`,
+    shareHalves: (names: string) =>
+      `${names} is kept as money from you in a shared account. Remove it first, share this account, then add it again.`,
+    viewOnly: "You can view this plan only, so you can't share accounts in it.",
+    waitingToSend:
+      "Some changes on this phone haven't been sent to your account yet. Try again once they have.",
+    /** The shared half of money between a private account and a shared one (D16, D52). */
+    fromPerson: (name: string) => `From ${name}`,
+    toPerson: (name: string) => `To ${name}`,
+    /** In "From your partner" when this person hasn't given a name yet. */
+    yourPartner: 'your partner',
+    /** On a payment locked to someone else, such as "From Jess". */
+    lockedTo: (name: string) =>
+      `Only ${name} can change this. It's money between ${name}'s own account and this one.`,
+    /** Shared pay someone else added (D418). */
+    paidBy: (name: string) => `${name} added this as their pay.`,
+    claim: 'This is my pay',
+    claimLine: 'Then you can change it, and add overtime or a missed shift to it.',
+    claimed: "It's your pay now.",
+    claimHasDetails: (name: string) =>
+      `${name} has overtime or job details on it, so it can't be made yours. Ask ${name} to take them off first.`,
+  },
+
+  /** The page an invite link opens (brief 4.14, step 3f). */
+  join: {
+    heading: 'Join a shared plan',
+    purpose:
+      'Someone has invited you to share their plan in PrePenny, so you can plan money together, each on your own phone.',
+    signInFirst: 'Sign in or sign up to see the invite and ask to join.',
+    signIn: 'Sign up or sign in',
+    off: "Signing in isn't switched on here, so invites can't be used.",
+    noLink: "There's no invite here. Open the link from your invite again.",
+    loading: 'Looking at the invite.',
+    couldNotLoad:
+      "PrePenny couldn't reach its server, so the invite can't be shown. Try again in a minute.",
+    tryAgain: 'Try again',
+    invitedBy: (name: string) => `${name} has invited you to share their plan.`,
+    canEdit: "You'll be able to see and change everything they share, and tick payments.",
+    canView:
+      "You'll be able to see everything they share, but not change it. You can still keep your own pay up to date.",
+    privateLine: 'Accounts you add yourself stay private unless you choose to share them.',
+    nameLabel: (name: string) => `Your name, as ${name} will see it`,
+    seesEmail: (name: string) =>
+      `${name} will see this name and the email address you signed in with, then choose whether to let you in.`,
+    ask: 'Ask to join',
+    asking: 'Asking.',
+    waiting: (name: string) =>
+      `Waiting for ${name} to allow it. Keep this page open, or come back later: the plan comes to this phone as soon as ${name} allows it.`,
+    joined: (name: string) => `${name} let you in. Bringing the plan to this phone.`,
+    goToPlan: 'Go to the plan',
+    notAllowed: (name: string) =>
+      `${name} didn't let you in, so you haven't joined. Ask ${name} for a new invite if this was a mistake.`,
+    used: 'This invite has been used already. Each invite works once. Ask the person who sent it for a new one.',
+    ranOut:
+      'This invite has run out. Invites last 7 days. Ask the person who sent it for a new one.',
+    cancelled: 'This invite was cancelled. Ask the person who sent it for a new one.',
+    notFound: "This invite link doesn't work. Check you have the whole link, or ask for a new one.",
+    yours: 'This is your own invite. Send it to your partner, so they can ask to join.',
+    member: "You're already in this plan.",
+    hasAPlan: (name: string) =>
+      `You already have a plan in PrePenny, so you can't join ${name}'s plan yet. PrePenny keeps one plan for each person, and joining with a plan of your own isn't ready yet.`,
+    someone: 'Your partner',
+    full: (name: string) => `${name}'s plan already has two people in it, so nobody else can join.`,
+    goHome: 'Go to my plan',
+  },
+
   /** Two-step sign-in with an authenticator app (brief 4.13, step 3e). */
   twoStep: {
     heading: 'Two-step sign-in',

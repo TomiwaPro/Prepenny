@@ -73,6 +73,7 @@ import {
   type UnsentEdit,
 } from './db.ts';
 import { getBackInNoticeChanges, setGetBackInNotice } from './get-back-in-notice.ts';
+import { setJoinRequests } from './join-requests.ts';
 
 // ---------------------------------------------------------------------------
 // What the screens show.
@@ -238,13 +239,20 @@ type Standing =
  */
 async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
   const answer = await withDb((db) =>
-    rpc<{ sign_in?: unknown; version?: unknown; get_back_in?: unknown }>(client, 'hello', {}, db),
+    rpc<{ sign_in?: unknown; version?: unknown; get_back_in?: unknown; join_requests?: unknown }>(
+      client,
+      'hello',
+      {},
+      db,
+    ),
   );
   // A database from before step 3e has no `hello`: it's still being updated.
   if (!answer.ok) return 'wait';
   // Someone getting back in with the backup email: every screen says so,
   // with "Stop it" (step 3e hardening).
   setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
+  // Someone asking to join this person's plan (step 3f).
+  setJoinRequests(answer.data.sign_in === 'ok' ? answer.data.join_requests : []);
   if (answer.data.sign_in === 'ended') return 'ended';
   if (answer.data.sign_in === 'second-step') return 'second-step';
   if (answer.data.sign_in !== 'ok') return 'wait';
@@ -314,8 +322,14 @@ export function lookForGetBackIn(): Promise<void> {
         const client = await signedInClient();
         if (client === null) return;
         const before = getBackInNoticeChanges();
-        const answer = await rpc<{ sign_in?: unknown; get_back_in?: unknown }>(client, 'hello', {});
-        if (!answer.ok || getBackInNoticeChanges() !== before) continue;
+        const answer = await rpc<{
+          sign_in?: unknown;
+          get_back_in?: unknown;
+          join_requests?: unknown;
+        }>(client, 'hello', {});
+        if (!answer.ok) continue;
+        setJoinRequests(answer.data.sign_in === 'ok' ? answer.data.join_requests : []);
+        if (getBackInNoticeChanges() !== before) continue;
         setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
       } while (lookAgain);
     } catch {
@@ -1149,6 +1163,22 @@ async function askToChoose(
     phoneStartedAt: startedAt(await loadRecords(db, own.id)),
     phoneSetUp: setupDone(own.setup),
   };
+}
+
+/**
+ * True when this phone has a plan of the person's own with something in it,
+ * kept in the account or not. Joining someone else's plan with one isn't
+ * ready yet (D416): the join page says so rather than guessing.
+ */
+export async function phoneHasOwnPlan(): Promise<boolean> {
+  try {
+    return await withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      return own !== undefined && (await hasSomething(db, own.id));
+    });
+  } catch {
+    return false;
+  }
 }
 
 /**
