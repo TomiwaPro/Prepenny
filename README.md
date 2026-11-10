@@ -357,6 +357,100 @@ To check it worked, after merging:
 
 **If the function step fails** (a red cross on that step only; the database is changed already): if it says Supabase refused it (403), the key is missing **Edge Functions: Read-write**: make a new key as in "The database", step 5, and replace `SUPABASE_ACCESS_TOKEN`. Then open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Until it's online, a code typed on the **Get back in** page can't be used, and the page says PrePenny couldn't reach its server. Nothing on anyone's account changes meanwhile. If it fails twice, tell Claude Code what the step says.
 
+### H. Step 3f: shared plans, invite and join
+
+**Nothing new to set up.** When the pull request is merged, the **Database** workflow adds step 3f's changes to the database with the key it already has, and the **Deploy** workflow puts the app online, as for every step. Checked in this step's own changes, one by one:
+
+- No new GitHub secret or variable, and no workflow changed: the new end-to-end tests run in the sign-in tests' parts, which already start a local Supabase.
+- No new Supabase setting: no new sign-in setting, web address or email template, no new function to put online, and no new permission for GitHub's Supabase key (the Database run's key check tries all eleven before changing anything, D406). The database's new steps use only what step 3e switched on: sending its own emails through Resend, with the key kept in Supabase's Vault (part F), and the live nudges (step 3c).
+- Invite emails go through Resend like step 3e's, from hello@prepenny.co.uk, at most 3 a day for a plan. Resend's free plan allows 100 emails a day and 3,000 a month (part F).
+- Nothing new in Cloudflare: the join page, `/join/`, is an ordinary page of the app.
+
+This sandbox couldn't open Supabase's, Resend's or GitHub's own websites to compare their lists today, so the check above is of what this step uses. If any of those services has renamed a setting since, nothing here depends on it.
+
+To check it worked, after merging: open **Actions**, then **Database**, then the newest run: a green tick. Then **Deploy**: a green tick.
+
+#### Trying it on two phones, with your partner
+
+Use **two spare email addresses that have never been used with PrePenny**, one on each phone, so your own plan isn't touched. Sharing an account can't be undone yet, and joining needs a person with no plan of their own yet (D416).
+
+On your phone (phone A), first:
+
+1. Open https://prepenny.co.uk/app/, tap **More**, then **Sign out**, then **Sign out** again. Your own plan is safe in your account and comes back when you sign in again.
+2. Tap **Make my plan**. Make a quick plan: an account called `Joint` with `100` as its balance, skip the other screens, then **Go to my plan**.
+3. Tap **More**, then **Sign up or sign in**, and sign up with the first spare address (the 6-digit code comes by email).
+
+Sharing an account:
+
+4. On phone A, tap **More**, then **Share with my partner**. It says "You (…), Made this plan" under "Who's in this plan".
+5. Tap **Choose shared accounts**, tick **Joint**, tap **Share these accounts**, then **Yes, share**. It says "Shared: Joint." Go back.
+
+A forwarded link, and "Don't allow":
+
+6. Under **Invite your partner**, type your name, keep **Can edit** and **A link I send myself**, and tap **Make the invite link**. Tap **Copy the link** and send it to your partner, in a message.
+7. On your partner's phone (phone B), open the link. It says "Join a shared plan". Tap **Sign up or sign in** and sign up with the second spare address. It says "… has invited you to share their plan." Type their name and tap **Ask to join**. It says "Waiting for … to allow it."
+8. On phone A, within a few seconds, a sheet says "… wants to join your plan", with the address your partner signed up with. Tap **Don't allow**.
+9. On phone B, within a few seconds: "… didn't let you in, so you haven't joined." Open the same link again: "This invite has been used already."
+
+By email, and "Allow":
+
+10. On phone A, in **Share with my partner**, choose **Can edit** and **An email from PrePenny**, type the second spare address, and tap **Send the invite**.
+11. On phone B, the email comes from PrePenny: "… has invited you to share a plan in PrePenny". Tap **Open the invite**, type the name, and tap **Ask to join**.
+12. On phone A, tap **Allow**. On phone B, within a few seconds, Home opens with the Joint account and £100.
+
+"From Jess", and what stays private:
+
+13. On phone B, tap **More**, then **Accounts**, then **Add an account**: call it `My own account`, with `500` as its balance.
+14. On phone B, on Home, tap **Add a payment**: **Between accounts**, name `For the bills`, amount `60`, from **My own account** to **Joint**, **Once**, on any day this week. Tap **Add payment**.
+15. On phone A, tap **Coming up**. Within a minute, the Joint account shows "From …, +£60.00". Tap it: "Only … can change this." Tap **More**, then **Accounts**: there's no "My own account".
+
+"Can view only" was tried on this computer, with both phones (`apps/web/e2e/sharing.spec.ts`, test 2). To try it here as well, remove the two accounts (below) and do steps 1 to 12 again with **Can view only**: on phone B, changing an amount in the Joint account says "A change wasn't saved … You can look at this plan but not change it."
+
+When you're done, sign out on both phones, and sign in again on yours with your own address.
+
+#### Removing the two test accounts afterwards
+
+Until "Delete my account and all my data" comes in step 3h, this removes two accounts and everything of theirs, and nothing else. It refuses unless it finds exactly the two addresses typed, and unless their plans have nobody else in them.
+
+1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
+2. Paste this, and type the two spare addresses in place of the two on the first line, keeping the quote marks:
+
+   ```sql
+   do $$
+   declare
+     addresses text[] := array['first-spare@example.com', 'second-spare@example.com'];
+     found_people uuid[];
+     their_plans uuid[];
+     plans_removed integer;
+     people_removed integer;
+   begin
+     select array_agg(id) into found_people from auth.users
+       where lower(email) in (select lower(btrim(a)) from unnest(addresses) a);
+     if coalesce(cardinality(found_people), 0) <> cardinality(addresses) then
+       raise exception 'Found % of the % addresses. Nothing was removed.',
+         coalesce(cardinality(found_people), 0), cardinality(addresses);
+     end if;
+     select coalesce(array_agg(distinct m.plan_id), '{}') into their_plans
+       from public.plan_members m where m.person_id = any (found_people);
+     if exists (select 1 from public.plan_members m
+         where m.plan_id = any (their_plans) and not (m.person_id = any (found_people))) then
+       raise exception 'Someone else is in one of their plans. Nothing was removed.';
+     end if;
+     delete from public.plans where id = any (their_plans);
+     get diagnostics plans_removed = row_count;
+     delete from public.invites
+       where created_by = any (found_people) or asked_by = any (found_people) or accepted_by = any (found_people);
+     delete from auth.users where id = any (found_people);
+     get diagnostics people_removed = row_count;
+     raise notice 'Removed % plans and % accounts.', plans_removed, people_removed;
+   end $$;
+   ```
+
+3. Tap **Run**. It should say **Success. No rows returned**, and under it "Removed 1 plans and 2 accounts." If it says "Found 1 of the 2 addresses", check the spelling of the addresses: nothing was removed.
+4. Close the query without saving it. On each phone, PrePenny notices within a minute that the sign-in has ended.
+
+It removes the accounts' plans with everything in them, the invites they made or used, their sign-ins, devices and backup emails. It writes no amount, name or email address anywhere: it says only how many it removed.
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow**. It only saves a new commit if the list has changed.
