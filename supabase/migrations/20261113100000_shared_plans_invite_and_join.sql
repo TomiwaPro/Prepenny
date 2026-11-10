@@ -789,7 +789,11 @@ begin
   end if;
   perform set_config('prepenny.claiming', family::text, true);
   perform set_config('prepenny.edit', edit::text, true);
-  update public.series s set paid_to = auth.uid() where s.plan_id = plan and s.family_id = family;
+  -- Every shared series of the family, removed ones too, so every phone reads
+  -- the same whose-pay from any of them. One removed before its account was
+  -- shared stays private, and its person's (D414).
+  update public.series s set paid_to = auth.uid()
+    where s.plan_id = plan and s.family_id = family and s.private_to is null;
   perform set_config('prepenny.claiming', '', true);
   perform set_config('prepenny.edit', '', true);
   if app.family_rules_problem(plan, array[family]) is not null then
