@@ -4703,7 +4703,7 @@ D403 is the owner's instructions for step 3e-2, a preview database, on 9 Nov 202
 
 ### D403. A preview database, its own key, and the live app untouched
 
-The owner's instruction, 9 Nov 2026. Builds D346; replaces D340.
+The owner's instruction, 9 Nov 2026. Builds D346; replaces D340 once the preview database is set up, which waits for Supabase's paid plan (D411).
 
 - A second, free Supabase project, **prepenny-preview**, in London, used only by pull request previews. It never holds real people's data, and the preview says so on every page: "Test version: don't use real details." (D407).
 - When a pull request is ready, its database changes, the sign-in settings and the get-back-in function go to the preview project, and its preview app is built to use it.
@@ -4831,3 +4831,22 @@ Decided 9 Nov 2026 in step 3e-2, from an outside review of the whole change. Add
 Test: `scripts/check-supabase-key.test.ts` (11 checks: a weaker answer, a brand-new project and a wrong project added), `scripts/preview-database.test.ts`.
 
 Why: each was shown by the review with a case that went wrong.
+
+## From the owner's change of plan for step 3e-2
+
+### D411. The preview database waits for Supabase's paid plan
+
+The owner's decision, 10 Nov 2026. Puts D403's preview database off until the paid plan; keeps D404, D406 and D410.
+
+- Supabase's free plan allows only two active projects, and both are in use, so prepenny-preview can't be made now. While PrePenny has no real users, the owner tests each step on the live app after merging, with a spare email address. The preview database waits until the move to Supabase's paid plan before launch: making prepenny-preview and its key (README.md, "The preview database") is on the launch checklist beside that move.
+- Kept and switched on: the key check at the start of the Database workflow (D406, D410), README.md's list of the eleven permissions as Supabase's token page names them, and the notice that appears within a minute without a refresh (D404).
+- Kept but switched off: the preview database's code. Decided in step 3e-2:
+  - The preview database's job runs only once the preview project's two variables, `PREVIEW_SUPABASE_URL` and `PREVIEW_SUPABASE_PUBLISHABLE_KEY`, are there. Until then GitHub skips it, so it shows as skipped, never red, and nothing is asked of any Supabase project.
+  - A preview is still built with signing in off, never with the real project's address or key, and without a warning, since that's the plan for now. It still says "Test version: don't use real details." at the top.
+  - Its link comment says plainly what a preview can and can't do: everything kept on the phone works (the welcome, setup, the example plan, and every screen and change); signing in, saving the plan in an account and keeping two devices in step are tried on the live app after merging.
+  - Once the three secrets and two variables are added, it all switches on by itself, with nothing else to change. Its first run is its real test: the parts that talk to a hosted Supabase project couldn't be tried from here.
+- D340 holds again until then: a step's database changes can only be tried once it's merged.
+
+Test: the Deploy workflow on this step's pull request, with no preview secrets or variables: the preview is put online with signing in off, the preview database's job is skipped, and every other check passes.
+
+Why: the owner's decision.

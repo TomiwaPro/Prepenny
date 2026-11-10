@@ -56,8 +56,8 @@ The live app is at https://prepenny.prepenny.workers.dev/app/ (set up by the own
 You don't need to type any commands. Everything is done on github.com, on a phone or a computer. An update arrives as a **pull request**: a proposed change, with a name such as "Step 2h: Phase 2 complete".
 
 1. **Open the pull request.** Go to https://github.com/TomiwaPro/Prepenny and tap **Pull requests**, then the update's name.
-2. **Try the preview.** A few minutes after the pull request is marked ready, a comment appears on it from **github-actions** with a preview link, such as `https://pr-19-prepenny.prepenny.workers.dev/app/`. Open it on your phone and try the update. It's a separate copy with its own test database, and says "Test version: don't use real details." at the top: nothing you do there touches the live app or the real database. Sign in with any email address you can read; the code comes from "PrePenny (test version)". If no link appears after 15 minutes, see "If something goes wrong" below.
-3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are six: "Lint, type checks, tests and the database", "Build and end-to-end tests" parts 1, 2 and 3, "Put the app online", and "Get the preview database ready, and try the preview". A yellow dot means it's still running (about 20 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong". If it still says **Draft**, Claude Code hasn't finished the step yet.
+2. **Try the preview.** A few minutes after the pull request is marked ready, a comment appears on it from **github-actions** with a preview link, such as `https://pr-19-prepenny.prepenny.workers.dev/app/`. Open it on your phone and try the update. It's a separate copy, and says "Test version: don't use real details." at the top: nothing you do there touches the live app or the real database. **What a preview can do for now** (D411): everything kept on the phone, such as the welcome, setup, the example plan, and every screen and change. **What it can't:** signing in is off on previews until the preview database is set up, with Supabase's paid plan before launch, so signing in, saving the plan in an account and keeping two devices in step are tried on the live app after merging, with a spare email address. If no link appears after 15 minutes, see "If something goes wrong" below.
+3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are five: "Lint, type checks, tests and the database", "Build and end-to-end tests" parts 1, 2 and 3, and "Put the app online". "Get the preview database ready, and try the preview" shows as skipped until the preview database is set up (D411), and is a sixth tick after that. A yellow dot means it's still running (about 20 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong". If it still says **Draft**, Claude Code hasn't finished the step yet.
 4. **Merge it.** When you're happy with the preview and every tick is green, tap **Merge pull request**, then **Confirm merge**. GitHub may say **Squash and merge** or **Create a merge commit** instead; either is fine.
 5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about 20 minutes after merging in all, and the Database workflow sends any database changes to the real database. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
 6. **See it on your phone.** Open the live app. If PrePenny was already open, a note at the bottom says "PrePenny has been updated. Tap to reload." Tap it. People's plans stay as they were: they're saved on their own phones, and an update never changes them.
@@ -85,7 +85,7 @@ GitHub needs permission to put the app on your Cloudflare account. Cloudflare ch
 
 Until the two secrets are added, the Deploy workflow still builds the app but says "Cloudflare isn't set up yet, so nothing was put online".
 
-The first time, before anything has been merged, the Deploy workflow puts the pull request's version online once as the live app too, because Cloudflare needs a live app before it can make previews of it.
+Cloudflare needs a live app before it can make previews of it, and a pull request's version is never put online as the live app (D409). If a preview's Deploy run ever says "The live app isn't on Cloudflare yet", put `main` online first: **Actions**, then **Deploy**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
 
 ## The database
 
@@ -95,7 +95,7 @@ Nobody changes the real database by hand. GitHub does it, the same way it puts t
 
 - On every pull request, the **Lint, type checks, tests and the database** check builds a fresh copy of the database on GitHub's own machine, with made-up people (Jess, Tom and Alex), and runs every test on it. Nothing there touches the real database.
 - When a pull request is merged into `main` and every check has passed on it, the **Database** workflow (`.github/workflows/database.yml`) sends the changes to the real database in London. The made-up people and the tests never go there. Then it checks the project's **Data API** shows PrePenny's public part only, never its private checks (`app`), and says exactly what to do if it ever does (D341).
-- A pull request's preview link uses a second, free project, **prepenny-preview**, never the real one (step 3e-2, D403). When a pull request is ready, its database changes go there first, so they can be tried before merging. See "The preview database" below.
+- A pull request's preview never uses the real project. For now its signing in is off, and each step's database changes are tried on the live app after merging (D411). Once a second project, **prepenny-preview**, is set up with Supabase's paid plan, previews use it, and database changes can be tried before merging. See "The preview database" below.
 - Before changing anything, the Database workflow checks its key has every permission in step 5 below. If any are missing, it stops with one message listing all of them, and nothing is changed (D406).
 
 ### Setting it up the first time (the owner does this once)
@@ -143,7 +143,9 @@ Keep the token and the password only in GitHub's secrets and your password manag
 
 ## The preview database
 
-A second, free Supabase project, **prepenny-preview**, in London, used only by pull request previews (step 3e-2, D403). It never holds real people's data, and each preview says so at the top of every page: "Test version: don't use real details." The live app and the real database never use it, and it never gets the real project's key.
+**Waiting for Supabase's paid plan** (D411). Supabase's free plan allows two active projects, and both are in use, so prepenny-preview is made when PrePenny moves to the paid plan before launch: the steps below are on the launch checklist in `PLAN.md`. Until then, previews are built with signing in off, the job below is switched off (it shows as skipped, never red), and each step's database changes are tried on the live app after merging, with a spare email address. Everything is ready for the day its three secrets and two variables are added: nothing else needs changing.
+
+A second Supabase project, **prepenny-preview**, in London, used only by pull request previews (step 3e-2, D403). It never holds real people's data, and each preview says so at the top of every page: "Test version: don't use real details." The live app and the real database never use it, and it never gets the real project's key.
 
 When a pull request is marked ready, and at every push after that, GitHub's **Deploy** workflow:
 
@@ -162,9 +164,9 @@ On a preview, sign in by typing the 6-digit code from the email. The email's lin
 - The other pull requests' previews then say "Changes can't be sent right now. They're saved on this phone." until theirs are put online again, and GitHub comments on each to say so. To try one again: **Actions**, then **Deploy**, then its newest run, then **Re-run all jobs**.
 - GitHub keeps only one waiting in line: if three are put online at once, the middle one's "Get the preview database ready, and try the preview" check is cancelled. Its link is still there; tap **Re-run all jobs** on it as above.
 
-Supabase's free plan allows two projects, and pauses one that hasn't been used for a week, as it does the real one (D19).
+On the paid plan, each project has its own monthly cost: check Supabase's pricing when it's made.
 
-### Setting it up (the owner does this once)
+### Setting it up (the owner does this once, with the paid plan)
 
 Supabase changes its menus now and then, so a label may be slightly different from these. Keys and passwords go only into your password manager and GitHub's secrets, never into a chat or a message.
 
@@ -219,7 +221,7 @@ Open **Actions**, then **Deploy**, then the pull request's newest run, then **Ge
 - **The key is missing permissions.** It lists every one missing. Make a new key for prepenny-preview with all eleven (steps 6 to 8), replace `PREVIEW_SUPABASE_ACCESS_TOKEN` with it, and tap **Re-run all jobs**.
 - **"Not the preview project", "Preview address", or a project "called" something else.** `PREVIEW_SUPABASE_PROJECT_REF` or `PREVIEW_SUPABASE_URL` holds another project's: put prepenny-preview's in (steps 3 and 4). Nothing was changed on any project.
 - **The check says cancelled.** Another pull request's preview took its turn (see above): tap **Re-run all jobs**.
-- **"Couldn't reach the preview database".** The free project has paused after a week without use, or the password is wrong. On supabase.com, open prepenny-preview and tap **Restore project**, wait a few minutes, then **Re-run all jobs**; or reset its database password under **Project Settings**, then **Database**, and replace `PREVIEW_SUPABASE_DB_PASSWORD`.
+- **"Couldn't reach the preview database".** The password is wrong, or the project is paused. Reset its database password under **Project Settings**, then **Database**, and replace `PREVIEW_SUPABASE_DB_PASSWORD`; or, if supabase.com shows prepenny-preview as paused, tap **Restore project** and wait a few minutes. Then **Re-run all jobs**.
 - **The try on two phones failed.** The step says which part, and a report is kept with the run, under **Artifacts**. Tell Claude Code.
 
 Resend's free plan sends 100 emails a day, shared between the live app and previews.
