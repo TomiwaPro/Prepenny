@@ -127,7 +127,7 @@ Found in step 3e:
 44. **Getting back in with nothing left** (Phase 4, brief 4.16): someone who has lost their sign-in email with no backup, or their authenticator app, writes to hello@prepenny.co.uk for now (D384, confirmed by the owner in D396). Support's own steps come with the support tools, including for someone whose backup address is kept locked by someone else typing wrong codes (D392).
 45. **Fingerprint and face** for the app lock (Phase 6, D35): the phone apps add them, and hide the app switcher's picture fully (D385).
 46. **A step's preview can't be tried with its database changes before merging** (D340). Waits for the preview database, with Supabase's paid plan (D411): until then each step is tried on the live app after merging, and the preview database's job, built in step 3e-2, is switched off.
-47. **Item 37's offline test needed more than 5 seconds once** (any time): on the computer step 3e was built on, running three tests at a time, the offline helper took longer than the test's 5 seconds to take charge of the first page. It passed 10 runs in 10 on its own at 320px and 360px. GitHub runs one test at a time (D343). If it ever fails there, look at how long the helper takes to keep the app's files: step 3e added five pages. It did the same in step 3e-2, at both widths with four tests at a time, and passed 10 runs in 10 on its own again.
+47. **Item 37's offline test needed more than 5 seconds once** (any time): on the computer step 3e was built on, running three tests at a time, the offline helper took longer than the test's 5 seconds to take charge of the first page. It passed 10 runs in 10 on its own at 320px and 360px. GitHub runs one test at a time (D343). If it ever fails there, look at how long the helper takes to keep the app's files: step 3e added five pages. It did the same in step 3e-2, at both widths with four tests at a time, and passed 10 runs in 10 on its own again. And in step 3f, at both widths with three at a time, then passed 6 runs in 6 on its own.
 
 Found in step 3e hardening:
 
@@ -145,6 +145,7 @@ Found in step 3f:
 53. **Changing someone's role, leaving with or without a copy, and making a shared account private again** (step 3g, D53, D425).
 54. **A request answered on one of the owner's phones** stays on their other phones until those look again, within a minute (D423). Answering it there says "This has been answered already."
 55. **Joining with a plan of one's own** waits for the owner's answer below (D416).
+56. **"Continue with Google" can't be tested on the computer step 3f was built on** (any time): its network checks every secure connection with a certificate of its own, which Supabase's sign-in service, running in Docker, doesn't trust, so the service can't read Google's settings and sign-in test 6 fails there at both widths. Nothing in PrePenny is involved, and GitHub runs it as usual. Every other test of the full run passed (750), the offline test of item 47 apart.
 
 ## Waiting for the owner
 
