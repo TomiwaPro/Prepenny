@@ -11,7 +11,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(77);
+select plan(78);
 
 select tests.make_jess_alone();
 select tests.make_person('sam');
@@ -231,22 +231,28 @@ select tests.as_person('tom');
 select throws_ok($$ select public.cancel_invite((select value::uuid from kept where name = 'tom-invite')) $$,
   '42501', 'not-found', 'Only the owner cancels an invite');
 
--- A plan of one's own: not joined, until the owner decides (D416).
+-- A plan of one's own comes with its person since step 3f-2 (D426,
+-- replacing D416's "not joined"), and nobody is ever in two plans (D427).
+-- 25-bring-your-plan.test.sql tries the move itself.
 select tests.as_person('alex');
 insert into kept select 'alex-6', public.make_invite(tests.id('alex-plan'), 'editor', 'Alex', null) ->> 'token';
 select tests.as_person('priya');
 select public.start_plan(tests.id('priya-plan'), null);
+select is(public.look_at_invite((select value from kept where name = 'alex-6')) - 'expires_at' - 'now',
+  jsonb_build_object('state', 'open', 'role', 'editor', 'inviter', 'Alex', 'brings', true,
+    'nation', 'england-and-wales', 'own_nation', 'england-and-wales'),
+  'Priya, who has a plan of her own with nobody else in it, can ask, and is told it comes with her');
+select tests.as_person('tom');
 select is(public.look_at_invite((select value from kept where name = 'alex-6')) ->> 'state', 'has-a-plan',
-  'Priya, who has a plan of her own, is told so');
-select throws_ok($$ select public.ask_to_join((select value from kept where name = 'alex-6'), 'Priya') $$, 'P0001',
-  'has-a-plan', 'and can''t ask to join yet');
+  'Tom, who is in Jess''s plan, is told he can''t join another');
+select throws_ok($$ select public.ask_to_join((select value from kept where name = 'alex-6'), 'Tom') $$, 'P0001',
+  'has-a-plan', 'and can''t ask to');
 select tests.as_person('sam');
 select public.ask_to_join((select value from kept where name = 'alex-6'), 'Sam');
 select public.start_plan(tests.id('sam-plan'), null);
 select tests.as_person('alex');
-select throws_ok(format($$ select public.answer_join(%L, true) $$,
-    (select (public.hello() -> 'join_requests' -> 0 ->> 'invite'))),
-  'P0001', 'has-a-plan', 'Someone who made a plan of their own while waiting can''t be let in either');
+select is(public.answer_join((select (public.hello() -> 'join_requests' -> 0 ->> 'invite'))::uuid, true) ->> 'state',
+  'allowed', 'Someone who made a plan of their own while waiting is let in, to bring it with them');
 
 -- ---------------------------------------------------------------------------
 -- By email: the email holds the link, and nothing about money.

@@ -102,7 +102,9 @@ select set_eq(
     'stop_get_back_in_with_link',
     'sharing_now', 'claiming_now',
     'make_invite', 'cancel_invite', 'look_at_invite', 'ask_to_join', 'answer_join', 'sharing',
-    'share_accounts', 'claim_pay'],
+    'share_accounts', 'claim_pay',
+    -- Step 3f-2 (D426): joining with a plan of one's own.
+    'look_at_my_invite', 'join_with_my_plan'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -115,7 +117,9 @@ select set_eq(
     'confirm_backup_email', 'remove_backup_email', 'send_get_in_code', 'stop_get_back_in',
     'stop_get_back_in_with_link',
     'make_invite', 'cancel_invite', 'look_at_invite', 'ask_to_join', 'answer_join', 'sharing',
-    'share_accounts', 'claim_pay'],
+    'share_accounts', 'claim_pay',
+    -- Step 3f-2 (D426): joining with a plan of one's own.
+    'look_at_my_invite', 'join_with_my_plan'],
   'The Data API''s part holds only the steps the phone calls'
 );
 
