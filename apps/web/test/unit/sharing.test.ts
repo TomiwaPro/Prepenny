@@ -217,6 +217,9 @@ describe('finishing joining (D426)', () => {
   it('turns the bank holidays refusal into its own problem', () => {
     expect(problemOf({ message: 'nation-changed' })).toEqual({ kind: 'nation-changed' });
     expect(problemOf({ message: 'allowed' })).toEqual({ kind: 'invite', state: 'allowed' });
+    // A plan that couldn't move says so, never what was in it.
+    expect(problemOf({ message: 'bad-record' })).toEqual({ kind: 'could-not-move' });
+    expect(problemOf({ message: 'family-broken' })).toEqual({ kind: 'could-not-move' });
   });
 
   it('reads who was let in from the server, and nothing malformed', () => {

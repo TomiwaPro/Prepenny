@@ -66,6 +66,8 @@ export type SharingProblem =
   | { readonly kind: 'pay-has-details' }
   /** The inviter's plan changed its bank holidays since the person was told (D426). */
   | { readonly kind: 'nation-changed' }
+  /** Something in the person's plan couldn't be moved, so nothing was: they're still in their own (D426). */
+  | { readonly kind: 'could-not-move' }
   /** The invite can't be asked with: what it is now. */
   | { readonly kind: 'invite'; readonly state: InviteState }
   /** Money moves between these accounts and other private ones: share them too, or neither. */
@@ -113,6 +115,9 @@ export function problemOf(error: unknown): SharingProblem {
     case 'share-together':
     case 'share-has-halves':
       return { kind: message, ids: idsIn(details) };
+    case 'bad-record':
+    case 'family-broken':
+      return { kind: 'could-not-move' };
     default:
       if (typeof message === 'string' && (STATES as readonly string[]).includes(message)) {
         return { kind: 'invite', state: message as InviteState };

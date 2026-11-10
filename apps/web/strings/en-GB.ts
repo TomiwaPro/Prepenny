@@ -2205,6 +2205,8 @@ export const strings = {
     bringing: (name: string) => `${name} let you in. Bringing your plan into ${name}'s plan.`,
     letYouIn: (name: string) => `${name} let you in.`,
     bringAndJoin: 'Bring my plan and join',
+    couldNotMove:
+      "Your plan couldn't be moved, so nothing has changed: you're still in your own plan. Write to hello@prepenny.co.uk and we'll look into it.",
     notSentYet:
       "Some changes on this phone haven't been sent to your account yet. Stay online, then try again: your plan comes with you once they have.",
     someone: 'Your partner',

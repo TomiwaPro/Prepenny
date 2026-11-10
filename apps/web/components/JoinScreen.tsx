@@ -232,7 +232,12 @@ export function JoinScreen() {
       }
       setBringing({
         kind: 'failed',
-        words: kind === 'offline' ? strings.share.offline : t.couldNotLoad,
+        words:
+          kind === 'offline'
+            ? strings.share.offline
+            : kind === 'could-not-move'
+              ? t.couldNotMove
+              : t.couldNotLoad,
       });
     },
     [comeDown, look],
