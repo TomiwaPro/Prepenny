@@ -43,7 +43,7 @@ const kinds = strings.setup.account;
 const shoots = (info: TestInfo, colorScheme: string) =>
   colorScheme === 'light' && info.project.name === 'phone-360';
 
-async function useSetting(page: Page, setting: TestSetting) {
+async function putSetting(page: Page, setting: TestSetting) {
   await page.addInitScript(settingScript, [TEST_SETTING_KEY, setting] as const);
 }
 
@@ -89,7 +89,7 @@ const phoneBill: PlanRecords = {
 };
 
 async function openHomeOn(page: Page, today: string, plan?: PlanRecords) {
-  await useSetting(page, { today, ...(plan === undefined ? {} : { plan }) });
+  await putSetting(page, { today, ...(plan === undefined ? {} : { plan }) });
   await page.goto('/app/');
   await expect(page.getByTestId('balance')).toBeVisible();
 }
