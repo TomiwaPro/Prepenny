@@ -17,7 +17,7 @@ import { newId, timeNow } from '../lib/ids.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { AccountCard } from '../lib/money-views.ts';
 import { refusalMessage } from '../lib/refusals.ts';
-import { type AccountErrors, blankAccount, buildAccount } from '../lib/setup-forms.ts';
+import { type AccountErrors, blankAccount, buildAccount, withKind } from '../lib/setup-forms.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
 import { CheckOption, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
@@ -29,6 +29,8 @@ import { useOpenCount } from './useOpenCount.ts';
 
 const t = strings.accountSheet;
 const words = strings.setup.account;
+/** Each kind's own name, which a new account's name follows until one is typed (D429). */
+const KIND_NAMES = { current: words.current, savings: words.savings, joint: words.joint } as const;
 
 export function AccountSheet({
   open,
@@ -153,7 +155,9 @@ function LimitBoxes({
 function AddAccount({ onDone }: { readonly onDone: () => void }) {
   const { loaded, makeChange } = usePlanActions();
   const id = useId();
-  const [form, setForm] = useState<Form>(() => blankAccount(false));
+  const [form, setForm] = useState<Form>(() => blankAccount(false, KIND_NAMES.savings));
+  // The name follows the kind chosen until the person types one (D429).
+  const [named, setNamed] = useState(false);
   const [errors, setErrors] = useState<AccountErrors>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -193,7 +197,10 @@ function AddAccount({ onDone }: { readonly onDone: () => void }) {
         id={`${id}-name`}
         value={form.name}
         error={mistakeWords(errors, 'name')}
-        onChange={(name) => set({ name })}
+        onChange={(name) => {
+          setNamed(true);
+          set({ name });
+        }}
       />
       <ChoiceList<AccountKind>
         legend={words.kind}
@@ -204,7 +211,7 @@ function AddAccount({ onDone }: { readonly onDone: () => void }) {
           { value: 'savings', label: words.savings },
           { value: 'joint', label: words.joint },
         ]}
-        onChange={(kind) => set({ kind })}
+        onChange={(kind) => setForm((now) => withKind(now, kind, named, KIND_NAMES))}
       />
       <Field id={`${id}-balance`} label={words.balance} error={mistakeWords(errors, 'balance')}>
         <MoneyInput
