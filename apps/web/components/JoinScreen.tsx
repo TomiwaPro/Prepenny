@@ -245,7 +245,7 @@ export function JoinScreen() {
               : t.couldNotLoad,
       });
     },
-    [comeDown, look],
+    [look],
   );
 
   // Allowed, with a plan whose bank holidays don't change: it comes straight
