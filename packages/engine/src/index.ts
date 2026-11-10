@@ -135,6 +135,7 @@ export type {
   JustThisOneEdits,
   NewBudget,
   NewGoal,
+  NewOtherHalf,
   NewSeries,
   PaymentRef,
   PayProfileEdits,

@@ -133,6 +133,15 @@ export type NewSeries = Omit<
   'familyId' | 'familyCreatedAt' | 'firstNumber' | 'splitFrom' | 'mirrorOf'
 >;
 
+/** The shared half of a private transfer, for "Add a payment" (D16, D94). */
+export interface NewOtherHalf {
+  readonly id: string;
+  /** The shared account it arrives in, or leaves. */
+  readonly accountId: string;
+  /** "From Jess" or "To Jess": all the shared plan sees of it, with the date and amount. */
+  readonly name: string;
+}
+
 /** What can change about an account (D151). */
 export interface AccountEdits {
   readonly name?: string;
@@ -334,6 +343,16 @@ export type EditCommand =
       readonly series: NewSeries;
       /** When it was added, a UTC time. It sets its place in the same-day order (D12). */
       readonly madeAt: string;
+      /**
+       * Money between the person's private account and a shared one (D16,
+       * D52, D94, step 3f): `series` is the private half, money going out of
+       * (or into) their own account, and this is the shared half, the same
+       * money arriving in (or leaving) the shared account, named "From Jess"
+       * (or "To Jess") and carrying nothing else. Both are one edit and one
+       * undo. The engine doesn't know which accounts are private: the app
+       * says so by asking for the other half.
+       */
+      readonly otherHalf?: NewOtherHalf;
     }
   /** Deletes a payment that hasn't started yet: its whole family (D156). */
   | { readonly kind: 'delete-payment'; readonly seriesId: string }
