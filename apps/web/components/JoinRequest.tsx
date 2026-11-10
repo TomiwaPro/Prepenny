@@ -62,7 +62,12 @@ export function JoinRequestChoice({
     answeredHere(request.invite);
     // The plan's members have changed: bring down the new list now.
     void syncNow();
-    onAnswered({ allowed: allow, words: allow ? t.allowed(name) : t.notAllowed(name) });
+    // Someone with a plan of their own joins once their phone brings it (D426).
+    const bringing = (done.value as { state?: unknown } | null)?.state === 'allowed';
+    onAnswered({
+      allowed: allow,
+      words: !allow ? t.notAllowed(name) : bringing ? t.allowedBringing(name) : t.allowed(name),
+    });
   }
 
   return (

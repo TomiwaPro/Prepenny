@@ -2090,10 +2090,13 @@ export const strings = {
     dontAllow: "Don't allow",
     answering: 'Saving your answer.',
     allowed: (name: string) => `${name} has joined your plan.`,
+    /** Allowed someone with a plan of their own, which their phone brings in (D426). */
+    allowedBringing: (name: string) =>
+      `${name} can join now. It finishes on ${name}'s phone, as soon as PrePenny is open there.`,
     notAllowed: (name: string) => `${name} wasn't let in. The invite can't be used again.`,
     answerRanOut: 'This invite has run out, so nobody can join with it. Make a new one.',
     answerHasAPlan: (name: string) =>
-      `${name} has a plan of their own now, so they can't join yours yet.`,
+      `${name} is in another shared plan now, so they can't join yours.`,
     answerGone: 'This has been answered already.',
     gotIt: 'Got it',
     /** "Choose shared accounts" (PLAN.md items 26 and 34). */
@@ -2175,7 +2178,23 @@ export const strings = {
     yours: 'This is your own invite. Send it to your partner, so they can ask to join.',
     member: "You're already in this plan.",
     hasAPlan: (name: string) =>
-      `You already have a plan in PrePenny, so you can't join ${name}'s plan yet. PrePenny keeps one plan for each person, and joining with a plan of your own isn't ready yet.`,
+      `You're already in a shared plan in PrePenny, so you can't join ${name}'s plan as well. PrePenny keeps one plan for each person.`,
+    /** Joining with a plan of one's own (step 3f-2, D426). */
+    bringsLine: (name: string) =>
+      `You have a plan of your own, and it comes with you: your accounts and everything on them move into ${name}'s plan, private to you.`,
+    bringsPrivate: (name: string) =>
+      `${name} sees none of it until you choose to share an account. Nothing has to be typed again, and you'll have one plan: ${name}'s, with yours in it.`,
+    /** When the two plans use different bank holidays: "England and Wales", "Scotland" or "Northern Ireland". */
+    nationDiffers: (name: string, theirs: string, yours: string) =>
+      `Bank holidays: ${name}'s plan uses ${theirs}, and yours uses ${yours}. Once you join, a payment set to move for a bank holiday follows ${theirs}, so it may move to a different day.`,
+    notSavedYet:
+      "Your plan on this phone hasn't been saved in your account yet. Stay online, then try again: it comes with you once it's saved.",
+    saving: 'Saving your plan in your account first.',
+    bringing: (name: string) => `${name} let you in. Bringing your plan into ${name}'s plan.`,
+    letYouIn: (name: string) => `${name} let you in.`,
+    bringAndJoin: 'Bring my plan and join',
+    notSentYet:
+      "Some changes on this phone haven't been sent to your account yet. Stay online, then try again: your plan comes with you once they have.",
     someone: 'Your partner',
     full: (name: string) => `${name}'s plan already has two people in it, so nobody else can join.`,
     goHome: 'Go to my plan',
@@ -2331,6 +2350,18 @@ export const strings = {
    * The notice on every signed-in device while someone is getting back in
    * with the backup email (step 3e hardening).
    */
+  /** "Finish joining" on any screen, for someone let in whose plan is still to come (step 3f-2, D426). */
+  joining: {
+    heading: (name: string) => `${name} has let you into their plan`,
+    line: 'Finish joining to bring your plan into it. It moves in one go, private to you.',
+    finish: 'Finish joining',
+  },
+
+  /** The live app's old address, for a phone holding something not saved in an account yet (D428). */
+  oldAddress: {
+    line: "PrePenny's address is now prepenny.co.uk. This phone has changes that aren't saved in your account yet, so they stay here for now. Sign in and stay online until they're sent, then open prepenny.co.uk.",
+  },
+
   getBackInNotice: {
     heading: 'Someone asked to get into your account',
     waiting: (when: string) =>

@@ -11,7 +11,11 @@
 //    can be claimed and looked after (D311, D418).
 // 3. A forwarded link: whoever opens it first gets nothing until allowed;
 //    "Don't allow" ends it, so the real partner finds it used; and someone
-//    with a plan of their own is told they can't join yet (D416).
+//    already in a shared plan is told they can't join another (D427).
+// 4. Step 3f-2 (D426): Sam, with a plan of his own on other bank holidays,
+//    joins Jess's and keeps every account, private to him: told before he
+//    asks, brought in once she allows it, from the join page or from "Finish
+//    joining" on Home, and Jess sees none of it.
 
 import { type Browser, expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
@@ -19,11 +23,12 @@ import { layoutProblems, named } from './coming-up.ts';
 import { addPayment, noSidewaysScroll, openHome, undoBar } from './journeys.ts';
 import { box, fillAccount, noAxeProblems, radio } from './setup.ts';
 import { askForCode, makeAPlan, newEmail, signInEmail } from './sign-in-helpers.ts';
-import { openMore, quoted, secondPhone, signUpFromMore, sql } from './two-phones.ts';
+import { openMore, personOn, quoted, secondPhone, signUpFromMore, sql } from './two-phones.ts';
 
 const s = strings.share;
 const j = strings.join;
 const SCREENS = '../../docs/screens/3f';
+const SCREENS_2 = '../../docs/screens/3f-2';
 const INBOX = 'http://127.0.0.1:54324';
 
 /** True for the one run that saves the screenshots: 360px, light. */
@@ -69,10 +74,16 @@ async function shareAccount(page: Page, account: string, info: TestInfo, colorSc
 }
 
 /** "Invite your partner": makes an invite link and gives it back. */
-async function makeLink(page: Page, role: string, info?: TestInfo, colorScheme = 'dark') {
+async function makeLink(
+  page: Page,
+  role: string,
+  info?: TestInfo,
+  colorScheme = 'dark',
+  name = 'Tom',
+) {
   await openShare(page);
   const invite = page.getByTestId('invite');
-  await box(invite, s.nameLabel).fill('Tom');
+  await box(invite, s.nameLabel).fill(name);
   await radio(invite, role).check();
   await radio(invite, s.byLink).check();
   await invite.getByRole('button', { name: s.makeLink }).click();
@@ -94,6 +105,7 @@ async function askWithLink(
   name: string,
   /** Which email to this address has the sign-in code: the second when the invite came by email. */
   codeEmail = 1,
+  inviter = 'Tom',
 ) {
   await page.goto(link);
   await expect(page.getByRole('heading', { level: 1, name: j.heading })).toBeVisible();
@@ -106,12 +118,12 @@ async function askWithLink(
   await box(page, '6-digit code').fill((await signInEmail(address, codeEmail)).code);
   await page.getByRole('button', { name: 'Sign up', exact: true }).click();
   await expect(page).toHaveURL(/\/join\/$/);
-  await expect(page.getByTestId('join-message')).toHaveText(j.invitedBy('Tom'));
+  await expect(page.getByTestId('join-message')).toHaveText(j.invitedBy(inviter));
   await noAxeProblems(page);
   await noSidewaysScroll(page);
-  await box(page, j.nameLabel('Tom')).fill(name);
+  await box(page, j.nameLabel(inviter)).fill(name);
   await page.getByRole('button', { name: j.ask }).click();
-  await expect(page.getByTestId('join-message')).toHaveText(j.waiting('Tom'));
+  await expect(page.getByTestId('join-message')).toHaveText(j.waiting(inviter));
   await noAxeProblems(page);
 }
 
@@ -134,6 +146,19 @@ async function addAccount(page: Page, name: string, balance: string) {
 
 async function newPhone(browser: Browser, info: TestInfo, colorScheme: 'light' | 'dark') {
   return secondPhone(browser, info, colorScheme);
+}
+
+/** "Where you live", under More, Accounts. */
+async function setNation(page: Page, nation: string) {
+  await page.goto('/app/accounts/');
+  await page.getByRole('button', { name: strings.accounts.changeNation }).click();
+  const sheet = page.getByRole('dialog', { name: strings.nation.title });
+  await radio(sheet, nation).check();
+  await sheet.getByRole('button', { name: strings.nation.save }).click();
+  await expect(sheet).toBeHidden();
+  await expect(
+    page.getByText(strings.accounts.holidaysLine(nation), { exact: true }),
+  ).toBeVisible();
 }
 
 for (const colorScheme of ['light', 'dark'] as const) {
@@ -409,11 +434,21 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noAxeProblems(jess.page);
       await jess.context.close();
 
-      // Someone with a plan of their own is told plainly they can't join yet (D416).
+      // Someone already in a shared plan is told plainly they can't join
+      // another (D427). Since step 3f-2, a plan of one's own with nobody
+      // else in it comes along instead (test 4).
       const fresh = await makeLink(page, s.canEdit);
       const sam = await newPhone(browser, info, colorScheme);
       await makeAPlan(sam.page);
       await signUpFromMore(sam.page, newEmail('sam'));
+      const samsLink = await makeLink(sam.page, s.canEdit, undefined, 'dark', 'Sam');
+      const priya = await newPhone(browser, info, colorScheme);
+      await askWithLink(priya.page, samsLink, newEmail('priya'), 'Priya', 1, 'Sam');
+      const samSheet = await requestSheet(sam.page, 'Priya');
+      await samSheet.getByRole('button', { name: s.allow, exact: true }).click();
+      await expect(priya.page).toHaveURL(/\/app\/$/, { timeout: 15_000 });
+      await priya.context.close();
+      await samSheet.getByRole('button', { name: s.gotIt }).click();
       await sam.page.goto(fresh);
       await expect(sam.page.getByTestId('join-message')).toHaveText(j.hasAPlan('Tom'));
       await expect(sam.page.getByRole('button', { name: j.ask })).toHaveCount(0);
@@ -421,6 +456,164 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noSidewaysScroll(sam.page);
       await sam.page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
       expect(await layoutProblems(sam.page)).toEqual([]);
+      await sam.context.close();
+    });
+
+    test("4. Sam, with a plan of his own, joins Jess's and keeps every account, private to him", async ({
+      page,
+      browser,
+    }, info) => {
+      test.setTimeout(300_000);
+      await page.emulateMedia({ colorScheme });
+      // Jess's plan: Scotland's bank holidays, and a joint account she shares.
+      await makeAPlan(page);
+      await setNation(page, 'Scotland');
+      await addAccount(page, 'Joint', '800');
+      await signUpFromMore(page, newEmail('jess'));
+      await shareAccount(page, 'Joint', info, 'dark');
+      const link = await makeLink(page, s.canEdit, undefined, 'dark', 'Jess');
+
+      // Sam's own plan on his phone: his current account, his savings and a
+      // phone bill, on England and Wales's bank holidays, saved in his account.
+      const sam = await newPhone(browser, info, colorScheme);
+      await makeAPlan(sam.page);
+      await addAccount(sam.page, "Sam's savings", '500');
+      await addPayment(sam.page, {
+        name: 'Phone bill',
+        amount: '20',
+        date: '2026-10-30',
+        account: 'Current account',
+        often: 'Once',
+      });
+      const samAddress = newEmail('sam');
+      await signUpFromMore(sam.page, samAddress);
+      const samId = await personOn(sam.page);
+      const ownPlan = sql(
+        `select plan_id from public.plan_members where person_id = ${quoted(samId)}`,
+      );
+
+      // Before he asks, he's told what comes with him, and what the bank holidays change.
+      await sam.page.goto(link);
+      await expect(sam.page.getByTestId('join-message')).toHaveText(j.invitedBy('Jess'));
+      await expect(sam.page.getByTestId('join-brings')).toHaveText(j.bringsLine('Jess'));
+      await expect(sam.page.getByText(j.bringsPrivate('Jess'))).toBeVisible();
+      await expect(sam.page.getByTestId('join-holidays')).toHaveText(
+        j.nationDiffers('Jess', 'Scotland', 'England and Wales'),
+      );
+      await noAxeProblems(sam.page);
+      await noSidewaysScroll(sam.page);
+      if (shoots(info, colorScheme)) {
+        await sam.page.screenshot({
+          path: `${SCREENS_2}/bring-your-plan-ask-360-light.png`,
+          fullPage: true,
+        });
+      }
+      const big = await sam.page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(sam.page)).toEqual([]);
+      await big.evaluate((node) => (node as Element).remove());
+      await box(sam.page, j.nameLabel('Jess')).fill('Sam');
+      await sam.page.getByRole('button', { name: j.ask }).click();
+      await expect(sam.page.getByTestId('join-message')).toHaveText(j.waiting('Jess'));
+      // In light, he goes back to his plan meanwhile, and finishes from Home;
+      // in dark, he keeps the join page open.
+      const fromHome = colorScheme === 'light';
+      if (fromHome) {
+        await sam.page.goto('/app/');
+        await expect(sam.page.getByTestId('balance')).toBeVisible();
+      }
+
+      // Jess allows it. Nothing of his has moved yet.
+      const sheet = await requestSheet(page, 'Sam');
+      await sheet.getByRole('button', { name: s.allow, exact: true }).click();
+      await expect(sheet.getByTestId('join-answered')).toHaveText(s.allowedBringing('Sam'));
+      await noAxeProblems(page);
+      await sheet.getByRole('button', { name: s.gotIt }).click();
+      expect(
+        sql(`select count(*) from public.plan_members where person_id = ${quoted(samId)}`),
+      ).toBe('1');
+      expect(sql(`select count(*) from public.plans where id = ${quoted(ownPlan)}`)).toBe('1');
+      await openShare(page);
+      await expect(page.getByTestId('invite-open')).toContainText(s.allowedBringing('Sam'));
+
+      if (fromHome) {
+        // "Finish joining" shows on his Home by itself.
+        const card = sam.page.getByTestId('finish-joining');
+        await expect(card).toBeVisible({ timeout: 70_000 });
+        await expect(card.getByRole('heading')).toHaveText(strings.joining.heading('Jess'));
+        await noAxeProblems(sam.page);
+        await noSidewaysScroll(sam.page);
+        if (shoots(info, colorScheme)) {
+          await sam.page.screenshot({ path: `${SCREENS_2}/finish-joining-360-light.png` });
+        }
+        await card.getByRole('link', { name: strings.joining.finish }).click();
+        await expect(sam.page).toHaveURL(/\/join\/$/);
+      }
+      // The bank holidays differ, so he's told again, and chooses.
+      await expect(sam.page.getByTestId('join-holidays')).toBeVisible({ timeout: 20_000 });
+      const bring = sam.page.getByRole('button', { name: j.bringAndJoin });
+      await expect(bring).toBeVisible();
+      await noAxeProblems(sam.page);
+      await noSidewaysScroll(sam.page);
+      if (shoots(info, colorScheme)) {
+        await sam.page.screenshot({
+          path: `${SCREENS_2}/bring-your-plan-allowed-360-light.png`,
+          fullPage: true,
+        });
+      }
+      await bring.click();
+      await expect(sam.page).toHaveURL(/\/app\/$/, { timeout: 20_000 });
+
+      // Everything of his came with him: Home, his accounts and his phone bill.
+      await expect(sam.page.getByRole('heading', { name: 'Current account' })).toBeVisible();
+      await expect(sam.page.getByTestId('balance')).toContainText('£267.54');
+      await sam.page.goto('/app/accounts/');
+      for (const name of ['Current account', "Sam's savings", 'Joint']) {
+        await expect(sam.page.getByText(name, { exact: true }).first()).toBeVisible();
+      }
+      await expect(
+        sam.page.getByText(strings.accounts.holidaysLine('Scotland'), { exact: true }),
+      ).toBeVisible();
+      await noAxeProblems(sam.page);
+      if (shoots(info, colorScheme)) {
+        await sam.page.screenshot({
+          path: `${SCREENS_2}/sams-accounts-after-joining-360-light.png`,
+        });
+      }
+      await sam.page.goto('/app/coming-up/');
+      await expect(sam.page.getByRole('button', { name: named('Phone bill') })).toBeVisible();
+      // His accounts are his to share, when he chooses.
+      await openShare(sam.page);
+      await sam.page.getByRole('link', { name: s.chooseAccounts }).click();
+      await expect(sam.page.getByRole('checkbox', { name: 'Current account' })).toBeVisible();
+      await expect(sam.page.getByRole('checkbox', { name: "Sam's savings" })).toBeVisible();
+
+      // On the server: he's in her plan only, his old plan is gone, and
+      // everything he brought is private to him.
+      expect(
+        sql(`select count(*) from public.plan_members where person_id = ${quoted(samId)}`),
+      ).toBe('1');
+      expect(sql(`select count(*) from public.plans where id = ${quoted(ownPlan)}`)).toBe('0');
+      expect(
+        sql(`select count(*) from public.accounts where private_to = ${quoted(samId)}
+          and name in ('Current account', 'Sam''s savings')`),
+      ).toBe('2');
+      expect(
+        sql(
+          `select count(*) from public.series where created_by = ${quoted(samId)} and private_to is null`,
+        ),
+      ).toBe('0');
+
+      // Jess sees that Sam joined, and nothing of his.
+      await openShare(page);
+      await expect(page.getByTestId('member')).toHaveText([
+        `${s.you('Jess')}${s.roles.owner}`,
+        `Sam${s.roles.editor}`,
+      ]);
+      await page.goto('/app/accounts/');
+      await expect(page.getByText("Sam's savings")).toHaveCount(0);
+      await page.goto('/app/coming-up/');
+      await expect(page.getByText('Phone bill')).toHaveCount(0);
+      await noAxeProblems(page);
       await sam.context.close();
     });
   });

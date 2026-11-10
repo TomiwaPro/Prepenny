@@ -74,6 +74,7 @@ import {
 } from './db.ts';
 import { getBackInNoticeChanges, setGetBackInNotice } from './get-back-in-notice.ts';
 import { setJoinRequests } from './join-requests.ts';
+import { setJoining } from './joining.ts';
 
 // ---------------------------------------------------------------------------
 // What the screens show.
@@ -239,12 +240,13 @@ type Standing =
  */
 async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
   const answer = await withDb((db) =>
-    rpc<{ sign_in?: unknown; version?: unknown; get_back_in?: unknown; join_requests?: unknown }>(
-      client,
-      'hello',
-      {},
-      db,
-    ),
+    rpc<{
+      sign_in?: unknown;
+      version?: unknown;
+      get_back_in?: unknown;
+      join_requests?: unknown;
+      joining?: unknown;
+    }>(client, 'hello', {}, db),
   );
   // A database from before step 3e has no `hello`: it's still being updated.
   if (!answer.ok) return 'wait';
@@ -253,6 +255,8 @@ async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
   setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
   // Someone asking to join this person's plan (step 3f).
   setJoinRequests(answer.data.sign_in === 'ok' ? answer.data.join_requests : []);
+  // This person let into a plan, with their own plan still to bring (step 3f-2).
+  setJoining(answer.data.sign_in === 'ok' ? answer.data.joining : []);
   if (answer.data.sign_in === 'ended') return 'ended';
   if (answer.data.sign_in === 'second-step') return 'second-step';
   if (answer.data.sign_in !== 'ok') return 'wait';
@@ -1653,6 +1657,51 @@ export function keepInStep(): () => void {
     window.removeEventListener('online', look);
     document.removeEventListener('visibilitychange', look);
   };
+}
+
+/**
+ * Joining with a plan of one's own (D426): everything on this phone is sent
+ * to the account first, then `task` asks the server to move the plan, in
+ * turn with every other look at the account, so nothing is sent or brought
+ * down meanwhile. `sent: false` when something couldn't be sent yet: the
+ * plan then waits, so nothing made on this phone is left behind.
+ */
+export async function sendEverythingThen<T>(
+  task: () => Promise<T>,
+): Promise<{ readonly sent: false } | { readonly sent: true; readonly value: T }> {
+  if (!(await allSent())) return { sent: false };
+  return inTurn(async () => {
+    const clear = await withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      if (own === undefined || !(await hasSomething(db, own.id))) return true;
+      const link = await db.links.get(own.id);
+      if (link === undefined || link.sending === true) return false;
+      return (await db.unsent.where('planId').equals(own.id).count()) === 0;
+    });
+    if (!clear) return { sent: false } as const;
+    return { sent: true, value: await task() } as const;
+  });
+}
+
+/**
+ * True when this phone holds something of the person's that isn't saved in
+ * an account yet: a plan of their own never sent, part of one still going
+ * up, or changes waiting to go. The old address keeps such a phone where it
+ * is rather than send it to prepenny.co.uk, where it couldn't be reached
+ * (D428).
+ */
+export async function heldOnlyHere(): Promise<boolean> {
+  try {
+    return await withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      if (own === undefined || !(await hasSomething(db, own.id))) return false;
+      const link = await db.links.get(own.id);
+      if (link === undefined || link.sending === true) return true;
+      return (await db.unsent.where('planId').equals(own.id).count()) > 0;
+    });
+  } catch {
+    return false;
+  }
 }
 
 /** True once nothing on this phone is waiting to be sent. */

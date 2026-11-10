@@ -9,8 +9,10 @@
 // Nothing here writes an email address, an invite link's secret or anything
 // about money to the console or anywhere else (CLAUDE.md).
 
+import type { Nation } from '@prepenny/engine';
 import { signedInClient } from './account.ts';
 import { newId, timeNow } from './ids.ts';
+import { siteOrigin } from './site.ts';
 
 export type Role = 'editor' | 'viewer';
 
@@ -18,6 +20,8 @@ export type Role = 'editor' | 'viewer';
 export type InviteState =
   | 'open'
   | 'waiting'
+  /** Allowed, waiting for the asker's phone to bring their plan in (D426). */
+  | 'allowed'
   | 'joined'
   | 'not-allowed'
   | 'used'
@@ -32,6 +36,7 @@ export type InviteState =
 const STATES: readonly InviteState[] = [
   'open',
   'waiting',
+  'allowed',
   'joined',
   'not-allowed',
   'used',
@@ -59,6 +64,8 @@ export type SharingProblem =
   | { readonly kind: 'has-a-plan' }
   | { readonly kind: 'not-pay' }
   | { readonly kind: 'pay-has-details' }
+  /** The inviter's plan changed its bank holidays since the person was told (D426). */
+  | { readonly kind: 'nation-changed' }
   /** The invite can't be asked with: what it is now. */
   | { readonly kind: 'invite'; readonly state: InviteState }
   /** Money moves between these accounts and other private ones: share them too, or neither. */
@@ -101,6 +108,7 @@ export function problemOf(error: unknown): SharingProblem {
     case 'has-a-plan':
     case 'not-pay':
     case 'pay-has-details':
+    case 'nation-changed':
       return { kind: message };
     case 'share-together':
     case 'share-has-halves':
@@ -132,9 +140,24 @@ async function call<T>(name: string, args: Record<string, unknown>): Promise<Don
 /** Where an invite link's secret waits while its person signs in, on this phone only. */
 export const JOIN_KEY = 'prepenny-join';
 
-/** The invite link: PrePenny's join page, with the secret after a "#", so it's never sent to the site. */
-export function inviteLink(token: string, origin: string = window.location.origin): string {
+/**
+ * The invite link: PrePenny's join page, with the secret after a "#", so it's
+ * never sent to the site. On the live app it's always prepenny.co.uk, even
+ * when the phone has the old address open (lib/site.ts).
+ */
+export function inviteLink(token: string, origin: string = siteOrigin()): string {
   return `${origin}/join/#${token}`;
+}
+
+/** "Finish joining" on any screen: the join page for the invite with this id, after a "#". */
+export function finishJoiningLink(invite: string): string {
+  return `/join/#invite=${invite}`;
+}
+
+/** The invite's id from "#invite=…", when the join page is opened to finish joining. */
+export function inviteIdFrom(hash: string): string | null {
+  const found = /^#?invite=([0-9a-f-]{36})$/.exec(hash.trim());
+  return found?.[1] ?? null;
 }
 
 /** The secret from a link opened on this page, or one kept while signing in. */
@@ -212,13 +235,26 @@ export interface InviteLook {
   /** The name of the person who made the plan, when the invite is for this person. */
   readonly inviter: string | null;
   readonly expiresAt: string | null;
+  /** The invite's own id, given only to the person who asked with it. */
+  readonly invite: string | null;
+  /**
+   * The person has a plan of their own, alone in it, which comes with them
+   * (D426), with the bank holidays of both plans: the inviter's, and theirs.
+   */
+  readonly brings: { readonly nation: Nation; readonly ownNation: Nation } | null;
 }
+
+const NATION_NAMES: readonly unknown[] = ['england-and-wales', 'scotland', 'northern-ireland'];
 
 function lookOf(value: {
   state?: unknown;
   role?: unknown;
   inviter?: unknown;
   expires_at?: unknown;
+  invite?: unknown;
+  brings?: unknown;
+  nation?: unknown;
+  own_nation?: unknown;
 }): InviteLook {
   const state = (STATES as readonly unknown[]).includes(value.state)
     ? (value.state as InviteState)
@@ -228,12 +264,49 @@ function lookOf(value: {
     role: value.role === 'viewer' ? 'viewer' : 'editor',
     inviter: typeof value.inviter === 'string' ? value.inviter : null,
     expiresAt: typeof value.expires_at === 'string' ? value.expires_at : null,
+    invite: typeof value.invite === 'string' ? value.invite : null,
+    brings:
+      value.brings === true &&
+      NATION_NAMES.includes(value.nation) &&
+      NATION_NAMES.includes(value.own_nation)
+        ? { nation: value.nation as Nation, ownNation: value.own_nation as Nation }
+        : null,
   };
 }
 
 export async function lookAtInvite(token: string): Promise<Done<InviteLook>> {
   const answer = await call<Record<string, unknown>>('look_at_invite', { token });
   return answer.ok ? { ok: true, value: lookOf(answer.value) } : answer;
+}
+
+/** The invite this person asked with, by its id: for "Finish joining", where the link isn't to hand. */
+export async function lookAtMyInvite(invite: string): Promise<Done<InviteLook>> {
+  const answer = await call<Record<string, unknown>>('look_at_my_invite', { invite });
+  return answer.ok ? { ok: true, value: lookOf(answer.value) } : answer;
+}
+
+/**
+ * "Join and bring my plan" (D426): once allowed, the server makes this
+ * person a member and moves their own plan in, private to them, in one step.
+ * `nation` is the inviter's plan's bank holidays, as the person was shown.
+ */
+export function joinWithMyPlan(invite: string, nation: Nation): Promise<Done<unknown>> {
+  return call('join_with_my_plan', { invite, nation, edit: newId(), made_at: timeNow() });
+}
+
+/** Someone let into a plan, whose phone still has to bring their plan in: "Finish joining". */
+export interface Joining {
+  readonly invite: string;
+  readonly inviter: string;
+}
+
+export function joiningOf(value: unknown): Joining[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((one: Record<string, unknown>) =>
+    typeof one?.invite === 'string' && typeof one.inviter === 'string'
+      ? [{ invite: one.invite, inviter: one.inviter }]
+      : [],
+  );
 }
 
 export async function askToJoin(token: string, nickname: string): Promise<Done<InviteLook>> {
@@ -295,6 +368,8 @@ export interface Sharing {
     readonly email: string | null;
     readonly state: InviteState;
     readonly expiresAt: string;
+    /** Who was allowed in, while their phone brings their plan (D426). */
+    readonly asker: string | null;
   } | null;
   readonly requests: readonly JoinRequest[];
 }
@@ -310,6 +385,7 @@ export async function sharingOf(planId: string): Promise<Done<Sharing>> {
       email: string | null;
       state: InviteState;
       expires_at: string;
+      asker?: string | null;
     } | null;
     requests: unknown;
   }>('sharing', { plan: planId });
@@ -330,6 +406,7 @@ export async function sharingOf(planId: string): Promise<Done<Sharing>> {
               email: value.invite.email,
               state: value.invite.state,
               expiresAt: value.invite.expires_at,
+              asker: typeof value.invite.asker === 'string' ? value.invite.asker : null,
             },
       requests: requestsOf(value.requests),
     },

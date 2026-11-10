@@ -317,7 +317,8 @@ $$;
 -- Only the person who asked with the invite can, only once it's allowed,
 -- only with a plan of their own that nobody else is in, and only while the
 -- inviter's plan uses the bank holidays they were shown (`nation`): if it
--- changed meanwhile, "nation-changed", and they're told again. Someone whose
+-- changed meanwhile, "nation-changed", and they're told again. `nation` only
+-- matters when a plan comes with them. Someone whose
 -- plan was removed meanwhile just joins. Sent twice, it changes nothing the
 -- second time. Refusals: "not-found" (42501), "waiting", "cancelled",
 -- "ran-out", "not-allowed", "full", "has-a-plan", "nation-changed",
@@ -354,9 +355,6 @@ begin
 
   -- One join into the plan at a time, so it never has more people than it allows.
   select * into target from public.plans p where p.id = found_one.plan_id for no key update;
-  if nation is distinct from target.nation then
-    perform app.refuse('nation-changed');
-  end if;
   if (select count(*) from public.plan_members m where m.plan_id = target.id and m.left_at is null)
     + (select count(*) from public.invites i
         where i.plan_id = target.id and i.id <> invite and app.invite_state(i) = 'allowed')
@@ -369,6 +367,10 @@ begin
     old := app.plan_to_bring(me);
     if old is null then
       perform app.refuse('has-a-plan');
+    end if;
+    -- The bank holidays they were told about are the ones their plan gets.
+    if nation is distinct from target.nation then
+      perform app.refuse('nation-changed');
     end if;
     -- Every save to it waits until this is done, so nothing saved is left behind.
     perform 1 from public.plans p where p.id = old for update;

@@ -2,7 +2,8 @@
 
 // Every screen of the app: the example plan banner, the offline note and,
 // while someone is getting back in with the backup email, its notice at the
-// top (step 3e hardening), the screen in a centred column, the undo bar after a change, and
+// top (step 3e hardening), and "Finish joining" for someone let into a plan
+// whose own plan is still to come (step 3f-2), the screen in a centred column, the undo bar after a change, and
 // the bottom navigation.
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -13,6 +14,7 @@ import { AppLock } from './AppLock.tsx';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
 import { ClashSheet } from './ClashSheet.tsx';
+import { FinishJoining } from './FinishJoining.tsx';
 import { GetBackInNotice } from './GetBackInNotice.tsx';
 import { JoinRequestSheet } from './JoinRequest.tsx';
 import { KeepInStep } from './KeepInStep.tsx';
@@ -39,6 +41,7 @@ function Notes() {
       ) : null}
       <OfflineNote />
       <GetBackInNotice />
+      <FinishJoining />
     </div>
   );
 }
