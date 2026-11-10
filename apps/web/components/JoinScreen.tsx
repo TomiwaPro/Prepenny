@@ -211,7 +211,12 @@ export function JoinScreen() {
       const answer: Done<unknown> = result.value;
       if (answer.ok) {
         forgetToken();
-        await comeDown();
+        // Joined: the shared plan comes down, and Home opens. If it can't come
+        // down just now, the page says they've joined, with "Go to the plan".
+        setBringing({ kind: 'idle' });
+        setSeen((now) =>
+          now.kind === 'looked' ? { kind: 'looked', look: { ...now.look, state: 'joined' } } : now,
+        );
         return;
       }
       const kind = answer.problem.kind;
