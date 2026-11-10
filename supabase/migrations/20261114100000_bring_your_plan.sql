@@ -46,15 +46,6 @@ language sql stable set search_path = '' as $$
   end
 $$;
 
--- The places taken in a plan now: the people in it, and anyone let in whose
--- phone is still bringing their plan, so a plan never has more people than
--- it allows (brief 4.14's limit, `max_members`).
-create or replace function app.members_now(plan uuid) returns integer
-language sql stable security definer set search_path = '' as $$
-  select ((select count(*) from public.plan_members m where m.plan_id = plan and m.left_at is null)
-    + (select count(*) from public.invites i where i.plan_id = plan and app.invite_state(i) = 'allowed'))::integer
-$$;
-
 -- The plan a person would bring with them: the one plan they're in, when
 -- it's their own and nobody else is in it. Null when they're in no plan, or
 -- in one they can't bring: someone else's, or their own shared with someone,
@@ -66,6 +57,31 @@ language sql stable security definer set search_path = '' as $$
     and (select count(*) from public.plan_members x where x.person_id = person and x.left_at is null) = 1
     and not exists (select 1 from public.plan_members o
       where o.plan_id = m.plan_id and o.left_at is null and o.person_id <> person)
+    -- Nor anyone let in and still bringing their own plan: their place is kept.
+    and not exists (select 1 from public.invites i
+      where i.plan_id = m.plan_id and app.invite_state(i) = 'allowed')
+$$;
+
+-- True while a person could still join a plan: in none, or with a plan of
+-- their own they can bring. An invite allowed for someone who has since
+-- joined another plan, or let someone into theirs, keeps no place and
+-- shows no "Finish joining".
+create function app.can_still_join(person uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select not app.in_a_plan(person) or app.plan_to_bring(person) is not null
+$$;
+
+-- Finding a person's own asks, for "Finish joining" every minute.
+create index invites_by_asker on public.invites (asked_by) where asked_by is not null;
+
+-- The places taken in a plan now: the people in it, and anyone let in whose
+-- phone is still bringing their plan, so a plan never has more people than
+-- it allows (brief 4.14's limit, `max_members`).
+create or replace function app.members_now(plan uuid) returns integer
+language sql stable security definer set search_path = '' as $$
+  select ((select count(*) from public.plan_members m where m.plan_id = plan and m.left_at is null)
+    + (select count(*) from public.invites i where i.plan_id = plan and app.invite_state(i) = 'allowed'
+        and app.can_still_join(i.asked_by)))::integer
 $$;
 
 -- What an invite is, for the signed-in person looking: as in step 3f, with
@@ -144,6 +160,18 @@ begin
 end;
 $$;
 
+-- Once someone has joined a plan, their other asks, waiting or allowed, are
+-- withdrawn: they can't join two plans (D427), so no other plan keeps a
+-- place for them, and no "Finish joining" is left behind. Each such plan's
+-- owner sees the invite cancelled, and can make a new one.
+create function app.withdraw_other_asks(person uuid, kept uuid) returns void
+language plpgsql volatile security definer set search_path = '' as $$
+begin
+  update public.invites i set cancelled_at = now()
+    where i.asked_by = person and i.id <> kept and app.invite_state(i) in ('waiting', 'allowed');
+end;
+$$;
+
 -- "Allow" or "Don't allow", as in step 3f. Allowing someone with no plan
 -- adds them now. Allowing someone with a plan of their own, alone in it,
 -- marks the invite allowed and tells their phones, which bring the plan in
@@ -153,8 +181,19 @@ language plpgsql volatile security definer set search_path = '' as $$
 declare
   found_one public.invites;
   bring uuid;
+  asker uuid;
 begin
+  -- The asker's own row first, as making a plan and bringing one take it
+  -- (D352, D427): so nobody is let into a plan while they make or join
+  -- another at the same moment. Then the invite, checked again.
+  select i.asked_by into asker from public.invites i where i.id = invite;
+  if asker is not null then
+    perform 1 from public.people p where p.id = asker for update;
+  end if;
   select * into found_one from public.invites i where i.id = invite for update;
+  if found and found_one.asked_by is distinct from asker then
+    perform app.refuse('not-waiting');
+  end if;
   if not found or allow is null or not app.session_ok()
     or not exists (select 1 from app.my_owned_plans() p where p = found_one.plan_id) then
     perform app.refuse('not-found', '42501');
@@ -186,6 +225,7 @@ begin
   on conflict (plan_id, person_id) do update
     set role = excluded.role, left_at = null, joined_at = now();
   update public.invites i set accepted_at = now(), accepted_by = found_one.asked_by where i.id = invite;
+  perform app.withdraw_other_asks(found_one.asked_by, invite);
   perform app.send_nudge('plan:' || found_one.plan_id);
   return jsonb_build_object('state', 'joined', 'now', app.server_time());
 end;
@@ -357,7 +397,8 @@ begin
   select * into target from public.plans p where p.id = found_one.plan_id for no key update;
   if (select count(*) from public.plan_members m where m.plan_id = target.id and m.left_at is null)
     + (select count(*) from public.invites i
-        where i.plan_id = target.id and i.id <> invite and app.invite_state(i) = 'allowed')
+        where i.plan_id = target.id and i.id <> invite and app.invite_state(i) = 'allowed'
+          and app.can_still_join(i.asked_by))
     >= target.max_members then
     perform app.refuse('full');
   end if;
@@ -372,8 +413,13 @@ begin
     if nation is distinct from target.nation then
       perform app.refuse('nation-changed');
     end if;
-    -- Every save to it waits until this is done, so nothing saved is left behind.
+    -- Every save to it waits until this is done, so nothing saved is left
+    -- behind. Then it's checked again: nobody can have been let into it
+    -- meanwhile, who would go with it.
     perform 1 from public.plans p where p.id = old for update;
+    if app.plan_to_bring(me) is distinct from old then
+      perform app.refuse('has-a-plan');
+    end if;
   end if;
 
   insert into public.plan_members as m (plan_id, person_id, role)
@@ -389,10 +435,10 @@ begin
     begin
       families := app.move_plan(old, target.id, me);
     exception
-      when sqlstate 'P0001' or insufficient_privilege then
-        raise;
       when others then
-        -- Postgres's own message could show what a record holds (D331).
+        -- Whatever stopped it, the whole move is taken back, and the phone
+        -- is told only that the plan couldn't move: never Postgres's own
+        -- message, which could show what a record holds (D331).
         perform app.refuse('bad-record');
     end;
     perform set_config('prepenny.edit', '', true);
@@ -402,6 +448,7 @@ begin
   end if;
 
   update public.invites i set accepted_at = now(), accepted_by = me where i.id = invite;
+  perform app.withdraw_other_asks(me, invite);
   -- Everyone in the plan looks again, and the person's own phones, including
   -- any still keeping the old plan, which then bring the new one down.
   perform app.send_nudge('plan:' || target.id);
@@ -411,6 +458,27 @@ begin
   end if;
   return jsonb_build_object('state', 'joined', 'saved', 'new', 'brought', old is not null,
     'now', app.server_time());
+end;
+$$;
+
+-- "Cancel this invite", as in step 3f, now saying what the invite is: an
+-- invite someone has already joined with, or that was answered or had run
+-- out, isn't cancelled, and the owner is told what it is instead.
+create or replace function public.cancel_invite(invite uuid) returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  found_one public.invites;
+begin
+  select * into found_one from public.invites i where i.id = invite for update;
+  if not found or not app.session_ok()
+    or not exists (select 1 from app.my_owned_plans() p where p = found_one.plan_id) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  if found_one.accepted_at is null and found_one.refused_at is null and found_one.cancelled_at is null then
+    update public.invites i set cancelled_at = now() where i.id = invite;
+    return jsonb_build_object('state', 'cancelled', 'now', app.server_time());
+  end if;
+  return jsonb_build_object('state', app.invite_state(found_one), 'now', app.server_time());
 end;
 $$;
 
@@ -475,7 +543,7 @@ language sql stable security definer set search_path = '' as $$
   select coalesce(jsonb_agg(jsonb_build_object('invite', i.id, 'inviter', app.owner_name(i.plan_id))
       order by i.allowed_at), '[]'::jsonb)
   from public.invites i
-  where i.asked_by = auth.uid() and app.invite_state(i) = 'allowed'
+  where i.asked_by = auth.uid() and app.invite_state(i) = 'allowed' and app.can_still_join(auth.uid())
 $$;
 
 -- The phone's look at its sign-in, as in step 3f, also says when this

@@ -17,7 +17,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(54);
+select plan(59);
 
 select tests.make_jess_alone();
 create temporary table kept (name text primary key, value text);
@@ -315,11 +315,38 @@ select tests.as_person('sam');
 select is(public.join_with_my_plan((select value::uuid from kept where name = 'sam-priya'), 'england-and-wales',
   gen_random_uuid(), '2026-11-10T11:00:00Z') ->> 'state', 'joined', 'Sam, let in by two, joins Priya''s with his plan');
 select is(pg_temp.refusal(format($$ select public.join_with_my_plan(%L, 'england-and-wales', gen_random_uuid(),
-    '2026-11-10T11:00:00Z') $$, (select value from kept where name = 'sam-alex'))), 'has-a-plan',
-  'and can''t then join Alex''s as well');
+    '2026-11-10T11:00:00Z') $$, (select value from kept where name = 'sam-alex'))), 'cancelled',
+  'and can''t then join Alex''s as well: joining one withdrew his other ask');
+select is(public.hello() -> 'joining', '[]'::jsonb, 'so no "Finish joining" is left behind');
 select tests.as_test();
 select is((select count(*) from public.plan_members where person_id = tests.id('sam') and left_at is null), 1::bigint,
   'He''s in one plan');
+select tests.as_person('alex');
+select is(public.sharing(tests.id('alex-plan')) -> 'invite' ->> 'state', 'cancelled',
+  'Alex sees his invite cancelled, and his place isn''t kept for Sam');
+select is(pg_temp.refusal(format($$ select public.cancel_invite(%L) $$,
+    (select value from kept where name = 'sam-priya'))), 'not-found',
+  'Only an invite''s own plan''s owner can cancel it');
+select tests.as_person('priya');
+select is(public.cancel_invite((select value::uuid from kept where name = 'sam-priya')) ->> 'state', 'joined',
+  'and cancelling one someone has joined with says so, rather than "cancelled"');
+
+-- Someone who lets a person into their own plan, while that person is still
+-- bringing theirs, can't bring their own plan anywhere meanwhile.
+select tests.as_test();
+select tests.make_person('kofi');
+select tests.make_person('ali');
+select tests.as_person('kofi');
+select public.start_plan(tests.id('kofi-plan'), null);
+insert into kept select 'kofi-link', public.make_invite(tests.id('kofi-plan'), 'editor', 'Kofi', null) ->> 'token';
+select tests.as_person('ali');
+select public.start_plan(tests.id('ali-plan'), null);
+select public.ask_to_join((select value from kept where name = 'kofi-link'), 'Ali');
+select tests.as_person('kofi');
+select public.answer_join((select (public.hello() -> 'join_requests' -> 0 ->> 'invite')::uuid), true);
+select tests.as_test();
+select is(app.plan_to_bring(tests.id('kofi')), null::uuid,
+  'Kofi, with Ali let into his plan and still bringing hers, has no plan he could bring meanwhile');
 
 -- An invite the owner cancels after allowing can't be used.
 select tests.as_test();
