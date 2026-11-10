@@ -1,7 +1,10 @@
 // Hosting on Cloudflare Workers (D68): the static export in out/, served as
-// it is, with no code of our own running on Cloudflare. A preview link for
-// each pull request comes from `wrangler versions upload` in
-// .github/workflows/deploy.yml.
+// it is. Since step 3f-2 a few lines of our own run first for the app's
+// pages (cloudflare/worker.ts): a page opened at the old address moves to
+// prepenny.co.uk, and everything else is served from out/ as before (D428).
+// The app's files under /_next/ never run them, so they're served directly.
+// A preview link for each pull request comes from `wrangler versions upload`
+// in .github/workflows/deploy.yml.
 //
 // prepenny.co.uk is the app's own address (D304). It's listed here, so every
 // `wrangler deploy` of the live app adds it if it's missing and keeps it
@@ -11,12 +14,15 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "prepenny",
+  "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-10-19",
   "workers_dev": true,
   "preview_urls": true,
   "routes": [{ "pattern": "prepenny.co.uk", "custom_domain": true }],
   "assets": {
     "directory": "./out",
+    "binding": "ASSETS",
+    "run_worker_first": ["/*", "!/_next/*"],
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   }

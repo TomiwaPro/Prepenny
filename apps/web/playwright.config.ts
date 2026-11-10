@@ -17,6 +17,8 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 const SIGN_IN_TESTS =
   /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing)\.spec\.ts$/;
 const port = 4173;
+/** The second copy, for the move from the old address (D428). */
+const OLD_ADDRESS_PORT = 4174;
 /**
  * A pull request's preview on Cloudflare, tried for real by the Deploy
  * workflow (step 3e-2, D408). Given, only that test runs, against it.
@@ -70,13 +72,24 @@ export default defineConfig({
   // The preview is online already; everything else uses this computer's own copy.
   ...(PREVIEW_URL === undefined
     ? {
-        webServer: {
-          command: `wrangler dev --port ${port} --ip 127.0.0.1 --log-level warn`,
-          url: `http://127.0.0.1:${port}/app/`,
-          reuseExistingServer: process.env.CI === undefined,
-          env: { WRANGLER_SEND_METRICS: 'false' },
-          timeout: 60_000,
-        },
+        webServer: [
+          {
+            command: `wrangler dev --port ${port} --ip 127.0.0.1 --log-level warn`,
+            url: `http://127.0.0.1:${port}/app/`,
+            reuseExistingServer: process.env.CI === undefined,
+            env: { WRANGLER_SEND_METRICS: 'false' },
+            timeout: 60_000,
+          },
+          // The same app as Cloudflare serves it at any address, for the move
+          // from the old address (e2e/old-address.spec.ts, D428).
+          {
+            command: `wrangler dev --config e2e/old-address.wrangler.jsonc --port ${OLD_ADDRESS_PORT} --ip 127.0.0.1 --log-level warn`,
+            url: `http://127.0.0.1:${OLD_ADDRESS_PORT}/app/`,
+            reuseExistingServer: process.env.CI === undefined,
+            env: { WRANGLER_SEND_METRICS: 'false' },
+            timeout: 60_000,
+          },
+        ],
       }
     : {}),
 });
