@@ -16,7 +16,14 @@ export interface GetBackInNotice {
 }
 
 let notice: GetBackInNotice | null = null;
+/** How many times the notice has changed, so an answer asked for before a change can be left out (D404). */
+let changes = 0;
 const listeners = new Set<() => void>();
+
+/** How many times the notice has changed since PrePenny opened. */
+export function getBackInNoticeChanges(): number {
+  return changes;
+}
 
 /** What the server said about it: the request, or null when there's none. */
 export function setGetBackInNotice(next: unknown): void {
@@ -32,6 +39,7 @@ export function setGetBackInNotice(next: unknown): void {
       : null;
   if (found?.startedAt === notice?.startedAt && found?.readyAt === notice?.readyAt) return;
   notice = found;
+  changes += 1;
   for (const listener of listeners) listener();
 }
 

@@ -17,6 +17,12 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
 const SIGN_IN_TESTS =
   /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery)\.spec\.ts$/;
 const port = 4173;
+/**
+ * A pull request's preview on Cloudflare, tried for real by the Deploy
+ * workflow (step 3e-2, D408). Given, only that test runs, against it.
+ */
+const PREVIEW_URL = process.env.PREVIEW_URL;
+const PREVIEW_TEST = /preview\.spec\.ts$/;
 
 const phone = (width: number, height: number) => ({
   browserName: 'chromium' as const,
@@ -46,17 +52,31 @@ export default defineConfig({
   // The sign-in tests need the local Supabase (`supabase start`), so they're
   // projects of their own (step 3b). GitHub runs them in part 3, once it has
   // started.
-  projects: [
-    { name: 'phone-320', use: phone(320, 640), testIgnore: SIGN_IN_TESTS },
-    { name: 'phone-360', use: phone(360, 780), testIgnore: SIGN_IN_TESTS },
-    { name: 'sign-in-320', use: phone(320, 640), testMatch: SIGN_IN_TESTS },
-    { name: 'sign-in-360', use: phone(360, 780), testMatch: SIGN_IN_TESTS },
-  ],
-  webServer: {
-    command: `wrangler dev --port ${port} --ip 127.0.0.1 --log-level warn`,
-    url: `http://127.0.0.1:${port}/app/`,
-    reuseExistingServer: process.env.CI === undefined,
-    env: { WRANGLER_SEND_METRICS: 'false' },
-    timeout: 60_000,
-  },
+  projects:
+    PREVIEW_URL === undefined
+      ? [
+          { name: 'phone-320', use: phone(320, 640), testIgnore: [SIGN_IN_TESTS, PREVIEW_TEST] },
+          { name: 'phone-360', use: phone(360, 780), testIgnore: [SIGN_IN_TESTS, PREVIEW_TEST] },
+          { name: 'sign-in-320', use: phone(320, 640), testMatch: SIGN_IN_TESTS },
+          { name: 'sign-in-360', use: phone(360, 780), testMatch: SIGN_IN_TESTS },
+        ]
+      : [
+          {
+            name: 'preview',
+            use: { browserName: 'chromium', baseURL: PREVIEW_URL },
+            testMatch: PREVIEW_TEST,
+          },
+        ],
+  // The preview is online already; everything else uses this computer's own copy.
+  ...(PREVIEW_URL === undefined
+    ? {
+        webServer: {
+          command: `wrangler dev --port ${port} --ip 127.0.0.1 --log-level warn`,
+          url: `http://127.0.0.1:${port}/app/`,
+          reuseExistingServer: process.env.CI === undefined,
+          env: { WRANGLER_SEND_METRICS: 'false' },
+          timeout: 60_000,
+        },
+      }
+    : {}),
 });

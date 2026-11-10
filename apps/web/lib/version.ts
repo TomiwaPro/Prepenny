@@ -14,6 +14,7 @@
 // Both are written into the app when it's built (scripts/build-worker.ts).
 
 import { testSetting } from './test-setting.ts';
+import { fetchWithTimeLimit } from './time-limit.ts';
 
 export interface Version {
   readonly database: string;
@@ -37,7 +38,7 @@ export function appVersion(): Version {
  */
 export async function liveVersion(): Promise<Version | null> {
   try {
-    const response = await fetch('/version.json', { cache: 'no-store' });
+    const response = await fetchWithTimeLimit()('/version.json', { cache: 'no-store' });
     if (!response.ok) return null;
     const value = (await response.json()) as { database?: unknown; build?: unknown };
     if (typeof value.database !== 'string' || typeof value.build !== 'string') return null;

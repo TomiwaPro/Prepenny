@@ -72,7 +72,7 @@ import {
   setShowing,
   type UnsentEdit,
 } from './db.ts';
-import { setGetBackInNotice } from './get-back-in-notice.ts';
+import { getBackInNoticeChanges, setGetBackInNotice } from './get-back-in-notice.ts';
 
 // ---------------------------------------------------------------------------
 // What the screens show.
@@ -288,6 +288,43 @@ export async function lookAtSignInOnly(): Promise<void> {
   const client = await signedInClient();
   if (client === null) return;
   if ((await lookAtStanding(client)) === 'ended') await signInEndedOnServer();
+}
+
+let lookingForGetBackIn: Promise<void> | null = null;
+let lookAgain = false;
+
+/**
+ * Asks the server only whether someone is getting back into this account
+ * with its backup email, on its own, so the notice never waits behind
+ * sending or bringing down the plan (D404). Only the notice changes here:
+ * everything else the answer says is acted on by the next look at the
+ * account, in turn. Asked again while it asks, as by a nudge, it asks once
+ * more straight after, and an answer that comes back after the notice was
+ * changed meanwhile, as by "Stop it", is left out.
+ */
+export function lookForGetBackIn(): Promise<void> {
+  if (lookingForGetBackIn !== null) {
+    lookAgain = true;
+    return lookingForGetBackIn;
+  }
+  lookingForGetBackIn = (async () => {
+    try {
+      do {
+        lookAgain = false;
+        const client = await signedInClient();
+        if (client === null) return;
+        const before = getBackInNoticeChanges();
+        const answer = await rpc<{ sign_in?: unknown; get_back_in?: unknown }>(client, 'hello', {});
+        if (!answer.ok || getBackInNoticeChanges() !== before) continue;
+        setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
+      } while (lookAgain);
+    } catch {
+      // No answer: the next look, within a minute, asks again.
+    } finally {
+      lookingForGetBackIn = null;
+    }
+  })();
+  return lookingForGetBackIn;
 }
 
 // ---------------------------------------------------------------------------
@@ -1545,7 +1582,10 @@ function startListening(client: SupabaseClient, link: PlanLink) {
       for (const topic of [`plan:${link.planId}`, `plan:${link.planId}:${link.personId}`]) {
         client
           .channel(topic, { config: { private: true } })
-          .on('broadcast', { event: 'changed' }, () => syncSoon())
+          .on('broadcast', { event: 'changed' }, () => {
+            void lookForGetBackIn();
+            syncSoon();
+          })
           .subscribe();
       }
     } catch {
@@ -1565,6 +1605,10 @@ const LOOK_EVERY_MS = 60_000;
  */
 export function keepInStep(): () => void {
   const look = () => {
+    // Someone getting back in with the backup email: asked on its own, so
+    // a look at the account under way, or a request of its that never got an
+    // answer, can't hold the notice up (D404).
+    void lookForGetBackIn();
     if (document.visibilityState === 'visible') void syncNow();
     // Not on screen, it still looks at its sign-in every minute, so one
     // ended on another phone removes the plan here within a minute (D21).

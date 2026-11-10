@@ -1,9 +1,11 @@
 // The root of every page: the language, the one font (Figtree, self-hosted,
-// D23), the colours and the home-screen app details.
+// D23), the colours, the home-screen app details and, on a pull request's
+// preview, the line saying it's a test version (D407).
 
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
+import { PreviewLine } from '../components/PreviewLine.tsx';
 import { ServiceWorker } from '../components/ServiceWorker.tsx';
 import { coloursScript, PAPER } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -69,6 +71,7 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
         <script dangerouslySetInnerHTML={{ __html: coloursScript }} />
       </head>
       <body>
+        <PreviewLine />
         {children}
         <ServiceWorker />
       </body>

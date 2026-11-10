@@ -56,8 +56,8 @@ The live app is at https://prepenny.prepenny.workers.dev/app/ (set up by the own
 You don't need to type any commands. Everything is done on github.com, on a phone or a computer. An update arrives as a **pull request**: a proposed change, with a name such as "Step 2h: Phase 2 complete".
 
 1. **Open the pull request.** Go to https://github.com/TomiwaPro/Prepenny and tap **Pull requests**, then the update's name.
-2. **Try the preview.** A few minutes after the pull request is marked ready, a comment appears on it from **github-actions** with a preview link, such as `https://pr-19-prepenny.prepenny.workers.dev/app/`. Open it on your phone and try the update. It's a separate copy: nothing you do there touches the live app. If no link appears after 15 minutes, see "If something goes wrong" below.
-3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are five: "Lint, type checks, tests and the database", "Build and end-to-end tests" parts 1, 2 and 3, and "Put the app online". A yellow dot means it's still running (about 20 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong". If it still says **Draft**, Claude Code hasn't finished the step yet.
+2. **Try the preview.** A few minutes after the pull request is marked ready, a comment appears on it from **github-actions** with a preview link, such as `https://pr-19-prepenny.prepenny.workers.dev/app/`. Open it on your phone and try the update. It's a separate copy, and says "Test version: don't use real details." at the top: nothing you do there touches the live app or the real database. **What a preview can do for now** (D411): everything kept on the phone, such as the welcome, setup, the example plan, and every screen and change. **What it can't:** signing in is off on previews until the preview database is set up, with Supabase's paid plan before launch, so signing in, saving the plan in an account and keeping two devices in step are tried on the live app after merging, with a spare email address. If no link appears after 15 minutes, see "If something goes wrong" below.
+3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are five: "Lint, type checks, tests and the database", "Build and end-to-end tests" parts 1, 2 and 3, and "Put the app online". "Get the preview database ready, and try the preview" shows as skipped until the preview database is set up (D411), and is a sixth tick after that. A yellow dot means it's still running (about 20 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong". If it still says **Draft**, Claude Code hasn't finished the step yet.
 4. **Merge it.** When you're happy with the preview and every tick is green, tap **Merge pull request**, then **Confirm merge**. GitHub may say **Squash and merge** or **Create a merge commit** instead; either is fine.
 5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about 20 minutes after merging in all, and the Database workflow sends any database changes to the real database. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
 6. **See it on your phone.** Open the live app. If PrePenny was already open, a note at the bottom says "PrePenny has been updated. Tap to reload." Tap it. People's plans stay as they were: they're saved on their own phones, and an update never changes them.
@@ -85,7 +85,7 @@ GitHub needs permission to put the app on your Cloudflare account. Cloudflare ch
 
 Until the two secrets are added, the Deploy workflow still builds the app but says "Cloudflare isn't set up yet, so nothing was put online".
 
-The first time, before anything has been merged, the Deploy workflow puts the pull request's version online once as the live app too, because Cloudflare needs a live app before it can make previews of it.
+Cloudflare needs a live app before it can make previews of it, and a pull request's version is never put online as the live app (D409). If a preview's Deploy run ever says "The live app isn't on Cloudflare yet", put `main` online first: **Actions**, then **Deploy**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
 
 ## The database
 
@@ -95,7 +95,8 @@ Nobody changes the real database by hand. GitHub does it, the same way it puts t
 
 - On every pull request, the **Lint, type checks, tests and the database** check builds a fresh copy of the database on GitHub's own machine, with made-up people (Jess, Tom and Alex), and runs every test on it. Nothing there touches the real database.
 - When a pull request is merged into `main` and every check has passed on it, the **Database** workflow (`.github/workflows/database.yml`) sends the changes to the real database in London. The made-up people and the tests never go there. Then it checks the project's **Data API** shows PrePenny's public part only, never its private checks (`app`), and says exactly what to do if it ever does (D341).
-- A pull request's preview link uses the real project too, so a change to the database can only be tried once it's merged. On a preview of step 3c, signing in works and the plan stays on the phone, with "Changes can't be sent right now. They're saved on this phone." Once merged, it goes up the next time PrePenny opens (D340).
+- A pull request's preview never uses the real project. For now its signing in is off, and each step's database changes are tried on the live app after merging (D411). Once a second project, **prepenny-preview**, is set up with Supabase's paid plan, previews use it, and database changes can be tried before merging. See "The preview database" below.
+- Before changing anything, the Database workflow checks its key has every permission in step 5 below. If any are missing, it stops with one message listing all of them, and nothing is changed (D406).
 
 ### Setting it up the first time (the owner does this once)
 
@@ -109,14 +110,17 @@ GitHub needs permission to change your Supabase project. Supabase changes its me
    - **Region:** the one that says **London** (its code is `eu-west-2`).
    - Leave everything else as it is, then tap **Create new project**. It takes a minute or two; wait until the project's page no longer says it's being set up.
 4. Copy the **Project ID**. Tap the gear icon at the bottom of the menu on the left (**Project Settings**), then **General**. The Project ID is 20 letters, such as `abcdefghijklmnopqrst`. It's also in the web address of every page of your project.
-5. Make a key for GitHub. Go to https://supabase.com/dashboard/account/tokens and tap **Generate new token**. Call it `GitHub, PrePenny`. If it asks when the token should expire, choose the longest time offered. If it asks which permissions to give it, give it these on the **prepenny** project. Each is what a step of the Database workflow needs; the names in brackets are Supabase's own, as its API lists them, in case the menu words differ:
-   - **Projects: Read-write** (`project_admin_read`, `project_admin_write`): to find the project, and, with Auth below, to send the sign-in settings.
-   - **Database: Read-write** (`database_read`, `database_write`): to send the database changes, and to give the database the Resend key.
-   - **Auth: Read-write** (`auth_config_read`, `auth_config_write`): to send the sign-in settings.
-   - **Data API: Read-write** (`data_api_config_read`, `data_api_config_write`): to check the Data API shows only PrePenny's public part, and to put that right.
-   - **Edge Functions: Read-write** (`edge_functions_read`, `edge_functions_write`): to put the get-back-in function online (step 3e hardening, part G of "Signing in").
+5. Make a key for GitHub. Go to https://supabase.com/dashboard/account/tokens and tap **Generate new token**. Call it `GitHub, PrePenny`. If it asks when the token should expire, choose the longest time offered. Give it these permissions on the **prepenny** project, named as Supabase's token page names them (checked on 9 Nov 2026). Each is something a run of the Database workflow does:
+   - **Project Settings: Read-write**: to find the project, and, with Auth Config, to send the sign-in settings.
+   - **Auth Config: Read-write**: to send the sign-in settings.
+   - **Database: Read-write**: to give the database the Resend key.
+   - **Migrations: Read-write**: for Supabase's command line, which sends the database changes.
+   - **Edge Functions: Read-write**: to put the get-back-in function online.
+   - **API Keys: Read** and **API Key Secrets: Read**: for Supabase's command line, to connect to the project.
+   - **Data API Config: Read**: to check the Data API shows only PrePenny's public part.
+   - **Database Config: Read**, **Connection Pooling: Read** and **Storage Config: Read**: for Supabase's command line, to connect to the database.
 
-   Tap **Generate token**, and copy it straight away: Supabase shows it only once. It starts with `sbp_`.
+   Leave every other permission as **No access**. Tap **Generate token**, and copy it straight away: Supabase shows it only once. It starts with `sbp_`. Each run checks the key has all eleven before it changes anything, and if any are missing it stops with one message listing them all, such as "Migrations: Read-write, Edge Functions: Read-write" (D406).
 6. In GitHub, open the repository, then **Settings**, then **Secrets and variables**, then **Actions**, then **New repository secret**. Add three secrets, one at a time:
    - Name `SUPABASE_ACCESS_TOKEN`, with the token from step 5.
    - Name `SUPABASE_PROJECT_REF`, with the Project ID from step 4.
@@ -129,12 +133,98 @@ Keep the token and the password only in GitHub's secrets and your password manag
 
 ### If something goes wrong with the database
 
-- **A Database step says Supabase refused it (403, "forbidden" or "not allowed").** GitHub's Supabase key is missing that step's permission. Make a new key with every permission in step 5 above, replace `SUPABASE_ACCESS_TOKEN` with it as in step 6, then run the workflow again: **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
+- **The first Database step says the key is missing permissions.** It lists every one missing, as Supabase's token page names them, and nothing was changed. Make a new key with every permission in step 5 above, replace `SUPABASE_ACCESS_TOKEN` with it as in step 6, then run the workflow again: **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Until it has run, the live app says "Changes can't be sent right now. They're saved on this phone." if the update changed the database, and nothing on anyone's phone is lost (D386).
+- **A later Database step says Supabase refused it (403, "forbidden" or "not allowed").** Supabase needs a permission the check didn't know of: tell Claude Code what the step says.
 
 - **The Database workflow has a red cross saying it couldn't reach the database.** On the free plan, a project that hasn't been used for a week is paused, and Supabase emails you first. Open the project on supabase.com and tap **Restore project**, wait a few minutes, then open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Moving to Supabase's paid plan before launch stops the pausing (D19).
 - **It says a secret is wrong.** Make the token again (step 5) and replace `SUPABASE_ACCESS_TOKEN`, or reset the database password under **Project Settings**, then **Database**, and replace `SUPABASE_DB_PASSWORD`. Then run the workflow again as above.
 - **The "Lint, type checks, tests and the database" check has a red cross on a pull request.** Don't merge: ask Claude Code to fix it. The real database is unchanged.
 - **The Database workflow says "The Data API shows app".** On supabase.com, open the **prepenny** project, then **Project Settings** (the gear), then **Data API**. Under **Exposed schemas**, remove `app`, keep `public` and `graphql_public`, and tap **Save**. Then run the workflow again as above. To check by hand at any time, look at the same list: it should show `public` and `graphql_public` only.
+
+## The preview database
+
+**Waiting for Supabase's paid plan** (D411). Supabase's free plan allows two active projects, and both are in use, so prepenny-preview is made when PrePenny moves to the paid plan before launch: the steps below are on the launch checklist in `PLAN.md`. Until then, previews are built with signing in off, the job below is switched off (it shows as skipped, never red), and each step's database changes are tried on the live app after merging, with a spare email address. Everything is ready for the day its three secrets and two variables are added: nothing else needs changing.
+
+A second Supabase project, **prepenny-preview**, in London, used only by pull request previews (step 3e-2, D403). It never holds real people's data, and each preview says so at the top of every page: "Test version: don't use real details." The live app and the real database never use it, and it never gets the real project's key.
+
+When a pull request is marked ready, and at every push after that, GitHub's **Deploy** workflow:
+
+1. puts the preview online, built to use prepenny-preview only, and posts its link on the pull request;
+2. checks, before changing anything, that the project is prepenny-preview and not the real one, and that the preview key has every permission it needs;
+3. gives prepenny-preview the pull request's database changes, its sign-in settings (emails come through Resend from "PrePenny (test version)", with the key GitHub already has) and the get-back-in function;
+4. tries the preview on two phones: signs in, saves a plan and keeps it in step between them, checking neither phone asks the real project anything and the live app isn't the preview;
+5. updates the link's comment, saying how that went.
+
+On a preview, sign in by typing the 6-digit code from the email. The email's link opens whichever preview was put online last, which may be another pull request's.
+
+**Two pull requests open at once** (D405). There's one preview database, so it follows the pull request whose preview went online last, one at a time:
+
+- Most pull requests don't change the database. When the preview database already has exactly a pull request's database changes, nothing in it changes, and anyone signed up on it stays signed up. Any number of these share it.
+- A pull request with database changes of its own takes the preview database over: it gets that pull request's changes, adding them when it can and otherwise starting again, empty. Starting again removes test accounts too, so sign up again on the preview.
+- The other pull requests' previews then say "Changes can't be sent right now. They're saved on this phone." until theirs are put online again, and GitHub comments on each to say so. To try one again: **Actions**, then **Deploy**, then its newest run, then **Re-run all jobs**.
+- GitHub keeps only one waiting in line: if three are put online at once, the middle one's "Get the preview database ready, and try the preview" check is cancelled. Its link is still there; tap **Re-run all jobs** on it as above.
+
+On the paid plan, each project has its own monthly cost: check Supabase's pricing when it's made.
+
+### Setting it up (the owner does this once, with the paid plan)
+
+Supabase changes its menus now and then, so a label may be slightly different from these. Keys and passwords go only into your password manager and GitHub's secrets, never into a chat or a message.
+
+Make the project:
+
+1. Go to https://supabase.com/dashboard and sign in. Choose the **PrePenny** organisation, then tap **New project**.
+2. Fill in:
+   - **Project name:** `prepenny-preview`, exactly. GitHub changes only a project with this name, so it can never change the real one.
+   - **Database password:** tap **Generate a password**, then copy it into your password manager straight away, as "PrePenny preview database". You need it in step 9.
+   - **Region:** the one that says **London** (its code is `eu-west-2`).
+   - Leave everything else as it is, as for the real project, then tap **Create new project**. Wait until its page no longer says it's being set up.
+3. Copy the **Project ID**: tap the gear icon at the bottom of the menu on the left (**Project Settings**), then **General**. It's 20 letters. Keep it for step 9.
+4. Still in **Project Settings**, tap **Data API** (or **API**) and copy the **Project URL**, such as `https://abcdefghijklmnopqrst.supabase.co`. Keep it for step 10.
+5. Still in **Project Settings**, tap **API Keys** and copy the **Publishable key**, which starts with `sb_publishable_`. Keep it for step 10. Never copy the **Secret key**: GitHub reads it itself when it needs it.
+
+Make its own key for GitHub, separate from the real project's:
+
+6. Go to https://supabase.com/dashboard/account/tokens and tap **Generate new token**. Call it `GitHub, PrePenny preview`. If it asks when the token should expire, choose the longest time offered.
+7. Give it permissions on the **prepenny-preview** project only, never on **prepenny**. The same eleven as the real project's key, named as Supabase's token page names them:
+   - **Project Settings: Read-write**
+   - **Auth Config: Read-write**
+   - **Database: Read-write**
+   - **Migrations: Read-write**
+   - **Edge Functions: Read-write**
+   - **API Keys: Read**
+   - **API Key Secrets: Read**
+   - **Data API Config: Read**
+   - **Database Config: Read**
+   - **Connection Pooling: Read**
+   - **Storage Config: Read**
+
+   Leave every other permission as **No access**. "The database", step 5, above says what each is for.
+8. Tap **Generate token**, and copy it straight away: Supabase shows it only once. It starts with `sbp_`.
+
+Give GitHub the secrets and variables. Don't change `SUPABASE_ACCESS_TOKEN` or any other secret or variable already there: those are the real project's.
+
+9. On github.com, open the repository, then **Settings**, then **Secrets and variables**, then **Actions**. On the **Secrets** tab, tap **New repository secret** and add three, one at a time:
+   - Name `PREVIEW_SUPABASE_ACCESS_TOKEN`, with the key from step 8.
+   - Name `PREVIEW_SUPABASE_PROJECT_REF`, with the Project ID from step 3.
+   - Name `PREVIEW_SUPABASE_DB_PASSWORD`, with the database password from step 2.
+10. On the **Variables** tab, tap **New repository variable** and add two:
+    - Name `PREVIEW_SUPABASE_URL`, with the Project URL from step 4.
+    - Name `PREVIEW_SUPABASE_PUBLISHABLE_KEY`, with the publishable key from step 5.
+11. Tell Claude Code it's done.
+
+Until the two variables are there, previews are put online with signing in off. Until the three secrets are there too, the preview database isn't got ready, and the pull request's comment says so. Nothing changes on the real project either way.
+
+### If something goes wrong with the preview database
+
+Open **Actions**, then **Deploy**, then the pull request's newest run, then **Get the preview database ready, and try the preview**. The first step with a red cross says what to do:
+
+- **The key is missing permissions.** It lists every one missing. Make a new key for prepenny-preview with all eleven (steps 6 to 8), replace `PREVIEW_SUPABASE_ACCESS_TOKEN` with it, and tap **Re-run all jobs**.
+- **"Not the preview project", "Preview address", or a project "called" something else.** `PREVIEW_SUPABASE_PROJECT_REF` or `PREVIEW_SUPABASE_URL` holds another project's: put prepenny-preview's in (steps 3 and 4). Nothing was changed on any project.
+- **The check says cancelled.** Another pull request's preview took its turn (see above): tap **Re-run all jobs**.
+- **"Couldn't reach the preview database".** The password is wrong, or the project is paused. Reset its database password under **Project Settings**, then **Database**, and replace `PREVIEW_SUPABASE_DB_PASSWORD`; or, if supabase.com shows prepenny-preview as paused, tap **Restore project** and wait a few minutes. Then **Re-run all jobs**.
+- **The try on two phones failed.** The step says which part, and a report is kept with the run, under **Artifacts**. Tell Claude Code.
+
+Resend's free plan sends 100 emails a day, shared between the live app and previews.
 
 ## Signing in
 
@@ -227,7 +317,7 @@ These two aren't secret: they're in the app every phone downloads.
 1. In Supabase, open the **prepenny** project, then **Project Settings** (the gear), then **Data API** (or **API**). Copy the **Project URL**, such as `https://abcdefghijklmnopqrst.supabase.co`.
 2. Still in **Project Settings**, tap **API Keys**. Copy the **Publishable key**, which starts with `sb_publishable_`. Never copy the **Secret key** or the **service_role** key: PrePenny never needs them.
 3. In GitHub, open the repository, then **Settings**, then **Secrets and variables**, then **Actions**, then the **Variables** tab, then **New repository variable**. Add two: name `SUPABASE_URL` with the Project URL, and name `SUPABASE_PUBLISHABLE_KEY` with the publishable key.
-4. The next preview or live version has signing in switched on. Until then it says "Signing in isn't switched on yet."
+4. The next live version has signing in switched on. Until then it says "Signing in isn't switched on yet." Previews use the preview project's own two variables instead ("The preview database").
 
 ### E. In Supabase itself
 

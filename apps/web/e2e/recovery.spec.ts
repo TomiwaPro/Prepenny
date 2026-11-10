@@ -13,6 +13,9 @@
 //    does nothing else.
 // 3. Two-step sign-in still applies after getting back in: signing in with
 //    the backup address asks for the authenticator app's code.
+// 4. From the owner's report (step 3e-2, D404): the notice shows on a
+//    signed-in phone within a minute without reloading, even after one of its
+//    requests never got an answer and with its live updates gone.
 // "Sign out of all other devices" is devices.spec.ts test 2.
 
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
@@ -399,6 +402,56 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(phone.page).toHaveURL(/\/app\/$/);
       await expect(phone.page.getByTestId('balance')).toContainText('£267.54');
       await phone.context.close();
+    });
+
+    test('4. the notice shows within a minute without reloading, even when a request never got an answer and live updates have dropped', async ({
+      page,
+      browser,
+    }, info) => {
+      test.slow();
+      const main = newEmail('sam');
+      const backup = newEmail('backup');
+      // No live updates on this phone, as when its connection has dropped:
+      // only its look every minute can find out (D404).
+      await page.routeWebSocket(/\/realtime\//, (socket) => socket.close());
+      await makeAPlan(page);
+      await signUpFromMore(page, main);
+      const person = await personOn(page);
+      addBackup(person, backup);
+      const before = accountOf(person);
+
+      // The phone's next request to bring the plan down never gets an
+      // answer, as when it slept part-way through it (the owner's report).
+      let held = 0;
+      await page.route('**/rest/v1/rpc/plan_changes', async (route) => {
+        held += 1;
+        if (held === 1) return;
+        await route.continue();
+      });
+      await page.evaluate(() => window.dispatchEvent(new Event('online')));
+      await expect.poll(() => held, { message: 'a request left with no answer' }).toBe(1);
+      // Anything that loads the page again would lose this.
+      await page.evaluate(() => Reflect.set(window, 'notLoadedAgain', true));
+
+      // Someone with the backup starts getting in, on another phone.
+      const phone = await secondPhone(browser, info, colorScheme, undefined, DEVICES.iphoneSafari);
+      await phone.page.goto('/get-back-in/');
+      await useBackup(phone.page, backup, CODE_SUBJECT);
+      await expect(phone.page.getByTestId('get-back-in-waiting')).toBeVisible();
+      await phone.context.close();
+
+      // The signed-in phone shows the notice by itself: the look every
+      // minute, and the time that look takes.
+      const notice = page.getByTestId('get-back-in-notice');
+      await expect(notice).toBeVisible({ timeout: A_MINUTE + 10_000 });
+      await expect(notice.getByRole('heading', { name: n.heading })).toBeVisible();
+      expect(await page.evaluate(() => Reflect.get(window, 'notLoadedAgain'))).toBe(true);
+      await noAxeProblems(page);
+
+      // "Stop it" works from there, as on any screen.
+      await notice.getByRole('button', { name: n.stop }).click();
+      await expect(page.getByTestId('get-back-in-stopped')).toContainText(n.stopped);
+      expect(accountOf(person)).toBe(before);
     });
   });
 }
