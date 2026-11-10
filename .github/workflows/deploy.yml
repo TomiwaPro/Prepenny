@@ -3,10 +3,12 @@ name: Deploy
 # Puts the app online with Cloudflare Workers (D68):
 # - the live app, from main, only after the Check workflow has passed on it,
 #   with the real Supabase project
-# - a preview link for every pull request, posted on it, with the preview
-#   Supabase project, which never holds real people's data (step 3e-2, D403):
-#   the pull request's database changes, sign-in settings and get-back-in
-#   function go there first, then the preview is tried on two phones.
+# - a preview link for every pull request, posted on it, never with the real
+#   Supabase project. Once the preview Supabase project is set up (step 3e-2,
+#   D403), previews use it: the pull request's database changes, sign-in
+#   settings and get-back-in function go there first, then the preview is
+#   tried on two phones. Until then (D411), previews are built with signing
+#   in off, the preview database's job doesn't run, and nothing turns red.
 # Needs two secrets, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: see
 # "Putting PrePenny online" in README.md. Until they're added, it builds the
 # app and says plainly that nothing was put online. Previews also need the
@@ -94,7 +96,9 @@ jobs:
           if [ "$IS_PREVIEW" = "true" ]; then
             export NEXT_PUBLIC_PREVIEW=true
             if [ -z "$PREVIEW_SUPABASE_URL" ] || [ -z "$PREVIEW_SUPABASE_KEY" ]; then
-              echo "::warning title=Signing in is off on this preview::The PREVIEW_SUPABASE_URL and PREVIEW_SUPABASE_PUBLISHABLE_KEY variables aren't set yet, so this preview can't sign anyone in. Follow 'The preview database' in README.md."
+              # No preview database until Supabase's paid plan (D411): signing
+              # in is off on previews, as planned, so this is no warning.
+              echo "This preview is built with signing in off: there's no preview database yet (D411)."
               export NEXT_PUBLIC_SUPABASE_URL='' NEXT_PUBLIC_SUPABASE_KEY=''
             elif [ "$PREVIEW_SUPABASE_URL" = "$LIVE_SUPABASE_URL" ] || [ "$PREVIEW_SUPABASE_KEY" = "$LIVE_SUPABASE_KEY" ]; then
               echo "::error title=Preview not built::PREVIEW_SUPABASE_URL or PREVIEW_SUPABASE_PUBLISHABLE_KEY is the real project's. A preview never uses the real project: copy them from the prepenny-preview project (README.md, 'The preview database')."
@@ -164,16 +168,24 @@ jobs:
 
       - name: Post the preview link on the pull request
         # Straight away, so a preview waiting its turn for the preview
-        # database still has its link. The next job updates this comment (D405).
+        # database still has its link. The next job updates this comment
+        # (D405). With no preview database yet (D411), it says what a preview
+        # can and can't do.
         if: steps.preview.outputs.url != ''
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.number }}
           URL: ${{ steps.preview.outputs.url }}
+          PREVIEW_DATABASE: ${{ vars.PREVIEW_SUPABASE_URL != '' && vars.PREVIEW_SUPABASE_PUBLISHABLE_KEY != '' }}
         run: |
+          if [ "$PREVIEW_DATABASE" = "true" ]; then
+            more="Its test database is being got ready. This comment changes when it's done, in a few minutes."
+          else
+            more="Signing in is off on previews for now: there's no preview database until Supabase's paid plan. Everything kept on the phone works: the welcome, setup, the example plan, and every screen and change. Signing in, saving the plan in an account and keeping two devices in step are tried on the live app after merging."
+          fi
           body="Preview of this pull request: $URL/app/
 
-          Its test database is being got ready. This comment changes when it's done, in a few minutes."
+          $more"
           gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" \
             || gh pr comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"
 
@@ -187,7 +199,11 @@ jobs:
     # it's given is called prepenny-preview.
     name: Get the preview database ready, and try the preview
     needs: deploy
-    if: github.event_name == 'pull_request' && needs.deploy.outputs.url != ''
+    # Switched off until the preview project's variables exist (D411): it's
+    # then skipped, so no preview uses a database and nothing turns red.
+    if: >-
+      github.event_name == 'pull_request' && needs.deploy.outputs.url != '' &&
+      vars.PREVIEW_SUPABASE_URL != '' && vars.PREVIEW_SUPABASE_PUBLISHABLE_KEY != ''
     runs-on: ubuntu-latest
     timeout-minutes: 25
     # One preview at a time changes the preview database, in turn, and is
