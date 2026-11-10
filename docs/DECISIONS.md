@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, and D435 to D437 were decided while building it, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -5030,3 +5030,147 @@ Decided 10 Nov 2026 in step 3f. Added to `PLAN.md`.
 - An Activity list, and "Changed by Tom" on each payment: step 3g.
 
 Why: the owner's plan for step 3g, and each needs leaving or Activity to be right.
+
+## From the owner's answers and instructions for step 3f-2
+
+D426 to D434 come from the owner's message of 10 Nov 2026, after step 3f was merged: the answers to step 3f's four questions (D426, D432 to D434), the security tests for bringing a plan (D427), and four fixes from testing the live app (D428 to D431). Points marked "decided in step 3f-2" weren't in the owner's words. D435 to D437 were decided while building it, the same day.
+
+### D426. Joining with a plan of your own brings it with you
+
+The owner's answer (a) to step 3f's question 2, 10 Nov 2026. Replaces D416.
+
+- When Sam joins Jess's plan, his own plan's accounts and everything on them move into her plan, private to him until he chooses to share them. Nothing is lost or retyped. If his plan uses other bank holidays (his nation), he's told plainly before joining what that changes. It's built on the server in one step: all of it moves, or nothing does. His old plan is gone afterwards.
+- Decided in step 3f-2:
+  - **Who moves it.** Only Sam's own request ever moves his plan. Jess's "Allow" moves nothing: for someone with a plan of their own, it marks the invite allowed (`invites.allowed_at`, state "allowed") and nudges his phones. His phone then sends everything it has to the account, and asks the server to bring the plan in (`public.join_with_my_plan`). Someone with no plan joins at "Allow", as in step 3f.
+  - **What moves.** Every record of his plan, live and removed, keeps its own id and everything in it, and is saved again in her plan through the same checks as every record, so the database fills in each one's privacy from what it's on: all of it private to him. His settings (his main pay) and his change history come too, private to him. The move is one edit of his, private to him (`join-with-plan`). Rows whose id is worked out from their plan (a one-off change, a tick, overtime's details, his settings, `lib/sync-ids.ts`) get the id his phone works out for her plan, so the phone and the server agree on every row.
+  - **An account he'd shared before anyone joined** becomes private to him like the rest. Links kept apart because a shared payment named something private (D291) are joined back on the payment, as everything is his now. Money kept as "From Sam" in that account (D16) becomes a payment of his own: its two halves are no longer kept in step, and every amount and date stays the same.
+  - **Bank holidays.** Ticks and one-off changes are kept by a payment's date before any bank holiday move, so every one stays on its payment; only the day a payment set to move for a bank holiday lands on can change. Before he asks, the join page says: "Bank holidays: Jess's plan uses Scotland, and yours uses England and Wales. Once you join, a payment set to move for a bank holiday follows Scotland, so it may move to a different day." Once allowed, the page says it again and he chooses "Bring my plan and join"; with the same bank holidays, his plan comes straight away. If Jess changed hers in between, the server refuses ("nation-changed") and he's told again.
+  - **What the join page says** before he asks: "You have a plan of your own, and it comes with you: your accounts and everything on them move into Jess's plan, private to you." and "Jess sees none of it until you choose to share an account. Nothing has to be typed again, and you'll have one plan: Jess's, with yours in it." Once allowed: "Jess let you in." then, as it moves, "Jess let you in. Bringing your plan into Jess's plan." If something on his phone hasn't been sent: "Some changes on this phone haven't been sent to your account yet. Stay online, then try again: your plan comes with you once they have." If the server couldn't move it: "Your plan couldn't be moved, so nothing has changed: you're still in your own plan. Write to hello@prepenny.co.uk and we'll look into it." A plan on the phone that the account hasn't been given yet is saved there first ("Saving your plan in your account first.").
+  - **"Finish joining".** Someone who closed the join page before it was allowed sees, on every screen of the app, "Jess has let you into their plan", "Finish joining to bring your plan into it. It moves in one go, private to you." and "Finish joining", which opens the join page for that invite (`/join/#invite=…`, `public.look_at_my_invite`), so the move happens on a page where nothing else is changing.
+  - **What Jess sees.** After "Allow": "Sam can join now. It finishes on Sam's phone, as soon as PrePenny is open there." The same line shows on Share with my partner until he has joined, and his place is kept: she can't invite someone else meanwhile, and "Cancel this invite" ends it. Then "Who's in this plan" lists him by the name he gave. Nothing of his plan reaches her phone.
+  - **The invite** still runs out 7 days after it was made, allowed or not.
+  - **Who can bring a plan:** someone whose own plan has nobody else in it. Someone in someone else's plan, or whose own plan is shared with someone, is told "You're already in a shared plan in PrePenny, so you can't join Tom's plan as well. PrePenny keeps one plan for each person." Leaving comes in step 3g.
+
+Test: `supabase/tests/database/25-bring-your-plan.test.sql` (54 checks), `apps/web/e2e/sharing.spec.ts` test 4, `apps/web/test/unit/sharing.test.ts`. Screenshots: `docs/screens/3f-2`.
+
+Why: the owner's answer.
+
+### D427. A person is never in two plans
+
+The owner's instruction, 10 Nov 2026, among the security tests for bringing a plan. Builds D352; replaces its "Being in someone else's plan doesn't count".
+
+- Joining with a plan makes him a member of hers and removes his old plan in the same step, so there's no moment when he's in both.
+- Decided in step 3f-2: the database now refuses a new plan of a person's own while they're in any plan, theirs or someone else's ("has-a-plan"), as well as a second plan of their own (`app.one_plan_each`). Being let into two plans at once, only the first one he brings his plan into works: the other is refused ("has-a-plan").
+- Four older database tests used "someone in Jess's plan makes a plan of his own" only as set-up for other checks: `08-plans-families-and-counts` now makes Tom's plan as an account from before this rule could hold, by the database itself with the rule switched off (as `15-one-plan-each` already does for D352's accounts with two); `14-only-through-save-edit` makes its plan with Sam, who is in no plan; `15-one-plan-each`'s "Tom, in Jess's plan, still makes one of his own" is now refused; and `23-invite-and-join`'s D416 checks now expect a plan of one's own to come along (D426), and someone in a shared plan to be refused. What each test checks otherwise is unchanged.
+
+Test: `15-one-plan-each.test.sql`, `25-bring-your-plan.test.sql` ("never in two plans"), `apps/web/e2e/sharing.spec.ts` test 3.
+
+Why: the owner's instruction.
+
+### D428. Invite links always use prepenny.co.uk, and the old address sends people there
+
+The owner's fix B, 10 Nov 2026: an invite link used https://prepenny.prepenny.workers.dev/join because the phone had the old address open.
+
+- Invite links always use https://prepenny.co.uk. Anyone opening the old address, prepenny.prepenny.workers.dev, is sent to the same page on prepenny.co.uk. Pull request previews (pr-N-prepenny.prepenny.workers.dev) keep working as they are.
+- Decided in step 3f-2:
+  - **The link** is made from `siteOrigin()` (`lib/site.ts`): prepenny.co.uk wherever the live app was opened; a preview's own address on a preview, and this computer's in the tests, so their links come back to them. The invite email's link already came from the database's own setting, prepenny.co.uk on the live project.
+  - **On Cloudflare**, a few lines now run in front of the app's files (`apps/web/cloudflare/worker.ts`, `main` and `assets.run_worker_first` in `wrangler.jsonc`): a page opened at the old address gets "moved permanently" (301) to the same page on prepenny.co.uk, with its query; a browser keeps what follows a "#", such as an invite's secret. Only a page the browser is opening moves (`Sec-Fetch-Mode: navigate`, or for an older browser a request for a web page); the app's other files are still served at the old address, so a phone that installed PrePenny there can update its offline helper. Every other address is served exactly as before, with the same security headers (`public/_headers`) and redirects (`public/_redirects`), checked by the tests. The app's files under `/_next/` skip the script altogether.
+  - **A phone whose offline helper serves the old address** never asks Cloudflare for the page, so the app moves itself there (`components/OldAddress.tsx`) once the helper has the new version. A browser keeps each address's things apart, so a phone holding something there that isn't saved in an account yet (a plan never saved, part of one still going up, or changes not sent) stays where it is and says why: "PrePenny's address is now prepenny.co.uk. This phone has changes that aren't saved in your account yet, so they stay here for now. Sign in and stay online until they're sent, then open prepenny.co.uk." Nothing is lost by moving.
+  - **What was checked, and how.** Cloudflare's own documentation couldn't be reached from the computer this was built on (its address doesn't resolve there), as in D322. Instead: Wrangler 4.151.3's own settings description allows `run_worker_first` as a list with "!" for paths that skip the script; its own code uploads a script with files through the same address as files alone (`/accounts/…/workers/scripts/prepenny`, with its `assets-upload-session`), so the Cloudflare key needs nothing new (D322's "Account, Workers Scripts, Edit"); a dry-run deploy accepts the settings, with a script of 1.1 KB; and Wrangler run on this computer, the way the tests serve the app, applies the security headers and the Coming up redirect to what the script passes on.
+  - **Cloudflare's free plan.** The script runs for the app's pages and a few small files, never its files under `/_next/`. On Workers' free plan each run counts towards a daily allowance; from memory, as the page couldn't be opened, it's 100,000 a day, far more than PrePenny needs before launch. Launch checklist item 5 already has the owner check Cloudflare's plan before launch.
+
+Test: `apps/web/e2e/old-address.spec.ts`, against a second copy of the app served by Wrangler exactly as Cloudflare serves it, with no custom domain listed, because Wrangler run locally gives every request the listed domain's address (Miniflare's "upstream"), so the main copy can't show the old address. The browser is told the old address and a preview's are this computer. Chromium can't hand a test the second step of a move made by a server, and prepenny.co.uk can't be reached from here, so the test checks the browser asks for the same page on prepenny.co.uk straight after the old address answers; the app's own move is followed to the end. Turning the move off makes 3 of its checks fail. `test/unit/sharing.test.ts` checks the link's address and the page kept with its "#".
+
+Why: the owner's instruction.
+
+### D429. In setup, an account's name follows the type chosen
+
+The owner's fix A, 10 Nov 2026: choosing Joint account or Savings left the name as "Current account".
+
+- The name follows the type chosen ("Current account", "Savings", "Joint account") until the person types a name of their own.
+- Decided in step 3f-2: once anything is typed in the name box, the name is the person's and stays, even if it's a type's own words. "Add another account" starts as "Savings", as that's the type it starts with, and follows the same rule; so does **Add an account** under More, Accounts, which "+ Add an account" on Home opens too (D431). Changing an account that's already saved never renames it.
+
+Test: `apps/web/e2e/answers-3f-2.spec.ts` (fix A), `apps/web/test/unit/setup.test.ts`. Screenshot: `docs/screens/3f-2/setup-joint-account-360-light.png`.
+
+Why: the owner's instruction.
+
+### D430. Home's big figure: "About £X now"
+
+The owner's fix D, 10 Nov 2026. Replaces brief 4.9's "Balance and when it was checked" as Home's big figure, keeping both in the line under it. Adds to D168.
+
+- Home's big figure is "About £X now", worked out with brief 5.5 from the last balance check and every payment up to and including today, Not ticked yet included, with a line under it such as "Your bank showed £500 on Sun 8 Nov". When nothing has happened since the check, it stays simple, for example "£500, checked today".
+- Decided in step 3f-2:
+  - The figure is the engine's own balance at the end of today, the same "expected" figure Update balance shows (D46), so the two screens always agree.
+  - "Something has happened" means any payment, budget or spend that moves money in or out of the account between the check and the end of today, a tick after the check included. A £0.00 payment doesn't count.
+  - **The words, case by case** (Sam's example on Sun 25 Oct, and a plan checked at £500.00 on Sun 8 Nov with a £20.00 phone bill on Tue 10 Nov):
+    - checked today, nothing since: "£500.00" and "Checked today, Sun 8 Nov" (as before);
+    - checked on an earlier day, nothing since: "£500.00" and "Checked Sun 8 Nov" (as before);
+    - money moved since a check today: "About £237.54 now" and "Your bank showed £267.54 today" (Sam's example, after the £30.00 spending money due today);
+    - money moved since a check on an earlier day: "About £480.00 now" and "Your bank showed £500.00 on Sun 8 Nov", on the bill's day and every day after it while it isn't ticked.
+  - "About" and "now" sit smaller beside the figure, in the muted words-on-navy colour, and the figure is sized so all three fit on one line where they can; with very large text the words go on to the next line, never the figure itself. Screen readers hear "About £237.54 now".
+  - Amounts keep their pence (£500.00), as every balance does; only a warning level in a sentence drops ".00" (D166).
+  - Three older end-to-end checks of the old "Checked …" line change with it, each because money had moved since the check: `home.spec.ts` (Sam's example on Sun 25 Oct now shows "About £237.54 now" and "Your bank showed £267.54 today") and `actions.spec.ts` test 2, before Update balance and after its Undo, on Fri 30 Oct ("About £604.53 now", the £604.53 that Update balance expects in the same test, and "Your bank showed £267.54 on Sun 25 Oct"). The unit test of Home's account gains its two new fields (`now` £237.54, `movedSinceCheck`). Every other figure is unchanged.
+
+Test: `apps/web/e2e/answers-3f-2.spec.ts` (fix D: before, on and after a payment's day, and Sam's example), `apps/web/test/unit/home.test.ts` (the figure is Update balance's expected figure on every day of a month of Sam's example). Screenshot: `docs/screens/3f-2/home-about-now-and-add-an-account-360-light.png`.
+
+Why: the owner's instruction.
+
+### D431. "+ Add an account" on Home
+
+The owner's fix C, 10 Nov 2026.
+
+- A small "+ Add an account" link right under the account card on Home, opening the same form as More, Accounts.
+- Decided in step 3f-2: it's a link-style button with a 44px tap area, between the account card and the lowest point, in the words people see for links ("Navy as text", underlined). It opens the **Add an account** sheet itself, so the person stays on Home.
+
+Test: `apps/web/e2e/answers-3f-2.spec.ts` (fix C).
+
+Why: the owner's instruction.
+
+### D432. The inviter sees the asker's email address: confirmed
+
+The owner's answer to step 3f's question 3, 10 Nov 2026. Confirms D417.
+
+Why: the owner's answer, as suggested: a stranger with a forwarded link can't pass as Jess just by typing her name.
+
+### D433. "This is my pay" with "Can view only": confirmed
+
+The owner's answer to step 3f's question 4, 10 Nov 2026. Confirms D418.
+
+Why: the owner's answer, as suggested: a partner with "Can view only" can then look after pay typed in for them.
+
+### D434. Only the owner invites, and a shared account stays shared, until step 3g: confirmed
+
+The owner's answer to step 3f's question 5, 10 Nov 2026. Confirms D412's "Only the plan's owner invites" and D413's "A shared account can't be made private again".
+
+Why: the owner's answer, as suggested: roles and leaving come in step 3g.
+
+## Made during step 3f-2
+
+### D435. How step 3f-2 is tested
+
+Decided 10 Nov 2026 in step 3f-2.
+
+- `supabase/tests/database/25-bring-your-plan.test.sql`, 54 checks, on step 3f's `tests.make_jess_alone()`: the owner's story played by the fixture's names, Jess bringing her full plan into Tom's. Nothing private of hers reaches Tom (no row he can read names anything she brought, and his look at the plan gives none of it); it's all or nothing (a record refused part-way, with words of its own in the refusal, leaves her plan, his and the invite exactly as they were, and says only "bad-record"); nobody can move someone else's plan (Tom, Alex, someone not signed in, or Jess before Allow); and nobody ends up in two plans. Each rule was broken on purpose to see the checks fail: the privacy (a shared account left shared, caught by 3 checks; with a link to something private, the database's own checks refused the move before anything could leak), the asker check, the all-or-nothing, the one-plan rule and "Allow" moving the plan.
+- `apps/web/e2e/sharing.spec.ts` test 4: Sam with his own plan (two accounts and a phone bill, England and Wales) joins Jess's (Scotland, a shared Joint account), told first, at 320px and 360px in light and dark, with axe; in light he finishes from "Finish joining" on Home, in dark from the join page left open. Test 3's last part now checks someone already in a shared plan.
+- `apps/web/e2e/answers-3f-2.spec.ts` (fixes A, C and D) and `apps/web/e2e/old-address.spec.ts` (fix B), at 320px and 360px in light and dark, with axe.
+
+Why: the owner's list of what the tests must prove.
+
+### D436. Smaller choices in step 3f-2, and what's accepted
+
+Decided 10 Nov 2026 in step 3f-2.
+
+- The join page tells someone with a plan of their own the inviter's bank holidays before they've been let in. A name was already shown to whoever holds the link (D417), and the part of the UK says less; telling them before they ask is what the owner asked for.
+- The join page sends everything on the phone first, and the move runs in turn with every other look at the account, so nothing made on that phone is left behind. A change made in that very second in another tab of PrePenny, or a change on another of Sam's phones not yet sent when his plan moves, is lost, as when the plan on a phone is replaced (D352). The second phone then brings down the shared plan by itself.
+- An invite allowed for someone with a plan takes a place in the plan until it's finished, cancelled or run out, so the plan never has more people than it allows.
+- `look_at_invite` gives the invite's id to the person who asked with it only; `look_at_my_invite` only answers them.
+- Screenshots of step 3f-2 are in `docs/screens/3f-2`.
+
+Why: each follows from the owner's instructions where they didn't say exactly.
+
+### D437. Left for later
+
+Decided 10 Nov 2026 in step 3f-2. Added to `PLAN.md`.
+
+- "Choose which plan to keep" on a phone with a plan of its own, signed in to an account that's a member of someone else's plan: keeping the phone's plan is now refused by the database (D427), so the choice comes back until the saved plan is kept. Bringing it in, as joining does, would be better (step 3g, with leaving).
+- The two halves of "From Sam" that a move makes into payments of their own could be offered as one move between his accounts.
