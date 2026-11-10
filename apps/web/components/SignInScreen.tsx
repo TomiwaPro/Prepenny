@@ -41,6 +41,7 @@ import {
 } from '../lib/account.ts';
 import { formatDay } from '../lib/dates.ts';
 import { passSecondStep, twoStep } from '../lib/security.ts';
+import { keptToken } from '../lib/sharing.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
 import { localToday } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -122,7 +123,9 @@ function wordsFor(problem: Problem, sentAt: number | null): string {
 
 /** Where to go once signed in. */
 const afterSignIn = (from: From) =>
-  from === 'more' ? '/app/more/' : from === 'join' ? '/join/' : '/app/';
+  // An invite link opened before signing in waits on this phone (step 3f),
+  // even when the sign-in email's link, which opens this page afresh, was used.
+  from === 'join' || keptToken() !== null ? '/join/' : from === 'more' ? '/app/more/' : '/app/';
 
 /** This page's own address, keeping only who it's for and where it was opened from. */
 function pageAddress(mode: Mode, from: From): string {
