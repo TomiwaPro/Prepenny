@@ -35,6 +35,23 @@
   color: var(--on-navy-muted);
 }
 
+/*
+ * "About £237.54 now" (D430): the figure at the balance's size, sized with
+ * room for the two words, which sit smaller on its line. Where they don't
+ * fit, as with very large text, the words go on to the next line, never the
+ * figure itself.
+ */
+.aboutNow > span:not(.aboutWord) {
+  white-space: nowrap;
+}
+
+.aboutWord {
+  font-size: var(--size-name);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--on-navy-muted);
+}
+
 .line {
   margin: 0;
   border: 0;

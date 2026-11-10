@@ -12,12 +12,14 @@ import { planLookAhead, workOutPlanTo } from '../../lib/plan-input.ts';
 const home = workOutHome(examplePlan, '2026-10-25');
 
 describe('Home for Sam’s example plan', () => {
-  it('shows the current account at £267.54, checked on Sun 25 Oct', () => {
+  it('shows the current account at £267.54, checked on Sun 25 Oct, and about £237.54 now after the £30.00 due today (D430)', () => {
     expect(home.account).toEqual({
       name: 'Current account',
       balance: 26754,
       checkedOn: '2026-10-25',
       warningLevel: 2000,
+      now: 23754,
+      movedSinceCheck: true,
     });
   });
 
@@ -215,5 +217,74 @@ describe('This pay has to cover, on payday (D206)', () => {
 
   it('isn’t shown on a day that isn’t payday', () => {
     expect(workOutHome(examplePlan, '2026-10-31').cover?.payToday).toBeNull();
+  });
+});
+
+// Step 3f-2 (D430): "About £X now", by brief 5.5 from the last balance check
+// with every payment up to and including today, Not ticked yet included.
+describe('About what’s in the account now', () => {
+  const phoneBill: PlanRecords = {
+    accounts: [
+      {
+        id: 'current',
+        name: 'Current account',
+        kind: 'current',
+        overdraftLimit: 0,
+        warningLevel: 2000,
+      },
+    ],
+    balanceUpdates: [
+      {
+        id: 'checked',
+        accountId: 'current',
+        balance: 50000,
+        checkedOn: '2026-11-08',
+        checkedAt: '2026-11-08T09:00:00Z',
+      },
+    ],
+    series: [
+      {
+        id: 'phone',
+        accountId: 'current',
+        name: 'Phone bill',
+        direction: 'out',
+        type: 'bills',
+        amount: 2000,
+        start: '2026-11-10',
+        schedule: { kind: 'once' },
+        end: { kind: 'never' },
+        holidayRule: 'keep',
+        isEstimate: false,
+        familyId: 'phone',
+        familyCreatedAt: '2026-11-08T09:00:00Z',
+      },
+    ],
+    changes: [],
+    ticks: [],
+  };
+  const on = (today: string) => {
+    const { now, movedSinceCheck } = workOutHome(phoneBill, today).account;
+    return { now, movedSinceCheck };
+  };
+
+  it('is what the bank showed while nothing has moved since the check', () => {
+    expect(on('2026-11-08')).toEqual({ now: 50000, movedSinceCheck: false });
+    expect(on('2026-11-09')).toEqual({ now: 50000, movedSinceCheck: false });
+  });
+
+  it('counts a payment from its day, and after it while it isn’t ticked (brief 5.5)', () => {
+    expect(on('2026-11-10')).toEqual({ now: 48000, movedSinceCheck: true });
+    expect(on('2026-11-11')).toEqual({ now: 48000, movedSinceCheck: true });
+  });
+
+  it('is the figure Update balance expects, every day of Sam’s example for a month (D46)', () => {
+    for (let day = 25; day <= 55; day += 1) {
+      const date = new Date(Date.UTC(2026, 9, day)).toISOString().slice(0, 10);
+      const plan = workOutHomePlan(examplePlan, date);
+      const expected = plan.accounts.find(
+        (one) => one.account.id === homeAccountId(examplePlan),
+      )?.expected;
+      expect(workOutHome(examplePlan, date).account.now, date).toBe(expected);
+    }
   });
 });

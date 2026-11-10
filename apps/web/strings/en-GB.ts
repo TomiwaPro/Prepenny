@@ -474,6 +474,18 @@ export const strings = {
     purpose: "How much you have, how much you can spend, and what's due next.",
     checkedToday: (date: string) => `Checked today, ${date}`,
     checked: (date: string) => `Checked ${date}`,
+    /**
+     * The big figure when money has moved since the bank was checked (D430):
+     * "About £237.54 now", with these two words smaller around the figure.
+     */
+    about: 'About',
+    now: 'now',
+    /** Under it: "Your bank showed £267.54 today" or "Your bank showed £500.00 on Sun 8 Nov". */
+    bankShowed: 'Your bank showed',
+    bankShowedToday: 'today',
+    bankShowedOn: (date: string) => `on ${date}`,
+    /** Under the account card: opens the same form as More, Accounts (D431). */
+    addAccount: '+ Add an account',
     leftToSpendUntil: (date: string) => `Left to spend until ${date}`,
     leftToSpendTo: (date: string) => `Left to spend to ${date}`,
     spendNoMoreThan: (amount: string, warning: string, date: string) =>

@@ -142,7 +142,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }) => {
       await useSetting(page, { today: '2026-10-30' });
       await openHome(page);
-      await expect(page.getByText('Checked Sun\u00a025\u00a0Oct')).toBeVisible();
+      // Money has moved since Sun 25 Oct, so Home shows about what's there
+      // now, the figure Update balance expects (D430, D46).
+      await expect(page.getByTestId('now')).toHaveText('About £604.53 now');
+      await expect(page.getByTestId('bank-showed')).toHaveText(
+        'Your bank showed £267.54 on Sun\u00a025\u00a0Oct',
+      );
       const sheet = await openAction(page, 'Update balance');
       await sheet.getByLabel('Type what your bank shows now').fill('600');
       await sheet.getByRole('button', { name: 'Next' }).click();
@@ -196,7 +201,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // One Undo puts everything back: the balance, its date and every tick.
       await undo(page);
       await expect(page.getByTestId('balance')).toHaveText('£267.54');
-      await expect(page.getByText('Checked Sun\u00a025\u00a0Oct')).toBeVisible();
+      await expect(page.getByTestId('bank-showed')).toHaveText(
+        'Your bank showed £267.54 on Sun\u00a025\u00a0Oct',
+      );
+      await expect(page.getByTestId('now')).toHaveText('About £604.53 now');
       await expect(page.getByTestId('lowest-point')).toContainText('£4.53');
       // Before it's ticked, the pay is still coming in today.
       await expect(
