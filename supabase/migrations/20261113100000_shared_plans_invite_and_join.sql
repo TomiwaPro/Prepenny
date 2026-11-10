@@ -688,7 +688,10 @@ begin
       from public.series s
       where s.plan_id = plan and s.account_id = any (accounts) and not s.deleted and s.pay_profile_id is not null;
 
-    update public.accounts set private_to = null where plan_id = plan and id = any (accounts);
+    -- A shared account is everyone's in the plan, as the phone keeps it: it
+    -- names no one person (ARCHITECTURE.md 3.3), so no phone ever sends a
+    -- change to it just to say so, which "Can view only" couldn't make.
+    update public.accounts set private_to = null, belongs_to = null where plan_id = plan and id = any (accounts);
     update public.balance_updates set deleted = false
       where plan_id = plan and account_id = any (accounts) and not deleted;
     update public.budgets set deleted = false

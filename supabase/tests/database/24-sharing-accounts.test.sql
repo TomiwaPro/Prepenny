@@ -102,8 +102,8 @@ select is(public.share_accounts(tests.id('plan'), array[tests.id('jess-current')
   'sent twice, it changes nothing the second time');
 
 select tests.as_test();
-select is((select private_to from public.accounts where id = tests.id('jess-current')), null,
-  'The account is shared');
+select is((select private_to::text || belongs_to::text from public.accounts where id = tests.id('jess-current')),
+  null, 'The account is shared, naming no one person, as every phone keeps it');
 select is_empty($$ select * from pg_temp.on_current_account() where private is not null $$,
   'and so is every record on it: balance update, budget, spend, payments, changes, ticks, overtime');
 select is((select count(distinct t) from pg_temp.on_current_account()), 7::bigint,
