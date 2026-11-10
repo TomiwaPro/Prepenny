@@ -238,6 +238,101 @@ begin
 end;
 $$;
 
+-- Step 3f: Jess's plan before anyone joins it, as her phone makes it: every
+-- account private to her, as everything a person makes is (D334). Her
+-- current account has everything that can be on one, including links to her
+-- private card, goal and job, which must stay private when the account is
+-- shared. Money moves between her savings and her ISA, both private. Tom and
+-- Alex have a sign-in and no plan.
+create function tests.make_jess_alone() returns void
+language plpgsql as $$
+begin
+  perform tests.make_person('jess');
+  perform tests.make_person('tom');
+  perform tests.make_person('alex');
+
+  perform tests.writing_as('jess');
+  insert into public.plans (id, name) values (tests.id('plan'), '');
+
+  insert into public.accounts (id, plan_id, private_to, name, kind, warning_level, belongs_to)
+  values (tests.id('jess-current'), tests.id('plan'), tests.id('jess'), 'Jess current', 'current', 2000, tests.id('jess')),
+    (tests.id('jess-savings'), tests.id('plan'), tests.id('jess'), 'Jess savings', 'savings', 0, tests.id('jess')),
+    (tests.id('jess-isa'), tests.id('plan'), tests.id('jess'), 'Jess ISA', 'savings', 0, tests.id('jess')),
+    (tests.id('joint'), tests.id('plan'), tests.id('jess'), 'Joint', 'joint', 2000, tests.id('jess'));
+  insert into public.balance_updates (id, plan_id, account_id, balance, checked_on, checked_at)
+  values (tests.id('jess-balance'), tests.id('plan'), tests.id('jess-current'), 120000, '2026-10-25', '2026-10-25T09:00:00Z'),
+    (tests.id('joint-balance'), tests.id('plan'), tests.id('joint'), 80000, '2026-10-25', '2026-10-25T09:00:00Z');
+
+  -- Her job, its usual week, and her pay linked to them (D303).
+  insert into public.pay_profiles (id, plan_id, private_to, belongs_to, name, frequency, tax_code, basis)
+  values (tests.id('jess-job'), tests.id('plan'), tests.id('jess'), tests.id('jess'), 'Shop job', 'monthly', '1257L', 'cumulative');
+  insert into public.pay_weeks (id, plan_id, pay_profile_id, name, lines)
+  values (tests.id('jess-week'), tests.id('plan'), tests.id('jess-job'), 'Usual week',
+    '[{"name":"Basic","kind":"basic","hours":"37.5","rate":"12.71"}]');
+  perform tests.add_series('jess-pay', 'jess-current', 'in', 'pay', 210000, 'jess');
+  update public.series set pay_profile_id = tests.id('jess-job'), cycle_pay_weeks = array[tests.id('jess-week')]
+    where id = tests.id('jess-pay');
+  insert into public.payment_changes (id, plan_id, series_id, original_date, payment_number, amount)
+  values (tests.id('jess-pay-change'), tests.id('plan'), tests.id('jess-pay'), '2026-11-01', 0, 215000);
+  insert into public.ticks (id, plan_id, series_id, original_date, payment_number, paid_on, ticked_at, in_balance_update)
+  values (tests.id('jess-pay-tick'), tests.id('plan'), tests.id('jess-pay'), '2026-11-01', 0, '2026-11-01',
+    '2026-11-01T08:00:00Z', tests.id('jess-balance'));
+  insert into public.pay_adjustments (id, plan_id, family_id, payment_number, change)
+  values (tests.id('jess-overtime'), tests.id('plan'), tests.id('jess-pay'), 0, 4500);
+  insert into public.pay_adjustment_details (id, plan_id, adjustment_id, kind, worked_on, hours, rate, tax_year)
+  values (tests.id('jess-overtime-details'), tests.id('plan'), tests.id('jess-overtime'), 'overtime', '2026-10-27',
+    '3', '19.07', '2026-27');
+
+  -- A food budget with a spend.
+  insert into public.budgets (id, plan_id, account_id, name, amount, every, leaves, starts_on, made_at)
+  values (tests.id('jess-food'), tests.id('plan'), tests.id('jess-current'), 'Food', 20000, 'month', 'at-start',
+    '2026-10-25', '2026-10-25T09:00:00Z');
+  insert into public.spends (id, plan_id, budget_id, amount, spent_on, recorded_at)
+  values (tests.id('jess-spend'), tests.id('plan'), tests.id('jess-food'), 600, '2026-10-25', '2026-10-25T10:00:00Z');
+
+  -- Her private card, paid from her current account, one payment ticked
+  -- inside the card's Update from statement (D62).
+  insert into public.debts (id, plan_id, private_to, belongs_to, name, kind, balance, balance_on, balance_at, starting_balance)
+  values (tests.id('jess-card'), tests.id('plan'), tests.id('jess'), tests.id('jess'), 'Jess card', 'credit-card',
+    42099, '2026-10-25', '2026-10-25T09:00:00Z', 42099);
+  perform tests.add_series('jess-card-payment', 'jess-current', 'out', 'debt', 2500);
+  update public.series set debt_id = tests.id('jess-card') where id = tests.id('jess-card-payment');
+  insert into public.ticks (id, plan_id, series_id, original_date, payment_number, paid_on, ticked_at, in_debt_update)
+  values (tests.id('jess-card-tick'), tests.id('plan'), tests.id('jess-card-payment'), '2026-11-01', 0,
+    '2026-11-01', '2026-11-01T09:30:00Z', tests.id('jess-card'));
+
+  -- A savings goal kept in her current account, and money into it.
+  insert into public.goals (id, plan_id, private_to, name, target, account_id, belongs_to)
+  values (tests.id('jess-goal'), tests.id('plan'), tests.id('jess'), 'Jess holiday', 120000, tests.id('jess-current'),
+    tests.id('jess'));
+  perform tests.add_series('jess-to-goal', 'jess-current', 'in', 'savings', 1000, 'jess');
+  update public.series set goal_id = tests.id('jess-goal') where id = tests.id('jess-to-goal');
+
+  -- A payment removed before sharing, split from her rent: it stays private (D414).
+  perform tests.add_series('jess-rent', 'jess-current', 'out', 'rent', 55000);
+  insert into public.series (id, plan_id, account_id, name, direction, type, amount, start_date,
+    schedule, end_rule, holiday_rule, family_id, family_created_at, split_from, first_number, deleted)
+  values (tests.id('jess-rent-later'), tests.id('plan'), tests.id('jess-current'), 'Gift for Tom', 'out', 'other', 8000,
+    date '2026-12-01', '{"kind":"monthly","every":1,"on":{"kind":"day","day":1}}', '{"kind":"never"}', 'keep',
+    tests.id('jess-rent'), '2026-10-25T08:31:00Z', tests.id('jess-rent'), 1, true);
+  update public.series set end_rule = '{"kind":"after","count":1}' where id = tests.id('jess-rent');
+
+  -- Money between her savings and her ISA, both private.
+  insert into public.series (id, plan_id, account_id, to_account_id, name, direction, type, amount, start_date,
+    schedule, end_rule, holiday_rule, family_id, family_created_at)
+  values (tests.id('savings-to-isa'), tests.id('plan'), tests.id('jess-savings'), tests.id('jess-isa'), 'To ISA',
+    'transfer', 'savings', 5000, date '2026-11-01', '{"kind":"monthly","every":1,"on":{"kind":"day","day":1}}',
+    '{"kind":"never"}', 'keep', tests.id('savings-to-isa'), '2026-10-25T08:31:00Z');
+
+  -- Rent from the joint account, still private to her until she shares it.
+  perform tests.add_series('rent', 'joint', 'out', 'rent', 110000);
+
+  insert into public.settings (id, plan_id, main_pay_family_id)
+  values (tests.id('jess-settings'), tests.id('plan'), tests.id('jess-pay'));
+  perform tests.as_test();
+end;
+$$;
+
 -- The plan record tables, for helpers that run as a signed-in person, who
 -- can't use the database's own list.
 create function tests.record_tables() returns text[]
