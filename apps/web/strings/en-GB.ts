@@ -2373,7 +2373,7 @@ export const strings = {
 
   /** The live app's old address, for a phone holding something not saved in an account yet (D428). */
   oldAddress: {
-    line: "PrePenny's address is now prepenny.co.uk. This phone has changes that aren't saved in your account yet, so they stay here for now. Sign in and stay online until they're sent, then open prepenny.co.uk.",
+    line: "PrePenny's address is now prepenny.co.uk. This phone has a plan or changes that aren't saved in an account yet, so they stay here for now. Sign in from More and stay online until they're sent, then open prepenny.co.uk.",
   },
 
   getBackInNotice: {

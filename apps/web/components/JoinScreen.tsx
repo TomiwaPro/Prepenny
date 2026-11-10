@@ -48,7 +48,6 @@ import {
   tokenFrom,
 } from '../lib/sharing.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
-import { liveAddressFor } from '../lib/site.ts';
 import { strings } from '../strings/en-GB.ts';
 import { describedBy, Field, Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
@@ -103,7 +102,9 @@ export function JoinScreen() {
   const [busy, setBusy] = useState(false);
   const [bringing, setBringing] = useState<Bringing>({ kind: 'idle' });
   const comingDown = useRef(false);
-  const savedOnce = useRef(false);
+  /** Each try at saving the phone's plan in the account first; "Try again" makes another. */
+  const [saveTry, setSaveTry] = useState(0);
+  const savedFor = useRef(-1);
 
   useEffect(() => {
     void checkSignIn();
@@ -111,9 +112,9 @@ export function JoinScreen() {
 
   // The link's secret: from the address, kept while signing in, then taken
   // out of the address so it isn't left in the browser's history. At the old
-  // address it's left where it is: the page moves to prepenny.co.uk with it (D428).
+  // address, the move to prepenny.co.uk has already taken the whole address,
+  // "#" included (OldAddress's effect runs first, D428).
   useEffect(() => {
-    if (liveAddressFor(window.location) !== null) return;
     const invite = inviteIdFrom(window.location.hash);
     if (invite !== null) {
       window.history.replaceState(null, '', '/join/');
@@ -156,15 +157,20 @@ export function JoinScreen() {
   // first, once, so the server knows it comes with them (D426).
   const needsSaving = state === 'open' && found?.brings === null && ownPlan;
   useEffect(() => {
-    if (!needsSaving || savedOnce.current) return;
-    savedOnce.current = true;
+    if (!needsSaving || savedFor.current === saveTry) return;
+    savedFor.current = saveTry;
     setSaving(true);
     void (async () => {
-      await connectPlan();
+      const connection = await connectPlan();
+      // A different plan in the account: the person chooses which to keep first (D324).
+      if (connection.kind === 'choose') {
+        window.location.assign('/sign-in/?choose');
+        return;
+      }
       await look();
       setSaving(false);
     })();
-  }, [needsSaving, look]);
+  }, [needsSaving, look, saveTry]);
 
   // Waiting: looks every few seconds while on screen, and at once on coming back.
   useEffect(() => {
@@ -205,6 +211,12 @@ export function JoinScreen() {
       setBringing({ kind: 'busy' });
       const result = await sendEverythingThen(() => joinWithMyPlan(invite, nation));
       if (!result.sent) {
+        // The plan on this phone isn't the one in the account: the person
+        // chooses which to keep first (D324), and comes back.
+        if ((await connectPlan()).kind === 'choose') {
+          window.location.assign('/sign-in/?choose');
+          return;
+        }
         setBringing({ kind: 'not-sent' });
         return;
       }
@@ -221,9 +233,10 @@ export function JoinScreen() {
       }
       const kind = answer.problem.kind;
       if (kind === 'nation-changed') {
-        // Told again, with the bank holidays as they are now.
-        setBringing({ kind: 'idle' });
+        // Told again, with the bank holidays as they are now: looked at first,
+        // so the plan is never brought on the old ones meanwhile.
         await look();
+        setBringing({ kind: 'idle' });
         return;
       }
       if (kind === 'invite' || kind === 'has-a-plan' || kind === 'full') {
@@ -373,10 +386,7 @@ export function JoinScreen() {
               <button
                 type="button"
                 className={formStyles.outlined}
-                onClick={() => {
-                  savedOnce.current = false;
-                  void look();
-                }}
+                onClick={() => setSaveTry((n) => n + 1)}
               >
                 {t.tryAgain}
               </button>

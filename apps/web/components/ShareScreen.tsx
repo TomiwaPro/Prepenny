@@ -313,7 +313,9 @@ function Invite({
       return;
     }
     setMade(null);
-    setSaid(t.cancelled);
+    // Joined or answered meanwhile, it isn't cancelled: the screen shows what it is now.
+    const state = (done.value as { state?: unknown } | null)?.state;
+    setSaid(state === undefined || state === 'cancelled' ? t.cancelled : t.answerGone);
     onChanged();
   }
 

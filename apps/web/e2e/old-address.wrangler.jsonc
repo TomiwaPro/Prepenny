@@ -13,7 +13,15 @@
   "assets": {
     "directory": "../out",
     "binding": "ASSETS",
-    "run_worker_first": ["/*", "!/_next/*"],
+    "run_worker_first": [
+      "/*",
+      "!/_next/*",
+      "!/version.json",
+      "!/sw.js",
+      "!/icons/*",
+      "!/engine-worker-*",
+      "!/manifest.webmanifest"
+    ],
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   }

@@ -1669,7 +1669,12 @@ export function keepInStep(): () => void {
 export async function sendEverythingThen<T>(
   task: () => Promise<T>,
 ): Promise<{ readonly sent: false } | { readonly sent: true; readonly value: T }> {
-  if (!(await allSent())) return { sent: false };
+  // A plan with nothing in it yet has nothing to send, and isn't brought along.
+  const anything = await withDb(async (db) => {
+    const own = await ownPlanOnPhone(db);
+    return own !== undefined && (await hasSomething(db, own.id));
+  });
+  if (anything && !(await allSent())) return { sent: false };
   return inTurn(async () => {
     const clear = await withDb(async (db) => {
       const own = await ownPlanOnPhone(db);

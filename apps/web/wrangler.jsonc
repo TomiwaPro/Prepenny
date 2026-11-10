@@ -2,7 +2,10 @@
 // it is. Since step 3f-2 a few lines of our own run first for the app's
 // pages (cloudflare/worker.ts): a page opened at the old address moves to
 // prepenny.co.uk, and everything else is served from out/ as before (D428).
-// The app's files under /_next/ never run them, so they're served directly.
+// The app's files (under /_next/, the version a phone checks every minute,
+// the offline helper, icons, the engine's file and the app's details) never
+// run them, so they're served directly and don't count towards Cloudflare's
+// free daily allowance.
 // A preview link for each pull request comes from `wrangler versions upload`
 // in .github/workflows/deploy.yml.
 //
@@ -22,7 +25,15 @@
   "assets": {
     "directory": "./out",
     "binding": "ASSETS",
-    "run_worker_first": ["/*", "!/_next/*"],
+    "run_worker_first": [
+      "/*",
+      "!/_next/*",
+      "!/version.json",
+      "!/sw.js",
+      "!/icons/*",
+      "!/engine-worker-*",
+      "!/manifest.webmanifest"
+    ],
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   }

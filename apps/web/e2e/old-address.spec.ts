@@ -132,6 +132,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       });
       await page.goto(`http://${OLD}:${PORT}/sign-in/`, { waitUntil: 'commit' });
       await expect(page).toHaveURL('https://prepenny.co.uk/sign-in/', { timeout: 15_000 });
+      // An invite link too: it arrives with its secret, as the join page
+      // reads it only after the move has taken the whole address.
+      await page.route(`http://${OLD}:${PORT}/join/`, async (route) => {
+        const kept = await route.fetch({ url: `http://127.0.0.1:${PORT}/join/` });
+        await route.fulfill({ response: kept });
+      });
+      await page.goto(`http://${OLD}:${PORT}/join/#${SECRET}`, { waitUntil: 'commit' });
+      await expect(page).toHaveURL(`https://prepenny.co.uk/join/#${SECRET}`, { timeout: 15_000 });
     });
   });
 }
@@ -144,4 +152,9 @@ test("the old address's files are still served, so a phone's offline helper ther
     location: 'https://prepenny.co.uk/app/?x=1',
   });
   expect((await sendAs(PREVIEW, '/app/', 'navigate')).status).toBe(200);
+  // The app's own files never run the few lines, even asked for like a page:
+  // they don't count towards Cloudflare's free allowance (D428).
+  for (const path of ['/version.json', '/sw.js', '/icons/icon.svg', '/manifest.webmanifest']) {
+    expect((await sendAs(OLD, path, 'navigate')).status, path).toBe(200);
+  }
 });
