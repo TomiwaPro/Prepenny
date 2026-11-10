@@ -41,6 +41,7 @@ import {
 } from '../lib/account.ts';
 import { formatDay } from '../lib/dates.ts';
 import { passSecondStep, twoStep } from '../lib/security.ts';
+import { keptToken } from '../lib/sharing.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
 import { localToday } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -56,7 +57,8 @@ import styles from './SignInScreen.module.css';
 const t = strings.signIn;
 
 type Mode = 'sign-in' | 'sign-up';
-type From = 'more' | 'welcome';
+/** Where the sign-in page was opened from: More, an invite link (step 3f), or the welcome. */
+type From = 'more' | 'join' | 'welcome';
 type Busy =
   | 'sending'
   | 'checking'
@@ -120,13 +122,16 @@ function wordsFor(problem: Problem, sentAt: number | null): string {
 }
 
 /** Where to go once signed in. */
-const afterSignIn = (from: From) => (from === 'more' ? '/app/more/' : '/app/');
+const afterSignIn = (from: From) =>
+  // An invite link opened before signing in waits on this phone (step 3f),
+  // even when the sign-in email's link, which opens this page afresh, was used.
+  from === 'join' || keptToken() !== null ? '/join/' : from === 'more' ? '/app/more/' : '/app/';
 
 /** This page's own address, keeping only who it's for and where it was opened from. */
 function pageAddress(mode: Mode, from: From): string {
   const query = new URLSearchParams();
   if (mode === 'sign-up') query.set('to', 'sign-up');
-  if (from === 'more') query.set('from', 'more');
+  if (from === 'more' || from === 'join') query.set('from', from);
   const text = query.toString();
   return `/sign-in/${text === '' ? '' : `?${text}`}`;
 }
@@ -200,7 +205,8 @@ export function SignInScreen() {
     const search = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.slice(1));
     const opened: Mode = search.get('to') === 'sign-up' ? 'sign-up' : 'sign-in';
-    const cameFrom: From = search.get('from') === 'more' ? 'more' : 'welcome';
+    const asked = search.get('from');
+    const cameFrom: From = asked === 'more' || asked === 'join' ? asked : 'welcome';
     setMode(opened);
     setFrom(cameFrom);
     const tokenHash = hash.get('token_hash');

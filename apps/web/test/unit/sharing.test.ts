@@ -1,0 +1,163 @@
+// Step 3f's pieces that work on the phone alone: money between a private
+// account and a shared one as two halves (lib/private-transfer.ts), reading
+// an invite link and the server's refusals (lib/sharing.ts), names in a
+// sentence, and the private links' ids, which the server works out the same
+// way when an account is shared (supabase/tests/database/24-sharing-accounts.test.sql).
+
+import type { NewSeries } from '@prepenny/engine';
+import { describe, expect, it } from 'vitest';
+import { namesList } from '../../components/ShareScreen.tsx';
+import { addPaymentCommand } from '../../lib/private-transfer.ts';
+import { inviteLink, problemOf, requestsOf, tokenFrom } from '../../lib/sharing.ts';
+import { derivedId } from '../../lib/sync-ids.ts';
+
+const move: NewSeries = {
+  id: 'move',
+  accountId: 'jess',
+  toAccountId: 'joint',
+  name: 'To our account',
+  direction: 'transfer',
+  type: 'savings',
+  amount: 60000,
+  start: '2026-10-30',
+  schedule: { kind: 'once' },
+  end: { kind: 'never' },
+  holidayRule: 'keep',
+  isEstimate: false,
+  note: 'For the bills',
+};
+const shared = { sharedAccounts: new Set(['joint']), myName: 'Jess' };
+const noGoal = () => undefined;
+
+describe('Add a payment between a private account and a shared one (D16, D52)', () => {
+  it('is an ordinary transfer when nothing is shared, or both accounts are', () => {
+    expect(addPaymentCommand(move, 'now', null, 'half', noGoal)).toEqual({
+      kind: 'add-payment',
+      series: move,
+      madeAt: 'now',
+    });
+    const both = { sharedAccounts: new Set(['jess', 'joint']), myName: 'Jess' };
+    expect(addPaymentCommand(move, 'now', both, 'half', noGoal)).toEqual({
+      kind: 'add-payment',
+      series: move,
+      madeAt: 'now',
+    });
+  });
+
+  it('from her own account: money going out of it, and "From Jess" in the shared one', () => {
+    const { toAccountId: _to, ...rest } = move;
+    expect(addPaymentCommand(move, 'now', shared, 'half', noGoal)).toEqual({
+      kind: 'add-payment',
+      series: { ...rest, direction: 'out' },
+      madeAt: 'now',
+      otherHalf: { id: 'half', accountId: 'joint', name: 'From Jess' },
+    });
+  });
+
+  it('into her own account: money coming into it, and "To Jess" leaving the shared one', () => {
+    const back = { ...move, accountId: 'joint', toAccountId: 'jess' };
+    const command = addPaymentCommand(back, 'now', shared, 'half', noGoal);
+    expect(command.kind === 'add-payment' && command.series.accountId).toBe('jess');
+    expect(command.kind === 'add-payment' && command.series.direction).toBe('in');
+    expect(command.kind === 'add-payment' && command.otherHalf).toEqual({
+      id: 'half',
+      accountId: 'joint',
+      name: 'To Jess',
+    });
+  });
+
+  it('with no name given, "From your partner"; a goal stays only when it is in her own account', () => {
+    const unnamed = { sharedAccounts: shared.sharedAccounts, myName: null };
+    const command = addPaymentCommand(
+      { ...move, goalId: 'holiday' },
+      'now',
+      unnamed,
+      'half',
+      () => 'joint',
+    );
+    expect(command.kind === 'add-payment' && command.otherHalf?.name).toBe('From your partner');
+    expect(command.kind === 'add-payment' && command.series.goalId).toBeUndefined();
+    const kept = addPaymentCommand(
+      { ...move, goalId: 'holiday' },
+      'now',
+      shared,
+      'half',
+      () => 'jess',
+    );
+    expect(kept.kind === 'add-payment' && kept.series.goalId).toBe('holiday');
+  });
+});
+
+describe('the invite link', () => {
+  it('carries its secret after a "#", so it never reaches the site', () => {
+    expect(inviteLink('abcdefghijklmnopqrstuvwxyz012345', 'https://prepenny.co.uk')).toBe(
+      'https://prepenny.co.uk/join/#abcdefghijklmnopqrstuvwxyz012345',
+    );
+  });
+
+  it('reads only a secret that could be one', () => {
+    expect(tokenFrom('#abcdefghijklmnopqrstuvwxyz_-0123')).toBe('abcdefghijklmnopqrstuvwxyz_-0123');
+    expect(tokenFrom('#short')).toBeNull();
+    expect(tokenFrom('#token_hash=abcdefghijklmnopqrstuvwxyz')).toBeNull();
+    expect(tokenFrom('')).toBeNull();
+  });
+});
+
+describe("the server's refusals, read by their code alone", () => {
+  it('names the accounts to share together, and what an invite is now', () => {
+    expect(problemOf({ message: 'share-together', details: '["isa"]' })).toEqual({
+      kind: 'share-together',
+      ids: ['isa'],
+    });
+    expect(problemOf({ message: 'share-has-halves', details: 'not json' })).toEqual({
+      kind: 'share-has-halves',
+      ids: [],
+    });
+    expect(problemOf({ message: 'used' })).toEqual({ kind: 'invite', state: 'used' });
+    expect(problemOf({ message: 'has-a-plan' })).toEqual({ kind: 'has-a-plan' });
+    expect(problemOf({ message: 'something else entirely' })).toEqual({ kind: 'server' });
+  });
+
+  it('keeps only well-formed requests to join', () => {
+    expect(
+      requestsOf([
+        {
+          invite: 'i',
+          plan: 'p',
+          role: 'viewer',
+          nickname: 'Jess',
+          email: 'jess@example.com',
+          asked_at: '2026-11-10T09:00:00Z',
+        },
+        { invite: 'broken' },
+      ]),
+    ).toEqual([
+      {
+        invite: 'i',
+        plan: 'p',
+        role: 'viewer',
+        nickname: 'Jess',
+        email: 'jess@example.com',
+        askedAt: '2026-11-10T09:00:00Z',
+      },
+    ]);
+    expect(requestsOf(null)).toEqual([]);
+  });
+});
+
+describe('names in a sentence', () => {
+  it('joins them with commas and "and"', () => {
+    expect(namesList([])).toBe('');
+    expect(namesList(['Joint'])).toBe('Joint');
+    expect(namesList(['Joint', 'Savings'])).toBe('Joint and Savings');
+    expect(namesList(['Joint', 'Savings', 'ISA'])).toBe('Joint, Savings and ISA');
+  });
+});
+
+describe('private link ids', () => {
+  it('are the ones the server works out when an account is shared (app.derived_id)', () => {
+    expect(derivedId('0190a3d0-0000-7000-8000-000000000001', 'family-debt', 'abc')).toBe(
+      '3424324e-fea7-885a-8863-d0467a5decd3',
+    );
+  });
+});

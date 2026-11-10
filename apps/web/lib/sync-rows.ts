@@ -298,11 +298,16 @@ export function rowsOf(
 
   /** Whose pay a series is (D303): kept from the server for its family, or worked out once for a new family. */
   const paidTo = (one: Series): string | null => {
+    // A series still there first: one removed before its account was shared
+    // can still say whose it was then (D414, D418).
+    let removed: MirrorRow | undefined;
     for (const row of mirror.values()) {
       if (row.table === 'series' && row.values.family_id === one.familyId) {
-        return (row.values.paid_to as string | null | undefined) ?? null;
+        if (!row.deleted) return (row.values.paid_to as string | null | undefined) ?? null;
+        removed ??= row;
       }
     }
+    if (removed !== undefined) return (removed.values.paid_to as string | null | undefined) ?? null;
     const first = series.get(one.familyId) ?? one;
     if (first.mirrorOf !== undefined || first.direction !== 'in') return null;
     const privacy = accountPrivacy(first.accountId);

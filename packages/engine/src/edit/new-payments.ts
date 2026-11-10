@@ -9,11 +9,11 @@ import { paymentAtIndex } from '../schedule/payments.ts';
 import { prepareSeries } from '../schedule/series.ts';
 import type { Series } from '../schedule/types.ts';
 import { checkName, checkNewId, checkNow, checkObject, openAccount, recordNow } from './checks.ts';
-import { type Context, NO_CHANGES, paymentAt, refuse } from './context.ts';
+import { type Context, NO_CHANGES, otherHalf, paymentAt, refuse } from './context.ts';
 import { removeSeries, removeThisAndLater } from './later.ts';
 import { reworkPayAdjustments } from './pay.ts';
 import { clean, seriesWrite } from './records.ts';
-import type { EditCommand, NewSeries } from './types.ts';
+import type { EditCommand, NewOtherHalf, NewSeries } from './types.ts';
 
 /**
  * "Add a payment" and setup (brief 4.3, 4.4, D86): a new series, its own
@@ -113,7 +113,64 @@ export function addPayment(
     );
   }
   context.draft.set(seriesWrite(id, series));
+  if (command.otherHalf !== undefined) addOtherHalf(context, series, command.otherHalf);
   checkNow(context);
+}
+
+/**
+ * The shared half of a private transfer (D16, D94): the same money and
+ * timing as the private half, the other way, in the shared account, named
+ * "From Jess" or "To Jess", with no note, debt, goal, job or money set aside.
+ * The private half is money going out of or coming into the person's own
+ * account, never a transfer, so each account counts it once (ARCHITECTURE.md 3.6).
+ */
+function addOtherHalf(context: Context, mine: Series, raw: NewOtherHalf): void {
+  checkObject(raw, 'the other half');
+  const what = `Series ${mine.id}: its other half`;
+  const id = checkNewId(context, 'series', raw.id, 'other half');
+  if (id === mine.id) refuse('bad-command', `${what} needs an id of its own.`);
+  const name = checkName(raw.name, what);
+  if (mine.direction === 'transfer' || mine.toAccountId !== undefined) {
+    refuse(
+      'bad-other-half',
+      `${what}: the private half moves money in or out, not to another account.`,
+    );
+  }
+  if (raw.accountId === mine.accountId) {
+    refuse('same-account', `${what} must be in a different account.`);
+  }
+  openAccount(context, raw.accountId, what);
+  if (
+    mine.debtId !== undefined ||
+    mine.setAside !== undefined ||
+    mine.payProfileId !== undefined ||
+    mine.cyclePayWeeks !== undefined
+  ) {
+    refuse(
+      'bad-other-half',
+      `${what}: money between two accounts has no debt, job or money set aside.`,
+    );
+  }
+  const half = clean<Series>({
+    id,
+    accountId: raw.accountId,
+    name,
+    direction: mine.direction === 'out' ? 'in' : 'out',
+    amount: mine.amount,
+    amountCycle: mine.amountCycle === undefined ? undefined : [...mine.amountCycle],
+    cycleOffset: mine.cycleOffset,
+    start: mine.start,
+    schedule: mine.schedule,
+    end: mine.end,
+    lastAmount: mine.lastAmount,
+    holidayRule: mine.holidayRule,
+    type: mine.type,
+    isEstimate: mine.isEstimate,
+    familyId: id,
+    familyCreatedAt: mine.familyCreatedAt,
+    mirrorOf: mine.id,
+  });
+  context.draft.set(seriesWrite(id, half));
 }
 
 /**
@@ -138,6 +195,13 @@ export function deletePayment(context: Context, seriesId: string): void {
   const first = family[0] ?? prepared;
   if (first.count === 0) {
     for (const one of family) removeSeries(context, one);
+    // A private transfer's other half goes with it (D94).
+    const other = otherHalf(context, first.series);
+    if (other !== null) {
+      for (const one of context.checked.prepared) {
+        if (one.series.familyId === other.series.familyId) removeSeries(context, one);
+      }
+    }
   } else {
     const payment = paymentAt(context, first, 0);
     if (payment.payment.day <= context.today) {

@@ -4850,3 +4850,183 @@ The owner's decision, 10 Nov 2026. Puts D403's preview database off until the pa
 Test: the Deploy workflow on this step's pull request, with no preview secrets or variables: the preview is put online with signing in off, the preview database's job is skipped, and every other check passes.
 
 Why: the owner's decision.
+
+## From the owner's instructions for step 3f
+
+D412 to D416 come from the owner's instructions for step 3f, shared plans: invite and join, on 10 Nov 2026. Points marked "decided in step 3f" weren't in the owner's words. D417 to D425 were decided while building it, the same day.
+
+### D412. Invites: by link or by email, 7 days, once, and nobody joins without "Allow"
+
+The owner's instruction, 10 Nov 2026. Builds brief 4.14 and ARCHITECTURE.md 3.2.
+
+- "Share with my partner", under More, makes an invite by a link the person sends themselves, or by an email from PrePenny. It says what it gives: "Can edit" (the default) or "Can view only".
+- An invite lasts 7 days and works once. A link can be forwarded, so opening it lets nobody in: the person who opens it asks to join, and the inviter sees "Jess wants to join your plan" with "Allow" and "Don't allow". "Don't allow" ends the invite for good.
+- The server checks every role (D51): a person with "Can view only" can't change anything shared, apart from their own pay (D311).
+- Decided in step 3f:
+  - **Only the plan's owner invites.** Someone with "Can edit" can't, and nobody can invite themselves into someone else's plan: making, cancelling and answering an invite are the server's own steps, each checking who's asking, and nobody can write an invite or a membership straight through the Data API.
+  - **The first person who asks uses it up.** Anyone else opening the same link, then or later, is told "This invite has been used already." The person who asked sees whether they were let in.
+  - **One invite at a time.** Making a new one cancels any not answered yet, and "Cancel this invite" cancels it. A plan with two people in it can't make one (brief 4.14's limit, kept as `max_members`).
+  - **The link's secret** is 32 random bytes, kept only scrambled (SHA-256), after a "#" in the link so it never reaches PrePenny's site or its logs, and taken out of the address as soon as the join page has read it. While the person signs in or signs up it waits on that phone only, and goes once used, or at signing out.
+  - **By email:** the database sends it through Resend, as step 3e's emails, with the link as a button. It holds the inviter's name and no amount, payment name or note. At most 3 invite emails a day for a plan, so PrePenny can't be used to send its emails to strangers; a link still works after that.
+  - **Run out:** an invite asked with but not answered in its 7 days can't let anyone in either.
+
+Test: `supabase/tests/database/23-invite-and-join.test.sql` (77 checks), `apps/web/e2e/sharing.spec.ts` tests 1 to 3.
+
+Why: the owner's instruction.
+
+### D413. Sharing an account is the server's own step
+
+The owner's instruction, 10 Nov 2026 (PLAN.md items 26 and 34). Replaces D290's "sharing-comes-later".
+
+- A private account becomes shared only when its own person chooses it, on "Choose shared accounts", and everything on it changes privacy in one step of the server's own (`share_accounts`), or nothing does.
+- Decided in step 3f:
+  - **What moves with it:** its balance updates, budgets and their spends, payments with their one-off changes and ticks, and overtime on pay in it, as amounts locked to their person (D303). Each is saved again through the same checks, which fill its privacy in from the account, so nothing can be left private on a shared account, or shared by mistake.
+  - **What stays private:** savings goals, debts and jobs, which are chosen on their own (D65, D303), and the person's other accounts. A payment in the account that names one of them keeps the link privately, in the person's own private links (D291), which the server makes with the same ids the phone works out (`app.derived_id`, from `lib/sync-ids.ts`), so the phone and the server agree on every row.
+  - **Money between two of the person's accounts can't cross from shared to private.** Sharing one of them alone is refused, naming the other: "Money moves between these and Savings, which you're keeping private. Tick Savings too, or leave them all private." Money kept as "From Jess" in a shared account (D16) is refused too, naming it, until it's removed and added again after sharing (D425).
+  - **Only someone who can edit shares an account**, and only their own private ones. With "Can view only", sharing would make their own records shared ones they could no longer change.
+  - **A shared account can't be made private again** for now. The sheet that asks first says so. Unsharing is with leaving, in step 3g (D425).
+  - **A shared account names no one person** (`belongs_to` empty), as every phone keeps it. Found by the two-phone tests: the server first kept the person's name on it, so the partner's phone, which keeps it empty, sent a change to say so with its next change, and with "Can view only" the whole change was refused.
+  - It needs a signal and nothing waiting to be sent, because it's made on what the account has now: "Some changes on this phone haven't been sent to your account yet. Try again once they have."
+
+Test: `supabase/tests/database/24-sharing-accounts.test.sql` (43 checks), `apps/web/e2e/sharing.spec.ts` tests 1 to 3.
+
+Why: the owner's instruction, and D290's reason: one forgotten field would put Jess's private payment where Tom can read it.
+
+### D414. What was removed before sharing stays private
+
+Decided 10 Nov 2026 in step 3f. Adds to D413 and changes D299's family check.
+
+- Records removed before an account is shared (kept 90 days so every phone hears they've gone, ARCHITECTURE.md 3.1) stay private: a partner never gets what was removed, such as "Gift for Tom", even as a removed record.
+- So a family can hold a removed private series beside shared ones. The family check (`app.family_problem`) now leaves out a removed series' privacy, lock and pay when comparing; it must still be on the same account, and a series still joins only a family it was split into. Overtime takes its privacy from a payment still in its family.
+
+Test: `24-sharing-accounts.test.sql` ("What she removed before sharing stays private", and Tom changing a shared payment whose family has a removed private one).
+
+Why: the owner's rule, "a partner never receives anything private, before or after an account is shared".
+
+### D415. "From Jess, £600": money between a private account and a shared one
+
+The owner's instruction, 10 Nov 2026 (D16, D52, D94).
+
+- Decided in step 3f:
+  - **Add a payment** between two accounts, one the person's own private account and the other shared, makes the two linked halves of D16 in one change with one undo: money going out of (or into) their own account, with the name and note they typed, and "From Jess" arriving in (or "To Jess" leaving) the shared account, which carries the date, the amount, how often and whether it's an estimate, and nothing else. The engine's "Add a payment" takes the other half (`otherHalf`); the app decides when, from which accounts are shared.
+  - "Jess" is the name she gave (D420). With none yet, "From your partner".
+  - Only Jess can change it, as before (D293). On Tom's phone, tapping it says "Only Jess can change this. It's money between Jess's own account and this one."
+  - Removing it before its first payment removes both halves (the engine's `delete-payment` now reaches the other half).
+  - A savings goal stays on her half only when it's kept in her own account.
+  - With "Can view only", adding it is refused like any other new shared record (D51, D292): "From Jess" lands in the shared account. Her own half alone, in her own account, is hers to add.
+
+Test: `packages/engine/test/unit/add-private-transfer.test.ts`, `apps/web/test/unit/sharing.test.ts`, `apps/web/e2e/sharing.spec.ts` test 1. Screenshot: `docs/screens/3f/from-jess-360-light.png`.
+
+Why: D16, D52 and D94 decided the rule; nothing could make the two halves until now.
+
+### D416. Joining with a plan of one's own: not built until the owner chooses
+
+The owner's instruction, 10 Nov 2026: don't guess.
+
+- Someone who already has a plan, their own or someone else's, or a plan with something in it on the phone they open the link on, is told: "You already have a plan in PrePenny, so you can't join Tom's plan yet. PrePenny keeps one plan for each person, and joining with a plan of your own isn't ready yet." Asking is refused by the server too ("has-a-plan"), and so is allowing someone who made a plan while waiting.
+- The options, with a recommendation, are a question for the owner in `PLAN.md` ("Waiting for the owner").
+
+Test: `23-invite-and-join.test.sql`, `apps/web/e2e/sharing.spec.ts` test 3.
+
+Why: the owner's instruction.
+
+### D417. The inviter sees the email address the person asking signed in with
+
+Decided 10 Nov 2026 in step 3f. Adds to D412.
+
+- "Jess wants to join your plan" shows "Signed in as jess@example.com" under the name. A name is whatever the person asking types, so someone with a forwarded link could call themselves Jess; the address is the one thing they can't choose.
+- The person asking is told before they ask: "Tom will see this name and the email address you signed in with, then choose whether to let you in."
+- Only the plan's owner gets it, only while the request waits for their answer, and never in a log or an error: every refusal is a short code.
+
+Test: `23-invite-and-join.test.sql`, `apps/web/e2e/sharing.spec.ts` test 3 (the stranger's address shows, not Jess's).
+
+Why: the owner's rule that a forwarded link gets nothing until allowed only helps if the owner can tell who's asking.
+
+### D418. Shared pay someone else added can be claimed: "This is my pay" (D314)
+
+Decided 10 Nov 2026 in step 3f, as the owner asked: decide and explain plainly. Replaces D349.
+
+- **What it means.** When Tom types Jess's pay into the joint account before she joins, PrePenny records it as Tom's pay, because he added it (D303). Then Jess, with "Can view only", can't type its real amount (D311), and only Tom could add overtime to it. Until now she had to remove it and add it again, which "Can view only" can't do.
+- **Decided: yes.** On a shared payment that's Pay or Benefits and someone else's, the edit sheet says "Tom added this as their pay." with "This is my pay". One tap makes it hers, for every payment of it, past and future. Then she can change it, even with "Can view only", and add her overtime or a missed shift to it.
+- **When it can't:** while the other person has overtime, a missed shift or their job linked to it, which only they can take off ("Tom has overtime or job details on it, so it can't be made yours. Ask Tom to take them off first."). Never "From Jess", rent or anything that isn't pay, and never anything private.
+- **Anyone in the plan can claim it, with either role,** because the person whose pay it is should be able to look after it. A claim made by mistake can be claimed back the same way. It's an edit like any other, so it's in the history for Activity (step 3g) and reaches the other phone.
+
+Test: `24-sharing-accounts.test.sql` (claiming, its refusals, and claiming back), `apps/web/e2e/sharing.spec.ts` test 2.
+
+Why: without it, a partner with "Can view only" could never look after pay typed in for them, which D311 is for.
+
+### D419. A phone that joins brings the shared plan down straight away
+
+Decided 10 Nov 2026 in step 3f. Builds PLAN.md item 33.
+
+- Asking to join nudges the owner's phones (their private channel, D339), whose look at the account (`hello`, step 3e) brings the request: "Jess wants to join your plan" opens by itself on any screen of the app within seconds, once no other sheet is open, and waits on "Share with my partner" if it's closed without an answer. Every phone also looks every minute, as before.
+- The join page, waiting, looks every 3 seconds while it's on screen, and at once on coming back to it. The moment it's allowed, the plan comes down and Home opens. In the tests it took under 15 seconds from "Allow", every time.
+- A person who closed the page finds the plan at their next sign-in or opening of PrePenny, as before.
+
+Test: `apps/web/e2e/sharing.spec.ts` test 1.
+
+Why: item 33.
+
+### D420. Names: what each person is called in the plan
+
+Decided 10 Nov 2026 in step 3f. Replaces D377's "until nicknames can be set".
+
+- The inviter types "Your name, as your partner will see it" when making the invite, and the person joining types "Your name, as Tom will see it" when asking. A first name or nickname is enough (brief 7.2): 1 to 30 characters.
+- The name is used in "Jess wants to join your plan", "From Jess", "Changed by" and the clash messages. Someone who hasn't given one is still "Your partner".
+
+Test: `23-invite-and-join.test.sql` (a name is needed, of 30 characters at most).
+
+Why: brief 4.14's "Jess wants to join", "From Jess" and "Changed by Tom" need a name.
+
+### D421. The words, and where each screen is
+
+Decided 10 Nov 2026 in step 3f. Every sentence is in `apps/web/strings/en-GB.ts` (`share` and `join`), checked by the voice check.
+
+- **More** has "Share with my partner", "Plan together, each on your own phone".
+- **Share with my partner** (`/app/share/`): who's in the plan, the shared accounts with "Choose shared accounts", and "Invite your partner". Signed out: "Sign in first, so your plan is kept in your account. Then you can share it." The example plan can't be shared.
+- **Choose shared accounts** (`/app/share/accounts/`): a tick box for each of the person's own private accounts, "Already shared" under the others, and a sheet that asks first.
+- **The join page** (`/join/#…`), outside the app's own frame, like the sign-in page.
+- **"Jess wants to join your plan"**, as a sheet that opens by itself and as a card on Share with my partner.
+- Not this step: changing someone's role, leaving, keeping a copy, and an Activity list (step 3g, D425).
+
+Why: the owner's instruction to show every new screen's and email's words.
+
+### D422. How step 3f is tested
+
+Decided 10 Nov 2026 in step 3f.
+
+- `supabase/tests/database/23-invite-and-join.test.sql` (77 checks) and `24-sharing-accounts.test.sql` (43 checks), on a new fixture, `tests.make_jess_alone()`: Jess's plan before anyone joins, every account private to her as the phone makes it, with everything that can be on one. Tom and Alex join, or try to, through the server's own steps, as their phones would.
+- `apps/web/e2e/sharing.spec.ts`, three tests with two people on two phones, at 320px and 360px in light and dark, with axe, against the local Supabase: by link with "Can edit", by email with "Can view only", and a forwarded link with "Don't allow" and a plan of one's own.
+- The other tests' one change: the database check of which functions a person can use lists the new ones (`00-every-table.test.sql`).
+
+Why: the owner's list of what the tests must prove.
+
+### D423. Smaller choices in step 3f
+
+Decided 10 Nov 2026 in step 3f.
+
+- An invite opened before signing in is kept on the phone, and signing in brings the person back to it, even through the sign-in email's link.
+- Answering a request on one phone hides it there at once; the owner's other phones stop showing it at their next look.
+- The sheet's "Close" without an answer leaves the request on Share with my partner rather than opening it again.
+- Screenshots are in `docs/screens/3f`.
+
+Why: each follows from the owner's instructions where they didn't say exactly.
+
+### D424. Removing the two test accounts until "Delete my account"
+
+Decided 10 Nov 2026 in step 3f, from the owner's instruction for safe steps until step 3h.
+
+- README.md, "H. Step 3f", has an SQL query for Supabase's SQL Editor that removes two named accounts and everything of theirs: their plans first (Supabase can't remove an account whose plan is there, PLAN.md item 50), then the accounts. It refuses to do anything unless it finds exactly the two addresses typed, and says what it removed in counts only.
+- Tried on this computer on the two test people the end-to-end tests made, and on a person outside it, who was left untouched.
+
+Why: the owner's instruction.
+
+### D425. Left for later
+
+Decided 10 Nov 2026 in step 3f. Added to `PLAN.md`.
+
+- Changing someone's role, leaving the plan with or without a copy (D53), and making a shared account private again: step 3g.
+- Money kept as "From Jess" in a shared account when its private account is shared later: the two halves would be better as one move between two shared accounts; for now it's refused with plain words (D413).
+- An Activity list, and "Changed by Tom" on each payment: step 3g.
+
+Why: the owner's plan for step 3g, and each needs leaving or Activity to be right.

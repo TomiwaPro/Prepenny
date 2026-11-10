@@ -15,6 +15,7 @@ import {
   type PaymentType,
 } from '@prepenny/engine';
 import { type RefObject, useId, useMemo, useRef, useState } from 'react';
+import { myName, useSharedPlan } from '../data/shared-plan.ts';
 import { holidaysFor } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import {
@@ -27,6 +28,7 @@ import {
   typeFor,
   type WhenForm,
 } from '../lib/new-payment.ts';
+import { addPaymentCommand } from '../lib/private-transfer.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
@@ -99,6 +101,10 @@ function PaymentFields({
   readonly preset: PaymentPreset;
 }) {
   const { makeChange, loaded } = usePlanActions();
+  const shared = useSharedPlan(
+    loaded !== null && !loaded.plan.isExample ? loaded.plan.id : null,
+    loaded?.version ?? 0,
+  );
   const id = useId();
   const today = view.today;
   const first = view.accounts.find((one) => one.id === view.homeAccountId) ?? view.accounts[0];
@@ -172,10 +178,15 @@ function PaymentFields({
     }
     setErrors({});
     setBusy(true);
-    const outcome = await makeChange(
-      { kind: 'add-payment', series: { ...built.series, id: newId() }, madeAt: timeNow() },
-      strings.undo.added(built.series.name),
+    // Money between a private account and a shared one is two linked halves (D16, step 3f).
+    const command = addPaymentCommand(
+      { ...built.series, id: newId() },
+      timeNow(),
+      shared === null ? null : { sharedAccounts: shared.sharedAccounts, myName: myName(shared) },
+      newId(),
+      (goalId) => view.goals.find((goal) => goal.id === goalId)?.accountId,
     );
+    const outcome = await makeChange(command, strings.undo.added(built.series.name));
     setBusy(false);
     if (outcome.ok) {
       onDone();

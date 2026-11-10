@@ -509,3 +509,62 @@ describe('a shared plan', () => {
     expect(writesFor(tomsPlan, { planId: PLAN, personId: TOM }, tom, undefined)).toEqual([]);
   });
 });
+
+describe('step 3f: whose pay, once it has been claimed (D418)', () => {
+  it('reads it from a series still there, not from one removed before its account was shared', () => {
+    const series: Series = {
+      id: 'pay-later',
+      accountId: 'joint',
+      name: 'Pay',
+      direction: 'in',
+      type: 'pay',
+      amount: 180000,
+      start: '2026-12-01',
+      schedule: { kind: 'monthly', every: 1, on: { kind: 'day', day: 1 } },
+      end: { kind: 'never' },
+      holidayRule: 'keep',
+      isEstimate: false,
+      familyId: 'pay',
+      familyCreatedAt: '2026-10-25T09:00:00Z',
+      splitFrom: 'pay',
+      firstNumber: 1,
+    };
+    const row = (id: string, privateTo: string | null, deleted: boolean, paidTo: string) =>
+      mirrorRowOf('series', {
+        id,
+        version: 2,
+        seq: 1,
+        private_to: privateTo,
+        deleted,
+        family_id: 'pay',
+        paid_to: paidTo,
+      });
+    // The removed series comes first, as it may on a phone.
+    const mirror = new Map(
+      [
+        row('pay', JESS, true, JESS),
+        row('pay-later', null, false, TOM),
+        mirrorRowOf('accounts', {
+          id: 'joint',
+          version: 1,
+          seq: 1,
+          private_to: null,
+          deleted: false,
+        }),
+      ].map((one) => [`${one.table}|${one.id}`, one]),
+    );
+    const wanted = rowsOf(
+      {
+        accounts: [
+          { id: 'joint', name: 'Joint', kind: 'joint', overdraftLimit: 0, warningLevel: 0 },
+        ],
+        balanceUpdates: [],
+        series: [series],
+      },
+      { planId: PLAN, personId: JESS },
+      mirror,
+      undefined,
+    );
+    expect(wanted.get('series|pay-later')?.values.paid_to).toBe(TOM);
+  });
+});

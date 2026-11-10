@@ -87,7 +87,9 @@ select is_empty(
 -- four steps the phone calls and what they call in turn (D324): since step
 -- 3d, the server's time and the notice for a change a newer one replaced.
 -- Step 3e adds the phone's look at its sign-in, the signed-in devices and
--- the backup email, in the Data API's part only.
+-- the backup email, in the Data API's part only. Step 3f adds invites,
+-- joining, sharing accounts and claiming pay, and the two marks the
+-- series check reads.
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
@@ -97,7 +99,10 @@ select set_eq(
     'server_time', 'tell_clashes', 'save_edit', 'plan_changes', 'start_plan', 'remove_plan',
     'hello', 'my_devices', 'end_device', 'end_other_devices', 'backup_email', 'add_backup_email',
     'confirm_backup_email', 'remove_backup_email', 'send_get_in_code', 'stop_get_back_in',
-    'stop_get_back_in_with_link'],
+    'stop_get_back_in_with_link',
+    'sharing_now', 'claiming_now',
+    'make_invite', 'cancel_invite', 'look_at_invite', 'ask_to_join', 'answer_join', 'sharing',
+    'share_accounts', 'claim_pay'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -108,7 +113,9 @@ select set_eq(
   array['save_edit', 'plan_changes', 'start_plan', 'remove_plan',
     'hello', 'my_devices', 'end_device', 'end_other_devices', 'backup_email', 'add_backup_email',
     'confirm_backup_email', 'remove_backup_email', 'send_get_in_code', 'stop_get_back_in',
-    'stop_get_back_in_with_link'],
+    'stop_get_back_in_with_link',
+    'make_invite', 'cancel_invite', 'look_at_invite', 'ask_to_join', 'answer_join', 'sharing',
+    'share_accounts', 'claim_pay'],
   'The Data API''s part holds only the steps the phone calls'
 );
 

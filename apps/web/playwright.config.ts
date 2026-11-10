@@ -15,7 +15,7 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
  * getting back in with a 24-hour wait (step 3e hardening).
  */
 const SIGN_IN_TESTS =
-  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery)\.spec\.ts$/;
+  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing)\.spec\.ts$/;
 const port = 4173;
 /**
  * A pull request's preview on Cloudflare, tried for real by the Deploy
