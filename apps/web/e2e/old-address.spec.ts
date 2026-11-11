@@ -9,9 +9,13 @@
 // Cloudflare: Chrome only ever opens an address ending .dev over https, and
 // newer versions turn an http one into https before asking (step 3f-2's
 // first ready run failed on GitHub that way, D439).
-// prepenny.co.uk itself is never reached: the test answers for it where it
-// can, and where a browser follows a move from the server, which a test
-// can't answer for, it checks the browser asked for the right page there.
+// prepenny.co.uk itself is never reached: the browser is told it doesn't
+// exist, so the tests never touch the live site from any computer. The test
+// answers for it where it can, and where a browser follows a move from the
+// server, which a test can't answer for, it checks the browser asked for
+// the right page there. (GitHub's computers can reach the live site: before
+// this, the browser opened it there, and the live app's own next page was
+// taken for the move, D439.)
 // A browser keeps what follows a "#" across such a move, by the web's own
 // rules; the app's own move keeps it too (test/unit/sharing.test.ts).
 
@@ -22,6 +26,7 @@ import { noSidewaysScroll } from './journeys.ts';
 import { noAxeProblems } from './setup.ts';
 
 const OLD = 'prepenny.prepenny.workers.dev';
+const LIVE = 'prepenny.co.uk';
 const PREVIEW = 'pr-31-prepenny.prepenny.workers.dev';
 const PORT = 4174;
 const SECRET = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEF';
@@ -44,7 +49,9 @@ test.use({
       // As above, for the browser itself: Chrome never lets a .dev address
       // open with a certificate it doesn't otherwise know.
       '--ignore-certificate-errors',
-      `--host-resolver-rules=MAP ${OLD} 127.0.0.1, MAP ${PREVIEW} 127.0.0.1`,
+      // The old address and a preview are this computer; prepenny.co.uk
+      // doesn't exist, so the live site is never opened.
+      `--host-resolver-rules=MAP ${OLD} 127.0.0.1, MAP ${PREVIEW} 127.0.0.1, MAP ${LIVE} ~NOTFOUND`,
       '--no-proxy-server',
       // A page the test answers for counts as from outside this computer, so
       // Chromium would refuse it this computer's files. Only in this test.
