@@ -11,13 +11,15 @@
 --   plan and the invite exactly as they were;
 -- - nobody can move someone else's plan: only the person who asked, only
 --   once it's allowed, and Tom's "Allow" moves nothing itself;
+-- - nobody learns anything about Tom's plan from the link, not even its bank
+--   holidays, until he taps Allow, and then only the person he let in (D439);
 -- - a person never ends up in two plans;
 -- - refusals are short codes: no amount, name, note or email address.
 
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(59);
+select plan(62);
 
 select tests.make_jess_alone();
 create temporary table kept (name text primary key, value text);
@@ -108,17 +110,32 @@ values (tests.id('tom-rent'), tests.id('tom-plan'), tests.id('tom-joint'), 'Rent
 select tests.as_person('tom');
 insert into kept select 'link', public.make_invite(tests.id('tom-plan'), 'editor', 'Tom', null) ->> 'token';
 
+-- Mo, a stranger with a plan of her own and other bank holidays, who is
+-- forwarded the link.
+select tests.as_test();
+select tests.make_person('mo');
+select tests.as_person('mo');
+select public.start_plan(tests.id('mo-plan'), 'northern-ireland');
+
 -- ---------------------------------------------------------------------------
--- Asking: told what comes with her, and what the bank holidays change.
+-- Asking: told what comes with her, and nothing about Tom's plan itself.
 
 select tests.as_person('jess');
 select is(public.look_at_invite((select value from kept where name = 'link')) - 'expires_at' - 'now',
-  jsonb_build_object('state', 'open', 'role', 'editor', 'inviter', 'Tom', 'brings', true,
-    'nation', 'scotland', 'own_nation', 'england-and-wales'),
-  'Jess opens the link: she can ask, her plan comes with her, and his plan uses Scotland''s bank holidays');
+  jsonb_build_object('state', 'open', 'role', 'editor', 'inviter', 'Tom', 'brings', true),
+  'Jess opens the link: she can ask, and her plan comes with her, but she''s told nothing about Tom''s plan, not even its bank holidays');
+select tests.as_person('mo');
+select is(public.look_at_invite((select value from kept where name = 'link')) - 'expires_at' - 'now',
+  jsonb_build_object('state', 'open', 'role', 'editor', 'inviter', 'Tom', 'brings', true),
+  'Nor is Mo, a stranger with a forwarded link and a plan of her own');
+select tests.as_person('jess');
 select is(public.ask_to_join((select value from kept where name = 'link'), 'Jess') ->> 'state', 'waiting',
   'She asks to join');
 insert into kept select 'invite', public.look_at_invite((select value from kept where name = 'link')) ->> 'invite';
+select is(public.look_at_invite((select value from kept where name = 'link')) - 'expires_at' - 'now',
+  jsonb_build_object('state', 'waiting', 'role', 'editor', 'inviter', 'Tom', 'brings', true,
+    'invite', (select value from kept where name = 'invite')),
+  'While she waits for Tom, she''s still told nothing about his plan');
 select is(pg_temp.refusal(format($$ select public.join_with_my_plan(%L, 'scotland', gen_random_uuid(),
     '2026-11-10T10:00:00Z') $$, (select value from kept where name = 'invite'))), 'waiting',
   'Before Tom answers, her plan can''t move');
@@ -135,8 +152,15 @@ select tests.as_person('jess');
 select is(public.hello() -> 'joining', jsonb_build_array(jsonb_build_object(
     'invite', (select value from kept where name = 'invite'), 'inviter', 'Tom')),
   'Her phones are told she''s been let in, to finish joining on any screen');
-select is(public.look_at_my_invite((select value::uuid from kept where name = 'invite')) ->> 'state', 'allowed',
-  'and can look at the invite by its id, with no link to hand');
+select is(public.look_at_my_invite((select value::uuid from kept where name = 'invite')) - 'expires_at' - 'now',
+  jsonb_build_object('state', 'allowed', 'role', 'editor', 'inviter', 'Tom', 'brings', true,
+    'invite', (select value from kept where name = 'invite'),
+    'nation', 'scotland', 'own_nation', 'england-and-wales'),
+  'and can look at the invite by its id, with no link to hand: only now, let in, is she told his plan uses Scotland''s bank holidays and hers England and Wales''s');
+select tests.as_person('mo');
+select is(public.look_at_invite((select value from kept where name = 'link')) - 'expires_at' - 'now',
+  jsonb_build_object('state', 'used', 'role', 'editor', 'inviter', null),
+  'Mo, with the forwarded link, still learns nothing about Tom''s plan, nor even whose it is');
 select tests.as_person('tom');
 select is(public.look_at_my_invite((select value::uuid from kept where name = 'invite')) ->> 'state', 'not-found',
   'Nobody but her can look at it that way');

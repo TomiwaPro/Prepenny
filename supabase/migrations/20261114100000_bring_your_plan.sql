@@ -85,10 +85,13 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- What an invite is, for the signed-in person looking: as in step 3f, with
--- what comes with them. For someone with a plan they can bring: `brings`,
--- and the bank holidays of both plans (`nation` the inviter's, `own_nation`
--- theirs), so they're told before they ask what joining changes (D426). The
--- invite's own id goes only to the person who asked with it.
+-- what comes with them. For someone with a plan they can bring: `brings`.
+-- Only once the owner has let them in (`allowed`, which only the person who
+-- asked ever sees), the bank holidays of both plans (`nation` the
+-- inviter's, `own_nation` theirs), so they're told what joining changes
+-- before their plan comes (D426). Before that, nothing about the plan
+-- itself: someone with a forwarded link sees only the invite (D439).
+-- The invite's own id goes only to the person who asked with it.
 create function app.invite_look(found_one public.invites) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
@@ -118,7 +121,8 @@ begin
           'member', 'full') then app.owner_name(found_one.plan_id) end,
       'expires_at', app.utc_words(found_one.expires_at), 'now', app.server_time())
     || case when found_one.asked_by = me then jsonb_build_object('invite', found_one.id) else '{}'::jsonb end
-    || case when bring is null then '{}'::jsonb else jsonb_build_object('brings', true,
+    || case when bring is null then '{}'::jsonb else jsonb_build_object('brings', true) end
+    || case when bring is null or state <> 'allowed' then '{}'::jsonb else jsonb_build_object(
       'nation', (select p.nation from public.plans p where p.id = found_one.plan_id),
       'own_nation', (select p.nation from public.plans p where p.id = bring)) end;
 end;

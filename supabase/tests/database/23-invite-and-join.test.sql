@@ -239,9 +239,8 @@ insert into kept select 'alex-6', public.make_invite(tests.id('alex-plan'), 'edi
 select tests.as_person('priya');
 select public.start_plan(tests.id('priya-plan'), null);
 select is(public.look_at_invite((select value from kept where name = 'alex-6')) - 'expires_at' - 'now',
-  jsonb_build_object('state', 'open', 'role', 'editor', 'inviter', 'Alex', 'brings', true,
-    'nation', 'england-and-wales', 'own_nation', 'england-and-wales'),
-  'Priya, who has a plan of her own with nobody else in it, can ask, and is told it comes with her');
+  jsonb_build_object('state', 'open', 'role', 'editor', 'inviter', 'Alex', 'brings', true),
+  'Priya, who has a plan of her own with nobody else in it, can ask, and is told it comes with her, but nothing about Alex''s plan until he lets her in (D439)');
 select tests.as_person('tom');
 select is(public.look_at_invite((select value from kept where name = 'alex-6')) ->> 'state', 'has-a-plan',
   'Tom, who is in Jess''s plan, is told he can''t join another');
