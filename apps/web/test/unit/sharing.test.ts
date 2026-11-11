@@ -13,6 +13,7 @@ import {
   inviteIdFrom,
   inviteLink,
   joiningOf,
+  lookOf,
   problemOf,
   requestsOf,
   tokenFrom,
@@ -233,5 +234,34 @@ describe('finishing joining (D426)', () => {
     expect(
       derivedId('00000000-0000-0000-0000-000000000001', 'ticks', 'series-1', '2026-11-01', ''),
     ).toBe('cf3d9097-5a3a-8576-a553-461f2d754e45');
+  });
+});
+
+describe("an invite's bank holidays, only once let in (D439)", () => {
+  const regions = { brings: true, nation: 'scotland', own_nation: 'england-and-wales' };
+
+  it('knows a plan comes along before Allow, and never the bank holidays, even if sent', () => {
+    for (const state of ['open', 'waiting'] as const) {
+      const look = lookOf({ state, role: 'editor', inviter: 'Jess', ...regions });
+      expect(look.brings).toBe(true);
+      expect(look.holidays).toBeNull();
+    }
+  });
+
+  it("gives both plans' bank holidays once allowed", () => {
+    const look = lookOf({
+      state: 'allowed',
+      role: 'editor',
+      inviter: 'Jess',
+      invite: 'x',
+      ...regions,
+    });
+    expect(look.holidays).toEqual({ nation: 'scotland', ownNation: 'england-and-wales' });
+  });
+
+  it('has nothing to bring, and no bank holidays, for someone with no plan of their own', () => {
+    const look = lookOf({ state: 'allowed', role: 'editor', inviter: 'Jess', invite: 'x' });
+    expect(look.brings).toBe(false);
+    expect(look.holidays).toBeNull();
   });
 });

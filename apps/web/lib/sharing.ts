@@ -242,16 +242,20 @@ export interface InviteLook {
   readonly expiresAt: string | null;
   /** The invite's own id, given only to the person who asked with it. */
   readonly invite: string | null;
+  /** The person has a plan of their own, alone in it, which comes with them (D426). */
+  readonly brings: boolean;
   /**
-   * The person has a plan of their own, alone in it, which comes with them
-   * (D426), with the bank holidays of both plans: the inviter's, and theirs.
+   * Only once the inviter has let them in, with a plan that comes: the bank
+   * holidays of both plans, the inviter's and theirs. Before that, nothing
+   * about the inviter's plan itself (D439).
    */
-  readonly brings: { readonly nation: Nation; readonly ownNation: Nation } | null;
+  readonly holidays: { readonly nation: Nation; readonly ownNation: Nation } | null;
 }
 
 const NATION_NAMES: readonly unknown[] = ['england-and-wales', 'scotland', 'northern-ireland'];
 
-function lookOf(value: {
+/** What the server says about an invite, as the join page reads it. */
+export function lookOf(value: {
   state?: unknown;
   role?: unknown;
   inviter?: unknown;
@@ -270,7 +274,9 @@ function lookOf(value: {
     inviter: typeof value.inviter === 'string' ? value.inviter : null,
     expiresAt: typeof value.expires_at === 'string' ? value.expires_at : null,
     invite: typeof value.invite === 'string' ? value.invite : null,
-    brings:
+    brings: value.brings === true,
+    holidays:
+      state === 'allowed' &&
       value.brings === true &&
       NATION_NAMES.includes(value.nation) &&
       NATION_NAMES.includes(value.own_nation)

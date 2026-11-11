@@ -14,8 +14,10 @@
 //    already in a shared plan is told they can't join another (D427).
 // 4. Step 3f-2 (D426): Sam, with a plan of his own on other bank holidays,
 //    joins Jess's and keeps every account, private to him: told before he
-//    asks, brought in once she allows it, from the join page or from "Finish
-//    joining" on Home, and Jess sees none of it.
+//    asks that his plan comes, but nothing about hers, not even its bank
+//    holidays, until she allows it (D439); then told what they change, and
+//    brought in from the join page or from "Finish joining" on Home, and
+//    Jess sees none of it.
 
 import { type Browser, expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
@@ -492,14 +494,28 @@ for (const colorScheme of ['light', 'dark'] as const) {
         `select plan_id from public.plan_members where person_id = ${quoted(samId)}`,
       );
 
-      // Before he asks, he's told what comes with him, and what the bank holidays change.
+      // Before he asks, he's told what comes with him, and nothing about
+      // Jess's plan itself, not even its bank holidays (D439): neither on the
+      // page nor in what the server sends his phone.
+      const looked = sam.page.waitForResponse((response) =>
+        response.url().includes('/rest/v1/rpc/look_at_invite'),
+      );
       await sam.page.goto(link);
       await expect(sam.page.getByTestId('join-message')).toHaveText(j.invitedBy('Jess'));
       await expect(sam.page.getByTestId('join-brings')).toHaveText(j.bringsLine('Jess'));
       await expect(sam.page.getByText(j.bringsPrivate('Jess'))).toBeVisible();
-      await expect(sam.page.getByTestId('join-holidays')).toHaveText(
-        j.nationDiffers('Jess', 'Scotland', 'England and Wales'),
-      );
+      await expect(sam.page.getByTestId('join-holidays')).toHaveCount(0);
+      await expect(sam.page.getByText(/Scotland|England and Wales/)).toHaveCount(0);
+      const firstLook = (await (await looked).json()) as Record<string, unknown>;
+      expect(Object.keys(firstLook).sort()).toEqual([
+        'brings',
+        'expires_at',
+        'inviter',
+        'now',
+        'role',
+        'state',
+      ]);
+      expect(firstLook).toMatchObject({ state: 'open', inviter: 'Jess', brings: true });
       await noAxeProblems(sam.page);
       await noSidewaysScroll(sam.page);
       if (shoots(info, colorScheme)) {
@@ -514,6 +530,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(sam.page, j.nameLabel('Jess')).fill('Sam');
       await sam.page.getByRole('button', { name: j.ask }).click();
       await expect(sam.page.getByTestId('join-message')).toHaveText(j.waiting('Jess'));
+      // Still nothing about her plan while he waits.
+      await expect(sam.page.getByTestId('join-holidays')).toHaveCount(0);
+      await expect(sam.page.getByText(/Scotland|England and Wales/)).toHaveCount(0);
       // In light, he goes back to his plan meanwhile, and finishes from Home;
       // in dark, he keeps the join page open.
       const fromHome = colorScheme === 'light';
@@ -548,8 +567,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await card.getByRole('link', { name: strings.joining.finish }).click();
         await expect(sam.page).toHaveURL(/\/join\/$/);
       }
-      // The bank holidays differ, so he's told again, and chooses.
-      await expect(sam.page.getByTestId('join-holidays')).toBeVisible({ timeout: 20_000 });
+      // Only now he's let in is he told her plan's bank holidays. They
+      // differ from his, so he's told what that changes, and chooses.
+      await expect(sam.page.getByTestId('join-holidays')).toHaveText(
+        j.nationDiffers('Jess', 'Scotland', 'England and Wales'),
+        { timeout: 20_000 },
+      );
+      await expect(sam.page.getByText(j.letYouIn('Jess'), { exact: true })).toBeVisible();
       const bring = sam.page.getByRole('button', { name: j.bringAndJoin });
       await expect(bring).toBeVisible();
       await noAxeProblems(sam.page);

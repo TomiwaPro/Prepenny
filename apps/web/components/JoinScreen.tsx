@@ -14,10 +14,13 @@
 // down to this phone (PLAN.md item 33).
 //
 // Someone with a plan of their own brings it with them (step 3f-2, D426):
-// before asking they're told it comes, private to them, and what the other
-// plan's bank holidays change. Once allowed, this phone sends everything it
-// has to the account, then asks the server to move the plan in one step,
-// and the shared plan, with theirs in it, comes down. Opened as
+// before asking they're told it comes, private to them. Nothing about the
+// other plan itself shows until they're let in, not even its bank holidays
+// (D439). Once allowed, with the same bank holidays, this phone sends
+// everything it has to the account, then asks the server to move the plan
+// in one step, and the shared plan, with theirs in it, comes down. With
+// different ones, they're told first what that changes, and choose "Bring
+// my plan and join". Opened as
 // "/join/#invite=…" from "Finish joining", it finishes an invite already
 // allowed, with no link to hand.
 
@@ -155,7 +158,7 @@ export function JoinScreen() {
 
   // A plan on this phone the account hasn't been given yet: it's saved there
   // first, once, so the server knows it comes with them (D426).
-  const needsSaving = state === 'open' && found?.brings === null && ownPlan;
+  const needsSaving = state === 'open' && found?.brings === false && ownPlan;
   useEffect(() => {
     if (!needsSaving || savedFor.current === saveTry) return;
     savedFor.current = saveTry;
@@ -262,15 +265,16 @@ export function JoinScreen() {
   );
 
   // Allowed, with a plan whose bank holidays don't change: it comes straight
-  // away, as they agreed when they asked. With different ones, they're told
-  // again and choose "Bring my plan and join" (D426).
+  // away, as they agreed when they asked. With different ones, only now
+  // shown, they're told what that changes and choose "Bring my plan and
+  // join" (D426, D439).
   const invite = found?.invite ?? null;
-  const brings = found?.brings ?? null;
-  const sameHolidays = brings === null || brings.nation === brings.ownNation;
+  const holidays = found?.holidays ?? null;
+  const sameHolidays = holidays === null || holidays.nation === holidays.ownNation;
   useEffect(() => {
     if (state !== 'allowed' || invite === null || !sameHolidays || bringing.kind !== 'idle') return;
-    void bring(invite, brings?.nation ?? 'england-and-wales');
-  }, [state, invite, sameHolidays, brings, bringing.kind, bring]);
+    void bring(invite, holidays?.nation ?? 'england-and-wales');
+  }, [state, invite, sameHolidays, holidays, bringing.kind, bring]);
 
   async function ask(event: FormEvent) {
     event.preventDefault();
@@ -322,11 +326,11 @@ export function JoinScreen() {
   const inviter =
     found !== null && found.inviter !== null && found.inviter !== '' ? found.inviter : t.someone;
 
-  /** "Bank holidays: Tom's plan uses Scotland, and yours uses England and Wales…", when they differ. */
+  /** "Bank holidays: Tom's plan uses Scotland, and yours uses England and Wales…", once let in, when they differ. */
   const holidaysLine =
-    brings === null || sameHolidays ? null : (
+    holidays === null || sameHolidays ? null : (
       <p className={styles.line} data-testid="join-holidays">
-        {t.nationDiffers(inviter, nations[brings.nation], nations[brings.ownNation])}
+        {t.nationDiffers(inviter, nations[holidays.nation], nations[holidays.ownNation])}
       </p>
     );
 
@@ -399,16 +403,15 @@ export function JoinScreen() {
               {t.invitedBy(inviter)}
             </p>
             <p className={styles.line}>{found.role === 'viewer' ? t.canView : t.canEdit}</p>
-            {brings === null ? (
-              <p className={styles.line}>{t.privateLine}</p>
-            ) : (
+            {found.brings ? (
               <>
                 <p className={styles.line} data-testid="join-brings">
                   {t.bringsLine(inviter)}
                 </p>
                 <p className={styles.line}>{t.bringsPrivate(inviter)}</p>
-                {holidaysLine}
               </>
+            ) : (
+              <p className={styles.line}>{t.privateLine}</p>
             )}
             <Field
               id={`${id}-name`}
@@ -464,7 +467,8 @@ export function JoinScreen() {
                   type="button"
                   className={formStyles.main}
                   onClick={() => {
-                    if (invite !== null) void bring(invite, brings?.nation ?? 'england-and-wales');
+                    if (invite !== null)
+                      void bring(invite, holidays?.nation ?? 'england-and-wales');
                   }}
                 >
                   {bringing.kind === 'idle' ? t.bringAndJoin : t.tryAgain}
