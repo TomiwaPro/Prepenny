@@ -71,10 +71,12 @@ async function expectEveryFigure(page: Page) {
     }),
   ).toBeVisible();
 
-  // Current account £267.54, "Checked today, Sun 25 Oct".
+  // Current account: about £237.54 now, after the £30.00 spending money due
+  // today, and "Your bank showed £267.54 today" (D430).
   await expect(page.getByRole('heading', { name: 'Current account' })).toBeVisible();
+  await expect(page.getByTestId('now')).toHaveText('About £237.54 now');
   await expect(page.getByTestId('balance')).toHaveText('£267.54');
-  await expect(page.getByText('Checked today, Sun 25 Oct', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('bank-showed')).toHaveText('Your bank showed £267.54 today');
 
   // Left to spend until Fri 30 Oct £30.00, with the D3 line.
   await expect(page.getByRole('heading', { name: 'Left to spend until Fri 30 Oct' })).toBeVisible();

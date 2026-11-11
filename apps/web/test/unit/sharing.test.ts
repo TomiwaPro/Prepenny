@@ -8,7 +8,17 @@ import type { NewSeries } from '@prepenny/engine';
 import { describe, expect, it } from 'vitest';
 import { namesList } from '../../components/ShareScreen.tsx';
 import { addPaymentCommand } from '../../lib/private-transfer.ts';
-import { inviteLink, problemOf, requestsOf, tokenFrom } from '../../lib/sharing.ts';
+import {
+  finishJoiningLink,
+  inviteIdFrom,
+  inviteLink,
+  joiningOf,
+  lookOf,
+  problemOf,
+  requestsOf,
+  tokenFrom,
+} from '../../lib/sharing.ts';
+import { LIVE_SITE, liveAddressFor, OLD_LIVE_HOST, siteOrigin } from '../../lib/site.ts';
 import { derivedId } from '../../lib/sync-ids.ts';
 
 const move: NewSeries = {
@@ -159,5 +169,99 @@ describe('private link ids', () => {
     expect(derivedId('0190a3d0-0000-7000-8000-000000000001', 'family-debt', 'abc')).toBe(
       '3424324e-fea7-885a-8863-d0467a5decd3',
     );
+  });
+});
+
+// Step 3f-2: joining with a plan of one's own (D426) and the live address (D428).
+
+describe('the address an invite link uses (D428)', () => {
+  it('is always prepenny.co.uk on the live app, even with the old address open', () => {
+    const at = (origin: string) => ({ origin, hostname: new URL(origin).hostname });
+    expect(siteOrigin(at('https://prepenny.prepenny.workers.dev'))).toBe(LIVE_SITE);
+    expect(siteOrigin(at('https://prepenny.co.uk'))).toBe('https://prepenny.co.uk');
+    expect(
+      inviteLink('abcdefghijklmnopqrstuvwxyz012345', siteOrigin(at(`https://${OLD_LIVE_HOST}`))),
+    ).toBe('https://prepenny.co.uk/join/#abcdefghijklmnopqrstuvwxyz012345');
+  });
+
+  it("is a preview's own address on a preview, and this computer's in the tests", () => {
+    const at = (origin: string) => ({ origin, hostname: new URL(origin).hostname });
+    expect(siteOrigin(at('https://pr-31-prepenny.prepenny.workers.dev'))).toBe(
+      'https://pr-31-prepenny.prepenny.workers.dev',
+    );
+    expect(siteOrigin(at('http://127.0.0.1:4173'))).toBe('http://127.0.0.1:4173');
+  });
+
+  it('sends a page at the old address to the same page on prepenny.co.uk, with what follows the "#"', () => {
+    const page = (hostname: string) => ({
+      hostname,
+      pathname: '/join/',
+      search: '?from=x',
+      hash: '#secret',
+    });
+    expect(liveAddressFor(page(OLD_LIVE_HOST))).toBe('https://prepenny.co.uk/join/?from=x#secret');
+    expect(liveAddressFor(page('prepenny.co.uk'))).toBeNull();
+    expect(liveAddressFor(page('pr-31-prepenny.prepenny.workers.dev'))).toBeNull();
+    expect(liveAddressFor(page('127.0.0.1'))).toBeNull();
+  });
+});
+
+describe('finishing joining (D426)', () => {
+  it('opens the join page with the invite after a "#", and reads it back', () => {
+    const invite = '0190a3d0-0000-7000-8000-000000000001';
+    expect(finishJoiningLink(invite)).toBe(`/join/#invite=${invite}`);
+    expect(inviteIdFrom(`#invite=${invite}`)).toBe(invite);
+    expect(inviteIdFrom('#abcdefghijklmnopqrstuvwxyz012345')).toBeNull();
+    expect(tokenFrom(`#invite=${invite}`)).toBeNull();
+  });
+
+  it('turns the bank holidays refusal into its own problem', () => {
+    expect(problemOf({ message: 'nation-changed' })).toEqual({ kind: 'nation-changed' });
+    expect(problemOf({ message: 'allowed' })).toEqual({ kind: 'invite', state: 'allowed' });
+    // A plan that couldn't move says so, never what was in it.
+    expect(problemOf({ message: 'bad-record' })).toEqual({ kind: 'could-not-move' });
+    expect(problemOf({ message: 'family-broken' })).toEqual({ kind: 'could-not-move' });
+  });
+
+  it('reads who was let in from the server, and nothing malformed', () => {
+    expect(joiningOf([{ invite: 'a', inviter: 'Jess' }, { invite: 1 }, null])).toEqual([
+      { invite: 'a', inviter: 'Jess' },
+    ]);
+    expect(joiningOf('nothing')).toEqual([]);
+  });
+
+  it("works out a row's id as the server does when it moves a plan (25-bring-your-plan.test.sql)", () => {
+    expect(
+      derivedId('00000000-0000-0000-0000-000000000001', 'ticks', 'series-1', '2026-11-01', ''),
+    ).toBe('cf3d9097-5a3a-8576-a553-461f2d754e45');
+  });
+});
+
+describe("an invite's bank holidays, only once let in (D439)", () => {
+  const regions = { brings: true, nation: 'scotland', own_nation: 'england-and-wales' };
+
+  it('knows a plan comes along before Allow, and never the bank holidays, even if sent', () => {
+    for (const state of ['open', 'waiting'] as const) {
+      const look = lookOf({ state, role: 'editor', inviter: 'Jess', ...regions });
+      expect(look.brings).toBe(true);
+      expect(look.holidays).toBeNull();
+    }
+  });
+
+  it("gives both plans' bank holidays once allowed", () => {
+    const look = lookOf({
+      state: 'allowed',
+      role: 'editor',
+      inviter: 'Jess',
+      invite: 'x',
+      ...regions,
+    });
+    expect(look.holidays).toEqual({ nation: 'scotland', ownNation: 'england-and-wales' });
+  });
+
+  it('has nothing to bring, and no bank holidays, for someone with no plan of their own', () => {
+    const look = lookOf({ state: 'allowed', role: 'editor', inviter: 'Jess', invite: 'x' });
+    expect(look.brings).toBe(false);
+    expect(look.holidays).toBeNull();
   });
 });

@@ -26,9 +26,19 @@ export interface HomeView {
   readonly lookAheadTo: string;
   readonly account: {
     readonly name: string;
+    /** What the bank showed at the last balance check, and the day it was checked. */
     readonly balance: Pence;
     readonly checkedOn: string;
     readonly warningLevel: Pence;
+    /**
+     * About what's in the account now (step 3f-2, D430): the balance at the
+     * end of today by brief 5.5, from the last check with every payment up to
+     * and including today, Not ticked yet included. The same figure Update
+     * balance expects (D46).
+     */
+    readonly now: Pence;
+    /** True when something has moved money in or out since the check, so `now` differs from what the bank showed. */
+    readonly movedSinceCheck: boolean;
   };
   /** Null when there's no main pay (D112). */
   readonly leftToSpend: {
@@ -218,6 +228,8 @@ export function workOutHome(records: PlanRecords, today: string): HomeView {
       balance: account.start.balance,
       checkedOn: account.start.checkedOn,
       warningLevel: account.account.warningLevel,
+      now: account.expected,
+      movedSinceCheck: account.rows.some((row) => row.date <= today && row.change !== 0),
     },
     leftToSpend: leftToSpendOf(account),
     mainPayEnded: plan.mainPayEnded,

@@ -1,0 +1,30 @@
+// A second copy of the app on this computer for e2e/old-address.spec.ts
+// (step 3f-2, D428): the same files and the same few lines in front of them
+// (../cloudflare/worker.ts), on port 4174, with no custom domain listed. Run
+// locally, Wrangler gives every request the listed domain's address, so the
+// main copy (../wrangler.jsonc) can't show what Cloudflare does at the old
+// address; with none listed, each request keeps the address the browser
+// asked for, as on Cloudflare. The test runs it over https (see
+// ../playwright.config.ts), as Chrome only ever opens a .dev address over
+// https (D439).
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "prepenny-old-address-test",
+  "main": "../cloudflare/worker.ts",
+  "compatibility_date": "2026-10-19",
+  "assets": {
+    "directory": "../out",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/*",
+      "!/_next/*",
+      "!/version.json",
+      "!/sw.js",
+      "!/icons/*",
+      "!/engine-worker-*",
+      "!/manifest.webmanifest"
+    ],
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

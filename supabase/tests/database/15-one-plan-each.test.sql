@@ -1,6 +1,6 @@
 -- Step 3c fix (D352): a person owns one plan at most. A second plan of their
--- own is refused ("has-a-plan"), whoever asks, while being in someone else's
--- plan doesn't count. An account that already has two, from before this
+-- own is refused ("has-a-plan"), whoever asks, and since step 3f-2 so is
+-- any plan while the person is in someone else's (D427). An account that already has two, from before this
 -- rule, keeps both until the person chooses, and either can be removed.
 -- Two phones asking at the same moment are tried in e2e/your-plan.spec.ts,
 -- against the local Supabase's own Data API.
@@ -34,13 +34,13 @@ select lives_ok($$ select public.remove_plan(tests.id('alex-plan')) $$, 'He remo
 select lives_ok($$ select public.start_plan(tests.id('alex-plan-2'), null) $$,
   'and can then make another');
 
--- Being in someone else's plan doesn't count: Tom, who can edit Jess's
--- plan, makes one of his own, but not two.
+-- Being in someone else's plan counts too, since step 3f-2: a person is
+-- never in two plans (D427, replacing this file's "doesn't count").
 select tests.as_person('tom');
-select lives_ok($$ select public.start_plan(tests.id('tom-plan'), null) $$,
-  'Tom, in Jess''s plan, still makes one of his own');
+select throws_ok($$ select public.start_plan(tests.id('tom-plan'), null) $$, 'P0001', 'has-a-plan',
+  'Tom, in Jess''s plan, can''t make one of his own');
 select throws_ok($$ select public.start_plan(tests.id('tom-plan-2'), null) $$, 'P0001', 'has-a-plan',
-  'but not a second');
+  'nor a second try');
 
 -- Not even the database itself, writing for Jess, gives her a second plan.
 select tests.writing_as('jess');

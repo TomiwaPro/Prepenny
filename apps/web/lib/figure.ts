@@ -17,7 +17,13 @@ export function figureWidth(text: string): number {
   return Math.round(width * 1000) / 1000;
 }
 
-/** The CSS variable the big figures' size is worked out from. */
-export function figureStyle(text: string) {
-  return { '--figure-width': String(figureWidth(text)) } as Record<string, string>;
+/**
+ * The CSS variable the big figures' size is worked out from. `extra` is room
+ * for words beside the figure on the same line, in the figure's own em, as
+ * "About" and "now" on Home (D430).
+ */
+export function figureStyle(text: string, extra = 0) {
+  return {
+    '--figure-width': String(Math.round((figureWidth(text) + extra) * 1000) / 1000),
+  } as Record<string, string>;
 }

@@ -11,10 +11,16 @@ select plan(15);
 
 select tests.make_jess_and_tom('viewer');
 
--- Tom, who can only view Jess's plan, makes a plan of his own, and changes
--- things in it.
-select tests.as_person('tom');
-select public.start_plan(tests.id('tom-plan'), null);
+-- Tom, who can only view Jess's plan, has a plan of his own, and changes
+-- things in it. Since step 3f-2 nobody can make a plan while in another
+-- (D427), so his is one from before that rule, as an account could hold
+-- (D352): made here by the database itself, with the rule switched off.
+select tests.as_test();
+alter table public.plans disable trigger one_plan_each;
+select tests.writing_as('tom');
+insert into public.plans (id, nation) values (tests.id('tom-plan'), 'england-and-wales');
+select tests.as_test();
+alter table public.plans enable trigger one_plan_each;
 select tests.in_an_edit('tom', 'tom-plan');
 
 select throws_ok($$ insert into public.ticks (id, plan_id, series_id, original_date, payment_number, paid_on, ticked_at)

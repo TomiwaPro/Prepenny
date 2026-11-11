@@ -13,9 +13,18 @@
 // looks every few seconds, and the moment it's allowed the shared plan comes
 // down to this phone (PLAN.md item 33).
 //
-// Someone who already has a plan of their own can't join yet: what to do
-// then is the owner's question (D416), so this page says so plainly.
+// Someone with a plan of their own brings it with them (step 3f-2, D426):
+// before asking they're told it comes, private to them. Nothing about the
+// other plan itself shows until they're let in, not even its bank holidays
+// (D439). Once allowed, with the same bank holidays, this phone sends
+// everything it has to the account, then asks the server to move the plan
+// in one step, and the shared plan, with theirs in it, comes down. With
+// different ones, they're told first what that changes, and choose "Bring
+// my plan and join". Opened as
+// "/join/#invite=…" from "Finish joining", it finishes an invite already
+// allowed, with no link to hand.
 
+import type { Nation } from '@prepenny/engine';
 import Link from 'next/link';
 import {
   type FormEvent,
@@ -26,15 +35,19 @@ import {
   useRef,
   useState,
 } from 'react';
-import { connectPlan, phoneHasOwnPlan } from '../data/sync.ts';
+import { connectPlan, phoneHasOwnPlan, sendEverythingThen } from '../data/sync.ts';
 import { checkSignIn, useAccount } from '../lib/account.ts';
 import {
   askToJoin,
+  type Done,
   forgetToken,
   type InviteLook,
+  inviteIdFrom,
+  joinWithMyPlan,
   keepToken,
   keptToken,
   lookAtInvite,
+  lookAtMyInvite,
   tokenFrom,
 } from '../lib/sharing.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
@@ -45,6 +58,7 @@ import screenStyles from './Screens.module.css';
 import styles from './SignInScreen.module.css';
 
 const t = strings.join;
+const nations = strings.setup.account.nations;
 
 /** How often a waiting phone looks whether it has been let in. */
 const LOOK_EVERY_MS = 3000;
@@ -67,39 +81,65 @@ type Seen =
   | { readonly kind: 'failed' }
   | { readonly kind: 'looked'; readonly look: InviteLook };
 
+/** Which invite this page is for: a link's secret, or the id of one this person asked with. */
+type Which = { readonly token: string } | { readonly invite: string };
+
+/** Bringing the plan in, once allowed (D426). */
+type Bringing =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'busy' }
+  | { readonly kind: 'not-sent' }
+  | { readonly kind: 'failed'; readonly words: string };
+
 export function JoinScreen() {
   const account = useAccount();
   const id = useId();
   const off = signInConfig() === null;
-  const [token, setToken] = useState<string | null>(null);
+  const [which, setWhich] = useState<Which | null>(null);
   const [seen, setSeen] = useState<Seen>({ kind: 'reading' });
   const [ownPlan, setOwnPlan] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState<string | undefined>();
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const bringing = useRef(false);
+  const [bringing, setBringing] = useState<Bringing>({ kind: 'idle' });
+  const comingDown = useRef(false);
+  /** Each try at saving the phone's plan in the account first; "Try again" makes another. */
+  const [saveTry, setSaveTry] = useState(0);
+  const savedFor = useRef(-1);
 
   useEffect(() => {
     void checkSignIn();
   }, []);
 
   // The link's secret: from the address, kept while signing in, then taken
-  // out of the address so it isn't left in the browser's history.
+  // out of the address so it isn't left in the browser's history. At the old
+  // address, the move to prepenny.co.uk has already taken the whole address,
+  // "#" included (OldAddress's effect runs first, D428).
   useEffect(() => {
+    const invite = inviteIdFrom(window.location.hash);
+    if (invite !== null) {
+      window.history.replaceState(null, '', '/join/');
+      setWhich({ invite });
+      return;
+    }
     const fromLink = tokenFrom(window.location.hash);
     if (fromLink !== null) {
       keepToken(fromLink);
       window.history.replaceState(null, '', '/join/');
     }
     const found = fromLink ?? keptToken();
-    setToken(found);
     if (found === null) setSeen({ kind: 'no-link' });
+    else setWhich({ token: found });
   }, []);
 
   const look = useCallback(async () => {
-    if (token === null) return;
-    const [answer, hasOwn] = await Promise.all([lookAtInvite(token), phoneHasOwnPlan()]);
+    if (which === null) return;
+    const [answer, hasOwn] = await Promise.all([
+      'token' in which ? lookAtInvite(which.token) : lookAtMyInvite(which.invite),
+      phoneHasOwnPlan(),
+    ]);
     setOwnPlan(hasOwn);
     if (!answer.ok) {
       setSeen((now) => (now.kind === 'looked' ? now : { kind: 'failed' }));
@@ -107,13 +147,33 @@ export function JoinScreen() {
     }
     setSeen({ kind: 'looked', look: answer.value });
     if (FINISHED.includes(answer.value.state)) forgetToken();
-  }, [token]);
+  }, [which]);
 
   useEffect(() => {
-    if (account.status === 'signed-in' && token !== null) void look();
-  }, [account.status, token, look]);
+    if (account.status === 'signed-in' && which !== null) void look();
+  }, [account.status, which, look]);
 
-  const state = seen.kind === 'looked' ? seen.look.state : null;
+  const found = seen.kind === 'looked' ? seen.look : null;
+  const state = found?.state ?? null;
+
+  // A plan on this phone the account hasn't been given yet: it's saved there
+  // first, once, so the server knows it comes with them (D426).
+  const needsSaving = state === 'open' && found?.brings === false && ownPlan;
+  useEffect(() => {
+    if (!needsSaving || savedFor.current === saveTry) return;
+    savedFor.current = saveTry;
+    setSaving(true);
+    void (async () => {
+      const connection = await connectPlan();
+      // A different plan in the account: the person chooses which to keep first (D324).
+      if (connection.kind === 'choose') {
+        window.location.assign('/sign-in/?choose');
+        return;
+      }
+      await look();
+      setSaving(false);
+    })();
+  }, [needsSaving, look, saveTry]);
 
   // Waiting: looks every few seconds while on screen, and at once on coming back.
   useEffect(() => {
@@ -131,23 +191,94 @@ export function JoinScreen() {
     };
   }, [state, look]);
 
-  // Let in: the shared plan comes down to this phone straight away (item 33).
+  /** The shared plan comes down to this phone, and Home opens (item 33). */
+  const comeDown = useCallback(async () => {
+    if (comingDown.current) return;
+    comingDown.current = true;
+    const connection = await connectPlan();
+    if (connection.kind === 'brought-down' || connection.kind === 'kept') {
+      window.location.replace('/app/');
+    } else {
+      comingDown.current = false;
+    }
+  }, []);
+
+  // Let in: the shared plan comes down to this phone straight away.
   useEffect(() => {
-    if (state !== 'joined' || bringing.current) return;
-    bringing.current = true;
-    void (async () => {
-      const connection = await connectPlan();
-      if (connection.kind === 'brought-down' || connection.kind === 'kept') {
-        window.location.replace('/app/');
-      } else {
-        bringing.current = false;
+    if (state === 'joined') void comeDown();
+  }, [state, comeDown]);
+
+  /** Sends everything on this phone, then asks the server to bring the plan in (D426). */
+  const bring = useCallback(
+    async (invite: string, nation: Nation) => {
+      setBringing({ kind: 'busy' });
+      const result = await sendEverythingThen(() => joinWithMyPlan(invite, nation));
+      if (!result.sent) {
+        // The plan on this phone isn't the one in the account: the person
+        // chooses which to keep first (D324), and comes back.
+        if ((await connectPlan()).kind === 'choose') {
+          window.location.assign('/sign-in/?choose');
+          return;
+        }
+        setBringing({ kind: 'not-sent' });
+        return;
       }
-    })();
-  }, [state]);
+      const answer: Done<unknown> = result.value;
+      if (answer.ok) {
+        forgetToken();
+        // Joined: the shared plan comes down, and Home opens. If it can't come
+        // down just now, the page says they've joined, with "Go to the plan".
+        setBringing({ kind: 'idle' });
+        setSeen((now) =>
+          now.kind === 'looked' ? { kind: 'looked', look: { ...now.look, state: 'joined' } } : now,
+        );
+        return;
+      }
+      const kind = answer.problem.kind;
+      if (kind === 'nation-changed') {
+        // Told again, with the bank holidays as they are now: looked at first,
+        // so the plan is never brought on the old ones meanwhile.
+        await look();
+        setBringing({ kind: 'idle' });
+        return;
+      }
+      if (kind === 'invite' || kind === 'has-a-plan' || kind === 'full') {
+        const next: InviteLook['state'] =
+          kind === 'invite' ? answer.problem.state : kind === 'full' ? 'full' : 'has-a-plan';
+        setBringing({ kind: 'idle' });
+        setSeen((now) =>
+          now.kind === 'looked' ? { kind: 'looked', look: { ...now.look, state: next } } : now,
+        );
+        return;
+      }
+      setBringing({
+        kind: 'failed',
+        words:
+          kind === 'offline'
+            ? strings.share.offline
+            : kind === 'could-not-move'
+              ? t.couldNotMove
+              : t.couldNotLoad,
+      });
+    },
+    [look],
+  );
+
+  // Allowed, with a plan whose bank holidays don't change: it comes straight
+  // away, as they agreed when they asked. With different ones, only now
+  // shown, they're told what that changes and choose "Bring my plan and
+  // join" (D426, D439).
+  const invite = found?.invite ?? null;
+  const holidays = found?.holidays ?? null;
+  const sameHolidays = holidays === null || holidays.nation === holidays.ownNation;
+  useEffect(() => {
+    if (state !== 'allowed' || invite === null || !sameHolidays || bringing.kind !== 'idle') return;
+    void bring(invite, holidays?.nation ?? 'england-and-wales');
+  }, [state, invite, sameHolidays, holidays, bringing.kind, bring]);
 
   async function ask(event: FormEvent) {
     event.preventDefault();
-    if (busy || token === null) return;
+    if (busy || which === null || !('token' in which)) return;
     const typed = name.trim();
     const wrong =
       typed === ''
@@ -162,34 +293,46 @@ export function JoinScreen() {
       return;
     }
     setBusy(true);
-    const answer = await askToJoin(token, typed);
+    const answer = await askToJoin(which.token, typed);
     setBusy(false);
     if (answer.ok) {
       setSeen({ kind: 'looked', look: answer.value });
       return;
     }
-    const found = answer.problem;
-    if (found.kind === 'invite') {
+    const refused = answer.problem;
+    if (refused.kind === 'invite') {
       setSeen((now) =>
-        now.kind === 'looked' ? { kind: 'looked', look: { ...now.look, state: found.state } } : now,
+        now.kind === 'looked'
+          ? { kind: 'looked', look: { ...now.look, state: refused.state } }
+          : now,
       );
       return;
     }
-    if (found.kind === 'has-a-plan') {
-      setOwnPlan(true);
+    if (refused.kind === 'has-a-plan') {
+      setSeen((now) =>
+        now.kind === 'looked'
+          ? { kind: 'looked', look: { ...now.look, state: 'has-a-plan' } }
+          : now,
+      );
       return;
     }
-    if (found.kind === 'needs-name') {
+    if (refused.kind === 'needs-name') {
       setNameError(strings.share.nameError);
       return;
     }
-    setProblem(found.kind === 'offline' ? strings.share.offline : t.couldNotLoad);
+    setProblem(refused.kind === 'offline' ? strings.share.offline : t.couldNotLoad);
   }
 
   const inviter =
-    seen.kind === 'looked' && seen.look.inviter !== null && seen.look.inviter !== ''
-      ? seen.look.inviter
-      : t.someone;
+    found !== null && found.inviter !== null && found.inviter !== '' ? found.inviter : t.someone;
+
+  /** "Bank holidays: Tom's plan uses Scotland, and yours uses England and Wales…", once let in, when they differ. */
+  const holidaysLine =
+    holidays === null || sameHolidays ? null : (
+      <p className={styles.line} data-testid="join-holidays">
+        {t.nationDiffers(inviter, nations[holidays.nation], nations[holidays.ownNation])}
+      </p>
+    );
 
   function body() {
     if (off) return <p className={styles.line}>{t.off}</p>;
@@ -226,8 +369,7 @@ export function JoinScreen() {
         </>
       );
     }
-    if (seen.kind !== 'looked') return <p className={styles.line}>{t.loading}</p>;
-    const found = seen.look;
+    if (found === null) return <p className={styles.line}>{t.loading}</p>;
     const toPlan = (
       <Link className={formStyles.outlined} href="/app/">
         {t.goHome}
@@ -235,13 +377,23 @@ export function JoinScreen() {
     );
     switch (found.state) {
       case 'open':
-        if (ownPlan) {
-          return (
+        if (needsSaving) {
+          return saving ? (
+            <p className={styles.line} role="status" data-testid="join-message">
+              {t.saving}
+            </p>
+          ) : (
             <>
-              <p className={styles.line} data-testid="join-message">
-                {t.hasAPlan(inviter)}
+              <p className={styles.line} role="status" data-testid="join-message">
+                {t.notSavedYet}
               </p>
-              {toPlan}
+              <button
+                type="button"
+                className={formStyles.outlined}
+                onClick={() => setSaveTry((n) => n + 1)}
+              >
+                {t.tryAgain}
+              </button>
             </>
           );
         }
@@ -251,7 +403,16 @@ export function JoinScreen() {
               {t.invitedBy(inviter)}
             </p>
             <p className={styles.line}>{found.role === 'viewer' ? t.canView : t.canEdit}</p>
-            <p className={styles.line}>{t.privateLine}</p>
+            {found.brings ? (
+              <>
+                <p className={styles.line} data-testid="join-brings">
+                  {t.bringsLine(inviter)}
+                </p>
+                <p className={styles.line}>{t.bringsPrivate(inviter)}</p>
+              </>
+            ) : (
+              <p className={styles.line}>{t.privateLine}</p>
+            )}
             <Field
               id={`${id}-name`}
               label={t.nameLabel(inviter)}
@@ -283,6 +444,38 @@ export function JoinScreen() {
           <p className={styles.line} role="status" data-testid="join-message">
             {t.waiting(inviter)}
           </p>
+        );
+      case 'allowed':
+        return (
+          <div className={formStyles.actions}>
+            {bringing.kind === 'busy' || (sameHolidays && bringing.kind === 'idle') ? (
+              <p className={styles.line} role="status" data-testid="join-message">
+                {t.bringing(inviter)}
+              </p>
+            ) : (
+              <>
+                <p className={styles.line}>{t.letYouIn(inviter)}</p>
+                {holidaysLine}
+                <p className={styles.line} role="status" data-testid="join-message">
+                  {bringing.kind === 'not-sent'
+                    ? t.notSentYet
+                    : bringing.kind === 'failed'
+                      ? bringing.words
+                      : t.bringsLine(inviter)}
+                </p>
+                <button
+                  type="button"
+                  className={formStyles.main}
+                  onClick={() => {
+                    if (invite !== null)
+                      void bring(invite, holidays?.nation ?? 'england-and-wales');
+                  }}
+                >
+                  {bringing.kind === 'idle' ? t.bringAndJoin : t.tryAgain}
+                </button>
+              </>
+            )}
+          </div>
         );
       case 'joined':
         return (

@@ -235,12 +235,15 @@ select is((select nation from public.plans where id = tests.id('plan')), 'northe
   'So the nation is the one Tom saved last');
 
 -- Making a plan: start_plan only. Its mark lets in the one plan it makes,
--- and ends with it.
-select tests.as_person('alex');
-select throws_ok($$ insert into public.plans (id) values (tests.id('alex-straight-plan')) $$, '42501', 'use-save-edit',
-  'Alex can''t make a plan straight on the table');
-select lives_ok($$ select public.start_plan(tests.id('alex-plan'), 'scotland') $$, 'start_plan makes him one');
-select throws_ok($$ insert into public.plans (id) values (tests.id('alex-plan-2')) $$, '42501', 'use-save-edit',
+-- and ends with it. Sam is in no plan: since step 3f-2, Alex, who is in
+-- Jess's, can't make one at all (D427).
+select tests.as_test();
+select tests.make_person('sam');
+select tests.as_person('sam');
+select throws_ok($$ insert into public.plans (id) values (tests.id('sam-straight-plan')) $$, '42501', 'use-save-edit',
+  'Sam can''t make a plan straight on the table');
+select lives_ok($$ select public.start_plan(tests.id('sam-plan'), 'scotland') $$, 'start_plan makes him one');
+select throws_ok($$ insert into public.plans (id) values (tests.id('sam-plan-2')) $$, '42501', 'use-save-edit',
   'and straight after it, in the same request, any other plan of his own making is still refused');
 
 -- save_edit's mark ends with it too, so one request with two steps, as

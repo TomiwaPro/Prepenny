@@ -28,6 +28,7 @@ import {
   buildPayDetails,
   eachPaydayOf,
   firstPaydays,
+  withKind,
 } from '../../lib/setup-forms.ts';
 import { workOutSetupView } from '../../lib/setup-view.ts';
 
@@ -411,5 +412,33 @@ describe('Step 6: "Already spent" only where it can be inside the balance (D246)
       checkedOn: SUNDAY,
     });
     expect(built.ok && built.commands.map((one) => one.kind)).toEqual(['add-budget']);
+  });
+});
+
+// Step 3f-2 (D429): an account's name follows the kind chosen until the person types their own.
+describe('An account’s name and its kind', () => {
+  const names = { current: 'Current account', savings: 'Savings', joint: 'Joint account' } as const;
+  const form = blankAccount(true, 'Current account');
+
+  it('follows the kind chosen while the person hasn’t typed a name', () => {
+    expect(withKind(form, 'joint', false, names)).toMatchObject({
+      kind: 'joint',
+      name: 'Joint account',
+    });
+    expect(withKind(form, 'savings', false, names)).toMatchObject({
+      kind: 'savings',
+      name: 'Savings',
+    });
+  });
+
+  it('keeps a name the person typed, even one that is a kind’s own words', () => {
+    expect(withKind({ ...form, name: 'Bills' }, 'joint', true, names)).toMatchObject({
+      kind: 'joint',
+      name: 'Bills',
+    });
+    expect(withKind({ ...form, name: 'Savings' }, 'current', true, names)).toMatchObject({
+      kind: 'current',
+      name: 'Savings',
+    });
   });
 });

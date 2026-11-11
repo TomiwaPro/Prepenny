@@ -31,3 +31,21 @@
   border-radius: var(--radius-card);
   padding: 14px 16px;
 }
+
+/*
+ * "+ Add an account", right under the account card (D431): a small link-style
+ * button, as "See everything coming up", with a tap area of 44px.
+ */
+.addAccount {
+  align-self: flex-start;
+  min-height: var(--tap);
+  margin-top: calc(-1 * var(--space-2));
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--accent-text);
+  font-size: var(--size-second);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

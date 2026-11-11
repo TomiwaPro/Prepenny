@@ -16,6 +16,7 @@ import {
   accountTyped,
   blankAccount,
   buildAccount,
+  withKind,
 } from '../../lib/setup-forms.ts';
 import { strings } from '../../strings/en-GB.ts';
 import { ChoiceList } from '../ChoiceList.tsx';
@@ -28,9 +29,14 @@ import { useStep } from './useStep.ts';
 
 const t = strings.setup.account;
 
+/** Each kind's own name, which an account's name follows until one is typed (D429). */
+const KIND_NAMES = { current: t.current, savings: t.savings, joint: t.joint } as const;
+
 interface Draft {
   readonly key: string;
   readonly form: AccountForm;
+  /** True once the person has typed in the name box: their name then stays (D429). */
+  readonly named: boolean;
 }
 
 export function StepAccounts() {
@@ -38,7 +44,9 @@ export function StepAccounts() {
   const id = useId();
   const saved = step.items('account');
   const [drafts, setDrafts] = useState<readonly Draft[]>(() =>
-    step.accounts.length === 0 ? [{ key: newId(), form: blankAccount(true, t.firstName) }] : [],
+    step.accounts.length === 0
+      ? [{ key: newId(), form: blankAccount(true, t.firstName), named: false }]
+      : [],
   );
   const [errors, setErrors] = useState<Readonly<Record<string, AccountErrors>>>({});
   const [nation, setNation] = useState<Nation>(
@@ -49,6 +57,22 @@ export function StepAccounts() {
     setDrafts((now) =>
       now.map((draft) =>
         draft.key === key ? { ...draft, form: { ...draft.form, ...change } } : draft,
+      ),
+    );
+  /** The name box typed in: from now on the name is the person's own. */
+  const setName = (key: string, name: string) =>
+    setDrafts((now) =>
+      now.map((draft) =>
+        draft.key === key ? { ...draft, named: true, form: { ...draft.form, name } } : draft,
+      ),
+    );
+  /** A kind chosen: the name follows it, until the person has typed one of their own. */
+  const setKind = (key: string, kind: AccountKind) =>
+    setDrafts((now) =>
+      now.map((draft) =>
+        draft.key === key
+          ? { ...draft, form: withKind(draft.form, kind, draft.named, KIND_NAMES) }
+          : draft,
       ),
     );
   const fieldId = (key: string, field: keyof AccountForm) => `${id}-${key}-${field}`;
@@ -175,7 +199,7 @@ export function StepAccounts() {
                 value={form.name}
                 aria-invalid={error('name') !== undefined}
                 aria-describedby={describedBy(fieldId(draft.key, 'name'), error('name'))}
-                onChange={(event) => setForm(draft.key, { name: event.target.value })}
+                onChange={(event) => setName(draft.key, event.target.value)}
               />
             </Field>
             <ChoiceList<AccountKind>
@@ -187,7 +211,7 @@ export function StepAccounts() {
                 { value: 'savings', label: t.savings },
                 { value: 'joint', label: t.joint },
               ]}
-              onChange={(kind) => setForm(draft.key, { kind })}
+              onChange={(kind) => setKind(draft.key, kind)}
             />
             <Field id={fieldId(draft.key, 'balance')} label={t.balance} error={error('balance')}>
               <MoneyInput
@@ -258,7 +282,10 @@ export function StepAccounts() {
         className={formStyles.outlined}
         onClick={() => {
           const key = newId();
-          setDrafts((now) => [...now, { key, form: blankAccount(false) }]);
+          setDrafts((now) => [
+            ...now,
+            { key, form: blankAccount(false, KIND_NAMES.savings), named: false },
+          ]);
           // The new account's name box takes focus once it's drawn.
           requestAnimationFrame(() => document.getElementById(fieldId(key, 'name'))?.focus());
         }}

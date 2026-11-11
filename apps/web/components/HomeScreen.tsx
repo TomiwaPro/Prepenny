@@ -1,17 +1,18 @@
 'use client';
 
 // Home (brief 4.9, the Home sketch in ARCHITECTURE.md 4.6): what it's for in
-// one plain sentence (D213), the balance and
-// when it was checked, Left to spend, the lowest point ahead, what this pay
+// one plain sentence (D213), about what's in the account now, with what the
+// bank showed and when (D430), "+ Add an account" (D431), Left to spend, the lowest point ahead, what this pay
 // has to cover, the next three due and the four actions. Every figure comes
 // from the engine, worked out in the background; every word from the strings file.
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { formatDay } from '../lib/dates.ts';
 import type { HomeView } from '../lib/home.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
+import { AccountSheet } from './AccountSheet.tsx';
 import { Actions } from './Actions.tsx';
 import { BalanceCard } from './BalanceCard.tsx';
 import { EditSheet } from './EditSheet.tsx';
@@ -55,9 +56,11 @@ function leftToSpend(home: HomeView) {
 function Figures({
   home,
   onOpen,
+  onAddAccount,
 }: {
   readonly home: HomeView;
   readonly onOpen: (row: RowView) => void;
+  readonly onAddAccount: () => void;
 }) {
   const day = (date: string) => formatDay(date, home.today);
   const warning = formatMoney(home.account.warningLevel, { wholePounds: true });
@@ -79,8 +82,27 @@ function Figures({
             ? t.checkedToday(day(home.account.checkedOn))
             : t.checked(day(home.account.checkedOn))
         }
+        {...(home.account.movedSinceCheck
+          ? {
+              now: {
+                amount: formatMoney(home.account.now),
+                when:
+                  home.account.checkedOn === home.today
+                    ? t.bankShowedToday
+                    : t.bankShowedOn(day(home.account.checkedOn)),
+              },
+            }
+          : {})}
         {...(raised === undefined ? {} : { raised })}
       />
+      <button
+        type="button"
+        className={styles.addAccount}
+        aria-haspopup="dialog"
+        onClick={onAddAccount}
+      >
+        {t.addAccount}
+      </button>
       <FigureCard
         testId="lowest-point"
         label={t.lowestPointAhead}
@@ -129,6 +151,8 @@ function Figures({
 export function HomeScreen() {
   const state = usePlan();
   const sheet = useEditSheet(state.status === 'ready' ? state.version : null);
+  // "+ Add an account" opens the same form as More, Accounts (D431).
+  const [addingAccount, setAddingAccount] = useState(false);
   return (
     <>
       <header className={styles.header}>
@@ -138,7 +162,11 @@ export function HomeScreen() {
       </header>
       <div className={styles.figures} aria-busy={state.status === 'loading'}>
         {state.status === 'ready' ? (
-          <Figures home={state.home} onOpen={sheet.open} />
+          <Figures
+            home={state.home}
+            onOpen={sheet.open}
+            onAddAccount={() => setAddingAccount(true)}
+          />
         ) : state.status === 'failed' ? (
           <p className={styles.failed} role="alert">
             {strings.errors.plan}
@@ -151,6 +179,12 @@ export function HomeScreen() {
       {state.status === 'ready' ? (
         <EditSheet row={sheet.editing} today={state.home.today} onClose={sheet.close} />
       ) : null}
+      <AccountSheet
+        open={addingAccount}
+        account={null}
+        others={[]}
+        onClose={() => setAddingAccount(false)}
+      />
     </>
   );
 }

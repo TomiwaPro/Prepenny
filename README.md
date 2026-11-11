@@ -49,7 +49,7 @@ To look at the app on a computer while working on it, run `pnpm --filter @prepen
 
 The app is hosted on Cloudflare Workers (D68), on Cloudflare's free plan. GitHub puts it online by itself, with the **Deploy** workflow (`.github/workflows/deploy.yml`): every pull request gets its own preview link, and every change merged into `main` goes to the live app once GitHub's checks have passed on it.
 
-The live app is at https://prepenny.prepenny.workers.dev/app/ (set up by the owner on 3 Nov 2026, D195), and at https://prepenny.co.uk/app/ once part A of "Signing in" is done (D304).
+The live app is at https://prepenny.co.uk/app/ (D304). Its old address, https://prepenny.prepenny.workers.dev/app/ (set up by the owner on 3 Nov 2026, D195), sends people to the same page there since step 3f-2 (D428).
 
 ### How to put an update online
 
@@ -278,7 +278,7 @@ Replies to sign-in emails (optional, free):
 
 13. In **prepenny.co.uk**, tap **Email**, then **Email Routing**, then **Get started**. Make the address `hello`, send it to your own email address, and confirm that address from the email Cloudflare sends. Cloudflare adds the records it needs. Anyone who replies to a sign-in email then reaches you.
 
-The old address, https://prepenny.prepenny.workers.dev/app/, keeps working. A browser keeps a plan for each address on its own, so a plan you made at the old address stays there.
+The old address, https://prepenny.prepenny.workers.dev/app/, sends people to the same page on prepenny.co.uk since step 3f-2 (D428). A browser keeps a plan for each address on its own: a phone with something at the old address that isn't saved in an account yet stays there, and says so, until it's sent.
 
 ### B. Resend, which sends the sign-in emails
 
@@ -372,7 +372,7 @@ To check it worked, after merging: open **Actions**, then **Database**, then the
 
 #### Trying it on two phones, with your partner
 
-Use **two spare email addresses that have never been used with PrePenny**, one on each phone, so your own plan isn't touched. Sharing an account can't be undone yet, and joining needs a person with no plan of their own yet (D416).
+Use **two spare email addresses that have never been used with PrePenny**, one on each phone, so your own plan isn't touched. Sharing an account can't be undone yet. Since step 3f-2, someone with a plan of their own brings it with them (part I).
 
 On your phone (phone A), first:
 
@@ -450,6 +450,71 @@ Until "Delete my account and all my data" comes in step 3h, this removes two acc
 4. Close the query without saving it. On each phone, PrePenny notices within a minute that the sign-in has ended.
 
 It removes the accounts' plans with everything in them, the invites they made or used, their sign-ins, devices and backup emails. It writes no amount, name or email address anywhere: it says only how many it removed.
+
+### I. Step 3f-2: bring your plan with you, and four fixes
+
+**What you need to set up: nothing new.** Checked one by one, in this step's own changes:
+
+- **Cloudflare.** The live app now has a few lines of code of its own in front of its files (`apps/web/cloudflare/worker.ts`), which send a page opened at the old address to prepenny.co.uk. The **Deploy** workflow puts them online with the same Cloudflare key and the same command as before. Checked in Wrangler 4.151.3's own code, which the workflow uses: it uploads code and files through the same address as files alone (`workers/scripts/prepenny`), so the key's **Account, Workers Scripts, Edit** (part A, step 3) covers it. Nothing to add by hand in Cloudflare's dashboard: no route, rule or setting, and prepenny.co.uk stays as part A set it up. Cloudflare's own pages couldn't be opened from the computer this was built on, so this was checked in Wrangler itself, and by running Wrangler locally the way the tests serve the app.
+- **Cloudflare's free plan.** Each time those few lines run counts towards Workers' free daily allowance (100,000 a day when last known; Cloudflare's pricing page couldn't be opened from here to confirm it). They run only when a page is opened, never for the app's files, including the one each phone checks every minute. To see the count any time: **Workers & Pages**, then **prepenny**, then **Metrics**. It's on the launch checklist with Cloudflare's plan (item 5, PLAN.md item 59).
+- **Supabase.** The **Database** workflow adds this step's database changes with the key it already has, as every step does; the key check tries all eleven permissions first (D406). No new sign-in setting, web address, email template, function or permission. No new emails are sent.
+- **GitHub.** No new secret or variable, and no workflow changed. The end-to-end tests start a second local copy of the app on GitHub's machine for the old-address test, from the test settings (`playwright.config.ts`), with nothing to set up.
+- **Resend.** Nothing new.
+
+To check it worked, after merging: **Actions**, then **Database**, then the newest run: a green tick. Then **Deploy**: a green tick. Then open https://prepenny.prepenny.workers.dev/app/ on your phone: it should end up at https://prepenny.co.uk/app/. A phone that had the old address installed moves itself once it has fetched the new version, the next time it's opened with a signal.
+
+#### Trying "bring your plan" on the live app, alone, with two devices
+
+You need your phone (device A, playing Jess) and a computer or a second browser where you can open a **private or incognito window** (device B, playing Sam). Use two new Gmail "+" addresses: Gmail delivers mail for `tomiwaprofficial+jess2@gmail.com` and `tomiwaprofficial+sam@gmail.com` to your own inbox, but PrePenny treats them as two new people. Your own plan isn't touched.
+
+Jess's plan, on device A:
+
+1. Open https://prepenny.co.uk/app/, tap **More**, then **Sign out**, then **Sign out** again. Your own plan is safe in your account.
+2. Tap **Make my plan**. On **Your account**, tap **Joint account**: the name changes to "Joint account" by itself (fix A). Type `800` as what the bank shows. Under **Which part of the UK do you live in?** choose **Scotland**. Tap **Next**, then **Skip this step** on each screen, then **Go to my plan**.
+3. Tap **More**, then **Sign up or sign in**, and sign up with `tomiwaprofficial+jess2@gmail.com` (the code comes to your Gmail).
+4. Tap **More**, then **Share with my partner**, then **Choose shared accounts**. Tick **Joint account**, tap **Share these accounts**, then **Yes, share**.
+5. Back on **Share with my partner**, under **Invite your partner**, type `Jess`, keep **Can edit** and **A link I send myself**, and tap **Make the invite link**. The link starts with `https://prepenny.co.uk/join/` (fix B). Tap **Copy the link** and send it to yourself, for example by email, so you can open it on device B.
+
+Sam's own plan, on device B, in a private or incognito window:
+
+6. Open https://prepenny.co.uk/ and tap **Make my plan**. Keep **Current account**, type `267.54`, keep **England and Wales**, tap **Next**, then **Skip this step** on each screen, then **Go to my plan**.
+7. On Home, under the account card, tap **+ Add an account** (fix C). It starts as **Savings**; tap **Joint account** and back to **Savings**: the name follows (fix A). Type `500` as what the bank shows, and tap **Add account**.
+8. Tap **Add a payment**: name `Phone bill`, amount `20`, from **Current account**, with today's date, **Once**. Tap **Add payment**. Home's big figure now says "About £247.54 now", with "Your bank showed £267.54 today" under it (fix D): the bill is due today and not ticked yet.
+9. Tap **More**, then **Sign up or sign in**, and sign up with `tomiwaprofficial+sam@gmail.com`. More says "Your plan is saved in your account."
+10. Paste the invite link into the address bar. The page says "Jess has invited you to share their plan." and "You have a plan of your own, and it comes with you…". It says nothing about Jess's plan itself, not even its bank holidays, until Jess lets you in. Type `Sam` and tap **Ask to join**. It says "Waiting for Jess to allow it."
+
+Allowing, on device A:
+
+11. Within a few seconds, a sheet says "Sam wants to join your plan", with "Signed in as tomiwaprofficial+sam@gmail.com". Tap **Allow**. It says "Sam can join now. It finishes on Sam's phone, as soon as PrePenny is open there." Tap **Got it**.
+
+Bringing the plan in, on device B:
+
+12. Within a few seconds the page says "Jess let you in.", "Bank holidays: Jess's plan uses Scotland, and yours uses England and Wales…", and **Bring my plan and join**. Tap it. Home opens with your Current account, "About £247.54 now" and "Your bank showed £267.54 today", and the phone bill under **Next due**.
+13. Tap **More**, then **Accounts**: **Current account**, **Savings** and Jess's **Joint account**, and "Payments that move on bank holidays follow Scotland." Under **Share with my partner**, **Choose shared accounts** lists Current account and Savings: yours to share when you choose. Don't share them for this test.
+
+What Jess sees, on device A:
+
+14. **More**, then **Share with my partner**: "Who's in this plan" lists you and **Sam, Can edit**.
+15. **More**, then **Accounts**: only **Joint account**. **Coming up**: no phone bill. Nothing of Sam's plan is on Jess's phone.
+
+To try "Finish joining" too: remove the two accounts (below) and do it again, but at step 10, after **Ask to join**, open https://prepenny.co.uk/app/ in the same window instead of waiting. After step 11, Sam's Home shows "Jess has let you into their plan" with **Finish joining**; tap it, then **Bring my plan and join**.
+
+When you're done, close the private window, and on device A sign out and sign in again with your own address.
+
+#### Removing every test account afterwards
+
+This removes the test accounts and everything of theirs, and nothing else, with the query in part H ("Removing the two test accounts afterwards"), which takes any number of addresses. It refuses to do anything unless it finds every address typed, and unless their plans have nobody else in them.
+
+1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
+2. Paste the query from part H. On its first line, put all four test addresses, keeping the quote marks:
+
+   `addresses text[] := array['tomiwaprofficial+tom@gmail.com', 'tomiwaprofficial+jess@gmail.com', 'tomiwaprofficial+jess2@gmail.com', 'tomiwaprofficial+sam@gmail.com'];`
+
+3. Tap **Run**. It should say **Success. No rows returned**, and under it how many plans and accounts it removed, such as "Removed 2 plans and 4 accounts." (step 3f's plan, Tom's with Jess in it, and this step's, Jess's with Sam in it; Sam's own plan went when he joined).
+4. If it says "Found 3 of the 4 addresses", one of them was never used or is gone already: nothing was removed. Take that address out of the first line and run it again. If it says "Someone else is in one of their plans", someone not on the list joined one of them: nothing was removed; tell Claude Code.
+5. Close the query without saving it. Any device still signed in as one of them notices within a minute that the sign-in has ended.
+
+Your own account is never touched: the query only finds the addresses typed on its first line.
 
 ## Bank holidays
 

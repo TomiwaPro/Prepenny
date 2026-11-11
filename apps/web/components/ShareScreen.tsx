@@ -256,7 +256,9 @@ function Invite({
   const [said, setSaid] = useState('');
   const open =
     sharing.invite !== null &&
-    (sharing.invite.state === 'open' || sharing.invite.state === 'waiting')
+    (sharing.invite.state === 'open' ||
+      sharing.invite.state === 'waiting' ||
+      sharing.invite.state === 'allowed')
       ? sharing.invite
       : null;
 
@@ -311,7 +313,9 @@ function Invite({
       return;
     }
     setMade(null);
-    setSaid(t.cancelled);
+    // Joined or answered meanwhile, it isn't cancelled: the screen shows what it is now.
+    const state = (done.value as { state?: unknown } | null)?.state;
+    setSaid(state === undefined || state === 'cancelled' ? t.cancelled : t.answerGone);
     onChanged();
   }
 
@@ -371,12 +375,25 @@ function Invite({
         </div>
       ) : open !== null ? (
         <div className={formStyles.actions} data-testid="invite-open">
-          <p className={styles.line}>
-            {open.email === null
-              ? t.openInvite(t.roles[open.role] ?? '', momentWords(open.expiresAt))
-              : t.openInviteTo(open.email, t.roles[open.role] ?? '', momentWords(open.expiresAt))}
-          </p>
-          <p className={styles.second}>{t.afterAsk}</p>
+          {open.state === 'allowed' ? (
+            // Allowed, while their phone brings their plan in (D426).
+            <p className={styles.line}>
+              {t.allowedBringing(open.asker === null || open.asker === '' ? t.someone : open.asker)}
+            </p>
+          ) : (
+            <>
+              <p className={styles.line}>
+                {open.email === null
+                  ? t.openInvite(t.roles[open.role] ?? '', momentWords(open.expiresAt))
+                  : t.openInviteTo(
+                      open.email,
+                      t.roles[open.role] ?? '',
+                      momentWords(open.expiresAt),
+                    )}
+              </p>
+              <p className={styles.second}>{t.afterAsk}</p>
+            </>
+          )}
           <button
             type="button"
             className={formStyles.outlined}

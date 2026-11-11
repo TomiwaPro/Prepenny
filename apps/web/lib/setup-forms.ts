@@ -114,6 +114,20 @@ export function blankAccount(first: boolean, name = ''): AccountForm {
   };
 }
 
+/**
+ * A new choice of kind for an account form (step 3f-2, D429): the name
+ * follows the kind chosen ("Current account", "Savings", "Joint account")
+ * until the person has typed a name of their own, which then stays.
+ */
+export function withKind(
+  form: AccountForm,
+  kind: AccountKind,
+  named: boolean,
+  kindNames: Readonly<Record<AccountKind, string>>,
+): AccountForm {
+  return named ? { ...form, kind } : { ...form, kind, name: kindNames[kind] };
+}
+
 /** True once something has been typed in an account form that starts empty. */
 export function accountTyped(form: AccountForm): boolean {
   return form.balance.trim() !== '' || form.overdraft.trim() !== '';
