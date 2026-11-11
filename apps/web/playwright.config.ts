@@ -81,10 +81,13 @@ export default defineConfig({
             timeout: 60_000,
           },
           // The same app as Cloudflare serves it at any address, for the move
-          // from the old address (e2e/old-address.spec.ts, D428).
+          // from the old address (e2e/old-address.spec.ts, D428). Over https,
+          // as Cloudflare serves it, with Wrangler's own test certificate:
+          // Chrome only ever opens a .dev address over https.
           {
-            command: `wrangler dev --config e2e/old-address.wrangler.jsonc --port ${OLD_ADDRESS_PORT} --ip 127.0.0.1 --log-level warn`,
-            url: `http://127.0.0.1:${OLD_ADDRESS_PORT}/app/`,
+            command: `wrangler dev --config e2e/old-address.wrangler.jsonc --port ${OLD_ADDRESS_PORT} --ip 127.0.0.1 --local-protocol https --log-level warn`,
+            url: `https://127.0.0.1:${OLD_ADDRESS_PORT}/app/`,
+            ignoreHTTPSErrors: true,
             reuseExistingServer: process.env.CI === undefined,
             env: { WRANGLER_SEND_METRICS: 'false' },
             timeout: 60_000,

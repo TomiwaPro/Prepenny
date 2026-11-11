@@ -4,7 +4,9 @@
 // locally, Wrangler gives every request the listed domain's address, so the
 // main copy (../wrangler.jsonc) can't show what Cloudflare does at the old
 // address; with none listed, each request keeps the address the browser
-// asked for, as on Cloudflare.
+// asked for, as on Cloudflare. The test runs it over https (see
+// ../playwright.config.ts), as Chrome only ever opens a .dev address over
+// https (D439).
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "prepenny-old-address-test",
