@@ -481,7 +481,7 @@ Sam's own plan, on device B, in a private or incognito window:
 7. On Home, under the account card, tap **+ Add an account** (fix C). It starts as **Savings**; tap **Joint account** and back to **Savings**: the name follows (fix A). Type `500` as what the bank shows, and tap **Add account**.
 8. Tap **Add a payment**: name `Phone bill`, amount `20`, from **Current account**, with today's date, **Once**. Tap **Add payment**. Home's big figure now says "About £247.54 now", with "Your bank showed £267.54 today" under it (fix D): the bill is due today and not ticked yet.
 9. Tap **More**, then **Sign up or sign in**, and sign up with `tomiwaprofficial+sam@gmail.com`. More says "Your plan is saved in your account."
-10. Paste the invite link into the address bar. The page says "Jess has invited you to share their plan.", "You have a plan of your own, and it comes with you…", and "Bank holidays: Jess's plan uses Scotland, and yours uses England and Wales…". Type `Sam` and tap **Ask to join**. It says "Waiting for Jess to allow it."
+10. Paste the invite link into the address bar. The page says "Jess has invited you to share their plan." and "You have a plan of your own, and it comes with you…". It says nothing about Jess's plan itself, not even its bank holidays, until Jess lets you in. Type `Sam` and tap **Ask to join**. It says "Waiting for Jess to allow it."
 
 Allowing, on device A:
 
@@ -489,7 +489,7 @@ Allowing, on device A:
 
 Bringing the plan in, on device B:
 
-12. Within a few seconds the page says "Jess let you in.", the bank holidays line again, and **Bring my plan and join**. Tap it. Home opens with your Current account, "About £247.54 now" and "Your bank showed £267.54 today", and the phone bill under **Next due**.
+12. Within a few seconds the page says "Jess let you in.", "Bank holidays: Jess's plan uses Scotland, and yours uses England and Wales…", and **Bring my plan and join**. Tap it. Home opens with your Current account, "About £247.54 now" and "Your bank showed £267.54 today", and the phone bill under **Next due**.
 13. Tap **More**, then **Accounts**: **Current account**, **Savings** and Jess's **Joint account**, and "Payments that move on bank holidays follow Scotland." Under **Share with my partner**, **Choose shared accounts** lists Current account and Savings: yours to share when you choose. Don't share them for this test.
 
 What Jess sees, on device A:
