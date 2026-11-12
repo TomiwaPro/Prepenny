@@ -272,3 +272,13 @@
   letter-spacing: 1px;
   word-break: break-word;
 }
+
+/* A label with its amount on the right, on one row of a list (step 3g). */
+.lineRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+  padding: var(--space-2) 0;
+}

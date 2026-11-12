@@ -73,7 +73,23 @@ export type SharingProblem =
   /** Money moves between these accounts and other private ones: share them too, or neither. */
   | { readonly kind: 'share-together'; readonly ids: readonly string[] }
   /** These payments are kept as "From Jess" in a shared account (D16). */
-  | { readonly kind: 'share-has-halves'; readonly ids: readonly string[] };
+  | { readonly kind: 'share-has-halves'; readonly ids: readonly string[] }
+  /** Step 3g: someone else shared it, so only they make it private (D462). */
+  | { readonly kind: 'not-yours' }
+  /** The other person has things of their own on it: these, of those this person can see (D462). */
+  | { readonly kind: 'partner-things'; readonly ids: readonly string[] }
+  /** A shared goal is kept in the account. */
+  | { readonly kind: 'goal-here'; readonly ids: readonly string[] }
+  /** Money moves between the account and these shared ones. */
+  | { readonly kind: 'move-together'; readonly ids: readonly string[] }
+  /** A goal kept in a private account can't be shared. */
+  | { readonly kind: 'goal-in-private-account' }
+  /** Something the change changed has been changed again since, so it can't be undone (D457). */
+  | { readonly kind: 'changed-since' }
+  | { readonly kind: 'undone-already' }
+  | { readonly kind: 'cant-undo' }
+  /** This person can only view, so the server refused it (D51). */
+  | { readonly kind: 'not-allowed' };
 
 export type Done<T> =
   | { readonly ok: true; readonly value: T }
@@ -111,9 +127,18 @@ export function problemOf(error: unknown): SharingProblem {
     case 'not-pay':
     case 'pay-has-details':
     case 'nation-changed':
+    case 'not-yours':
+    case 'goal-in-private-account':
+    case 'changed-since':
+    case 'undone-already':
+    case 'cant-undo':
+    case 'not-allowed':
       return { kind: message };
     case 'share-together':
     case 'share-has-halves':
+    case 'partner-things':
+    case 'goal-here':
+    case 'move-together':
       return { kind: message, ids: idsIn(details) };
     case 'bad-record':
     case 'family-broken':
@@ -437,4 +462,43 @@ export function shareAccounts(planId: string, accounts: readonly string[]): Prom
 /** "This is my pay" (D418): shared pay someone else added becomes this person's, for its whole family. */
 export function claimPay(planId: string, familyId: string): Promise<Done<unknown>> {
   return call('claim_pay', { plan: planId, family: familyId, edit: newId(), made_at: timeNow() });
+}
+
+// ---------------------------------------------------------------------------
+// Step 3g: Activity, undo, roles, and who sees what.
+
+/** The plan's changes this person may see, newest first, 50 at a time (D456). */
+export function planActivity(
+  planId: string,
+  olderThan: string | null = null,
+): Promise<Done<unknown>> {
+  return call('plan_activity', { plan: planId, older_than: olderThan });
+}
+
+/** "Undo this change" in Activity: one of this person's own changes, undone as a new one (D457). */
+export function undoChange(planId: string, undone: string): Promise<Done<unknown>> {
+  return call('undo_change', { plan: planId, undone, edit: newId(), made_at: timeNow() });
+}
+
+/** "Change what Tom can do": the plan's owner only (D461). */
+export function changeRole(planId: string, person: string, role: Role): Promise<Done<unknown>> {
+  return call('change_role', { plan: planId, person, role });
+}
+
+/** "Make it private": a shared account, debt or goal this person shared (D462). */
+export function makePrivate(
+  planId: string,
+  what: 'account' | 'debt' | 'goal',
+  record: string,
+): Promise<Done<unknown>> {
+  return call('make_private', { plan: planId, what, record, edit: newId(), made_at: timeNow() });
+}
+
+/** "Share it": a debt or savings goal of this person's own (D463). */
+export function shareRecord(
+  planId: string,
+  what: 'debt' | 'goal',
+  record: string,
+): Promise<Done<unknown>> {
+  return call('share_record', { plan: planId, what, record, edit: newId(), made_at: timeNow() });
 }

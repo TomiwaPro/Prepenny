@@ -5,28 +5,33 @@
 // partner then sees each one's balance and every payment in it. Sharing is
 // the server's own step: the account and everything on it change privacy
 // together, or nothing does, and savings goals, debts and job details stay
-// private (supabase/migrations, step 3f). A shared account can't be made
-// private again, so a sheet asks first.
+// private (supabase/migrations, step 3f). A sheet asks first.
+//
+// Since step 3g, the person who shared an account can make it private again,
+// with everything on it, once nothing of their partner's own is in it (D462).
 //
 // Money between two of the person's accounts can't cross from shared to
 // private, so the server refuses to share one without the other, and says
 // which; this screen names them.
 
 import { useState } from 'react';
-import { useSharedPlan } from '../data/shared-plan.ts';
+import { partnerOf, nameOf as personName, useSharedPlan } from '../data/shared-plan.ts';
 import { allSent, syncNow, useSync } from '../data/sync.ts';
 import { useAccount } from '../lib/account.ts';
-import { shareAccounts } from '../lib/sharing.ts';
+import { makePrivate, type SharingProblem, shareAccounts } from '../lib/sharing.ts';
 import { strings } from '../strings/en-GB.ts';
 import { CheckOption, Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';
+import { runPrivacyStep } from './privacy-step.ts';
 import { ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
 import { namesList } from './ShareScreen.tsx';
 import { Sheet } from './Sheet.tsx';
+import { StepSheet } from './StepSheet.tsx';
 
 const t = strings.share;
+const g = strings.together;
 
 export function ShareAccountsScreen() {
   const account = useAccount();
@@ -39,6 +44,7 @@ export function ShareAccountsScreen() {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [said, setSaid] = useState('');
+  const [unsharing, setUnsharing] = useState<string | null>(null);
 
   const header = (
     <ScreenHeader
@@ -71,6 +77,40 @@ export function ShareAccountsScreen() {
     Object.entries(shared.nicknames).find(
       ([person, name]) => person !== shared.personId && name !== '',
     )?.[1] ?? t.partnerFallback;
+
+  const records = loaded?.records;
+  const seriesName = (id: string) =>
+    records?.series.find((one) => one.id === id)?.name ??
+    records?.budgets?.find((one) => one.id === id)?.name ??
+    '';
+  const goalName = (id: string) => records?.goals?.find((one) => one.id === id)?.name ?? '';
+  const named = (ids: readonly string[], name: (id: string) => string) =>
+    namesList(ids.map(name).filter((one) => one !== ''));
+  const partnerWords = partnerOf(shared)?.name ?? t.partnerFallback;
+
+  /** Why the account can't be made private, in words. */
+  function privateProblem(found: SharingProblem, account: string, by: string): string | null {
+    switch (found.kind) {
+      case 'not-yours':
+        return g.notYours(by, account);
+      case 'partner-things': {
+        const names = named(found.ids, seriesName);
+        return names === ''
+          ? g.partnerThingsUnnamed(partnerWords, account)
+          : g.partnerThings(partnerWords, account, names);
+      }
+      case 'goal-here':
+        return g.goalHere(named(found.ids, goalName), account);
+      case 'move-together':
+        return g.moveTogether(account, named(found.ids, nameOf));
+      case 'share-has-halves':
+        return g.hasHalves(named(found.ids, seriesName), account);
+      default:
+        return null;
+    }
+  }
+  const unsharingName = unsharing === null ? '' : nameOf(unsharing);
+  const addedByOf = (id: string) => shared.addedBy.get(`accounts|${id}`);
 
   async function share() {
     if (busy || planId === null) return;
@@ -140,13 +180,35 @@ export function ShareAccountsScreen() {
           </fieldset>
         )}
         {alreadyShared.length === 0 ? null : (
-          <ul className={styles.list} aria-label={t.alreadyShared}>
-            {alreadyShared.map((one) => (
-              <li key={one.id} className={styles.rowBody}>
-                <span className={styles.rowName}>{one.name}</span>
-                <span className={styles.second}>{t.alreadyShared}</span>
-              </li>
-            ))}
+          <ul className={styles.list} aria-label={t.alreadyShared} data-testid="already-shared">
+            {alreadyShared.map((one) => {
+              const by = addedByOf(one.id);
+              const theirs = by !== undefined && by !== shared.personId;
+              return (
+                <li key={one.id} className={styles.rowBody}>
+                  <span className={styles.rowName}>{one.name}</span>
+                  <span className={styles.second}>{t.alreadyShared}</span>
+                  {theirs ? (
+                    <span className={styles.second}>
+                      {g.onlyTheyCan(personName(shared, by) ?? t.partnerFallback)}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className={formStyles.outlined}
+                      aria-haspopup="dialog"
+                      onClick={() => {
+                        setSaid('');
+                        setProblem(null);
+                        setUnsharing(one.id);
+                      }}
+                    >
+                      {g.makePrivate(one.name ?? '')}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
         <Problem text={problem} />
@@ -171,6 +233,31 @@ export function ShareAccountsScreen() {
           </div>
         )}
       </section>
+      <StepSheet
+        open={unsharing !== null}
+        title={g.privateTitle(unsharingName)}
+        intro={g.privateIntro(unsharingName, partnerWords)}
+        yes={g.privateYes}
+        no={g.privateNo}
+        working={g.makingPrivate}
+        run={() =>
+          runPrivacyStep(
+            () => makePrivate(planId ?? '', 'account', unsharing ?? ''),
+            (found) => {
+              const by = unsharing === null ? undefined : addedByOf(unsharing);
+              return privateProblem(
+                found,
+                unsharingName,
+                (by === undefined ? null : personName(shared, by)) ?? t.partnerFallback,
+              );
+            },
+          )
+        }
+        onClose={(done) => {
+          if (done) setSaid(g.privateDone(unsharingName));
+          setUnsharing(null);
+        }}
+      />
       <Sheet
         open={asking}
         title={t.confirmTitle(chosenNames)}

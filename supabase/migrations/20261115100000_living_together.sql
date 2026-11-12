@@ -358,7 +358,9 @@ $$;
 -- ---------------------------------------------------------------------------
 -- 4. "Changed by": what kind of edit last saved each record, as well as who
 -- and when (step 3d), so sharing an account doesn't show as a change to
--- every payment in it (D459). Otherwise as step 3d.
+-- every payment in it, and who added it, so only the person who shared an
+-- account is offered to make it private again (D459, D462). Who added a
+-- record is no more than "Added by Tom" says. Otherwise as step 3d.
 
 create or replace function public.plan_changes(plan uuid, shared_after bigint, mine_after bigint)
 returns jsonb
@@ -381,7 +383,7 @@ begin
   for t in select unnest(app.record_tables()) loop
     execute format($q$
       select coalesce(jsonb_agg(jsonb_build_object('table', %L,
-          'row', to_jsonb(r) - 'plan_id' - 'created_at' - 'created_by',
+          'row', to_jsonb(r) - 'plan_id' - 'created_at',
           'edit_made_at', e.made_at, 'edit_by', e.person_id, 'edit_kind', e.kind) order by r.seq), '[]'::jsonb)
       from public.%I r
       left join public.edits e on e.id = r.edit_id and e.plan_id = r.plan_id

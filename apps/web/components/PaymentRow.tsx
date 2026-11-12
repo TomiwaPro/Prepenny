@@ -16,6 +16,8 @@ export interface PaymentRowProps {
   readonly second: string;
   /** A third line under the name, such as "Lowest point ahead". */
   readonly third?: string | null;
+  /** Who changed it last, when it was the other person in a shared plan: "Changed by Tom, 2 hours ago" (step 3g). */
+  readonly changedBy?: string | null;
   readonly amount: string;
   /** Money coming in: its amount is green (brief Part 6), and the plus sign says so too. */
   readonly moneyIn: boolean;
@@ -35,6 +37,7 @@ export function PaymentRow({
   name,
   second,
   third = null,
+  changedBy = null,
   amount,
   moneyIn,
   left,
@@ -54,6 +57,11 @@ export function PaymentRow({
         <span className={styles.name}>{name}</span>
         <span className={styles.second}>{second}</span>
         {third === null ? null : <span className={styles.third}>{third}</span>}
+        {changedBy === null ? null : (
+          <span className={styles.second} data-testid="changed-by">
+            {changedBy}
+          </span>
+        )}
       </span>
       <span className={styles.right}>
         <span className={`${styles.amount} ${moneyIn ? styles.in : ''} num`}>{amount}</span>

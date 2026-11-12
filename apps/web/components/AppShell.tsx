@@ -14,6 +14,7 @@ import { strings } from '../strings/en-GB.ts';
 import { AppLock } from './AppLock.tsx';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
+import { ChangedByProvider } from './ChangedBy.tsx';
 import { ClashSheet } from './ClashSheet.tsx';
 import { ExampleNote, useOnHome } from './ExampleNote.tsx';
 import { FinishJoining } from './FinishJoining.tsx';
@@ -143,7 +144,9 @@ export function AppShell({ children }: { readonly children: ReactNode }) {
       <KeepInStep />
       <ClashSheet />
       <JoinRequestSheet />
-      <Column>{children}</Column>
+      <ChangedByProvider>
+        <Column>{children}</Column>
+      </ChangedByProvider>
       {/* Above the navigation: the update note, then the undo bar (D186, D202). */}
       <div className={styles.bottom} data-bottom-notes>
         <UpdateNote />

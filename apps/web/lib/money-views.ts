@@ -149,6 +149,18 @@ export interface GoalCard {
   /** Planned moves into or out of it. */
   readonly moves: number;
   readonly closed: boolean;
+  /** Already saved when it was made (D114). */
+  readonly startingAmount: Pence;
+  /**
+   * Saved so far, payment by payment (step 3g, D465): each linked series'
+   * ticked payments added up, with the account it came from when it's money
+   * moved from another account. Below zero for money taken out.
+   */
+  readonly savedFrom: readonly {
+    readonly seriesId: string;
+    readonly fromAccountId: string | null;
+    readonly amount: Pence;
+  }[];
 }
 
 export interface GoalsView {
@@ -158,6 +170,31 @@ export interface GoalsView {
   readonly goals: readonly GoalCard[];
   readonly closed: readonly GoalCard[];
   readonly accounts: readonly { readonly id: string; readonly name: string }[];
+}
+
+/** Each linked series' ticked payments added up, with where the money came from (D465). */
+function savedFrom(
+  rows: readonly {
+    readonly payment: { readonly seriesId: string };
+    readonly amount: Pence;
+    readonly ticked: boolean;
+  }[],
+  records: PlanRecords,
+  goalAccount: string,
+): GoalCard['savedFrom'] {
+  const sums = new Map<string, number>();
+  for (const row of rows) {
+    if (!row.ticked) continue;
+    sums.set(row.payment.seriesId, (sums.get(row.payment.seriesId) ?? 0) + row.amount);
+  }
+  return [...sums].map(([seriesId, amount]) => {
+    const series = records.series.find((one) => one.id === seriesId);
+    const fromAccountId =
+      series?.direction === 'transfer' && series.toAccountId === goalAccount
+        ? series.accountId
+        : null;
+    return { seriesId, fromAccountId, amount };
+  });
 }
 
 export function workOutGoalsView(records: PlanRecords, today: string): GoalsView {
@@ -191,6 +228,8 @@ export function workOutGoalsView(records: PlanRecords, today: string): GoalsView
       savedAtEnd: one.savedAtEnd,
       moves: records.series.filter((series) => series.goalId === one.goal.id).length,
       closed: one.goal.closed === true,
+      startingAmount: one.goal.startingAmount,
+      savedFrom: savedFrom(one.rows, records, one.goal.accountId),
     }),
   );
   return {

@@ -9,17 +9,19 @@
 // Only a plan kept in an account can be shared, so this needs signing in.
 // The database decides everything (supabase/migrations, step 3f): only the
 // plan's owner can invite, and only their own private accounts are theirs
-// to share.
+// to share. Since step 3g the owner can change what their partner can do,
+// and everyone sees what they can do themselves (D461).
 
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useId, useState } from 'react';
 import { useJoinRequests } from '../data/join-requests.ts';
 import { useSharedPlan } from '../data/shared-plan.ts';
-import { useSync } from '../data/sync.ts';
+import { syncNow, useSync } from '../data/sync.ts';
 import { useAccount } from '../lib/account.ts';
 import { momentWords } from '../lib/device-words.ts';
 import {
   cancelInvite,
+  changeRole,
   inviteLink,
   type MadeInvite,
   makeInvite,
@@ -35,8 +37,10 @@ import { type Answered, JoinRequestChoice } from './JoinRequest.tsx';
 import { usePlanActions } from './PlanProvider.tsx';
 import { ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
+import { Sheet } from './Sheet.tsx';
 
 const t = strings.share;
+const g = strings.together;
 
 type Loaded =
   | { readonly kind: 'loading' }
@@ -63,6 +67,8 @@ export function ShareScreen() {
   const live = useJoinRequests();
   const [info, setInfo] = useState<Loaded>({ kind: 'loading' });
   const [answers, setAnswers] = useState<Readonly<Record<string, Answered>>>({});
+  const [roleFor, setRoleFor] = useState<string | null>(null);
+  const [roleSaid, setRoleSaid] = useState('');
 
   const load = useCallback(async () => {
     if (planId === null) return;
@@ -189,9 +195,37 @@ export function ShareScreen() {
                 {one.person === me ? t.you(one.nickname) : called(one.nickname)}
               </span>
               <span className={styles.second}>{t.roles[one.role]}</span>
+              {iOwn && one.person !== me ? (
+                <button
+                  type="button"
+                  className={formStyles.outlined}
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    setRoleSaid('');
+                    setRoleFor(one.person);
+                  }}
+                >
+                  {g.changeRole(called(one.nickname))}
+                </button>
+              ) : null}
             </li>
           ))}
         </ul>
+        {iOwn ? null : (
+          <p className={styles.second} data-testid="my-role">
+            {sharing.members.find((one) => one.person === me)?.role === 'viewer'
+              ? g.youCanView(called(owner?.nickname ?? ''))
+              : g.youCanEdit}
+          </p>
+        )}
+        <p className={styles.line} role="status" data-testid="role-said">
+          {roleSaid}
+        </p>
+        <div className={styles.actions}>
+          <Link className={formStyles.outlined} href="/app/activity/">
+            {g.activityLink}
+          </Link>
+        </div>
       </section>
 
       <section
@@ -216,6 +250,18 @@ export function ShareScreen() {
           </Link>
         </div>
       </section>
+
+      <RoleSheet
+        planId={planId}
+        member={sharing.members.find((one) => one.person === roleFor) ?? null}
+        onClose={(said) => {
+          setRoleFor(null);
+          if (said !== null) {
+            setRoleSaid(said);
+            void load();
+          }
+        }}
+      />
 
       <section className={styles.card} aria-labelledby="invite-heading" data-testid="invite">
         <h2 id="invite-heading" className={styles.cardTitle}>
@@ -463,5 +509,80 @@ function Invite({
         </form>
       )}
     </>
+  );
+}
+
+/** "Change what Tom can do": the plan's owner chooses "Can edit" or "Can view only" (D461). */
+function RoleSheet({
+  planId,
+  member,
+  onClose,
+}: {
+  readonly planId: string | null;
+  readonly member: Sharing['members'][number] | null;
+  /** Closed: what was saved, in words, or null when nothing was. */
+  readonly onClose: (said: string | null) => void;
+}) {
+  const id = useId();
+  const [role, setRole] = useState<Role>('editor');
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const name = called(member?.nickname ?? '');
+  useEffect(() => {
+    if (member !== null) {
+      setRole(member.role === 'viewer' ? 'viewer' : 'editor');
+      setProblem(null);
+      setBusy(false);
+    }
+  }, [member]);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    if (busy || member === null || planId === null) return;
+    if (role === member.role) {
+      setProblem(g.roleSame);
+      return;
+    }
+    setBusy(true);
+    setProblem(null);
+    const done = await changeRole(planId, member.person, role);
+    setBusy(false);
+    if (!done.ok) {
+      setProblem(done.problem.kind === 'offline' ? g.roleOffline : g.roleProblem);
+      return;
+    }
+    await syncNow();
+    onClose(role === 'viewer' ? g.roleSavedView(name) : g.roleSavedEdit(name));
+  }
+
+  return (
+    <Sheet
+      open={member !== null}
+      title={g.roleTitle(name)}
+      intro={g.roleIntro(name)}
+      closeLabel={g.close}
+      onClose={() => onClose(null)}
+    >
+      <form className={formStyles.actions} onSubmit={save} noValidate>
+        <ChoiceList
+          legend={g.roleLegend(name)}
+          name={`${id}-role`}
+          value={role}
+          hintsUnder
+          options={[
+            { value: 'editor', label: t.canEdit, hint: t.canEditHint },
+            { value: 'viewer', label: t.canView, hint: t.canViewHint },
+          ]}
+          onChange={setRole}
+        />
+        <p className={formStyles.lede} role="status">
+          {busy ? g.savingRole : ''}
+        </p>
+        <Problem text={problem} />
+        <button type="submit" className={formStyles.main} aria-disabled={busy}>
+          {g.saveRole}
+        </button>
+      </form>
+    </Sheet>
   );
 }

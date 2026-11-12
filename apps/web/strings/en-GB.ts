@@ -2136,7 +2136,7 @@ export const strings = {
     chooseOne: 'Tick at least one account to share.',
     confirmTitle: (names: string) => `Share ${names}?`,
     confirmIntro: (partner: string) =>
-      `${partner} will see the balance and every payment in each one. Your savings goals, debts and job details stay private. You can't make a shared account private again.`,
+      `${partner} will see the balance and every payment in each one. Your savings goals, debts and job details stay private. You can make a shared account private again later.`,
     partnerFallback: 'Your partner',
     confirmYes: 'Yes, share',
     confirmNo: 'No, go back',
@@ -2481,6 +2481,206 @@ export const strings = {
     removeYes: 'Yes, remove everything',
     removeNo: 'No, go back',
     covered: 'PrePenny is hidden while you are away.',
+  },
+
+  /** Living together (step 3g): "Changed by Tom", Activity, roles, and who sees what. */
+  together: {
+    /** On a payment (brief 4.14): "Changed by Tom, 2 hours ago". */
+    changedBy: (who: string, when: string) => `Changed by ${who}, ${when}`,
+    addedBy: (who: string, when: string) => `Added by ${who}, ${when}`,
+    sharedBy: (who: string, when: string) => `Shared by ${who}, ${when}`,
+    you: 'you',
+    yourPartner: 'your partner',
+    justNow: 'just now',
+    minutesAgo: (count: number) => (count === 1 ? '1 minute ago' : `${count} minutes ago`),
+    hoursAgo: (count: number) => (count === 1 ? '1 hour ago' : `${count} hours ago`),
+    yesterday: 'yesterday',
+
+    /** Activity, under More (brief 4.12, 4.14). */
+    activityLink: 'Activity',
+    activityLine: 'Every change, and undo for your own',
+    heading: 'Activity',
+    purpose:
+      'Every change to your plan in the last 12 months, newest first. You can undo your own.',
+    purposeShared: (partner: string) =>
+      `Every change you and ${partner} made in the last 12 months, newest first. You can undo your own changes, but not ${partner}'s.`,
+    back: 'Back to More',
+    signInFirst:
+      'Activity shows the changes saved in your account. Sign in first, so your plan is kept there.',
+    signIn: 'Sign up or sign in',
+    onExample: 'This is the example plan, which has no Activity. Go back to your own plan first.',
+    loading: 'Finding the changes.',
+    couldNotLoad:
+      "PrePenny couldn't reach its server, so the changes can't be shown. Try again in a minute.",
+    offline: "You're offline. Connect to the internet to see Activity.",
+    tryAgain: 'Try again',
+    empty: 'No changes yet.',
+    today: 'Today',
+    yesterdayHeading: 'Yesterday',
+    /** One change: "Tom changed Rent on Tue 1 Dec to £560.", with the time under it. */
+    sentence: (who: string, what: string) => `${who} ${what}.`,
+    You: 'You',
+    YourPartner: 'Your partner',
+    at: (time: string) => `At ${time}`,
+    undone: 'Undone',
+    undo: 'Undo this change',
+    undoing: 'Undoing the change.',
+    undoneDone: 'Change undone.',
+    undoChangedSince:
+      "This can't be undone, because something it changed has been changed again since.",
+    undoViewOnly: "You can look at this plan but not change it, so this can't be undone.",
+    undoProblem:
+      "PrePenny couldn't reach its server, so nothing was undone. Try again in a minute.",
+    undoWaiting:
+      "Some changes on this phone haven't been sent to your account yet. Try again once they have.",
+    showOlder: 'Show older changes',
+    showingOlder: 'Finding older changes.',
+
+    /** What a change did, after who made it. */
+    what: {
+      markedPaid: (name: string, date: string) => `marked ${name} on ${date} as paid`,
+      markedArrived: (name: string, date: string) => `marked ${name} on ${date} as arrived`,
+      markedNotPaid: (name: string, date: string) => `marked ${name} on ${date} as not paid`,
+      markedNotArrived: (name: string, date: string) => `marked ${name} on ${date} as not arrived`,
+      ticked: (count: number) => (count === 1 ? 'ticked 1 payment' : `ticked ${count} payments`),
+      changedOneTo: (name: string, date: string, amount: string) =>
+        `changed ${name} on ${date} to ${amount}`,
+      changedOne: (name: string, date: string) => `changed ${name} on ${date}`,
+      movedOne: (name: string, date: string, to: string) => `moved ${name} on ${date} to ${to}`,
+      removedOne: (name: string, date: string) => `removed ${name} on ${date}`,
+      changedLaterTo: (name: string, amount: string, from: string) =>
+        `changed ${name} to ${amount} from ${from}`,
+      changedLater: (name: string, from: string) => `changed ${name} from ${from}`,
+      changedAllTo: (name: string, amount: string) => `changed ${name} to ${amount}`,
+      removedLater: (name: string) => `removed ${name} for this and all later ones`,
+      addedOnce: (name: string, amount: string, date: string) =>
+        `added ${name}, ${amount} on ${date}`,
+      addedFrom: (name: string, amount: string, date: string) =>
+        `added ${name}, ${amount} from ${date}`,
+      removed: (name: string) => `removed ${name}`,
+      balance: (account: string, amount: string) => `updated the ${account} balance to ${amount}`,
+      balanceTicked: (account: string, amount: string, count: number) =>
+        count === 1
+          ? `updated the ${account} balance to ${amount}, and ticked 1 payment`
+          : `updated the ${account} balance to ${amount}, and ticked ${count} payments`,
+      spent: (amount: string, budget: string) => `spent ${amount} on ${budget}`,
+      changedSpend: (budget: string, amount: string) => `changed a spend on ${budget} to ${amount}`,
+      removedSpend: (amount: string, budget: string) => `removed a spend of ${amount} on ${budget}`,
+      added: (thing: string) => `added ${thing}`,
+      changed: (thing: string) => `changed ${thing}`,
+      closed: (thing: string) => `closed ${thing}`,
+      ended: (thing: string) => `ended ${thing}`,
+      account: (name: string) => `the account ${name}`,
+      debt: (name: string) => `the debt ${name}`,
+      goal: (name: string) => `the savings goal ${name}`,
+      budget: (name: string) => `the budget ${name}`,
+      statement: (name: string) => `updated ${name} from its statement`,
+      overtime: (date: string) => `added overtime worked on ${date}`,
+      missedShift: (date: string) => `added a missed shift on ${date}`,
+      removedShift: 'removed overtime or a missed shift',
+      theirPay: 'changed their pay for overtime or a missed shift',
+      nation: (where: string) => `changed the bank holidays to ${where}`,
+      job: 'changed job details',
+      mainPay: 'chose which pay is the main pay',
+      sharedAccounts: (names: string) => `shared ${names}`,
+      sharedRecord: (thing: string) => `shared ${thing}`,
+      madePrivate: (thing: string) => `made ${thing} private`,
+      madeSomethingPrivate: (kind: string) =>
+        `made a shared ${kind} private, so you no longer see it`,
+      claimedMine: (name: string) => `said ${name} is your pay`,
+      claimedTheirs: (name: string) => `said ${name} is their pay`,
+      role: (whose: string, role: string) => `changed what ${whose} can do to ${role}`,
+      undid: (names: string) => `undid a change to ${names}`,
+      undidSomething: 'undid a change',
+      changedNames: (names: string) => `changed ${names}`,
+      madeAChange: 'made a change',
+      kinds: { account: 'account', debt: 'debt', goal: 'savings goal' } as Record<string, string>,
+    },
+
+    /** Roles (brief 4.14, D461), on Share with my partner. */
+    youCanEdit: 'You can see and change everything shared.',
+    youCanView: (owner: string) =>
+      `You can see everything shared, but change nothing. Only ${owner} can change that.`,
+    changeRole: (name: string) => `Change what ${name} can do`,
+    roleTitle: (name: string) => `Change what ${name} can do`,
+    roleIntro: (name: string) =>
+      `${name}'s phone follows the change straight away. Either of you can still keep your own pay up to date.`,
+    roleLegend: (name: string) => `What can ${name} do?`,
+    saveRole: 'Save',
+    savingRole: 'Saving.',
+    roleSavedEdit: (name: string) => `${name} can edit now.`,
+    roleSavedView: (name: string) => `${name} can view only now.`,
+    roleSame: 'Choose the other answer to change it, or close this.',
+    roleProblem: "PrePenny couldn't reach its server, so nothing changed. Try again in a minute.",
+    roleOffline: "You're offline. Connect to the internet to change this.",
+    close: 'Close',
+
+    /** Making a shared account private again (D462), on Choose shared accounts. */
+    sharedHeading: 'Shared accounts',
+    sharedLine: (partner: string) => `${partner} sees these, and everything in them.`,
+    makePrivate: (name: string) => `Make ${name} private again`,
+    onlyTheyCan: (name: string) => `Only ${name} can make this private again, as they shared it.`,
+    privateTitle: (name: string) => `Make ${name} private?`,
+    privateIntro: (name: string, partner: string) =>
+      `${partner} will no longer see ${name} or anything in it, and its changes leave ${partner}'s Activity. You can share it again later.`,
+    privateYes: 'Yes, make it private',
+    privateNo: 'No, keep it shared',
+    makingPrivate: 'Making it private.',
+    privateDone: (name: string) => `${name} is private now. Only you see it.`,
+    partnerThings: (partner: string, account: string, names: string) =>
+      `${partner} has payments of their own in ${account}: ${names}. While they're there, it stays shared. ${partner} can remove them or move them to an account of their own.`,
+    partnerThingsUnnamed: (partner: string, account: string) =>
+      `${partner} has things of their own in ${account}, so it stays shared for now.`,
+    goalHere: (names: string, account: string) =>
+      `${names} is a shared savings goal kept in ${account}. Make the goal private first, or keep ${account} shared.`,
+    moveTogether: (account: string, names: string) =>
+      `Money moves between ${account} and ${names}, which stays shared. Remove those payments first, or keep ${account} shared.`,
+    hasHalves: (names: string, account: string) =>
+      `${names} is money from your own account into ${account}. Remove it first, make ${account} private, then add it again.`,
+    notYours: (owner: string, name: string) =>
+      `Only ${owner} can make ${name} private, as they shared it.`,
+    privacyProblem:
+      "PrePenny couldn't reach its server, so nothing changed. Try again in a minute.",
+
+    /** Debts and savings goals, shared or one person's (D65, D463). */
+    whoSeesHeading: 'Who sees it',
+    sharedWith: (partner: string) => `Shared with ${partner}`,
+    sharedByThem: (owner: string) => `Shared by ${owner}. Only ${owner} can make it private.`,
+    onlyYou: 'Only you see this',
+    shareDebt: (partner: string) => `Share this debt with ${partner}`,
+    shareGoal: (partner: string) => `Share this goal with ${partner}`,
+    makeItPrivate: 'Make it private',
+    goalStaysPrivate: (account: string) =>
+      `It's kept in ${account}, which only you see, so it stays private.`,
+    shareDebtTitle: (name: string, partner: string) => `Share ${name} with ${partner}?`,
+    shareDebtIntro: (name: string, partner: string) =>
+      `${partner} will see ${name}, what's left on it and when it's paid off. You can make it private again later.`,
+    shareGoalTitle: (name: string, partner: string) => `Share ${name} with ${partner}?`,
+    shareGoalIntro: (name: string, partner: string) =>
+      `${partner} will see ${name}, what's saved and when it's reached, and can put money into it. You can make it private again later.`,
+    shareYes: 'Yes, share it',
+    shareNo: 'No, keep it private',
+    recordPrivateTitle: (name: string) => `Make ${name} private?`,
+    debtPrivateIntro: (name: string, partner: string) =>
+      `${partner} will no longer see ${name} or what's left on it. Payments to it from shared accounts still show, without the debt.`,
+    goalPrivateIntro: (name: string, partner: string) =>
+      `${partner} will no longer see ${name} or what's saved. Money into it from shared accounts still shows, without the goal.`,
+    sharing: 'Sharing.',
+    sharedDone: (name: string) => `${name} is shared now.`,
+    recordPartnerThings: (partner: string, name: string) =>
+      `${partner} puts money towards ${name}, so it stays shared. ${partner} can remove those payments first.`,
+    viewOnlyShare: "You can view this plan only, so you can't share anything in it.",
+    goalInPrivateAccount: (account: string) =>
+      `It's kept in ${account}, which only you see. Share ${account} first, or keep the goal private.`,
+
+    /** What each person has put into a shared goal (brief 4.14, D114, D465). */
+    putInHeading: 'What each of you has put in',
+    putInLine: 'Saved so far, by where the money came from.',
+    putInYou: 'You',
+    putInFrom: (account: string) => `From ${account}`,
+    putInStart: 'Already saved when it was made',
+    putInOther: 'Other money in',
+    putInOut: 'Taken out',
   },
 
   parts: {

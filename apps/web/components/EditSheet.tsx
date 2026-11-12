@@ -31,6 +31,7 @@ import {
 import { refusalMessage } from '../lib/refusals.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
+import { useSheetChangedBy } from './ChangedBy.tsx';
 import { ChoiceList } from './ChoiceList.tsx';
 import { ClaimPay } from './ClaimPay.tsx';
 import { CheckOption } from './Fields.tsx';
@@ -196,6 +197,8 @@ function EditForm({
   // What the plan's sharing says about this payment (step 3f).
   const planId = loaded !== null && !loaded.plan.isExample ? loaded.plan.id : null;
   const shared = useSharedPlan(planId, loaded?.version ?? 0);
+  // Who changed it last, and when, in a shared plan (step 3g, D459).
+  const changedBy = useSheetChangedBy(ref);
   const lockedBy = shared?.lockedTo.get(row.seriesId);
   const paidBy = shared?.paidTo.get(row.seriesId);
   const claimable =
@@ -421,6 +424,11 @@ function EditForm({
           {row.status === 'ok' ? null : <StatusPill status={row.status} />}
         </span>
       </p>
+      {changedBy === null ? null : (
+        <p className={styles.where} data-testid="sheet-changed-by">
+          {changedBy}
+        </p>
+      )}
     </div>
   );
 

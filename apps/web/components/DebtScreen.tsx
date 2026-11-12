@@ -15,6 +15,7 @@
 // removes; and closing the debt asks whether to remove its planned payments.
 
 import { useEffect, useState } from 'react';
+import { hasPartner } from '../data/shared-plan.ts';
 import { dateTile, formatDay } from '../lib/dates.ts';
 import type { DebtPaymentView, DebtRowView, DebtsView, DebtView } from '../lib/debts-view.ts';
 import { formatIn, formatMoney, perPoundWords } from '../lib/money.ts';
@@ -23,6 +24,7 @@ import { refusalMessage } from '../lib/refusals.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
+import { useShared } from './ChangedBy.tsx';
 import { CompareCard } from './CompareCard.tsx';
 import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { DebtSheet } from './DebtSheet.tsx';
@@ -39,6 +41,7 @@ import styles from './Screens.module.css';
 import { StatementSheet } from './StatementSheet.tsx';
 import { useEditSheet } from './useEditSheet.ts';
 import { useScreenView } from './useScreenView.ts';
+import { WhoSees } from './WhoSees.tsx';
 
 const t = strings.debt;
 
@@ -182,6 +185,20 @@ function CardDetails({ debt, today }: { readonly debt: DebtView; readonly today:
   );
 }
 
+/** Who sees the debt, in a shared plan (D65, D463): nothing in a plan of one's own. */
+function WhoSeesCard({ debt }: { readonly debt: DebtView }) {
+  const shared = useShared();
+  if (shared === null || !hasPartner(shared) || debt.closed) return null;
+  return (
+    <section className={styles.card} aria-labelledby="who-sees-debt">
+      <h2 id="who-sees-debt" className={styles.cardTitle}>
+        {strings.together.whoSeesHeading}
+      </h2>
+      <WhoSees what="debt" id={debt.id} name={debt.name} />
+    </section>
+  );
+}
+
 function OneDebt({
   debt,
   view,
@@ -236,6 +253,8 @@ function OneDebt({
           {t.paidOfStarted(money(debt.paidSoFar), money(debt.startingBalance))}
         </p>
       </section>
+
+      <WhoSeesCard debt={debt} />
 
       <CardDetails debt={debt} today={view.today} />
 
