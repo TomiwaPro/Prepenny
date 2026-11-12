@@ -16,7 +16,7 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
  * (step 3g), and download, import and delete (step 3h).
  */
 const SIGN_IN_TESTS =
-  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data)\.spec\.ts$/;
+  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data|security|brief-8-7|journeys-signed-in)\.spec\.ts$/;
 const port = 4173;
 /** The second copy, for the move from the old address (D428). */
 const OLD_ADDRESS_PORT = 4174;
