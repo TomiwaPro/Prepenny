@@ -296,7 +296,7 @@ export function ShareScreen() {
           </h2>
           <p className={styles.line}>
             {g.leave.linkLine(
-              called(sharing.members.find((one) => one.person !== me)?.nickname ?? ''),
+              sharing.members.find((one) => one.person !== me)?.nickname || g.yourPartner,
             )}
           </p>
           <div className={styles.actions}>

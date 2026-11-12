@@ -520,10 +520,10 @@ Your own account is never touched: the query only finds the addresses typed on i
 
 **What you need to set up: nothing new.** Checked one by one, in this step's own changes:
 
-- **Supabase.** The **Database** workflow adds this step's database changes with the key it already has, as every step does, after its key check of all eleven permissions (D406). No new sign-in setting, web address, email template, function or permission. The new steps (Activity, undo, roles, making something private or shared) are database functions only, which the Data API offers by itself. "Changed by" uses the live nudges step 3c switched on.
+- **Supabase.** The **Database** workflow adds this step's database changes with the key it already has, as every step does, after its key check of all eleven permissions (D406). No new sign-in setting, web address, email template, function or permission. The new steps (Activity, undo, roles, making something private or shared, leaving, and a payment's History) are database functions only, which the Data API offers by itself. History is kept for as long as each plan exists (D469): roughly 5 to 15 MB a year for a plan two people use every day, inside the free plan's 500 MB for now (PLAN.md item 67). "Changed by" uses the live nudges step 3c switched on.
 - **GitHub.** No new secret or variable, and no workflow changed. The new end-to-end tests run in the sign-in tests' parts, which already start a local Supabase.
 - **Resend.** No new emails.
-- **Cloudflare.** Nothing new: Activity is an ordinary page of the app.
+- **Cloudflare.** Nothing new: Activity and Leave this plan are ordinary pages of the app.
 - **Google.** Nothing new.
 
 This sandbox couldn't open Supabase's, Resend's, Cloudflare's or GitHub's own websites to compare their lists today, so the check above is of what this step uses. If any of those services has renamed a setting since, nothing here depends on it.
@@ -557,31 +557,40 @@ Tom joins, on device B, in a private or incognito window:
 
 Activity, and undo for your own changes only:
 
-13. On device B, tap **More**, then **Activity**. It says "You changed Rent on … to £560.00." with **Undo this change**, and "Jess shared Current account." with no Undo. There's nothing about Dentist: that was Jess's while the account was hers alone.
-14. On device A, tap **More**, then **Activity**: "Tom changed Rent on … to £560.00." with no Undo, and your own changes, Dentist included, with Undo on those that can still be undone.
+13. On device B, tap **More**, then **Activity**. It says "You changed Rent on … from £550.00 to £560.00." with **Undo this change**, and "Jess shared Current account." with no Undo. There's nothing about Dentist: that was Jess's while the account was hers alone.
+14. On device A, tap **More**, then **Activity**: "Tom changed Rent on … from £550.00 to £560.00." with no Undo, and your own changes, Dentist included, with Undo on those that can still be undone.
 15. On device B, tap **Undo this change** on the Rent change. It says "Change undone.", and the change says **Undone**. On device A, Rent on Home is back to −£550.00 within a few seconds.
+
+A payment's History:
+
+16. On device A, on Home, tap **Rent**. At the bottom of the sheet, under **History**, tap **Show its history**. Newest first, with the day and time of each: "Tom undid a change to it", "Tom changed it from £550.00 to £560.00" with **Undone since** beside it, and "You added it". Tap **Close**.
 
 Changing what Tom can do:
 
-16. On device A, tap **More**, then **Share with my partner**, then **Change what Tom can do**. Choose **Can view only** and tap **Save**: "Tom can view only now."
-17. On device B, tap **More**, then **Share with my partner**: "You can see everything shared, but change nothing. Only Jess can change that." Go to Home, tap **Rent**, change the amount to `999` and tap **Save**. Within a few seconds a sheet says "A change wasn't saved" and "You can look at this plan but not change it." Tap **Got it**: Rent is back as it was. Activity on device B says "Jess changed what you can do to Can view only."
-18. On device A, do step 16 again with **Can edit**.
+17. On device A, tap **More**, then **Share with my partner**, then **Change what Tom can do**. Choose **Can view only** and tap **Save**: "Tom can view only now."
+18. On device B, tap **More**, then **Share with my partner**: "You can see everything shared, but change nothing. Only Jess can change that." Go to Home, tap **Rent**, change the amount to `999` and tap **Save**. Within a few seconds a sheet says "A change wasn't saved" and "You can look at this plan but not change it." Tap **Got it**: Rent is back as it was. Activity on device B says "Jess changed what you can do to Can view only."
+19. On device A, do step 17 again with **Can edit**.
 
 A shared debt, and a shared goal with what each of you has put in:
 
-19. On device A, tap **Debts**, then **Add a debt**: name `Car loan`, **Loan**, `1200`, tick "I don't have payments planned for it yet", and tap **Add this debt**. Under it: "Only you see this". On device B, **Debts** shows no Car loan.
-20. On device A, tap **Car loan**. Under **Who sees it**, tap **Share this debt with Tom**, then **Yes, share it**. On device B, within a minute, **Debts** shows Car loan with "Shared with Jess".
-21. On device A, tap **More**, then **Savings goals**, then **Add a savings goal**: `Holiday`, target `1200`, kept in **Current account**, already saved `100`. Tap **Add goal**. It says "Shared with Tom".
-22. On device B, tap **More**, then **Accounts**, then **Add an account**: `Tom's account`, `300`. Then **More**, **Savings goals**, and under Holiday, **Add a payment into Holiday**: from **Tom's account**, to **Current account**, `50`, today, **Once**, then **Add payment**. On Home, tap **From Tom**, then **Mark as arrived**.
-23. On both devices, **Savings goals**: Holiday has "£150.00 saved of £1,200.00", and **What each of you has put in**: "Already saved when it was made £100.00" and "Tom £50.00" (on device B, "You £50.00").
+20. On device A, tap **Debts**, then **Add a debt**: name `Car loan`, **Loan**, `1200`, tick "I don't have payments planned for it yet", and tap **Add this debt**. Under it: "Only you see this". On device B, **Debts** shows no Car loan.
+21. On device A, tap **Car loan**. Under **Who sees it**, tap **Share this debt with Tom**, then **Yes, share it**. On device B, within a minute, **Debts** shows Car loan with "Shared with Jess".
+22. On device A, tap **More**, then **Savings goals**, then **Add a savings goal**: `Holiday`, target `1200`, kept in **Current account**, already saved `100`. Tap **Add goal**. It says "Shared with Tom".
+23. On device B, tap **More**, then **Accounts**, then **Add an account**: `Tom's account`, `300`. Then **More**, **Savings goals**, and under Holiday, **Add a payment into Holiday**: from **Tom's account**, to **Current account**, `50`, today, **Once**, then **Add payment**. On Home, tap **From Tom**, then **Mark as arrived**.
+24. On both devices, **Savings goals**: Holiday has "£150.00 saved of £1,200.00", and **What each of you has put in**: "Already saved when it was made £100.00" and "Tom £50.00" (on device B, "You £50.00").
 
 Making a shared account private again:
 
-24. On device A, tap **More**, then **Accounts**, then **Add an account**: `Joint savings`, `800`. Then **Share with my partner**, **Choose shared accounts**, tick **Joint savings**, **Share these accounts**, **Yes, share**. On device B, Accounts shows Joint savings within a minute.
-25. On device A, on **Choose shared accounts**, under **Shared accounts**, tap **Make Joint savings private again**, then **Yes, make it private**: "Joint savings is private now. Only you see it."
-26. On device B, within a minute, Accounts no longer shows Joint savings, and Activity says only "Jess made a shared account private, so you no longer see it.", nothing more about it. Under **Choose shared accounts**, Current account says "Only Jess can make this private again, as they shared it."
+25. On device A, tap **More**, then **Accounts**, then **Add an account**: `Joint savings`, `800`. Then **Share with my partner**, **Choose shared accounts**, tick **Joint savings**, **Share these accounts**, **Yes, share**. On device B, Accounts shows Joint savings within a minute.
+26. On device A, on **Choose shared accounts**, under **Shared accounts**, tap **Make Joint savings private again**, then **Yes, make it private**: "Joint savings is private now. Only you see it."
+27. On device B, within a minute, Accounts no longer shows Joint savings, and Activity says only "Jess made a shared account private, so you no longer see it.", nothing more about it. Under **Choose shared accounts**, Current account says "Only Jess can make this private again, as they shared it."
 
-Leaving a plan comes once you've chosen how (PLAN.md, "Waiting for the owner", question 2).
+Tom leaves, taking a copy:
+
+28. On device B, tap **More**, then **Share with my partner**. At the bottom, under **Leave this plan**, tap **Leave this plan**. It says what comes with you (everything only you see) and what stays with Jess (every shared account, your changes in her Activity, and money you put into a shared account).
+29. Tap **Leave this plan** without choosing anything: it says "Choose whether to take a copy of the shared accounts." Choose **Yes, take a copy**, tap **Leave this plan**, then, in the sheet, **Yes, leave**.
+30. Device B opens Home of Tom's own plan: "You've left the plan. Your own things are in a plan of your own now, with a copy of the shared accounts as they were today." Tap **Got it**. Under **More**, **Accounts** shows Tom's account and his copy of Current account. **Activity** starts with "You left the shared plan, and took a copy of the shared accounts.", and has nothing of Jess's.
+31. On device A, within a minute: **More**, then **Share with my partner** shows only you, with **Invite your partner** again. **Activity** says "Tom left the plan.", and Tom's earlier changes still say "Tom". On Home, tap **Rent**, then **Show its history**: Tom's change is still there. Tom's account shows nowhere.
 
 When you're done, close the private window, and on device A sign out and sign in again with your own address.
 
@@ -594,7 +603,7 @@ The same query as part H ("Removing the two test accounts afterwards"), with thi
 
    `addresses text[] := array['yourname+jess3@gmail.com', 'yourname+tom3@gmail.com'];`
 
-3. Tap **Run**. It should say **Success. No rows returned**, and under it "Removed 1 plans and 2 accounts." (Jess's plan, with Tom in it; Tom had no plan of his own). The history of their changes goes with the plan.
+3. Tap **Run**. It should say **Success. No rows returned**, and under it "Removed 2 plans and 2 accounts.": Jess's plan, and the plan of his own Tom took with him when he left. The history of their changes goes with the plans. (If you stopped before step 28, it says "Removed 1 plans and 2 accounts.")
 4. If it says "Found 1 of the 2 addresses", one was never used or is gone already: nothing was removed. Check the spelling, or take that address out and run it again.
 5. Close the query without saving it. Any device still signed in as one of them notices within a minute that the sign-in has ended.
 

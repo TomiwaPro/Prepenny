@@ -46,7 +46,8 @@ export function LeaveScreen() {
   const [gone, setGone] = useState(false);
 
   const partner = partnerOf(shared);
-  const partnerName = partner?.name ?? strings.share.someone;
+  // Inside a sentence: "your partner" when they gave no name (D377).
+  const partnerName = partner?.name ?? strings.together.yourPartner;
   const header = (
     <ScreenHeader
       heading={t.heading}
@@ -68,13 +69,25 @@ export function LeaveScreen() {
     );
   }
 
-  const kept = account.status === 'signed-in' && sync.kept && planId !== null && shared !== null;
-  if (!kept || partner === null) {
+  // The example plan, a plan not kept in an account, and a plan nobody
+  // else is in have nothing to leave, and say why, as Share with my partner does.
+  const kept = account.status === 'signed-in' && sync.kept && planId !== null;
+  const why =
+    loaded?.plan.isExample === true
+      ? strings.share.onExample
+      : !kept
+        ? strings.share.signInFirst
+        : shared === null
+          ? strings.share.loading
+          : partner === null
+            ? t.alone
+            : null;
+  if (why !== null || shared === null) {
     return (
       <>
         {header}
         <section className={styles.card}>
-          <p className={styles.line}>{kept ? t.alone : strings.share.loading}</p>
+          <p className={styles.line}>{why}</p>
         </section>
       </>
     );

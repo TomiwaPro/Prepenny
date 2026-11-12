@@ -1,5 +1,5 @@
 -- Step 3g: shared plans, living together (brief 4.12 and 4.14, D50, D53,
--- D65, D114, D425, D454 to D466).
+-- D65, D114, D425, D454 to D474).
 --
 -- 1. History. Every record an edit saves is kept as it was before and after
 --    the edit, with the privacy it had at each moment. Only the database's
@@ -21,6 +21,12 @@
 -- 7. Money from someone's own account into a shared savings goal ("From
 --    Jess") can count towards the goal, so the goal shows what each person
 --    has put in (D114).
+-- 8. From the outside review (D467).
+-- 9. Leaving a shared plan (D468, D472, D473): the leaver's own things go
+--    into a plan of their own, with their history; the shared accounts stay;
+--    a copy of them if they ask; nothing private of theirs stays behind.
+-- 10. A payment's history, for its sheet (D469, D474), kept for as long as
+--    the plan exists, as Activity is.
 --
 -- Every step here checks who's asking itself. Refusals are short codes, with
 -- record ids at most: never an amount, a name, a note or an email address
@@ -1707,7 +1713,7 @@ $$;
 -- for as long as the plan exists, with the same rule as Activity: only
 -- copies the person could read then and can still read now. The changes to
 -- its series' family (added, changed for this and all later ones, renamed),
--- and to its own one-off change and tick, newest first, 100 at most.
+-- and to its own one-off change and tick, newest first, every one.
 create function public.payment_history(plan uuid, family uuid, original_date date) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
@@ -1737,7 +1743,6 @@ begin
             and coalesce(r.after ->> 'original_date', r.before ->> 'original_date') = original_date::text
             and coalesce(r.after ->> 'series_id', r.before ->> 'series_id') = any (in_family))))
     order by e.made_at::timestamptz desc, e.saved_at desc
-    limit 100
   loop
     select coalesce(jsonb_agg(jsonb_build_object('table', r.record_table, 'id', r.record_id,
         'before', case when r.before_private is null or r.before_private = me then r.before end,

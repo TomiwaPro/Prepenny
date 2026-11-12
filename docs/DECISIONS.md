@@ -405,7 +405,7 @@ Why: a split makes a new series, and without the family it would lose its place 
 
 ### D50. Change history kept for 12 months
 
-Agreed 27 Oct 2026 (ARCHITECTURE.md 3.5).
+Agreed 27 Oct 2026 (ARCHITECTURE.md 3.5). **Replaced by D469 (12 Nov 2026): history is kept for as long as the plan exists.**
 
 Edits are kept for 12 months as the change history (brief 4.12).
 
@@ -5405,7 +5405,7 @@ D454 is the owner's instruction in the instructions for step 3g, shared plans: l
 
 ### D454. Leaving waits for the owner's choice
 
-The owner's instruction, 12 Nov 2026.
+The owner's instruction, 12 Nov 2026. **Answered the same day: option A (D468), built in step 3g (D472, D473).**
 
 - Before building leaving, the options are shown to the owner with a plain example (Tom and Jess): what happens to each person's private accounts, the shared accounts and the history, with a recommendation, as a question in the report. Leaving is built only once the owner has answered.
 - So step 3g builds everything else in it ("Changed by", Activity with undo, debts and goals shared or one person's, what each person has put into a shared goal, changing a role and making a shared account private again), and leaving, with its own security tests ("after leaving, the person who left gets nothing more from the plan, and the one who stays keeps nothing of the leaver's private records") and its screens, comes after the answer. The options are in `PLAN.md`, "Waiting for the owner".
@@ -5432,7 +5432,7 @@ Why: Activity needs what each change did (brief 4.12), and undo for older change
 Decided 12 Nov 2026 in step 3g. Builds brief 4.12 and 4.14.
 
 - Under More, after Share with my partner: **Activity**, "Every change, and undo for your own". Share with my partner links to it too.
-- It starts with "Every change to your plan in the last 12 months, newest first. You can undo your own." or, in a shared plan, "Every change you and Tom made in the last 12 months, newest first. You can undo your own changes, but not Tom's."
+- It starts with "Every change to your plan in the last 12 months, newest first. You can undo your own." or, in a shared plan, "Every change you and Tom made in the last 12 months, newest first. You can undo your own changes, but not Tom's." Since D469, without "in the last 12 months", and each change says from what to what (D474).
 - Changes are in cards by day ("Today", "Yesterday", "Tue 10 Nov"), newest first, 50 at a time with **Show older changes**. Each is one sentence with who made it and what it did, and "At 2:05pm" under it: "Tom changed Rent on Sun 1 Nov to £560.00.", "You marked Pay on Fri 27 Nov as arrived.", "Jess added Car MOT, −£54.85 on Fri 13 Nov.", "You updated the Joint balance to £1,234.56, and ticked 3 payments.", "Tom spent £12.50 on Food.", "Jess shared Current account.", "Jess changed what you can do to Can view only.", "You undid a change to Rent." Every kind of change has its words (`lib/activity-words.ts`); anything else says which records it changed ("Tom changed Rent and Gym.") or "Tom made a change." Someone with no name yet is "Your partner" (D377).
 - A change undone says **Undone** beside its time.
 - The words are put together on the phone from what the server gives it (D458), so they can name nothing private, and none of them is in a log.
@@ -5589,3 +5589,88 @@ Decided 12 Nov 2026 in step 3g, from an outside review of its database changes, 
 Test: `supabase/tests/database/27-living-together-review.test.sql` (20 checks). With the code from before the review put back on the local database for a moment, 9 of them failed, and the plan count with them.
 
 Why: each was shown by the review with a case that went wrong.
+
+## The owner's answers to step 3g
+
+### D468. Leaving a shared plan: your own goes with you, and the shared plan stays
+
+Decided by the owner 12 Nov 2026, answering step 3g's question (D454): option A. Builds D53 and brief 4.14, 8.7 test 5.
+
+- When Tom leaves, everything only Tom sees (his own accounts with everything on them, his own debts and goals, his job details) goes with him into a new plan of his own, with its history. Jess never saw them and still doesn't.
+- Every shared account stays in the shared plan with Jess, as it is. Payments Tom added in them stay and become Jess's to change. "From Tom" stays as money arriving, no longer locked to him, and his pay into a shared account stays as an amount Jess can change.
+- Tom chooses whether to take a **copy** of the shared accounts. The copy is his alone and never updates. Without it, only his own things go with him.
+- Jess's Activity keeps the shared changes with Tom's name on them. His private history goes with him.
+- Nobody has to agree. From that moment Tom gets nothing more from the plan, and nothing private of his stays in it.
+- If the owner leaves, the person who stays becomes the owner (D53).
+- The owner asked to see every leaving screen's words: they're in the step's report and `apps/web/strings/en-GB.ts` (`together.leave`).
+
+Why: the owner's choice. It's what brief 4.14 and 8.7 test 5 describe ("The other person keeps the shared plan", "Jess's plan is unchanged").
+
+### D469. A lasting record: History on every payment, kept for as long as the plan exists
+
+Decided by the owner 12 Nov 2026, answering step 3g's question. **Replaces D50's 12 months.**
+
+- Each payment's edit sheet has a **History** list: every change to that payment, who made it, when, and from what to what, for example "Tom changed it from £550.00 to £560.00, Tue 10 Nov, 2:05pm".
+- **Activity** says from what to what too: "Tom changed Rent on Tue 1 Dec from £550.00 to £560.00."
+- History is kept for **as long as the plan exists**, not 12 months. Activity shows it all, 50 changes at a time, with "Show older changes".
+- The same privacy rule as Activity (D458): nobody ever sees history of anything they couldn't see at the time and can't see now.
+- What happens to someone's history when they delete their account is for step 3h (PLAN.md).
+
+Why: "a lasting record, in case of arguments", in the owner's words.
+
+### D470. "Can view only" can always make their own shared account private again
+
+Decided by the owner 12 Nov 2026, answering step 3g's question. Confirms D462 as built.
+
+Whoever shared an account can make it private again, whatever their role.
+
+Why: the owner can't keep someone's own account by changing their role.
+
+### D471. "Changed by Tom" on the rows for 7 days
+
+Decided by the owner 12 Nov 2026, answering step 3g's question. Confirms D459 as built.
+
+A partner's change shows on the payment's row for 7 days, and always in its edit sheet.
+
+Why: the owner's choice.
+
+## Built with the owner's answers to step 3g
+
+### D472. A goal of your own that saves into a shared account brings a copy of that account
+
+Decided 12 Nov 2026 in step 3g. Adds to D468.
+
+- A savings goal only Tom sees can be kept in a shared account (D463). When Tom leaves without a copy, the goal would have no account to be kept in. So a copy of just that account comes with it either way: the account and its balance, without its payments.
+- The leaving screen says so: "Ring saves into Joint, so a copy of Joint comes with you either way."
+
+Why: otherwise leaving without a copy would lose a goal of Tom's own, which option A says goes with him. A copy of the account is the least that keeps it. The owner may prefer another way; this is easy to change.
+
+### D473. How leaving is built
+
+Decided 12 Nov 2026 in step 3g. Builds D468.
+
+- **Where:** Share with my partner has a **Leave this plan** card for anyone in a plan with someone else in it, whatever they can do. It opens a screen saying what comes with them and what stays, asks "Take a copy of the shared accounts?" with no answer chosen for them, and a sheet asks first: "Leave this plan?". If the owner is leaving, it says the other person will own the plan.
+- **One step on the server** (`leave_plan`): all of it, or nothing. It's refused for someone not in the plan ("not-found") and for someone alone in it ("alone"). Sent twice, it changes nothing the second time.
+- **The new plan** has the id made on the phone, as every plan's (D324), and the same bank holidays as the shared plan. Tom's own records keep their ids. Copies get new ids worked out from the new plan, and everything in them is private to Tom. His own links from shared payments to his own debts, goals and job (D291) go back on the copies. Removed payments come with a copy only where their payment's family still has a live one. If the copy can't be made, he leaves all the same with his own things, and Home says "The copy of the shared accounts couldn't be made, so it didn't come with you."
+- **The shared plan:** "From Tom" and his pay into a shared account are no longer locked to him, as they are. Overtime on his pay there stays as an amount; its details (hours, rate) are his and go. Every record private to Tom goes, with his notices. Changes only Tom could see go with him. In shared changes that stay, every copy of something private to him, and every copy at all of a record that went, is removed or emptied, so Jess keeps nothing of his. If Tom owned the plan, the other person owns it now, and any invite still open is cancelled.
+- **Names:** Activity and History keep the name of everyone who has been in the plan, so "Tom left the plan." and his older changes still say "Tom".
+- **His phones:** they find the plan they had is no longer in the account and bring down his new one in its place, as for any plan no longer in the account. Home then says "You've left the plan." with what came, until he taps "Got it". His Activity starts with "You left the shared plan, and took a copy of the shared accounts."
+- **Joining again later** works: his settings row in the shared plan, whose id comes from the plan and the person, is gone (PLAN.md item 60).
+
+Test: `supabase/tests/database/28-leaving.test.sql` (63 checks): the owner's two security tests (after leaving, Tom can read, bring down, save, hear and see nothing more of the plan, by every way the Data API offers; Jess's plan, its changes and its history name nothing of Tom's own), the shared accounts unchanged, what goes with him and its copy, "Can view only" leaving, nobody leaving a plan they're alone in, the owner leaving, and D472. Breaking four of its rules on purpose, one at a time, fails the checks each time. `apps/web/e2e/together.spec.ts` test 5. Screenshots: `docs/screens/3g/leave-360-light.png`, `leave-confirm-360-light.png`, `left-360-light.png`, `activity-tom-left-360-light.png`.
+
+Why: D468, and brief 8.7 test 5.
+
+### D474. How History and "from what to what" are built
+
+Decided 12 Nov 2026 in step 3g. Builds D469.
+
+- **History** is at the foot of a payment's edit sheet, with "Show its history", for a plan kept in an account: it's the account's history, so it isn't looked up until asked for. Each line: who, what, the day and the time, newest first, and "Undone since" on a change undone later.
+- The server's own step `payment_history` gives the changes to the payment's series and to its own one-off change and tick, with Activity's rule (D458). The phone keeps a change to the series only when it changed this payment: the engine works the payment out from the series as it was before and after (brief 5.3). So "this and all later ones" from a later date, or sharing the account, isn't in an earlier payment's History.
+- **"From" amounts:** for a one-off change, its earlier one-off amount, or else what the payment's series gave for it then. That's worked out by the engine from a copy of the series kept with each one-off change and tick when it's saved (new in this step). Overtime and missed shifts aren't in it: they're changes of their own.
+- **Activity** says from what to what for one-off changes, "this and all later ones" ("Tom changed Rent from £550.00 to £560.00, starting Tue 1 Dec."), changes to a spend and to a budget's amount. Where nothing was there before, it says what it is now, as before.
+- **Space:** measured on the test database, a change takes about 2.5 KB in all: the records it saved, before and after (1.7 a change on average, about 1 to 1.5 KB each with the database's own lists), the change itself and the phone it came from. A plan used every day by two people makes about 3,000 to 6,000 changes a year (8 to 16 a day: ticks, balance updates, spends, changes): roughly 5 to 15 MB of history a year. Supabase's free plan has 500 MB of database in all, so it holds a year of history for about 30 to 100 such plans; the paid plan has 8 GB.
+
+Test: `supabase/tests/database/29-payment-history.test.sql` (12 checks: what Tom sees of a payment shared later, nothing of a payment only Jess sees or one made private again, each payment's own changes only, and a change more than 12 months old). Breaking its privacy checks or its filter fails them. `apps/web/test/unit/lasting-history.test.ts` (12 tests). `apps/web/e2e/together.spec.ts` test 5. Screenshot: `docs/screens/3g/history-360-light.png`.
+
+Why: D469.
