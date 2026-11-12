@@ -224,7 +224,8 @@ $$;
 --   authenticator app's code was typed in the last 5 minutes,
 -- - "confirm" unless "delete" was typed,
 -- - "shared-plan" for someone who is or has been in a plan with someone
---   else, until the owner chooses what their partner's history then says.
+--   else, until the owner chooses what their partner's history then says,
+-- - "not-deleted" if the database refused any part of it.
 -- Only ever the person asking: there's nobody else it can name.
 create function public.delete_my_account(confirm text) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
@@ -251,7 +252,13 @@ begin
     perform app.refuse('shared-plan');
   end if;
 
-  address := app.delete_person(me);
+  -- All of it or nothing. Anything the database itself refused part-way is
+  -- answered with a code only, so no row or address reaches its logs.
+  begin
+    address := app.delete_person(me);
+  exception when others then
+    perform app.refuse('not-deleted');
+  end;
 
   -- The email that says it's done, sent once this step has finished. It
   -- names no amount, payment or note. With no way to send emails, the
