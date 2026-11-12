@@ -2610,7 +2610,6 @@ export const strings = {
     savingRole: 'Saving.',
     roleSavedEdit: (name: string) => `${name} can edit now.`,
     roleSavedView: (name: string) => `${name} can view only now.`,
-    roleSame: 'Choose the other answer to change it, or close this.',
     roleProblem: "PrePenny couldn't reach its server, so nothing changed. Try again in a minute.",
     roleOffline: "You're offline. Connect to the internet to change this.",
     close: 'Close',

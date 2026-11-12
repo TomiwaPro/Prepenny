@@ -254,10 +254,23 @@ export function ShareScreen() {
       <RoleSheet
         planId={planId}
         member={sharing.members.find((one) => one.person === roleFor) ?? null}
-        onClose={(said) => {
+        onClose={(said, role) => {
+          const person = roleFor;
           setRoleFor(null);
           if (said !== null) {
             setRoleSaid(said);
+            // Shown at once, before the server's own answer comes back.
+            if (role !== undefined && info.kind === 'ready') {
+              setInfo({
+                kind: 'ready',
+                sharing: {
+                  ...info.sharing,
+                  members: info.sharing.members.map((one) =>
+                    one.person === person ? { ...one, role } : one,
+                  ),
+                },
+              });
+            }
             void load();
           }
         }}
@@ -520,29 +533,29 @@ function RoleSheet({
 }: {
   readonly planId: string | null;
   readonly member: Sharing['members'][number] | null;
-  /** Closed: what was saved, in words, or null when nothing was. */
-  readonly onClose: (said: string | null) => void;
+  /** Closed: what was saved, in words, and the role now, or null when nothing was. */
+  readonly onClose: (said: string | null, role?: Role) => void;
 }) {
   const id = useId();
   const [role, setRole] = useState<Role>('editor');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const name = called(member?.nickname ?? '');
+  const person = member?.person ?? null;
+  const startsAs = member?.role === 'viewer' ? 'viewer' : 'editor';
+  // Starts from their role as the sheet opens, and not again while it's open.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only when it opens for someone
   useEffect(() => {
-    if (member !== null) {
-      setRole(member.role === 'viewer' ? 'viewer' : 'editor');
+    if (person !== null) {
+      setRole(startsAs);
       setProblem(null);
       setBusy(false);
     }
-  }, [member]);
+  }, [person]);
 
   async function save(event: FormEvent) {
     event.preventDefault();
     if (busy || member === null || planId === null) return;
-    if (role === member.role) {
-      setProblem(g.roleSame);
-      return;
-    }
     setBusy(true);
     setProblem(null);
     const done = await changeRole(planId, member.person, role);
@@ -552,7 +565,7 @@ function RoleSheet({
       return;
     }
     await syncNow();
-    onClose(role === 'viewer' ? g.roleSavedView(name) : g.roleSavedEdit(name));
+    onClose(role === 'viewer' ? g.roleSavedView(name) : g.roleSavedEdit(name), role);
   }
 
   return (
