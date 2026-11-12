@@ -213,7 +213,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openShare(page);
       await expect(page.getByTestId('member')).toHaveText([
         `${s.you('Tom')}${s.roles.owner}`,
-        `Jess${s.roles.editor}`,
+        // Since step 3g, the owner can change what Jess can do (D461).
+        `Jess${s.roles.editor}${strings.together.changeRole('Jess')}`,
       ]);
       await expect(page.getByTestId('invite')).toContainText(s.full);
 
@@ -631,7 +632,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openShare(page);
       await expect(page.getByTestId('member')).toHaveText([
         `${s.you('Jess')}${s.roles.owner}`,
-        `Sam${s.roles.editor}`,
+        // Since step 3g, the owner can change what Sam can do (D461).
+        `Sam${s.roles.editor}${strings.together.changeRole('Sam')}`,
       ]);
       await page.goto('/app/accounts/');
       await expect(page.getByText("Sam's savings")).toHaveCount(0);

@@ -25,7 +25,7 @@ import { layoutProblems, named } from './coming-up.ts';
 import { addPayment, noSidewaysScroll, openHome, undoBar } from './journeys.ts';
 import { box, fillAccount, noAxeProblems, radio } from './setup.ts';
 import { askForCode, makeAPlan, newEmail, signInEmail } from './sign-in-helpers.ts';
-import { openMore, secondPhone, signUpFromMore, sql } from './two-phones.ts';
+import { openMore, personOn, quoted, secondPhone, signUpFromMore, sql } from './two-phones.ts';
 
 const s = strings.share;
 const j = strings.join;
@@ -136,6 +136,14 @@ async function jessAndTom(
   await expect(tom.page).toHaveURL(/\/app\/$/, { timeout: 20_000 });
   await expect(tom.page.getByTestId('balance')).toBeVisible();
   return tom;
+}
+
+/** The plan of the person signed in on this phone, as the database's own id, for checks of it alone. */
+async function planOf(page: Page): Promise<string> {
+  const person = await personOn(page);
+  return sql(
+    `select plan_id from public.plan_members where person_id = ${quoted(person)} and left_at is null`,
+  );
 }
 
 /** Rent on Sun 1 Nov in Home's next three things due. */
@@ -258,8 +266,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(
         sql(`select count(*) from public.payment_changes c join public.series s on s.id = c.series_id
           where s.name = 'Rent' and c.amount = 56000 and not c.deleted
-            and s.plan_id = (select plan_id from public.plan_members m join public.people p on p.id = m.person_id
-              where p.nickname = 'Tom' and m.role = 'editor' order by m.joined_at desc limit 1)`),
+            and s.plan_id = ${quoted(await planOf(page))}`),
       ).toBe('0');
       await tom.context.close();
     });
@@ -339,7 +346,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(
         sql(`select count(*) from public.series s join public.goals g on g.id = s.goal_id
           where g.name = 'Holiday' and s.name = 'From Jess' and s.private_to is null
-            and s.locked_to is not null and s.created_at > now() - interval '10 minutes'`),
+            and s.locked_to is not null and s.plan_id = ${quoted(await planOf(page))}`),
       ).toBe('1');
       await expect(page.getByText(strings.clash.refusedTitle)).toHaveCount(0);
 
@@ -442,7 +449,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(refused).toBeVisible({ timeout: 20_000 });
       await expect(refused).toContainText(strings.clash.notAllowed);
       await refused.getByRole('button', { name: strings.clash.gotIt }).click();
-      expect(sql(`select count(*) from public.payment_changes where amount = 99900`)).toBe('0');
+      expect(
+        sql(`select count(*) from public.payment_changes where amount = 99900
+          and plan_id = ${quoted(await planOf(page))}`),
+      ).toBe('0');
       await openActivity(tom.page);
       await expect(
         entries(tom.page).filter({
@@ -563,12 +573,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // The server holds it private to Jess, with everything on it.
       expect(
         sql(`select count(*) from public.accounts a where a.name = 'Joint savings' and a.private_to is null
-          and a.created_at > now() - interval '10 minutes'`),
+          and a.plan_id = ${quoted(await planOf(page))}`),
       ).toBe('0');
       expect(
         sql(`select count(*) from public.series s join public.accounts a on a.id = s.account_id
           where a.name = 'Joint savings' and not s.deleted and s.private_to is distinct from a.private_to
-            and a.created_at > now() - interval '10 minutes'`),
+            and a.plan_id = ${quoted(await planOf(page))}`),
       ).toBe('0');
       await tom.context.close();
     });
