@@ -5685,6 +5685,7 @@ The owner's instruction, 12 Nov 2026.
 
 - In a shared plan, deleting works like leaving (D468, option A) first, then deletes. Before building that part, the options for what Jess's history then says about Tom's changes are shown to the owner with a plain example (Tom and Jess), with a recommendation, as a question in the report. It's built once the owner has answered.
 - So step 3h builds Download my data, Import a backup and deleting an account that has never shared a plan. Anyone who is, or has been, in a plan with someone else is refused for now ("shared-plan"), because their name is in the other person's history (PLAN.md item 66). The options are in `PLAN.md`, "Waiting for the owner".
+- **Answered the same day: option B (D482), built in step 3h.** The refusal is gone.
 
 Why: the owner's instruction.
 
@@ -5777,7 +5778,7 @@ Why: the owner's list of what the tests must prove.
 Decided 12 Nov 2026 in step 3h, from an outside review of its database steps and the import's checks, which tried each hole on the local database and forged files against `readBackup`. It found no way for anyone to download, import into or delete someone else's account, or to make an imported record someone else's. Adds to D477 and D478.
 
 - **Deleting, or importing, at the very moment a partner joins** could have removed the joiner's newly brought plan: the check of who's in the plan came before the plan was held. Now deleting holds the person's plans, and removing a plan (for an import, or "Keep the plan on this phone") holds that plan, before checking who's in it, so a join under way finishes first and is then seen, and the step is refused. Worked out from the code; a test needs two sessions at once, which the database tests can't do. Accepted: a join that starts at the very moment its plan is being deleted fails with the database's own error, and nothing changes.
-- **"Has shared a plan" could be got round**: once Tom had left, Jess could import a backup in place of the plan he'd been in, which took away the only sign that she'd shared it, and then delete her account. Now the database keeps a mark for everyone who has ever been in a plan with someone else (`app.shared_once`, filled in as anyone joins, and for everyone already so), which removing a plan doesn't take away.
+- **"Has shared a plan" could be got round**: once Tom had left, Jess could import a backup in place of the plan he'd been in, which took away the only sign that she'd shared it, and then delete her account. Now the database keeps a mark for everyone who has ever been in a plan with someone else (`app.shared_once`, filled in as anyone joins, and for everyone already so), which removing a plan doesn't take away. **Replaced by D482**: nobody is refused for having shared a plan any more, so the mark is gone.
 - **Nudges for a person's plan** (live updates naming the plan, not the person) stayed after deleting. Now deleting removes the nudges for the person and their plans, and any for a plan that's no longer there, such as one a backup replaced.
 - **Supabase's own sign-in log in the database** (`auth.audit_log_entries`) has no index the database may add, so deleting reads all of it: about 2.3 seconds for a million rows, against the 8 seconds a request may take. Supabase adds a row at every sign-in and every hourly renewal, so with many people it could grow past what deleting can read. Supabase lets the database copy be switched off (Authentication, Audit Logs, "Write audit logs to the database"), keeping the log in its own log storage, which it keeps 1 or 7 days (D479). It's a new setting for the owner (README.md part K): with it off, the table stops growing, and deleting stays quick.
 - **Putting a backup of the database back** now skips anyone in a plan with someone else, and anyone the database won't remove, and says how many it left, rather than stopping.
@@ -5787,3 +5788,57 @@ Decided 12 Nov 2026 in step 3h, from an outside review of its database steps and
 Test: `30-download-import-delete.test.sql` (4 new checks, 66 in all: importing in place of a plan someone left still leaves the person waiting for the owner's choice, and the mark can't be read). Taking the mark out fails 2 of them.
 
 Why: each was shown by the review with a case that went wrong, or by reading the code.
+
+## The owner's answers to step 3h
+
+D482 to D486 are the owner's answers to step 3h's question and their instructions, on 12 Nov 2026. Points marked "decided in step 3h" weren't in the owner's words.
+
+### D482. Deleting an account in a shared plan: option B, "Someone who has left"
+
+Decided by the owner 12 Nov 2026, answering step 3h's question (D475). Replaces D475's refusal and D481's lasting mark, which only kept that refusal; builds PLAN.md item 66.
+
+- When Tom deletes his account while he shares Jess's plan, or after having been in it, his changes stay in Jess's Activity, History and "Changed by", with **"Someone who has left"** in place of his name: "Someone who has left changed Rent on Sun 1 Nov from £550.00 to £560.00.", "Someone who has left changed it from £550.00 to £560.00, Tue 10 Nov, 2:05pm", "Changed by someone who has left, 2 hours ago". His leaving says "Someone left the plan.", and a role he was given, "You changed what someone who has left can do to Can view only." Amounts on shared payments stay, as they're Jess's records too. His name, email address, account and id appear nowhere afterwards.
+- **How it's built** (decided in step 3h):
+  - Deleting leaves the shared plan first, exactly as Leave this plan does without a copy (D468, D473): every shared account stays with Jess as it is, she owns the plan if Tom did, and everything only Tom sees goes into a plan of his own, which is deleted with the rest.
+  - Then he's **forgotten** in every plan he's been in that isn't his own (`app.forget_person`): every record he made or changed keeps everything but his id (made, changed, ticked and recorded by nobody), and so does every copy of a record in the history of changes, the server's own words for its steps ("Tom left the plan"), Jess's notices about his changes (with the device he made them on taken off), and invites. His changes are made by nobody now (`edits.person_id` empty). The database's own stamps, which would otherwise mark each record as changed just now by the person deleting, keep everything as it was while someone is forgotten (`app.forgetting`), only giving each record a new change number so Jess's phones bring it down again.
+  - All of it, leaving, forgetting and deleting, is one step, or nothing ("not-deleted").
+  - Jess's phone keeps a row it's sent again when who made or changed it is different, not only at a new version, so nothing she's changing at that moment clashes with it.
+  - "Changed by" on a payment shows for a change by someone whose account was deleted even once Jess is alone in the plan; otherwise a plan with one person in it still shows none (D459).
+- The delete screen, in a shared plan, under **Your shared plan**: "You share a plan with Jess. Deleting your account takes you out of it first, as Leave this plan does: every shared account stays with Jess as it is, and everything only you see is deleted." and "Your changes stay in Jess's Activity and History, as made by "Someone who has left". Your name, email address and account go."
+- Putting a backup of the database back (D478) still leaves anyone who has been in a plan with someone else for a person to look at, as leaving needs their own sign-in.
+
+Test: `supabase/tests/database/30-download-import-delete.test.sql` (85 checks: Tom deletes while in the plan, Sam after having left it, then Jess; after each, nothing in any table of any part of the database names their id, address, backup address or name, and Jess's plan, Activity, History, "Changed by" and notices keep the changes by nobody). Taking out any one of the three clean-ups (the changes, the history's copies, the notices) fails the checks, or the deletion refuses as a whole. `apps/web/test/unit/someone-who-left.test.ts` (5). `apps/web/e2e/together.spec.ts` test 6: on two phones, Tom (named "Tomasz", to look for it afterwards) changes Rent and deletes his account; Jess's phone, left open, shows "Changed by someone who has left", History and Activity keep the change, and neither the database nor anything on her phone holds his id, address or name. Screenshots: `docs/screens/3h/delete-shared-360-light.png`, `activity-after-delete-360-light.png`.
+
+Why: the owner's choice: "Their changes stay in the other person's Activity, History and "Changed by", with "Someone who has left" in place of their name", with tests proving the deleted person's name, email and nickname appear nowhere afterwards.
+
+### D483. Importing a backup into a shared plan: not now
+
+Decided by the owner 12 Nov 2026. Confirms D477.
+
+A backup only ever replaces a plan of one's own. Bringing a backup's accounts into a shared plan as the person's own private accounts stays an idea (PLAN.md item 69).
+
+Why: the owner's choice.
+
+### D484. "Delete my account" for the test accounts of README parts H and J
+
+The owner's instruction, 12 Nov 2026.
+
+Since D482, the two test accounts of parts H and J, which share a plan, are removed with Delete my account on each phone, in either order (README.md). The SQL query of part H is kept only as a fallback, for an account that can't be signed in to any more.
+
+Why: the owner's instruction.
+
+### D485. The launch checklist checks how long Resend keeps sent emails
+
+The owner's instruction, 12 Nov 2026. Builds D479 and PLAN.md item 68.
+
+Launch checklist item 9: check on resend.com how long Resend keeps the emails it has sent, and if it's longer than 30 days, change "within 30 days" in the app and the deletion email.
+
+Why: D479 couldn't confirm Resend's 30 days from Resend's own site.
+
+### D486. Supabase's sign-in log is no longer written to the database
+
+The owner, 12 Nov 2026, as README.md part K asked (D481).
+
+The owner turned off **Write audit logs to the database** in Supabase (Authentication, Audit Logs). Supabase keeps the log in its own log storage, 1 day on the free plan and 7 on the paid plan (D479), and deleting an account no longer has a growing table to read. Rows written before stay until someone they name deletes their account, which removes theirs.
+
+Why: the owner's action.

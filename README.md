@@ -410,7 +410,13 @@ When you're done, sign out on both phones, and sign in again on yours with your 
 
 #### Removing the two test accounts afterwards
 
-These two accounts have shared a plan, so "Delete my account and all my data" (step 3h, part K) doesn't remove them yet: deleting an account that has shared a plan waits for your answer on what the other person's history then says (PLAN.md, "Waiting for the owner"). Until it's built, use this query. It removes two accounts and everything of theirs, and nothing else. It refuses unless it finds exactly the two addresses typed, and unless their plans have nobody else in them.
+Use **Delete my account** on each phone (step 3h, part K), in either order:
+
+1. On the phone signed in as one of them, tap **More**. Under **Your data**, tap **Delete my account and all my data**. In a shared plan it says what happens: the shared accounts stay with the other person, and your changes stay in their history as made by "Someone who has left".
+2. Tap **Send me a code**, type the 6-digit code from the email, type `delete`, and tap **Delete my account and all my data**. The welcome says "Your account and all your data have been deleted…", and the email "Your PrePenny account has been deleted" arrives.
+3. Do the same on the other phone. Once both are deleted, nothing of either is left.
+
+**Only if that can't be done**, for example when one of the addresses can't receive email any more, this query in Supabase is the fallback. It removes two accounts and everything of theirs, and nothing else. It refuses unless it finds exactly the two addresses typed, and unless their plans have nobody else in them.
 
 1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
 2. Paste this, and type the two spare addresses in place of the two on the first line, keeping the quote marks:
@@ -503,7 +509,9 @@ When you're done, close the private window, and on device A sign out and sign in
 
 #### Removing every test account afterwards
 
-This removes the test accounts and everything of theirs, and nothing else, with the query in part H ("Removing the two test accounts afterwards"), which takes any number of addresses. It refuses to do anything unless it finds every address typed, and unless their plans have nobody else in them.
+Sign in as each test account in turn and use **Delete my account**, as part H says ("Removing the two test accounts afterwards"), in any order.
+
+**Only if that can't be done**, this removes the test accounts and everything of theirs, and nothing else, with the query in part H, which takes any number of addresses. It refuses to do anything unless it finds every address typed, and unless their plans have nobody else in them.
 
 1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
 2. Paste the query from part H. On its first line, put all four test addresses, keeping the quote marks:
@@ -596,7 +604,9 @@ When you're done, close the private window, and on device A sign out and sign in
 
 #### Removing the two test accounts afterwards
 
-These two accounts have shared a plan, so, as in part H, "Delete my account" doesn't remove them yet. Use the same query as part H ("Removing the two test accounts afterwards"), with this step's two addresses. It refuses to do anything unless it finds both, and unless their plan has nobody else in it.
+Use **Delete my account** on each device, in either order, as part H says ("Removing the two test accounts afterwards"): **More**, **Delete my account and all my data**, **Send me a code**, the code, `delete`, then **Delete my account and all my data**. If Tom deletes his first, Jess's Activity then says "Someone who has left changed Rent…" and "Someone left the plan." (D482).
+
+**Only if that can't be done**, use the same query as part H, with this step's two addresses. It refuses to do anything unless it finds both, and unless their plan has nobody else in it.
 
 1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
 2. Paste the query from part H. On its first line, put the two addresses, keeping the quote marks:
@@ -611,7 +621,7 @@ Your own account is never touched: the query only finds the addresses typed on i
 
 ### K. Step 3h: download, import and delete
 
-**What you need to set up: one setting in Supabase, two minutes.** Deleting an account also removes the person from Supabase's own sign-in log when that log is kept in the database. That log grows with every sign-in, and the database can only read all of it, so turn off its database copy and deleting stays quick (D481). Supabase still keeps the log in its own log storage, for 1 day on the free plan and 7 on the paid plan.
+**What you need to set up: one setting in Supabase, two minutes. Done by the owner on 12 Nov 2026 (D486).** Deleting an account also removes the person from Supabase's own sign-in log when that log is kept in the database. That log grows with every sign-in, and the database can only read all of it, so turn off its database copy and deleting stays quick (D481). Supabase still keeps the log in its own log storage, for 1 day on the free plan and 7 on the paid plan.
 
 1. On supabase.com, open the **prepenny** project, then **Authentication** in the menu on the left.
 2. Under **Configuration**, open **Audit Logs**. (Supabase moves its menus now and then: it may be under **Settings** instead.)
@@ -663,7 +673,16 @@ Delete my account:
 15. The welcome says "Your account and all your data have been deleted, and nothing of yours is left on this phone. An email is on its way to say so." Your inbox has "Your PrePenny account has been deleted".
 16. (If you did step 13.) Within a minute, without touching it, your phone opens the welcome: "This account has been deleted, so nothing of it is left on this phone." Sign in again there with your own address.
 
-Nothing to remove afterwards: the account deleted itself. An account that has shared a plan, as in parts H and J, can't be deleted this way yet: it says "Your account can't be deleted here yet…", and the query in part H removes it.
+Nothing to remove afterwards: the account deleted itself.
+
+#### Deleting in a shared plan, with two devices
+
+Using the two test accounts of part J, or two new "+" addresses shared as part J's steps 1 to 9 do (Jess on device A, Tom in a private window on device B):
+
+17. On device B, on Home, tap **Rent**, change the amount to `560`, and tap **Save**. On device A, Rent shows "Changed by Tom, just now".
+18. On device B, tap **More**, then **Delete my account and all my data**. Under **Your shared plan**: "You share a plan with Jess. Deleting your account takes you out of it first…". Send the code, type it and `delete`, and tap **Delete my account and all my data**.
+19. On device A, within a minute: Rent shows "Changed by someone who has left". **More**, then **Activity**: "Someone left the plan." and "Someone who has left changed Rent on … from £550.00 to £560.00." Tap **Rent** on Home, then **Show its history**: "Someone who has left changed it from £550.00 to £560.00". The name Tom is nowhere.
+20. To finish, delete Jess's account the same way on device A.
 
 #### If a backup of the database is ever put back
 

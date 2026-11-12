@@ -841,7 +841,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noAxeProblems(page);
       await jessEdit.getByRole('button', { name: strings.sheet.close }).click();
 
-      // Her Activity keeps his change and his leaving, and names nobody.
+      // Her Activity keeps his change and his leaving, and names nobody. The
+      // phone is loaded afresh first, so what's shown comes from what it keeps,
+      // not from a sheet still in memory from when he joined.
+      await page.reload();
       await openActivity(page);
       await expect(
         entries(page).filter({
