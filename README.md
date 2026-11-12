@@ -611,9 +611,16 @@ Your own account is never touched: the query only finds the addresses typed on i
 
 ### K. Step 3h: download, import and delete
 
-**What you need to set up: nothing new.** Checked one by one, in this step's own changes:
+**What you need to set up: one setting in Supabase, two minutes.** Deleting an account also removes the person from Supabase's own sign-in log when that log is kept in the database. That log grows with every sign-in, and the database can only read all of it, so turn off its database copy and deleting stays quick (D481). Supabase still keeps the log in its own log storage, for 1 day on the free plan and 7 on the paid plan.
 
-- **Supabase.** The **Database** workflow adds this step's database changes with the key it already has, after its key check of all eleven permissions (D406). No new sign-in setting, web address, email template, function or permission. "Check it's you", before deleting, sends the same 6-digit sign-in email as signing in (part E's template). Deleting an account removes it from Supabase's sign-in tables inside the database itself, as signing devices out already does (step 3e), so no new key or function is needed. Backups: the free plan has none, and there's nothing to switch on; the paid plan's daily backups come with the move to it before launch (launch checklist, item 3).
+1. On supabase.com, open the **prepenny** project, then **Authentication** in the menu on the left.
+2. Under **Configuration**, open **Audit Logs**. (Supabase moves its menus now and then: it may be under **Settings** instead.)
+3. Turn **Write audit logs to the database** off, and save if there's a **Save** button.
+4. That's all. If you can't find it, nothing breaks for now: deleting only slows down once there are hundreds of thousands of sign-ins, long after launch.
+
+Everything else, checked one by one, in this step's own changes, is nothing new:
+
+- **Supabase.** The **Database** workflow adds this step's database changes with the key it already has, after its key check of all eleven permissions (D406). No other new sign-in setting, web address, email template, function or permission. "Check it's you", before deleting, sends the same 6-digit sign-in email as signing in (part E's template). Deleting an account removes it from Supabase's sign-in tables inside the database itself, as signing devices out already does (step 3e), so no new key or function is needed. Backups: the free plan has none, and there's nothing to switch on; the paid plan's daily backups come with the move to it before launch (launch checklist, item 3).
 - **Resend.** One new email, "Your PrePenny account has been deleted", from hello@prepenny.co.uk, through the same key in Supabase's Vault (part F). Resend's free plan allows 100 emails a day.
 - **GitHub.** No new secret or variable, and no workflow changed. The new end-to-end tests run in the sign-in tests' parts, which already start a local Supabase: about 5 more minutes across the three parts.
 - **Cloudflare.** Nothing new: Download my data, Import a backup and Delete my account are ordinary pages, and the files are made on the phone.

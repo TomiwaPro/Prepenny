@@ -17,7 +17,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(62);
+select plan(66);
 
 select tests.make_jess_and_tom();
 
@@ -119,7 +119,8 @@ insert into auth.refresh_tokens (token, user_id, session_id, revoked)
 do $$
 begin
   insert into realtime.messages (topic, extension, payload, event, private)
-    values ('plan:' || tests.id('alex-plan') || ':' || tests.id('alex'), 'broadcast', '{}', 'changed', true);
+    values ('plan:' || tests.id('alex-plan') || ':' || tests.id('alex'), 'broadcast', '{}', 'changed', true),
+      ('plan:' || tests.id('alex-plan'), 'broadcast', '{}', 'changed', true);
 exception when others then
   -- No place for today's nudges while Realtime is off, as on GitHub's check.
   null;
@@ -295,6 +296,8 @@ select is(public.delete_my_account('  Delete ') ->> 'deleted', 'true',
   'Alex deletes his account, with "Delete" typed as it comes');
 select tests.as_test();
 
+-- The email that says it's done waits in pg_net's queue until it's sent, as
+-- bytes this search doesn't read: it's checked on its own below.
 select is_empty($$ select pg_temp.naming(tests.id('alex')::text) $$,
   'Nothing in the database names Alex''s id any more, in any table');
 select is_empty($$ select pg_temp.naming('alex@example.test') $$,
@@ -351,7 +354,18 @@ select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'sha
 select tests.as_person('jess');
 select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan',
   'and so does Jess, alone in it now');
+
+-- Found by the outside review: importing a backup took the plan Tom had been
+-- in away, and with it the only sign that she'd shared it.
+select is(public.replace_plan(tests.id('plan'), tests.id('jess-new-plan'), 'england-and-wales') ->> 'plan',
+  tests.id('jess-new-plan')::text, 'Jess can import a backup in place of the plan Tom left');
+select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan',
+  'but still waits for the owner''s choice: having shared a plan is kept');
+select tests.as_person('tom');
+select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan', 'and so does Tom');
 select tests.as_test();
+select ok(not has_table_privilege('authenticated', 'app.shared_once', 'select'),
+  'Nobody can read who has shared a plan');
 
 -- ---------------------------------------------------------------------------
 -- 6. A backup from before put back: the deletion is made again.

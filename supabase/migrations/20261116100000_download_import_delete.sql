@@ -139,16 +139,48 @@ language sql stable security definer set search_path = '' as $$
   )
 $$;
 
+-- Everyone who has ever been in a plan with someone else, kept for as long
+-- as their sign-in is: removing or replacing the plan they shared doesn't
+-- take it away (found by step 3h's outside review). Filled in as someone
+-- joins a plan, for them and everyone in it, and for everyone already so.
+create table app.shared_once (
+  person_id uuid primary key references auth.users (id) on delete cascade
+);
+alter table app.shared_once enable row level security;
+revoke all on app.shared_once from public, anon, authenticated;
+
+create function app.note_shared() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from public.plan_members m
+      where m.plan_id = new.plan_id and m.person_id <> new.person_id) then
+    insert into app.shared_once (person_id)
+      select m.person_id from public.plan_members m where m.plan_id = new.plan_id
+      on conflict (person_id) do nothing;
+  end if;
+  return null;
+end;
+$$;
+
+create trigger note_shared after insert on public.plan_members
+  for each row execute function app.note_shared();
+
+insert into app.shared_once (person_id)
+  select distinct mine.person_id from public.plan_members mine
+  join public.plan_members other on other.plan_id = mine.plan_id and other.person_id <> mine.person_id
+  on conflict (person_id) do nothing;
+
 -- True for someone who is, or has ever been, in a plan with someone else:
 -- their name is then in the other person's history, which waits for the
 -- owner's choice (PLAN.md item 66).
 create function app.ever_shared(person uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
-  select exists (
-    select 1 from public.plan_members mine
-    join public.plan_members other on other.plan_id = mine.plan_id and other.person_id <> mine.person_id
-    where mine.person_id = person
-  )
+  select exists (select 1 from app.shared_once s where s.person_id = person)
+    or exists (
+      select 1 from public.plan_members mine
+      join public.plan_members other on other.plan_id = mine.plan_id and other.person_id <> mine.person_id
+      where mine.person_id = person
+    )
 $$;
 
 -- Removes everything of one person's: their plans, with every record, change
@@ -163,8 +195,10 @@ language plpgsql volatile security definer set search_path = '' as $$
 declare
   address text;
   addresses text[];
+  their_plans text[];
 begin
   select u.email into address from auth.users u where u.id = me;
+  select coalesce(array_agg(p.id::text), '{}') into their_plans from public.plans p where p.owner = me;
   addresses := array_remove(array[lower(address),
     (select lower(b.email) from app.backup_emails b where b.person_id = me)], null);
 
@@ -190,11 +224,18 @@ begin
   delete from app.get_back_in g where g.person_id = me;
   delete from app.devices d where d.person_id = me;
 
-  -- The nudges sent to their phones hold nothing but the topic, which has
-  -- their id in it. Supabase's own log of their sign-ins, when it's kept in
-  -- the database, has their address. Both go, where this database may.
+  -- The nudges sent to their phones and plans hold nothing but the topic,
+  -- which has their id or their plan's in it: theirs go, with any for a plan
+  -- that's no longer there. Supabase's own log of their
+  -- sign-ins, when it's kept in the database, has their address. Both go,
+  -- where this database may.
   begin
-    delete from realtime.messages m where m.topic like 'plan:%:' || me::text;
+    delete from realtime.messages m
+      where m.topic like 'plan:%:' || me::text
+        or split_part(m.topic, ':', 2) = any (their_plans)
+        -- and any plan's no longer there, such as one a backup replaced.
+        or (m.topic like 'plan:%'
+          and not exists (select 1 from public.plans p where p.id::text = split_part(m.topic, ':', 2)));
   exception when insufficient_privilege or undefined_table then
     null;
   end;
@@ -237,8 +278,11 @@ begin
   if me is null or not app.session_ok() then
     perform app.refuse('not-allowed', '42501');
   end if;
-  -- One at a time for this person, as joining and leaving are.
+  -- One at a time for this person, as joining and leaving are, and nobody
+  -- joins their plan while it's checked and deleted: a join under way
+  -- finishes first, and is then seen (found by step 3h's outside review).
   perform 1 from public.people p where p.id = me for update;
+  perform 1 from public.plans p where p.owner = me for update;
   if not app.fresh_sign_in() then
     perform app.refuse('sign-in-again');
   end if;
@@ -272,7 +316,7 @@ begin
           || 'that run it, are gone within 30 days.',
         'You can make a new account with this email address at any time.'],
       'If you didn''t ask for this, write to hello@prepenny.co.uk.');
-  exception when sqlstate 'P0001' then
+  exception when others then
     emailed := false;
   end;
   return jsonb_build_object('deleted', true, 'emailed', emailed, 'now', app.server_time());
@@ -287,15 +331,48 @@ language plpgsql volatile security definer set search_path = '' as $$
 declare
   person uuid;
   done integer := 0;
+  skipped integer := 0;
 begin
   for person in
     select u.id from auth.users u
     where app.person_key(u.id) in (select d.person_key from app.deletions d)
   loop
-    perform app.delete_person(person);
-    done := done + 1;
+    -- Someone in a plan with anyone else is left for a person to look at,
+    -- so nobody else's records go; so is anyone the database won't remove.
+    if app.ever_shared(person) then
+      skipped := skipped + 1;
+      continue;
+    end if;
+    begin
+      perform app.delete_person(person);
+      done := done + 1;
+    exception when others then
+      skipped := skipped + 1;
+    end;
   end loop;
+  if skipped > 0 then
+    raise notice '% left as they were: look at them before deleting them by hand.', skipped;
+  end if;
   return done;
+end;
+$$;
+
+-- Removing a plan (step 3c), as "Keep the plan on this phone" and importing
+-- a backup do: the plan is held first, so someone joining it at that moment
+-- finishes joining first and is then seen, and the plan stays.
+create or replace function public.remove_plan(plan uuid) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if plan is null or not app.session_ok()
+    or not exists (select 1 from app.my_owned_plans() p where p = plan) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  perform 1 from public.plans p where p.id = plan for update;
+  if exists (select 1 from public.plan_members m
+      where m.plan_id = plan and m.left_at is null and m.person_id <> auth.uid()) then
+    perform app.refuse('shared-plan');
+  end if;
+  delete from public.plans p where p.id = plan;
 end;
 $$;
 
