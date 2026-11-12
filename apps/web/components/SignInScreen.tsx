@@ -43,6 +43,7 @@ import { formatDay } from '../lib/dates.ts';
 import { passSecondStep, twoStep } from '../lib/security.ts';
 import { keptToken } from '../lib/sharing.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
+import { useStarted } from '../lib/started.ts';
 import { localToday } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
@@ -195,6 +196,8 @@ export function SignInScreen() {
   // The email link's one-time key, kept here until "Finish signing in" is tapped.
   const linkKey = useRef<string | null>(null);
   const off = signInConfig() === null;
+  // Its forms only once its code has started (lib/started.ts).
+  const started = useStarted();
 
   // What the address says: who it's for, where it came from, and anything
   // coming back from the email's link or from Google.
@@ -540,7 +543,7 @@ export function SignInScreen() {
           <section className={styles.card}>
             <p>{t.off}</p>
           </section>
-        ) : step === 'choose' && choice !== null ? (
+        ) : !started ? null : step === 'choose' && choice !== null ? (
           <form
             className={styles.card}
             onSubmit={chooseToKeep}

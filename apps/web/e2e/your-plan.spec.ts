@@ -21,7 +21,8 @@
 //    Home with the same figures; a change on either phone reaches the other.
 // 8. A phone part-way through setup, not signed in, signs in from the
 //    welcome's "Already have an account? Sign in" and is asked which to keep.
-// 9. A fresh phone signs in from the welcome, and the saved plan comes down.
+// 9. A fresh phone signs in from the welcome, and the saved plan comes down;
+//    and (9b) one signed in before its account has a plan brings it down later.
 // 10. Signing out from the welcome screen, and from a setup step.
 // With three more, run once: an account that already has two plans of its
 // own asks which to keep (11), two phones sending their first copy at the
@@ -597,9 +598,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('balance')).toContainText('£267.54');
       expect(await threeScreens(page)).toEqual(saved);
       await noAxeProblems(page);
+      await second.context.close();
+    });
 
-      // And a fresh phone signed in before its account has a plan: left open
-      // on the welcome, it brings the plan down once another phone has saved one.
+    // Once part of test 9 (PLAN.md item 65): with both parts, four phones and
+    // two setups, it did twice a test's work in a test's 30 seconds, and three
+    // at a time on the building computer took 31 to 35 seconds, measured.
+    test('9b. a fresh phone signed in before its account has a plan, left open on the welcome, brings the plan down once another phone has saved one', async ({
+      browser,
+    }, info) => {
       const later = newEmail('kofi-later');
       const third = await secondPhone(browser, info, colorScheme);
       await signIn(third.page, later);
@@ -613,7 +620,6 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await third.page.evaluate(() => window.dispatchEvent(new Event('online')));
       await expect(third.page).toHaveURL(/\/app\/$/);
       await expect(third.page.getByTestId('balance')).toContainText('£267.54');
-      await second.context.close();
       await third.context.close();
       await fourth.context.close();
     });

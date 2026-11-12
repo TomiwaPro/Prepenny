@@ -8,6 +8,7 @@
 
 import { useId, useState, useSyncExternalStore } from 'react';
 import { changePin, lockOn, PIN, type PinCheck, turnOffLock, turnOnLock } from '../lib/app-lock.ts';
+import { useStarted } from '../lib/started.ts';
 import { strings } from '../strings/en-GB.ts';
 import { describedBy, Field, Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
@@ -77,6 +78,8 @@ export function LockSettingsScreen() {
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState<'off' | 'change' | null>(null);
+  // Its form only once its code has started (lib/started.ts).
+  const started = useStarted();
 
   return (
     <>
@@ -88,7 +91,7 @@ export function LockSettingsScreen() {
       <p className={styles.line} role="status" data-testid="lock-said">
         {said}
       </p>
-      {on ? (
+      {!started ? null : on ? (
         <section className={styles.card} data-testid="lock-settings">
           <p className={styles.line}>{t.isOn}</p>
           <p className={styles.second}>{t.preview}</p>
