@@ -19,6 +19,7 @@ import { layoutProblems } from './coming-up.ts';
 import { expect, settingScript, test } from './fixtures.ts';
 import { noSidewaysScroll } from './journeys.ts';
 import {
+  billOn,
   box,
   expectStep,
   fillAccount,
@@ -28,7 +29,6 @@ import {
   noAxeProblems,
   radio,
   rentForm,
-  billOn,
   skip,
   startSetup,
 } from './setup.ts';
@@ -71,7 +71,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme });
     });
 
-    test("1. Sam's example: \"Example plan, as on Sun 25 Oct 2026\", never \"today\"", async ({
+    test('1. Sam\'s example: "Example plan, as on Sun 25 Oct 2026", never "today"', async ({
       page,
     }, info) => {
       await openHome(page);
@@ -160,7 +160,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
         return {
           lines,
           clipped:
-            element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight,
+            element.scrollWidth > element.clientWidth ||
+            element.scrollHeight > element.clientHeight,
         };
       });
       expect(fits.clipped).toBe(false);
@@ -219,9 +220,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const button = practice.getByRole('button', { name: BUTTON, exact: true });
       await expect(button).toBeVisible();
       const sheet = await openSheet(page, button, 'I did overtime');
-      await sheet.getByRole('group', { name: 'What happened?' }).getByRole('radio', {
-        name: 'I missed a shift',
-      }).check();
+      await sheet
+        .getByRole('group', { name: 'What happened?' })
+        .getByRole('radio', {
+          name: 'I missed a shift',
+        })
+        .check();
       await expect(
         page
           .getByRole('dialog', { name: 'I missed a shift' })
@@ -396,7 +400,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
         // the whole account card still shows, and the lowest point with its
         // status, figure and date; only its last small line can be under
         // the navigation.
-        await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today: '2026-10-27' }] as const);
+        await page.addInitScript(settingScript, [
+          TEST_SETTING_KEY,
+          { today: '2026-10-27' },
+        ] as const);
         await page.goto('/app/');
         await expect(page.getByTestId('bank-showed')).toHaveText(
           `Your bank showed £267.54 on ${day('Mon 26 Oct')}`,

@@ -183,9 +183,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(link).toBeVisible();
       // Right under the four buttons since the polish step (D442), which
       // replaces "right under the account card" (D431).
-      const actions = await page
-        .getByRole('region', { name: strings.actions.label })
-        .boundingBox();
+      const actions = await page.getByRole('region', { name: strings.actions.label }).boundingBox();
       const under = await link.boundingBox();
       expect(actions !== null && under !== null).toBe(true);
       if (actions !== null && under !== null) {
