@@ -2500,10 +2500,9 @@ export const strings = {
     activityLink: 'Activity',
     activityLine: 'Every change, and undo for your own',
     heading: 'Activity',
-    purpose:
-      'Every change to your plan in the last 12 months, newest first. You can undo your own.',
+    purpose: 'Every change to your plan, newest first. You can undo your own.',
     purposeShared: (partner: string) =>
-      `Every change you and ${partner} made in the last 12 months, newest first. You can undo your own changes, but not ${partner}'s.`,
+      `Every change you and ${partner} made, newest first. You can undo your own changes, but not ${partner}'s.`,
     back: 'Back to More',
     signInFirst:
       'Activity shows the changes saved in your account. Sign in first, so your plan is kept there.',
@@ -2545,6 +2544,8 @@ export const strings = {
       ticked: (count: number) => (count === 1 ? 'ticked 1 payment' : `ticked ${count} payments`),
       changedOneTo: (name: string, date: string, amount: string) =>
         `changed ${name} on ${date} to ${amount}`,
+      changedOneFromTo: (name: string, date: string, from: string, to: string) =>
+        `changed ${name} on ${date} from ${from} to ${to}`,
       changedOne: (name: string, date: string) => `changed ${name} on ${date}`,
       movedOne: (name: string, date: string, to: string) => `moved ${name} on ${date} to ${to}`,
       removedOne: (name: string, date: string) => `removed ${name} on ${date}`,
@@ -2552,6 +2553,10 @@ export const strings = {
         `changed ${name} to ${amount} from ${from}`,
       changedLater: (name: string, from: string) => `changed ${name} from ${from}`,
       changedAllTo: (name: string, amount: string) => `changed ${name} to ${amount}`,
+      changedLaterFromTo: (name: string, from: string, to: string, date: string) =>
+        `changed ${name} from ${from} to ${to}, starting ${date}`,
+      changedAllFromTo: (name: string, from: string, to: string) =>
+        `changed ${name} from ${from} to ${to}`,
       removedLater: (name: string) => `removed ${name} for this and all later ones`,
       addedOnce: (name: string, amount: string, date: string) =>
         `added ${name}, ${amount} on ${date}`,
@@ -2565,6 +2570,10 @@ export const strings = {
           : `updated the ${account} balance to ${amount}, and ticked ${count} payments`,
       spent: (amount: string, budget: string) => `spent ${amount} on ${budget}`,
       changedSpend: (budget: string, amount: string) => `changed a spend on ${budget} to ${amount}`,
+      changedSpendFromTo: (budget: string, from: string, to: string) =>
+        `changed a spend on ${budget} from ${from} to ${to}`,
+      budgetFromTo: (name: string, from: string, to: string) =>
+        `changed the budget ${name} from ${from} to ${to}`,
       removedSpend: (amount: string, budget: string) => `removed a spend of ${amount} on ${budget}`,
       added: (thing: string) => `added ${thing}`,
       changed: (thing: string) => `changed ${thing}`,
@@ -2594,6 +2603,10 @@ export const strings = {
       undidSomething: 'undid a change',
       changedNames: (names: string) => `changed ${names}`,
       madeAChange: 'made a change',
+      /** Leaving (D468): in the plan left, and in the leaver's new plan. */
+      left: 'left the plan',
+      leftOwn: 'left the shared plan',
+      leftOwnCopy: 'left the shared plan, and took a copy of the shared accounts',
       kinds: { account: 'account', debt: 'debt', goal: 'savings goal' } as Record<string, string>,
     },
 
@@ -2680,6 +2693,90 @@ export const strings = {
     putInStart: 'Already saved when it was made',
     putInOther: 'Other money in',
     putInOut: 'Taken out',
+
+    /** A payment's history, in its edit sheet (D469): "Tom changed it from £550.00 to £560.00, Tue 10 Nov, 2:05pm". */
+    history: {
+      heading: 'History',
+      intro: 'Every change to this payment, newest first, and who made it.',
+      show: 'Show its history',
+      hide: 'Hide its history',
+      loading: 'Finding its history.',
+      empty: 'No changes to this payment yet.',
+      problem:
+        "PrePenny couldn't reach its server, so the history can't be shown. Try again in a minute.",
+      offline: "You're offline. Connect to the internet to see its history.",
+      line: (who: string, what: string, day: string, time: string) =>
+        `${who} ${what}, ${day}, ${time}`,
+      undone: 'Undone since',
+      added: 'added it',
+      changedFromTo: (from: string, to: string) => `changed it from ${from} to ${to}`,
+      changedTo: (to: string) => `changed it to ${to}`,
+      moved: (date: string) => `moved it to ${date}`,
+      removed: 'removed it',
+      putBack: 'put it back',
+      renamed: (name: string) => `renamed it ${name}`,
+      note: 'changed its note',
+      changed: 'changed it',
+      markedPaid: 'marked it as paid',
+      markedArrived: 'marked it as arrived',
+      markedNotPaid: 'marked it as not paid',
+      markedNotArrived: 'marked it as not arrived',
+      laterFromTo: (from: string, to: string) =>
+        `changed this one and all later ones from ${from} to ${to}`,
+      laterChanged: 'changed this one and all later ones',
+      laterRemoved: 'removed this one and all later ones',
+      undid: 'undid a change to it',
+    },
+
+    /** Leaving a shared plan (brief 4.14, D468), from Share with my partner. */
+    leave: {
+      link: 'Leave this plan',
+      linkLine: (partner: string) =>
+        `Stop sharing with ${partner}, and take your own things with you`,
+      heading: 'Leave this plan',
+      purpose: (partner: string) =>
+        `Stop sharing a plan with ${partner}. Your own things come with you into a plan of your own. Nobody has to agree.`,
+      back: 'Back to Share with my partner',
+      comesHeading: 'What comes with you',
+      comes:
+        'Everything only you see: your own accounts, payments, debts, savings goals and job details, with their history.',
+      staysHeading: (partner: string) => `What stays with ${partner}`,
+      staysShared: 'Every shared account, with everything in it, as it is now.',
+      staysChanges: (partner: string) =>
+        `Your changes to shared things stay in ${partner}'s Activity, with your name.`,
+      staysMoney: (partner: string) =>
+        `Money you put into a shared account, and your pay into one, stay there as amounts ${partner} can change.`,
+      ownerPasses: (partner: string) => `${partner} will own the plan once you've left.`,
+      copyLegend: 'Take a copy of the shared accounts?',
+      copyYes: 'Yes, take a copy',
+      copyYesHint: (partner: string) =>
+        `Each shared account as it is today, with its payments, just for you. It won't change when ${partner} changes something.`,
+      copyNo: 'No, just my own things',
+      copyError: 'Choose whether to take a copy of the shared accounts.',
+      goalComes: (goal: string, account: string) =>
+        `${goal} saves into ${account}, so a copy of ${account} comes with you either way.`,
+      leave: 'Leave this plan',
+      stay: 'Stay in the plan',
+      confirmTitle: 'Leave this plan?',
+      confirmIntro: (partner: string) =>
+        `You'll stop seeing the shared accounts, and ${partner} will stop seeing anything of yours. This can't be undone, but ${partner} can invite you again.`,
+      confirmYes: 'Yes, leave',
+      confirmNo: 'No, stay',
+      leaving: 'Leaving the plan.',
+      done: 'Your own things are in a plan of your own now.',
+      doneCopy:
+        'Your own things are in a plan of your own now, with a copy of the shared accounts as they were today.',
+      doneNoCopy:
+        "Your own things are in a plan of your own now. The copy of the shared accounts couldn't be made, so it didn't come with you.",
+      doneNote: (words: string) => `You've left the plan. ${words}`,
+      gotIt: 'Got it',
+      offline: "You're offline. Connect to the internet to leave the plan.",
+      problem:
+        "PrePenny couldn't reach its server, so you're still in the plan. Try again in a minute.",
+      alone: "Nobody else is in this plan now, so there's nothing to leave.",
+      waiting:
+        "Some changes on this phone haven't been sent to your account yet. Try again once they have.",
+    },
   },
 
   parts: {

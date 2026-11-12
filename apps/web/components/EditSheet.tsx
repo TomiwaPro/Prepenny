@@ -11,7 +11,13 @@
 // and can be undone from the undo bar. A change the engine refuses is
 // explained with words from the strings file, never its code.
 
-import type { EditCommand, JustThisOneEdits, Schedule, ThisAndLaterEdits } from '@prepenny/engine';
+import {
+  type EditCommand,
+  type JustThisOneEdits,
+  paymentNumberOf,
+  type Schedule,
+  type ThisAndLaterEdits,
+} from '@prepenny/engine';
 import Link from 'next/link';
 import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { nameOf, useSharedPlan } from '../data/shared-plan.ts';
@@ -36,6 +42,7 @@ import { ChoiceList } from './ChoiceList.tsx';
 import { ClaimPay } from './ClaimPay.tsx';
 import { CheckOption } from './Fields.tsx';
 import styles from './Form.module.css';
+import { PaymentHistory } from './PaymentHistory.tsx';
 import { usePlanActions } from './PlanProvider.tsx';
 import { Sheet } from './Sheet.tsx';
 import { StatusPill } from './StatusPill.tsx';
@@ -211,6 +218,30 @@ function EditForm({
     paidBy !== shared.personId;
   // Money coming into this account is marked as arrived, not paid (D278).
   const comingIn = row.flow === 'in' || row.flow === 'transfer-in';
+  // Its History, for a plan kept in an account (D469): the payment found by
+  // its family and number, as the server keeps changes to it.
+  const historySeries = loaded?.records.series.find((one) => one.id === row.seriesId);
+  const historyNumber =
+    historySeries === undefined || !canChange
+      ? null
+      : paymentNumberOf({ series: historySeries, holidays, originalDate: row.originalDate });
+  const history =
+    shared === null ||
+    planId === null ||
+    historySeries === undefined ||
+    historyNumber === null ? null : (
+      <PaymentHistory
+        planId={planId}
+        me={shared.personId}
+        nicknames={shared.nicknames}
+        payment={{
+          familyId: historySeries.familyId,
+          originalDate: row.originalDate,
+          number: historyNumber,
+          comesIn: comingIn,
+        }}
+      />
+    );
   // A pattern on pay that isn't weekly goes round by payday, not by week (D280).
   const weeklyPay = row.repeats?.howOften === 'weekly' && row.repeats.every === 1;
 
@@ -440,6 +471,7 @@ function EditForm({
         <p className={styles.lede} data-testid="locked-to">
           {strings.share.lockedTo(nameOf(shared, lockedBy) ?? strings.share.yourPartner)}
         </p>
+        {history}
       </div>
     );
   }
@@ -698,6 +730,7 @@ function EditForm({
           </button>
         </form>
       ) : null}
+      {history}
     </div>
   );
 }

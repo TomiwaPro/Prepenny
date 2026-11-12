@@ -288,6 +288,24 @@ export function ShareScreen() {
           <Invite planId={planId} sharing={sharing} onChanged={() => void load()} />
         )}
       </section>
+
+      {sharing.members.some((one) => one.person !== me) ? (
+        <section className={styles.card} aria-labelledby="leave-heading" data-testid="leave">
+          <h2 id="leave-heading" className={styles.cardTitle}>
+            {g.leave.link}
+          </h2>
+          <p className={styles.line}>
+            {g.leave.linkLine(
+              called(sharing.members.find((one) => one.person !== me)?.nickname ?? ''),
+            )}
+          </p>
+          <div className={styles.actions}>
+            <Link className={formStyles.outlined} href="/app/share/leave/">
+              {g.leave.link}
+            </Link>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

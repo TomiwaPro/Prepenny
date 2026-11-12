@@ -89,7 +89,9 @@ export type SharingProblem =
   | { readonly kind: 'undone-already' }
   | { readonly kind: 'cant-undo' }
   /** This person can only view, so the server refused it (D51). */
-  | { readonly kind: 'not-allowed' };
+  | { readonly kind: 'not-allowed' }
+  /** Nobody else is in the plan, so there's nothing to leave (D468). */
+  | { readonly kind: 'alone' };
 
 export type Done<T> =
   | { readonly ok: true; readonly value: T }
@@ -133,6 +135,7 @@ export function problemOf(error: unknown): SharingProblem {
     case 'undone-already':
     case 'cant-undo':
     case 'not-allowed':
+    case 'alone':
       return { kind: message };
     case 'share-together':
     case 'share-has-halves':
@@ -501,4 +504,39 @@ export function shareRecord(
   record: string,
 ): Promise<Done<unknown>> {
   return call('share_record', { plan: planId, what, record, edit: newId(), made_at: timeNow() });
+}
+
+/** A payment's History in its sheet: every change to it, for as long as the plan exists (D469). */
+export function paymentHistory(
+  planId: string,
+  familyId: string,
+  originalDate: string,
+): Promise<Done<unknown>> {
+  return call('payment_history', { plan: planId, family: familyId, original_date: originalDate });
+}
+
+/** What leaving gave back: the leaver's new plan, and whether the copy came with it. */
+export interface Left {
+  readonly plan: string;
+  readonly copied: boolean;
+}
+
+/**
+ * "Leave this plan" (D468): this person's own things go into a new plan of
+ * their own, with the id made here as every plan's is, and a copy of the
+ * shared accounts if they chose one.
+ */
+export async function leavePlan(planId: string, keepCopy: boolean): Promise<Done<Left>> {
+  const answer = await call<Record<string, unknown>>('leave_plan', {
+    plan: planId,
+    keep_copy: keepCopy,
+    new_plan: newId(),
+    edit: newId(),
+    made_at: timeNow(),
+  });
+  if (!answer.ok) return answer;
+  const plan = answer.value?.plan;
+  return typeof plan === 'string'
+    ? { ok: true, value: { plan, copied: answer.value?.copied === true } }
+    : { ok: false, problem: { kind: 'server' } };
 }

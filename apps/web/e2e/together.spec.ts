@@ -18,6 +18,12 @@
 //    his next change at once; then "Can edit" again.
 // 4. Making a shared account private again: not while Tom has his own
 //    payment in it; then Tom no longer sees it, nor anything of it in Activity.
+// 5. A lasting record and leaving (D468, D469): Rent's History on Jess's
+//    phone says "Tom changed it from £550.00 to £560.00", with when; then
+//    Tom leaves, taking a copy of the shared account. His own account goes
+//    with him into a plan of his own, Jess keeps the shared one and his
+//    change in her Activity and Rent's History, and nothing of his own stays
+//    in her plan.
 
 import { type Browser, expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
@@ -138,6 +144,14 @@ async function jessAndTom(
   return tom;
 }
 
+/** Rent's sheet's History list, shown. */
+async function historyOf(sheet: ReturnType<Page['getByRole']>) {
+  const history = sheet.getByTestId('history');
+  await history.getByRole('button', { name: g.history.show }).click();
+  await expect(history.getByTestId('history-line').first()).toBeVisible({ timeout: 20_000 });
+  return history;
+}
+
 /** The plan of the person signed in on this phone, as the database's own id, for checks of it alone. */
 async function planOf(page: Page): Promise<string> {
   const person = await personOn(page);
@@ -213,7 +227,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openActivity(tom.page);
       await expect(tom.page.getByText(g.purposeShared('Jess'))).toBeVisible();
       const tomsChange = entries(tom.page).filter({
-        hasText: 'You changed Rent on Sun 1 Nov to £560.00.',
+        hasText: 'You changed Rent on Sun 1 Nov from £550.00 to £560.00.',
       });
       await expect(tomsChange).toHaveCount(1);
       await expect(tomsChange.getByRole('button', { name: g.undo })).toBeVisible();
@@ -238,7 +252,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // Jess's Activity has her own changes, Dentist included, and Tom's without Undo.
       await openActivity(page);
       await expect(
-        entries(page).filter({ hasText: 'Tom changed Rent on Sun 1 Nov to £560.00.' }),
+        entries(page).filter({ hasText: 'Tom changed Rent on Sun 1 Nov from £550.00 to £560.00.' }),
       ).toHaveCount(1);
       await expect(
         entries(page).filter({ hasText: 'Tom changed Rent' }).getByRole('button', { name: g.undo }),
@@ -255,7 +269,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
         timeout: 20_000,
       });
       await expect(
-        entries(tom.page).filter({ hasText: 'You changed Rent on Sun 1 Nov to £560.00.' }),
+        entries(tom.page).filter({
+          hasText: 'You changed Rent on Sun 1 Nov from £550.00 to £560.00.',
+        }),
       ).toContainText(g.undone);
       await expect(
         entries(tom.page).filter({ hasText: 'You undid a change to Rent.' }),
@@ -579,6 +595,162 @@ for (const colorScheme of ['light', 'dark'] as const) {
         sql(`select count(*) from public.series s join public.accounts a on a.id = s.account_id
           where a.name = 'Joint savings' and not s.deleted and s.private_to is distinct from a.private_to
             and a.plan_id = ${quoted(await planOf(page))}`),
+      ).toBe('0');
+      await tom.context.close();
+    });
+
+    test('5. History on a payment, then Tom leaves with a copy, and nothing of his own stays', async ({
+      page,
+      browser,
+    }, info) => {
+      test.setTimeout(300_000);
+      const tom = await jessAndTom(page, browser, info, colorScheme);
+      // Tom's own account, with a payment of his in it.
+      await addAccount(tom.page, 'Tom current', '300');
+      await addPayment(tom.page, {
+        name: 'Phone bill',
+        amount: '30',
+        date: '2026-11-15',
+        account: 'Tom current',
+      });
+      // Tom changes Rent on Sun 1 Nov to £560, just this one.
+      await openHome(tom.page);
+      await rentDue(tom.page).click();
+      const edit = tom.page.getByRole('dialog', { name: 'Rent' });
+      await edit.getByLabel('Amount').fill('560');
+      await edit.getByRole('button', { name: 'Save' }).click();
+      await expect(undoBar(tom.page)).toContainText('Rent changed for just this one.');
+      await allSentOn(tom.page);
+
+      // Rent's History on Jess's phone: who, from what to what, and when.
+      await openHome(page);
+      await expect(rentDue(page)).toContainText('−£560.00', { timeout: 20_000 });
+      await rentDue(page).click();
+      const jessEdit = page.getByRole('dialog', { name: 'Rent' });
+      const history = await historyOf(jessEdit);
+      await expect(history.getByText(g.history.intro)).toBeVisible();
+      await expect(history.getByTestId('history-line').first()).toContainText(
+        /^Tom changed it from £550\.00 to £560\.00, \w{3}\s\d{1,2}\s\w{3}, \d{1,2}:\d{2}(am|pm)$/,
+      );
+      await expect(
+        history.getByTestId('history-line').filter({ hasText: /^You added it, / }),
+      ).toHaveCount(1);
+      await noAxeProblems(page);
+      await noSidewaysScroll(page);
+      if (shoots(info, colorScheme)) {
+        await history.scrollIntoViewIfNeeded();
+        await page.screenshot({ path: `${SCREENS}/history-360-light.png` });
+      }
+      await jessEdit.getByRole('button', { name: strings.sheet.close }).click();
+
+      // Tom leaves, from Share with my partner.
+      await openShare(tom.page);
+      const leaveCard = tom.page.getByTestId('leave');
+      await expect(leaveCard).toContainText(g.leave.linkLine('Jess'));
+      await leaveCard.getByRole('link', { name: g.leave.link }).click();
+      await expect(
+        tom.page.getByRole('heading', { level: 1, name: g.leave.heading }),
+      ).toBeVisible();
+      await expect(tom.page.getByText(g.leave.purpose('Jess'))).toBeVisible();
+      await expect(tom.page.getByTestId('leave-comes')).toContainText(g.leave.comes);
+      const stays = tom.page.getByTestId('leave-stays');
+      for (const words of [
+        g.leave.staysShared,
+        g.leave.staysChanges('Jess'),
+        g.leave.staysMoney('Jess'),
+      ]) {
+        await expect(stays).toContainText(words);
+      }
+      // Tom doesn't own the plan, so nothing is said about who will.
+      await expect(tom.page.getByText(g.leave.ownerPasses('Jess'))).toHaveCount(0);
+      // Asked whether to take a copy, with no answer chosen for him.
+      await tom.page.getByRole('button', { name: g.leave.leave }).click();
+      await expect(tom.page.getByText(g.leave.copyError)).toBeVisible();
+      await radio(tom.page, g.leave.copyYes).check();
+      await expect(tom.page.getByText(g.leave.copyError)).toHaveCount(0);
+      await noAxeProblems(tom.page);
+      await noSidewaysScroll(tom.page);
+      if (shoots(info, colorScheme)) {
+        await tom.page.screenshot({ path: `${SCREENS}/leave-360-light.png`, fullPage: true });
+      }
+      await tom.page.getByRole('button', { name: g.leave.leave }).click();
+      const confirm = tom.page.getByRole('dialog', { name: g.leave.confirmTitle });
+      await expect(confirm.getByText(g.leave.confirmIntro('Jess'))).toBeVisible();
+      await noAxeProblems(tom.page);
+      if (shoots(info, colorScheme)) {
+        await tom.page.screenshot({ path: `${SCREENS}/leave-confirm-360-light.png` });
+      }
+      await confirm.getByRole('button', { name: g.leave.confirmYes }).click();
+      // Home opens with his own new plan, and says he's left.
+      await expect(tom.page).toHaveURL(/\/app\/$/, { timeout: 30_000 });
+      const left = tom.page.getByTestId('left');
+      await expect(left.getByText(g.leave.doneNote(g.leave.doneCopy))).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(tom.page.getByTestId('balance')).toBeVisible();
+      await noAxeProblems(tom.page);
+      await noSidewaysScroll(tom.page);
+      if (shoots(info, colorScheme)) {
+        await tom.page.screenshot({ path: `${SCREENS}/left-360-light.png` });
+      }
+      await left.getByRole('button', { name: g.leave.gotIt }).click();
+      await expect(left).toHaveCount(0);
+
+      // Tom's own plan: his own account, and his copy of the shared one.
+      await tom.page.goto('/app/accounts/');
+      await expect(tom.page.getByText('Tom current').first()).toBeVisible({ timeout: 20_000 });
+      await expect(tom.page.getByText('Current account').first()).toBeVisible();
+      await openActivity(tom.page);
+      await expect(entries(tom.page).filter({ hasText: `You ${g.what.leftOwnCopy}.` })).toHaveCount(
+        1,
+      );
+      await expect(entries(tom.page).filter({ hasText: /^Jess / })).toHaveCount(0);
+      await noAxeProblems(tom.page);
+
+      // Jess keeps the shared account, his change in Activity and in Rent's History.
+      await openActivity(page);
+      await expect(entries(page).filter({ hasText: `Tom ${g.what.left}.` })).toHaveCount(1, {
+        timeout: 20_000,
+      });
+      await expect(
+        entries(page).filter({ hasText: 'Tom changed Rent on Sun 1 Nov from £550.00 to £560.00.' }),
+      ).toHaveCount(1);
+      await expect(page.getByText(/Tom current|Phone bill|£30\.00/)).toHaveCount(0);
+      await noAxeProblems(page);
+      if (shoots(info, colorScheme)) {
+        await page.screenshot({ path: `${SCREENS}/activity-tom-left-360-light.png` });
+      }
+      await openHome(page);
+      await rentDue(page).click();
+      const after = await historyOf(page.getByRole('dialog', { name: 'Rent' }));
+      await expect(
+        after
+          .getByTestId('history-line')
+          .filter({ hasText: /^Tom changed it from £550\.00 to £560\.00, / }),
+      ).toHaveCount(1);
+      await page
+        .getByRole('dialog', { name: 'Rent' })
+        .getByRole('button', { name: strings.sheet.close })
+        .click();
+      // Share with my partner: only Jess now, and she can invite again.
+      await openShare(page);
+      await expect(page.getByTestId('member')).toHaveCount(1);
+      await expect(page.getByTestId('leave')).toHaveCount(0);
+
+      // The server: two plans, Tom only in his own, and nothing of his own left in Jess's.
+      const jessPlan = await planOf(page);
+      const tomPlan = await planOf(tom.page);
+      expect(tomPlan).not.toBe(jessPlan);
+      const tomId = await personOn(tom.page);
+      for (const table of ['accounts', 'series', 'settings', 'private_links', 'edits']) {
+        expect(
+          sql(`select count(*) from public.${table} where plan_id = ${quoted(jessPlan)}
+            and private_to = ${quoted(tomId)}`),
+        ).toBe('0');
+      }
+      expect(
+        sql(`select count(*) from public.accounts where plan_id = ${quoted(tomPlan)}
+          and private_to is null`),
       ).toBe('0');
       await tom.context.close();
     });

@@ -1750,7 +1750,8 @@ begin
         and app.readable_now(plan, r.record_table, r.record_id)
         and ((r.record_table = 'series' and coalesce(r.after ->> 'family_id', r.before ->> 'family_id') = family::text)
           or (r.record_table in ('payment_changes', 'ticks')
-            and coalesce(r.after ->> 'original_date', r.before ->> 'original_date') = original_date::text));
+            and coalesce(r.after ->> 'original_date', r.before ->> 'original_date') = original_date::text
+            and coalesce(r.after ->> 'series_id', r.before ->> 'series_id') = any (in_family)));
     continue when jsonb_array_length(copies) = 0;
     found_edits := found_edits || jsonb_build_object('id', one.id, 'by', one.person_id, 'made_at', one.made_at,
       'kind', one.kind, 'mine', one.person_id = me, 'undone', app.is_undone(one), 'records', copies);

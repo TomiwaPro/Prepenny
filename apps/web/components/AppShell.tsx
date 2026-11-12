@@ -21,6 +21,7 @@ import { FinishJoining } from './FinishJoining.tsx';
 import { GetBackInNotice } from './GetBackInNotice.tsx';
 import { JoinRequestSheet } from './JoinRequest.tsx';
 import { KeepInStep } from './KeepInStep.tsx';
+import { LeftNote } from './LeftNote.tsx';
 import { OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlanActions } from './PlanProvider.tsx';
 import { UndoBar } from './UndoBar.tsx';
@@ -35,6 +36,7 @@ function Notes() {
       <OfflineNote />
       <GetBackInNotice />
       <FinishJoining />
+      <LeftNote />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
 // Activity, under More (brief 4.12 and 4.14, step 3g, D456 and D457): every
-// change to the plan in the last 12 months, newest first, by day, each in
-// plain words with its time: "Tom changed Rent on Tue 1 Dec to £560.00." A
+// change to the plan for as long as it exists (D469), newest first, by day,
+// each in plain words with its time, from what to what: "Tom changed Rent on
+// Tue 1 Dec from £550.00 to £560.00." A
 // person's own changes have "Undo this change", while nothing they changed
 // has been changed again since; their partner's never do. The server decides
 // what each person sees: their own changes, and their partner's shared ones,
@@ -19,6 +20,7 @@ import {
   type ActivityContext,
   type ActivityEdit,
   activityEditsFrom,
+  activityPeopleFrom,
   activityWords,
 } from '../lib/activity-words.ts';
 import { formatDay, formatTime } from '../lib/dates.ts';
@@ -37,7 +39,13 @@ const t = strings.together;
 type Loaded =
   | { readonly kind: 'loading' }
   | { readonly kind: 'failed'; readonly offline: boolean }
-  | { readonly kind: 'ready'; readonly edits: readonly ActivityEdit[]; readonly more: boolean };
+  | {
+      readonly kind: 'ready';
+      readonly edits: readonly ActivityEdit[];
+      readonly more: boolean;
+      /** Everyone who is or was in the plan, by name: someone who left still has theirs (D468). */
+      readonly people: Readonly<Record<string, string>>;
+    };
 
 /** "Today", "Yesterday" or "Tue 10 Nov", by this phone's own dates. */
 function dayHeading(day: string, today: string): string {
@@ -69,7 +77,12 @@ export function ActivityScreen() {
       return;
     }
     const more = (answer.value as { more?: unknown } | null)?.more === true;
-    setFound({ kind: 'ready', edits: activityEditsFrom(answer.value), more });
+    setFound({
+      kind: 'ready',
+      edits: activityEditsFrom(answer.value),
+      more,
+      people: activityPeopleFrom(answer.value),
+    });
   }, [planId]);
 
   useEffect(() => {
@@ -147,7 +160,7 @@ export function ActivityScreen() {
   const today = localToday();
   const context: ActivityContext = {
     me: shared?.personId ?? (account.status === 'signed-in' ? account.id : ''),
-    nicknames: shared?.nicknames ?? {},
+    nicknames: { ...found.people, ...(shared?.nicknames ?? {}) },
     today,
     nameOf: (table, id) => {
       const list =
@@ -222,7 +235,7 @@ export function ActivityScreen() {
     const next = activityEditsFrom(answer.value).filter(
       (one) => !found.edits.some((had) => had.id === one.id),
     );
-    setFound({ kind: 'ready', edits: [...found.edits, ...next], more });
+    setFound({ ...found, edits: [...found.edits, ...next], more });
   }
 
   const days: { day: string; edits: ActivityEdit[] }[] = [];
