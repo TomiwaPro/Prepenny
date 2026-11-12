@@ -252,7 +252,7 @@ const SHEETS: readonly {
       ['Update balance', 'Update balance'],
       ['I spent', 'I spent'],
       ['Add a payment', 'Add a payment'],
-      ['Extra/Missed shift', 'I did overtime'],
+      ['Overtime or missed shift', 'I did overtime'],
     ] as const
   ).map(([name, title]) => ({
     path: '/app/',
@@ -355,7 +355,7 @@ const SHEETS: readonly {
   ...(
     [
       ['Add a payment', 'Add a payment'],
-      ['Extra/Missed shift', 'I did overtime'],
+      ['Overtime or missed shift', 'I did overtime'],
       ['Update balance', 'Update balance'],
     ] as const
   ).map(([name, title]) => ({

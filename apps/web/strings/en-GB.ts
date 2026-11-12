@@ -516,8 +516,8 @@ export const strings = {
     updateBalance: 'Update balance',
     addPayment: 'Add a payment',
     spent: 'I spent',
-    /** Opens "What happened?", with extra hours or a missed shift (D282). */
-    overtime: 'Extra/Missed shift',
+    /** Opens "What happened?", with extra hours or a missed shift (D282, D441). */
+    overtime: 'Overtime or missed shift',
   },
 
   sheet: {
@@ -1187,7 +1187,7 @@ export const strings = {
     noPay: 'There are no paydays in your plan to add it to yet.',
     saveWeek: 'Save as a usual week',
     saveWeekIntro:
-      'Save these hours and rates as a usual week. You can start from it again here, and "Extra/Missed shift" uses it to work out your pay.',
+      'Save these hours and rates as a usual week. You can start from it again here, and "Overtime or missed shift" uses it to work out your pay.',
     saveWeekName: 'Name this week',
     saveWeekDefault: 'Usual week',
     saveWeekNameError: 'Type a name, for example 3-shift week.',
