@@ -89,7 +89,8 @@ select is_empty(
 -- Step 3e adds the phone's look at its sign-in, the signed-in devices and
 -- the backup email, in the Data API's part only. Step 3f adds invites,
 -- joining, sharing accounts and claiming pay, and the two marks the
--- series check reads.
+-- series check reads. Step 3g adds Activity, undo for one's own changes,
+-- roles, and making things private or shared, with the checks they call.
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
@@ -104,7 +105,10 @@ select set_eq(
     'make_invite', 'cancel_invite', 'look_at_invite', 'ask_to_join', 'answer_join', 'sharing',
     'share_accounts', 'claim_pay',
     -- Step 3f-2 (D426): joining with a plan of one's own.
-    'look_at_my_invite', 'join_with_my_plan'],
+    'look_at_my_invite', 'join_with_my_plan',
+    -- Step 3g: Activity, undo, roles, and who sees what, with what they call.
+    'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record',
+    'privacy_step', 'undo_writes', 'mark_undone'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -119,7 +123,9 @@ select set_eq(
     'make_invite', 'cancel_invite', 'look_at_invite', 'ask_to_join', 'answer_join', 'sharing',
     'share_accounts', 'claim_pay',
     -- Step 3f-2 (D426): joining with a plan of one's own.
-    'look_at_my_invite', 'join_with_my_plan'],
+    'look_at_my_invite', 'join_with_my_plan',
+    -- Step 3g: Activity, undo, roles, and who sees what.
+    'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record'],
   'The Data API''s part holds only the steps the phone calls'
 );
 
