@@ -27,6 +27,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { checkedLine } from '../lib/checked-line.ts';
 import { formatDay, formatMonth, weekdayShort } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
 import { type Filters, NO_FILTERS, rowMatches, type Show } from '../lib/plan-filters.ts';
@@ -45,7 +46,7 @@ import { ChoiceList } from './ChoiceList.tsx';
 import styles from './ComingUpScreen.module.css';
 import { EditSheet } from './EditSheet.tsx';
 import { Icon } from './icons.tsx';
-import { usePlanActions } from './PlanProvider.tsx';
+import { isSamsExample, usePlanActions } from './PlanProvider.tsx';
 import { RowItem } from './RowItem.tsx';
 import { Sheet } from './Sheet.tsx';
 import { StatusPill } from './StatusPill.tsx';
@@ -176,11 +177,14 @@ function Heading({ level, ...rest }: { readonly level: 2 | 3 } & ComponentPropsW
 function AccountCard({
   account,
   today,
+  example,
   canSwitch,
   onSwitch,
 }: {
   readonly account: AccountView;
   readonly today: string;
+  /** Sam's example: "£267.54, as on Sun 25 Oct 2026", never "today" (D448). */
+  readonly example: boolean;
   readonly canSwitch: boolean;
   readonly onSwitch: () => void;
 }) {
@@ -191,10 +195,8 @@ function AccountCard({
         <Heading level={2} className={styles.accountName}>
           {account.name}
         </Heading>
-        <p className={`${styles.second} num`}>
-          {account.checkedOn === today
-            ? t.checkedToday(balance)
-            : t.checked(balance, formatDay(account.checkedOn, today))}
+        <p className={`${styles.second} num`} data-testid="plan-account-checked">
+          {checkedLine(t, balance, account.checkedOn, today, example)}
         </p>
       </div>
       {canSwitch ? (
@@ -515,12 +517,15 @@ function ViewSheet({
 function SwitchAccountSheet({
   open,
   view,
+  example,
   shownId,
   onChoose,
   onClose,
 }: {
   readonly open: boolean;
   readonly view: PlanView | null;
+  /** Sam's example: "£267.54, as on Sun 25 Oct 2026", never "today" (D448). */
+  readonly example: boolean;
   readonly shownId: string | null;
   readonly onChoose: (accountId: string) => void;
   readonly onClose: () => void;
@@ -542,9 +547,7 @@ function SwitchAccountSheet({
               >
                 <span className={styles.accountName}>{account.name}</span>
                 <span className={`${styles.second} num`}>
-                  {account.checkedOn === today
-                    ? t.checkedToday(balance)
-                    : t.checked(balance, formatDay(account.checkedOn, today))}
+                  {checkedLine(t, balance, account.checkedOn, today, example)}
                 </span>
                 {showing ? <span className={styles.showingNow}>{t.showingNow}</span> : null}
               </button>
@@ -652,6 +655,7 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
 
   const view = shown?.view ?? null;
   const today = view?.today ?? loaded?.today ?? '';
+  const example = loaded !== null && isSamsExample(loaded.plan);
   const account =
     view === null
       ? null
@@ -763,6 +767,7 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
             <AccountCard
               account={account}
               today={today}
+              example={example}
               canSwitch={view.accounts.length > 1}
               onSwitch={() => setSwitchOpen(true)}
             />
@@ -879,6 +884,7 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
       <SwitchAccountSheet
         open={switchOpen}
         view={view}
+        example={example}
         shownId={account?.id ?? null}
         onChoose={(accountId) => {
           setChosenAccount(accountId);

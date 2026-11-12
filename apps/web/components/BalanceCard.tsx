@@ -32,7 +32,7 @@ export interface BalanceCardProps {
    */
   readonly now?: {
     readonly amount: string;
-    /** "today", or "on Sun 8 Nov"; none in Sam's example, whose next line says the day (D440). */
+    /** "today", or "on Sun 8 Nov", after "Bank: £267.54" (D450); none in Sam's example, whose next line says the day (D440). */
     readonly when?: string;
     /** Sam's example only: "Example plan, as on Sun 25 Oct 2026", under the bank's figure (D440). */
     readonly asOn?: string;

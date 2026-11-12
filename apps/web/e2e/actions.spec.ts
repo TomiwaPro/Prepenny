@@ -147,7 +147,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // the day it's shown as on, here the test's own today (D440).
       await expect(page.getByTestId('now')).toHaveText('About £604.53 now');
       await expect(page.getByTestId('bank-showed')).toHaveText(
-        'Your bank showed £267.54 on Sun\u00a025\u00a0Oct',
+        'Bank: £267.54 on Sun\u00a025\u00a0Oct',
       );
       await expect(page.getByTestId('checked')).toHaveText(
         'Example plan, as on Fri\u00a030\u00a0Oct\u00a02026',
@@ -208,7 +208,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await undo(page);
       await expect(page.getByTestId('balance')).toHaveText('£267.54');
       await expect(page.getByTestId('bank-showed')).toHaveText(
-        'Your bank showed £267.54 on Sun\u00a025\u00a0Oct',
+        'Bank: £267.54 on Sun\u00a025\u00a0Oct',
       );
       await expect(page.getByTestId('now')).toHaveText('About £604.53 now');
       await expect(page.getByTestId('lowest-point')).toContainText('£4.53');

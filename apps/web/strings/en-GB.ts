@@ -485,8 +485,12 @@ export const strings = {
      */
     about: 'About',
     now: 'now',
-    /** Under it: "Your bank showed £267.54 today" or "Your bank showed £500.00 on Sun 8 Nov". */
-    bankShowed: 'Your bank showed',
+    /**
+     * Under it, short enough for one line at 320px (D450): "Bank: £267.54
+     * today" or "Bank: £500.00 on Sun 8 Nov"; in Sam's example "Bank:
+     * £267.54", with the example's day on the next line (D440).
+     */
+    bankShowed: 'Bank:',
     bankShowedToday: 'today',
     bankShowedOn: (date: string) => `on ${date}`,
     /** Under the four buttons: opens the same form as More, Accounts (D431, D442). */
@@ -854,6 +858,8 @@ export const strings = {
     gotIt: 'Got it',
     checkedToday: (amount: string) => `${amount}, checked today`,
     checked: (amount: string, date: string) => `${amount}, checked ${date}`,
+    /** Sam's example, which never says "today" (D448): "£267.54, as on Sun 25 Oct 2026". */
+    asOn: (amount: string, date: string) => `${amount}, as on ${date}`,
     switchAccount: 'Switch account',
     switchIntro: 'Choose which account to see.',
     showingNow: 'Showing now',
@@ -1607,6 +1613,8 @@ export const strings = {
     kinds: { current: 'Current account', savings: 'Savings', joint: 'Joint account' },
     checkedToday: (amount: string) => `${amount}, checked today`,
     checked: (amount: string, date: string) => `${amount}, checked ${date}`,
+    /** Sam's example, which never says "today" (D448): "£267.54, as on Sun 25 Oct 2026". */
+    asOn: (amount: string, date: string) => `${amount}, as on ${date}`,
     noOverdraft: 'No overdraft',
     overdraft: (amount: string) => `Overdraft limit ${amount}`,
     warning: (amount: string) => `Tight under ${amount}`,

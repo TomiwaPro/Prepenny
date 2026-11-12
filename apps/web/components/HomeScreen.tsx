@@ -66,8 +66,8 @@ function checkedWords(home: HomeView, example: boolean) {
   const checkedToday = checkedOn === home.today;
   return {
     checked: asOn ?? (checkedToday ? t.checkedToday(day(checkedOn)) : t.checked(day(checkedOn))),
-    // "Your bank showed £267.54 today", or in the example "Your bank
-    // showed £267.54" with the day it's shown as on in the line under it.
+    // "Bank: £267.54 today" (D450), or in the example "Bank: £267.54"
+    // with the day it's shown as on in the line under it (D440).
     ...(asOn !== undefined && checkedToday
       ? { asOn }
       : {

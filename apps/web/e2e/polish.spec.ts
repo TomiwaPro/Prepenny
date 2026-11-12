@@ -80,7 +80,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // money due on Sun 25 Oct), so the figure is about what's there now,
       // with the bank's figure under it, then the example's day (D430, D440).
       await expect(page.getByTestId('now')).toHaveText('About £237.54 now');
-      await expect(page.getByTestId('bank-showed')).toHaveText('Your bank showed £267.54');
+      await expect(page.getByTestId('bank-showed')).toHaveText('Bank: £267.54');
       await expect(page.getByTestId('balance')).toHaveText('£267.54');
       await expect(page.getByTestId('checked')).toHaveText(
         `Example plan, as on ${day('Sun 25 Oct 2026')}`,
@@ -122,6 +122,30 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('now')).toHaveText('About £237.54 now');
       await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
       expect(await layoutProblems(page)).toEqual([]);
+
+      // Coming up and Accounts say the day it's as on too, never "today" (D448).
+      await page.goto('/app/coming-up/');
+      await expect(page.getByTestId('plan-account-checked')).toHaveText(
+        `£267.54, as on ${day('Sun 25 Oct 2026')}`,
+      );
+      await expect(page.getByTestId('plan-account')).not.toContainText('today');
+      await page.getByRole('button', { name: 'Switch account' }).click();
+      const switching = page.getByRole('dialog', { name: 'Switch account' });
+      await expect(switching).toContainText(`£500.00, as on ${day('Sun 25 Oct 2026')}`);
+      await expect(switching).not.toContainText('today');
+      await switching.getByRole('button', { name: 'Close' }).click();
+      await page.goto('/app/accounts/');
+      await expect(page.locator('[data-account="Current account"]')).toContainText(
+        `£267.54, as on ${day('Sun 25 Oct 2026')}`,
+      );
+      await expect(page.locator('[data-account="Savings"]')).toContainText(
+        `£500.00, as on ${day('Sun 25 Oct 2026')}`,
+      );
+      await expect(page.getByTestId('account').first()).not.toContainText('today');
+      await noAxeProblems(page);
+      if (shoots(info, colorScheme)) {
+        await page.screenshot({ path: `${SCREENS}/accounts-example-320-light.png` });
+      }
     });
 
     test(`2. "${BUTTON}" on Home, two per row at 320px, and the sheet's title follows the choice`, async ({
@@ -320,6 +344,17 @@ async function setUpOwnPlan(page: Page) {
   await expect(page.getByTestId('example-banner')).toHaveCount(0);
 }
 
+/** A line of words that takes exactly one line on screen. */
+async function expectOneLine(line: Locator) {
+  const lines = await line.evaluate((element) =>
+    Math.round(
+      element.getBoundingClientRect().height /
+        Number.parseFloat(getComputedStyle(element).lineHeight),
+    ),
+  );
+  expect(lines).toBe(1);
+}
+
 /**
  * Nothing scrolled; the account card, "About £X now" in it, ends above the
  * bottom navigation; and so does the lowest point ahead: the whole card, or
@@ -372,7 +407,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         // what the bank showed, Left to spend and its line (D3, D118, D430).
         // The £40.00 for food is still in the bank until it's spent.
         await expect(page.getByTestId('now')).toHaveText('About £197.54 now');
-        await expect(page.getByTestId('bank-showed')).toHaveText('Your bank showed £267.54 today');
+        await expect(page.getByTestId('bank-showed')).toHaveText('Bank: £267.54 today');
         await expect(page.getByTestId('left-to-spend')).toHaveText('£40.00');
         await expect(
           page.getByText(
@@ -396,20 +431,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
           await page.screenshot({ path: `${SCREENS}/home-own-plan-320x568-light.png` });
         }
 
-        // A day later the bank's line says the day, on two lines at 320px:
-        // the whole account card still shows, and the lowest point with its
-        // status, figure and date; only its last small line can be under
-        // the navigation.
+        // A day later the bank's line says the day, still on one line
+        // (D450), so the whole lowest point card still shows.
         await page.addInitScript(settingScript, [
           TEST_SETTING_KEY,
           { today: '2026-10-27' },
         ] as const);
         await page.goto('/app/');
         await expect(page.getByTestId('bank-showed')).toHaveText(
-          `Your bank showed £267.54 on ${day('Mon 26 Oct')}`,
+          `Bank: £267.54 on ${day('Mon 26 Oct')}`,
         );
         await expect(page.getByTestId('now')).toHaveText('About £197.54 now');
-        await expectInView(page, 'up to its date');
+        await expectOneLine(page.getByTestId('bank-showed'));
+        await expectInView(page, 'whole card');
       },
     );
   });

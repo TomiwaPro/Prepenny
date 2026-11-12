@@ -91,7 +91,7 @@ Every text pair passes 4.5:1 in both modes, and the text box border and focus ou
 
 ## Parts (from the approved sample)
 
-- **Balance card:** navy. Label, balance, "Checked today, Sun 8 Nov", a 1px brass line, then a raised block with "Left to spend". When money has moved since the check, the figure is "About £237.54 now", with "Your bank showed £267.54 today" under it (D430). In Sam's example the line says "Example plan, as on Sun 25 Oct 2026" instead, under "Your bank showed £267.54" when money has moved (D440).
+- **Balance card:** navy. Label, balance, "Checked today, Sun 8 Nov", a 1px brass line, then a raised block with "Left to spend". When money has moved since the check, the figure is "About £237.54 now", with "Bank: £267.54 today" or "Bank: £500.00 on Sun 8 Nov" under it, always on one line at 320px (D430, D450). In Sam's example the line says "Example plan, as on Sun 25 Oct 2026" instead, under "Bank: £267.54" when money has moved (D440).
 - **Figure card:** label, status pill (always with the word), big figure, date and cause, one line of context.
 - **Payment row:** date tile (day number over month), name with date below, then amount with "£X left" below, right-aligned.
 - **Actions:** a 2 by 2 grid, all four the same height, words on even lines. One navy main button (Update balance); the others outlined. On Home, "+ Add an account" sits under them (D441, D442).

@@ -2,18 +2,19 @@
 
 // Accounts, under More (brief 4.2, D151, D155, D158, D181): what it's for in
 // one plain sentence (D213), then every account with what its bank showed
-// and the day it was checked, its overdraft limit and the amount it warns
+// and the day it was checked (in Sam's example, the day it's as on, D448), its overdraft limit and the amount it warns
 // under. Each can be changed or closed, and new ones added. The part of the
 // UK for bank holidays is changed here too.
 
 import { useState } from 'react';
-import { formatDay } from '../lib/dates.ts';
+import { checkedLine } from '../lib/checked-line.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { AccountCard } from '../lib/money-views.ts';
 import { strings } from '../strings/en-GB.ts';
 import { AccountSheet } from './AccountSheet.tsx';
 import formStyles from './Form.module.css';
 import { NationSheet } from './NationSheet.tsx';
+import { isSamsExample, usePlanActions } from './PlanProvider.tsx';
 import { ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
 import { useScreenView } from './useScreenView.ts';
@@ -23,10 +24,13 @@ const t = strings.accounts;
 function Account({
   account,
   today,
+  example,
   onChange,
 }: {
   readonly account: AccountCard;
   readonly today: string;
+  /** Sam's example: "£267.54, as on Sun 25 Oct 2026", never "today" (D448). */
+  readonly example: boolean;
   readonly onChange: (() => void) | null;
 }) {
   const balance = formatMoney(account.balance);
@@ -46,9 +50,7 @@ function Account({
         <span className={styles.second}>{t.kinds[account.kind]}</span>
       </div>
       <p className={`${styles.line} num`}>
-        {account.checkedOn === today
-          ? t.checkedToday(balance)
-          : t.checked(balance, formatDay(account.checkedOn, today))}
+        {checkedLine(t, balance, account.checkedOn, today, example)}
       </p>
       {onChange === null ? (
         <p className={styles.second}>{t.closedLine}</p>
@@ -76,6 +78,8 @@ function Account({
 
 export function AccountsScreen() {
   const { view, failed } = useScreenView('accounts');
+  const { loaded } = usePlanActions();
+  const example = loaded !== null && isSamsExample(loaded.plan);
   // The account being changed, "new" for a new one, "nation", or null when no sheet is open.
   const [open, setOpen] = useState<string | null>(null);
   const changing =
@@ -103,6 +107,7 @@ export function AccountsScreen() {
               key={account.id}
               account={account}
               today={view.today}
+              example={example}
               onChange={() => setOpen(account.id)}
             />
           ))}
@@ -134,7 +139,13 @@ export function AccountsScreen() {
             <>
               <h2 className={styles.sectionHeading}>{t.closedHeading}</h2>
               {view.closed.map((account) => (
-                <Account key={account.id} account={account} today={view.today} onChange={null} />
+                <Account
+                  key={account.id}
+                  account={account}
+                  today={view.today}
+                  example={example}
+                  onChange={null}
+                />
               ))}
             </>
           )}
