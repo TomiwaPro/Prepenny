@@ -229,11 +229,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByText(/pay week|saved week/i)).toHaveCount(0);
     });
 
-    test('answer 7: Home’s fourth button says "Extra/Missed shift" and opens "What happened?"', async ({
+    test('answer 7: Home’s fourth button says "Overtime or missed shift" and opens "What happened?"', async ({
       page,
     }) => {
       await page.goto('/app/');
-      const button = page.getByRole('button', { name: 'Extra/Missed shift', exact: true });
+      const button = page.getByRole('button', { name: 'Overtime or missed shift', exact: true });
       await expect(button).toBeVisible();
       expect(await layoutProblems(page)).toEqual([]);
       await button.click();

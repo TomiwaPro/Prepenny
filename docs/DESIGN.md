@@ -91,10 +91,10 @@ Every text pair passes 4.5:1 in both modes, and the text box border and focus ou
 
 ## Parts (from the approved sample)
 
-- **Balance card:** navy. Label, balance, "Checked today, Sun 25 Oct", a 1px brass line, then a raised block with "Left to spend".
+- **Balance card:** navy. Label, balance, "Checked today, Sun 8 Nov", a 1px brass line, then a raised block with "Left to spend". When money has moved since the check, the figure is "About £237.54 now", with "Bank: £267.54 today" or "Bank: £500.00 on Sun 8 Nov" under it, always on one line at 320px (D430, D450). In Sam's example the line says "Example plan, as on Sun 25 Oct 2026" instead, under "Bank: £267.54" when money has moved (D440).
 - **Figure card:** label, status pill (always with the word), big figure, date and cause, one line of context.
 - **Payment row:** date tile (day number over month), name with date below, then amount with "£X left" below, right-aligned.
-- **Actions:** a 2 by 2 grid. One navy main button (Update balance); the others outlined.
+- **Actions:** a 2 by 2 grid, all four the same height, words on even lines. One navy main button (Update balance); the others outlined. On Home, "+ Add an account" sits under them (D441, D442).
 - **Bottom navigation:** Home, Coming up, Debts, More (D208). Simple line icons (1.7 stroke, round ends) with a label under each, and the active item in a soft pill.
 - **Editing** opens in a bottom sheet on phones and a centred dialog on laptops.
 - **Setup's parts** (D356): the top of each setup screen says its part in words, "Part 2 of 3: Money out", with "Skip this step" beside it, over a bar of three equal parts with 4px between them, 8px tall and fully rounded. Each part fills in Navy as text as far as the screen showing; the empty part is the card edge colour. The bar is only a picture: the words say the same.

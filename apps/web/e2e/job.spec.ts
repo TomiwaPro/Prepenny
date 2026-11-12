@@ -51,7 +51,7 @@ const detail = (job: Locator, label: string) =>
 async function addOvertime(page: Page) {
   await page.goto('/app/');
   await expect(page.getByTestId('balance')).toBeVisible();
-  await page.getByRole('button', { name: 'Extra/Missed shift', exact: true }).click();
+  await page.getByRole('button', { name: 'Overtime or missed shift', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'I did overtime' });
   await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
   await sheet.getByLabel('Hours', { exact: true }).fill('11.5');

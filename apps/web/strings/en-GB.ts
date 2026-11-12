@@ -475,16 +475,25 @@ export const strings = {
     checkedToday: (date: string) => `Checked today, ${date}`,
     checked: (date: string) => `Checked ${date}`,
     /**
+     * Sam's example, in place of "Checked today, Sun 25 Oct", whatever the
+     * real date (D133, D440): "Example plan, as on Sun 25 Oct 2026".
+     */
+    exampleAsOn: (date: string) => `Example plan, as on ${date}`,
+    /**
      * The big figure when money has moved since the bank was checked (D430):
      * "About £237.54 now", with these two words smaller around the figure.
      */
     about: 'About',
     now: 'now',
-    /** Under it: "Your bank showed £267.54 today" or "Your bank showed £500.00 on Sun 8 Nov". */
-    bankShowed: 'Your bank showed',
+    /**
+     * Under it, short enough for one line at 320px (D450): "Bank: £267.54
+     * today" or "Bank: £500.00 on Sun 8 Nov"; in Sam's example "Bank:
+     * £267.54", with the example's day on the next line (D440).
+     */
+    bankShowed: 'Bank:',
     bankShowedToday: 'today',
     bankShowedOn: (date: string) => `on ${date}`,
-    /** Under the account card: opens the same form as More, Accounts (D431). */
+    /** Under the four buttons: opens the same form as More, Accounts (D431, D442). */
     addAccount: '+ Add an account',
     leftToSpendUntil: (date: string) => `Left to spend until ${date}`,
     leftToSpendTo: (date: string) => `Left to spend to ${date}`,
@@ -516,8 +525,8 @@ export const strings = {
     updateBalance: 'Update balance',
     addPayment: 'Add a payment',
     spent: 'I spent',
-    /** Opens "What happened?", with extra hours or a missed shift (D282). */
-    overtime: 'Extra/Missed shift',
+    /** Opens "What happened?", with extra hours or a missed shift (D282, D441). */
+    overtime: 'Overtime or missed shift',
   },
 
   sheet: {
@@ -849,6 +858,8 @@ export const strings = {
     gotIt: 'Got it',
     checkedToday: (amount: string) => `${amount}, checked today`,
     checked: (amount: string, date: string) => `${amount}, checked ${date}`,
+    /** Sam's example, which never says "today" (D448): "£267.54, as on Sun 25 Oct 2026". */
+    asOn: (amount: string, date: string) => `${amount}, as on ${date}`,
     switchAccount: 'Switch account',
     switchIntro: 'Choose which account to see.',
     showingNow: 'Showing now',
@@ -1187,7 +1198,7 @@ export const strings = {
     noPay: 'There are no paydays in your plan to add it to yet.',
     saveWeek: 'Save as a usual week',
     saveWeekIntro:
-      'Save these hours and rates as a usual week. You can start from it again here, and "Extra/Missed shift" uses it to work out your pay.',
+      'Save these hours and rates as a usual week. You can start from it again here, and "Overtime or missed shift" uses it to work out your pay.',
     saveWeekName: 'Name this week',
     saveWeekDefault: 'Usual week',
     saveWeekNameError: 'Type a name, for example 3-shift week.',
@@ -1602,6 +1613,8 @@ export const strings = {
     kinds: { current: 'Current account', savings: 'Savings', joint: 'Joint account' },
     checkedToday: (amount: string) => `${amount}, checked today`,
     checked: (amount: string, date: string) => `${amount}, checked ${date}`,
+    /** Sam's example, which never says "today" (D448): "£267.54, as on Sun 25 Oct 2026". */
+    asOn: (amount: string, date: string) => `${amount}, as on ${date}`,
     noOverdraft: 'No overdraft',
     overdraft: (amount: string) => `Overdraft limit ${amount}`,
     warning: (amount: string) => `Tight under ${amount}`,

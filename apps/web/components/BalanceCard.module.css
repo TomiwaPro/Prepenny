@@ -3,7 +3,8 @@
   background: var(--navy);
   color: var(--on-navy);
   border-radius: var(--radius-balance);
-  padding: 18px 18px 14px;
+  /* 16px at the top, within DESIGN.md's 14 to 18px, so Home fits a 320 by 568 phone (D442). */
+  padding: 16px 18px 14px;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

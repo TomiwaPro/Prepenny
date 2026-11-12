@@ -143,10 +143,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await useSetting(page, { today: '2026-10-30' });
       await openHome(page);
       // Money has moved since Sun 25 Oct, so Home shows about what's there
-      // now, the figure Update balance expects (D430, D46).
+      // now, the figure Update balance expects (D430, D46). The example says
+      // the day it's shown as on, here the test's own today (D440).
       await expect(page.getByTestId('now')).toHaveText('About £604.53 now');
       await expect(page.getByTestId('bank-showed')).toHaveText(
-        'Your bank showed £267.54 on Sun\u00a025\u00a0Oct',
+        'Bank: £267.54 on Sun\u00a025\u00a0Oct',
+      );
+      await expect(page.getByTestId('checked')).toHaveText(
+        'Example plan, as on Fri\u00a030\u00a0Oct\u00a02026',
       );
       const sheet = await openAction(page, 'Update balance');
       await sheet.getByLabel('Type what your bank shows now').fill('600');
@@ -187,7 +191,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet).toBeHidden();
 
       await expect(page.getByTestId('balance')).toHaveText('£600.00');
-      await expect(page.getByText('Checked today, Fri\u00a030\u00a0Oct')).toBeVisible();
+      await expect(page.getByTestId('checked')).toHaveText(
+        'Example plan, as on Fri\u00a030\u00a0Oct\u00a02026',
+      );
       await expect(page.getByTestId('lowest-point')).toContainText('£0.00');
       // On payday, the pay that came in today, never "Coming in £0.00" (D206).
       const cover = page.getByTestId('this-pay');
@@ -202,7 +208,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await undo(page);
       await expect(page.getByTestId('balance')).toHaveText('£267.54');
       await expect(page.getByTestId('bank-showed')).toHaveText(
-        'Your bank showed £267.54 on Sun\u00a025\u00a0Oct',
+        'Bank: £267.54 on Sun\u00a025\u00a0Oct',
       );
       await expect(page.getByTestId('now')).toHaveText('About £604.53 now');
       await expect(page.getByTestId('lowest-point')).toContainText('£4.53');
@@ -289,7 +295,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openHome(page);
-      const sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
+      const sheet = await openAction(page, 'Overtime or missed shift', 'I did overtime');
       await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
       await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
       await expect(sheet.getByText('At £19.07 an hour.')).toBeVisible();
@@ -306,7 +312,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       );
 
       // Opened again, it remembers the hours and the rate (D200).
-      const again = await openAction(page, 'Extra/Missed shift', 'I did overtime');
+      const again = await openAction(page, 'Overtime or missed shift', 'I did overtime');
       await expect(again.getByLabel('Hours', { exact: true })).toHaveValue('11.5');
       await expect(again.getByText('At £19.07 an hour.')).toBeVisible();
       await again.getByRole('button', { name: 'Close', exact: true }).click();
@@ -320,7 +326,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await openHome(page);
-      let sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
+      let sheet = await openAction(page, 'Overtime or missed shift', 'I did overtime');
       await sheet.getByRole('radio', { name: 'I missed a shift' }).check();
       sheet = page.getByRole('dialog', { name: 'I missed a shift' });
       await expect(sheet).toBeVisible();
@@ -350,7 +356,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         { button: 'Update balance', title: 'Update balance' },
         { button: 'Add a payment', title: 'Add a payment' },
         { button: 'I spent', title: 'I spent' },
-        { button: 'Extra/Missed shift', title: 'I did overtime' },
+        { button: 'Overtime or missed shift', title: 'I did overtime' },
       ];
       for (const one of sheets) {
         const button = page.getByRole('button', { name: one.button, exact: true });
@@ -438,7 +444,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await sheet.getByRole('button', { name: 'Close', exact: true }).click();
 
       // I did overtime.
-      sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
+      sheet = await openAction(page, 'Overtime or missed shift', 'I did overtime');
       for (const label of ['Day of the overtime', 'Hours']) {
         await expect(sheet.getByLabel(label, { exact: true })).toBeVisible();
       }
@@ -468,7 +474,7 @@ test('the overtime sheet keeps the extras box while typing, and each kind its ow
   page,
 }) => {
   await openHome(page);
-  const sheet = await openAction(page, 'Extra/Missed shift', 'I did overtime');
+  const sheet = await openAction(page, 'Overtime or missed shift', 'I did overtime');
   await sheet.getByLabel('Day of the overtime').fill('2026-10-26');
   await sheet.getByLabel('Hours', { exact: true }).fill('11.5');
   const extras = sheet.getByLabel('Extras it adds, such as shift premium, if any');

@@ -63,7 +63,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       );
       const account = page.getByTestId('plan-account');
       await expect(account.getByRole('heading')).toHaveText('Current account');
-      await expect(account.getByText('£267.54, checked today', { exact: true })).toBeVisible();
+      // Sam's example never says "today": the day it's as on (D448).
+      await expect(
+        account.getByText('£267.54, as on Sun\u00a025\u00a0Oct\u00a02026', { exact: true }),
+      ).toBeVisible();
       // Sam has two accounts, so he can switch.
       await expect(account.getByRole('button', { name: 'Switch account' })).toBeVisible();
       await expect(page.getByTestId('plan-showing')).toHaveText('By payday, showing everything');
@@ -356,7 +359,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(accounts).toBeHidden();
       await expect(page.getByRole('button', { name: 'Switch account' })).toBeFocused();
       await expect(page.getByTestId('plan-account').getByRole('heading')).toHaveText('Savings');
-      await expect(page.getByTestId('plan-account')).toContainText('£500.00, checked today');
+      await expect(page.getByTestId('plan-account')).toContainText(
+        '£500.00, as on Sun\u00a025\u00a0Oct\u00a02026',
+      );
       await expectRows(first, [['From savings', 'Wed 28 Oct', `${MINUS}£500.00`, '£0.00 left']]);
       // No pay arrives in savings: the line says what does.
       await expect(paydayButton(page, '2026-11-13')).toContainText('£150.00 coming in');

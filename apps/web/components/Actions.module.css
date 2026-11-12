@@ -1,4 +1,8 @@
-/* Always 2 by 2 (DESIGN.md), or one column when big text needs the room. */
+/*
+ * Always 2 by 2 (DESIGN.md), or one column when big text needs the room. All
+ * four are the same height, so a label on two lines, such as "Overtime or
+ * missed shift" at 320px, keeps the grid even (D441).
+ */
 .actions {
   container-type: inline-size;
 }
@@ -6,6 +10,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: var(--space-3);
 }
 
@@ -22,6 +27,8 @@
   font-size: var(--size-name);
   font-weight: 600;
   line-height: 1.25;
+  /* Two even lines, "Overtime or" over "missed shift", never one word alone (D441). */
+  text-wrap: balance;
 }
 
 .main {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dateTile, formatDay } from '../../lib/dates.ts';
+import { dateTile, formatDay, formatDayAndYear } from '../../lib/dates.ts';
 import { EXAMPLE_TODAY, localToday, todayFor } from '../../lib/today.ts';
 
 const today = '2026-10-25';
@@ -40,6 +40,19 @@ describe('formatDay (brief Part 6, VOICE.md)', () => {
   it('refuses a date that isn’t a real calendar date', () => {
     expect(() => formatDay('2026-02-30', today)).toThrow();
     expect(() => formatDay('30/10/2026', today)).toThrow();
+  });
+});
+
+describe('formatDayAndYear (D440)', () => {
+  it('always says the year, as "Example plan, as on Sun 25 Oct 2026" does', () => {
+    expect(formatDayAndYear('2026-10-25')).toBe(nb('Sun 25 Oct 2026'));
+    expect(formatDayAndYear('2026-10-30')).toBe(nb('Fri 30 Oct 2026'));
+    expect(formatDayAndYear('2028-02-29')).toBe(nb('Tue 29 Feb 2028'));
+    expect(formatDayAndYear('2026-10-25')).not.toContain(' ');
+  });
+
+  it('refuses a date that isn’t a real calendar date', () => {
+    expect(() => formatDayAndYear('2026-02-30')).toThrow();
   });
 });
 

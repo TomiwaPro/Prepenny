@@ -178,7 +178,7 @@ const sheetShots: readonly {
   },
   {
     file: 'overtime-360-light.png',
-    button: 'Extra/Missed shift',
+    button: 'Overtime or missed shift',
     setting: null,
     fill: async (page) => {
       const sheet = page.getByRole('dialog');
@@ -621,7 +621,7 @@ test('Step 2h: your-job-360-light.png', async ({ browser }) => {
 });
 
 // Step 3a: the screens the owner's answers to step 2h changed (D277 to D284),
-// at 360px in light, on Sam's example: Home's "Extra/Missed shift", Coming
+// at 360px in light, on Sam's example: Home's "Overtime or missed shift", Coming
 // up's "Try a change" and "Change view", "Mark as arrived", closing a debt,
 // "Payday 2 of 4" for fortnightly pay, and the undo bar at 200% text at 320px.
 
@@ -659,7 +659,7 @@ async function shoot3a(page: Page, file: string) {
 test('Step 3a: home-360-light.png', async ({ browser }) => {
   const { context, page } = await step3aPage(browser);
   await page.goto('/app/');
-  await expect(page.getByRole('button', { name: 'Extra/Missed shift' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Overtime or missed shift' })).toBeVisible();
   await expect(page.getByTestId('balance')).toBeVisible();
   await expect(page.getByTestId('lowest-point')).toBeVisible();
   // The whole page, so the four buttons show.

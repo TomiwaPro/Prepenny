@@ -4,10 +4,11 @@
 // A. Setup's "Your account": the name follows the type chosen ("Joint
 //    account", "Savings") until the person types a name of their own (D429).
 // C. Home: "+ Add an account" right under the account card, opening the same
-//    form as More, Accounts (D431).
+//    form as More, Accounts (D431). Since the polish step it's under the four
+//    buttons instead (D442), tested in e2e/polish.spec.ts too.
 // D. Home's big figure: "About £X now", by brief 5.5 from the last balance
 //    check with every payment up to and including today, Not ticked yet
-//    included, with "Your bank showed £500.00 on Sun 8 Nov" under it; and
+//    included, with "Bank: £500.00 on Sun 8 Nov" under it (D450); and
 //    the figure with "Checked today" when nothing has moved since (D430).
 //
 // B, the old address, is e2e/old-address.spec.ts.
@@ -174,20 +175,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(name).toHaveValue('Holiday pot');
     });
 
-    test('C. "+ Add an account" under the account card opens the same form as More, Accounts', async ({
+    test('C. "+ Add an account" on Home opens the same form as More, Accounts', async ({
       page,
     }, info) => {
       await openHomeOn(page, '2026-10-25');
       const link = page.getByRole('button', { name: t.addAccount });
       await expect(link).toBeVisible();
-      // Right under the account card, before the lowest point.
-      const card = await page.getByRole('region', { name: 'Current account' }).boundingBox();
+      // Right under the four buttons since the polish step (D442), which
+      // replaces "right under the account card" (D431).
+      const actions = await page.getByRole('region', { name: strings.actions.label }).boundingBox();
       const under = await link.boundingBox();
-      const lowest = await page.getByTestId('lowest-point').boundingBox();
-      expect(card !== null && under !== null && lowest !== null).toBe(true);
-      if (card !== null && under !== null && lowest !== null) {
-        expect(under.y).toBeGreaterThanOrEqual(card.y + card.height - 1);
-        expect(under.y + under.height).toBeLessThanOrEqual(lowest.y + 1);
+      expect(actions !== null && under !== null).toBe(true);
+      if (actions !== null && under !== null) {
+        expect(under.y).toBeGreaterThanOrEqual(actions.y + actions.height - 1);
         expect(under.height).toBeGreaterThanOrEqual(44);
       }
       await noAxeProblems(page);
@@ -207,7 +207,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // It's in the plan, as from More, Accounts.
       await page.goto('/app/accounts/');
       await expect(page.getByText('Holiday pot', { exact: true })).toBeVisible();
-      await expect(page.getByText('£75.00, checked today')).toBeVisible();
+      // In Sam's example, the day it's as on, never "today" (D448).
+      await expect(page.getByText('£75.00, as on Sun\u00a025\u00a0Oct\u00a02026')).toBeVisible();
     });
 
     test('D. "About £X now" from the day of a payment, and the bank\'s figure when nothing has moved', async ({
@@ -229,7 +230,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openHomeOn(page, '2026-11-10', phoneBill);
       await expect(page.getByTestId('now')).toHaveText('About £480.00 now');
       await expect(page.getByTestId('bank-showed')).toHaveText(
-        `Your bank showed £500.00 ${t.bankShowedOn(day('Sun 8 Nov'))}`,
+        `Bank: £500.00 ${t.bankShowedOn(day('Sun 8 Nov'))}`,
       );
       await expect(page.getByTestId('balance')).toHaveText('£500.00');
       await noAxeProblems(page);
@@ -239,7 +240,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openHomeOn(page, '2026-11-11', phoneBill);
       await expect(page.getByTestId('now')).toHaveText('About £480.00 now');
       await expect(page.getByTestId('bank-showed')).toHaveText(
-        `Your bank showed £500.00 ${t.bankShowedOn(day('Sun 8 Nov'))}`,
+        `Bank: £500.00 ${t.bankShowedOn(day('Sun 8 Nov'))}`,
       );
       // With text at 200%, it still fits.
       await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
@@ -251,8 +252,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }) => {
       await openHomeOn(page, '2026-10-25');
       await expect(page.getByTestId('now')).toHaveText('About £237.54 now');
-      await expect(page.getByTestId('bank-showed')).toHaveText(
-        `Your bank showed £267.54 ${t.bankShowedToday}`,
+      // The example says the day it's shown as on, never "today" (D440).
+      await expect(page.getByTestId('bank-showed')).toHaveText('Bank: £267.54');
+      await expect(page.getByTestId('checked')).toHaveText(
+        `Example plan, as on ${day('Sun 25 Oct 2026')}`,
       );
       await expect(page.getByTestId('balance')).toHaveText('£267.54');
       await noAxeProblems(page);

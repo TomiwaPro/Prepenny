@@ -10,11 +10,17 @@
   color: var(--ink-muted);
 }
 
+/*
+ * The PrePenny name, as tall as its words, so a 320 by 568 phone shows the
+ * account card and the lowest point without scrolling (D442). The "?" help
+ * button beside it in Phase 4 (D175) keeps its 44px tap area without making
+ * the row taller.
+ */
 .wordmark {
   display: flex;
   align-items: center;
-  min-height: var(--tap);
   font-size: var(--size-wordmark);
+  line-height: 1.2;
   font-weight: 700;
   color: var(--accent-text);
   letter-spacing: -0.2px;
@@ -33,8 +39,8 @@
 }
 
 /*
- * "+ Add an account", right under the account card (D431): a small link-style
- * button, as "See everything coming up", with a tap area of 44px.
+ * "+ Add an account", right under the four buttons (D431, D442): a small
+ * link-style button, as "See everything coming up", with a tap area of 44px.
  */
 .addAccount {
   align-self: flex-start;
