@@ -49,6 +49,10 @@ import { z } from 'zod';
 import { holidaysFor } from './holidays.ts';
 import { planLookAhead, workOutPlanTo } from './plan-input.ts';
 
+// Zod checks without making code of its own at run time: the app's security
+// policy allows no eval (D175), and Zod would otherwise try it first.
+z.config({ jitless: true });
+
 /** What the file says it is. */
 export const BACKUP_APP = 'PrePenny';
 export const BACKUP_KIND = 'backup';

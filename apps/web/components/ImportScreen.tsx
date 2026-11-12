@@ -17,13 +17,13 @@ import { importIntoAccount, importOnPhone } from '../data/sync.ts';
 import { useOwnPlanId } from '../data/your-data.ts';
 import { useAccount } from '../lib/account.ts';
 import { MOST_BYTES, type ReadBackup, readBackup } from '../lib/backup.ts';
-import { formatDayAndYear } from '../lib/dates.ts';
+import { formatDay } from '../lib/dates.ts';
 import { newId } from '../lib/ids.ts';
 import { localToday } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
 import { Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
-import { usePlanActions } from './PlanProvider.tsx';
+import { todayOf, usePlanActions } from './PlanProvider.tsx';
 import { ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
 import { Sheet } from './Sheet.tsx';
@@ -71,7 +71,10 @@ export function ImportScreen() {
       setProblem(t.problems.unreadable ?? null);
       return;
     }
-    const got = readBackup(text, { today: localToday(), newId: () => newId() });
+    const got = readBackup(text, {
+      today: todayOf({ isExample: false, id: '' }),
+      newId: () => newId(),
+    });
     setSaid('');
     if (!got.ok) {
       setProblem(t.problems[got.problem] ?? t.problems.server ?? null);
@@ -222,7 +225,12 @@ export function ImportScreen() {
             : [
                 ready.madeAt === null
                   ? null
-                  : t.madeOn(formatDayAndYear(localToday(new Date(ready.madeAt)))),
+                  : t.madeOn(
+                      formatDay(
+                        localToday(new Date(ready.madeAt)),
+                        todayOf({ isExample: false, id: '' }),
+                      ),
+                    ),
                 t.holds(
                   ready.counts.accounts,
                   ready.counts.payments,

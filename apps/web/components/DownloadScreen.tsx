@@ -13,7 +13,7 @@ import { backupText } from '../lib/backup.ts';
 import { spreadsheetOf } from '../lib/backup-csv.ts';
 import { strings } from '../strings/en-GB.ts';
 import formStyles from './Form.module.css';
-import { usePlanActions } from './PlanProvider.tsx';
+import { todayOf, usePlanActions } from './PlanProvider.tsx';
 import { ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
 
@@ -33,7 +33,7 @@ export function DownloadScreen() {
     setBusy(kind);
     setSaid(t.preparing);
     try {
-      const data = await gatherMyData();
+      const data = await gatherMyData(todayOf({ isExample: false, id: '' }));
       if (data === null) {
         setSaid(t.noPlan);
         return;

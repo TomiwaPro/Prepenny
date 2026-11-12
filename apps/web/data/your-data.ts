@@ -36,7 +36,6 @@ import {
 import { deviceName } from '../lib/device-words.ts';
 import { myAccountData } from '../lib/security.ts';
 import { planActivity } from '../lib/sharing.ts';
-import { localToday } from '../lib/today.ts';
 import { strings } from '../strings/en-GB.ts';
 import { loadRecords, openDb, ownPlanOnPhone, type PlanLink } from './db.ts';
 
@@ -151,7 +150,7 @@ async function historyOf(
  * Everything to download, or null when there's no plan of the person's own
  * on this phone yet (Sam's example isn't theirs).
  */
-export async function gatherMyData(now: Date = new Date()): Promise<MyData | null> {
+export async function gatherMyData(today: string, now: Date = new Date()): Promise<MyData | null> {
   const db = openDb();
   let found: {
     records: PlanRecords;
@@ -172,7 +171,6 @@ export async function gatherMyData(now: Date = new Date()): Promise<MyData | nul
     db.close();
   }
   if (found === null) return null;
-  const today = localToday(now);
   const base = {
     records: found.records,
     today,
