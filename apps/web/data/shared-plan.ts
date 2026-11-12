@@ -52,10 +52,12 @@ export interface SharedPlan {
 function markOf(row: {
   readonly editBy?: string;
   readonly editMadeAt?: string;
+  readonly editSavedAt?: string;
   readonly editKind?: string;
 }): ChangeMark | null {
   if (row.editBy === undefined || row.editMadeAt === undefined) return null;
-  return { by: row.editBy, at: row.editMadeAt, kind: row.editKind ?? '' };
+  // When it reached the account, which no phone can set (D492); what the phone said only from an older server.
+  return { by: row.editBy, at: row.editSavedAt ?? row.editMadeAt, kind: row.editKind ?? '' };
 }
 
 async function read(planId: string): Promise<SharedPlan | null> {

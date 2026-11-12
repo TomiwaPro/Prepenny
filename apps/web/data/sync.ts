@@ -376,6 +376,8 @@ interface PlanChanges {
     readonly row: Record<string, unknown>;
     /** When the edit that last saved it was made, and by whom (step 3d). */
     readonly edit_made_at?: string | null;
+    /** When that edit reached the account, by the server's clock (step 3i, D492). */
+    readonly edit_saved_at?: string | null;
     readonly edit_by?: string | null;
     /** What kind of change that was (step 3g). */
     readonly edit_kind?: string | null;
@@ -409,11 +411,29 @@ interface Notice {
 
 /** The server's rows as this phone keeps them, from what plan_changes gave back. */
 function rowsFrom(changes: PlanChanges): MirrorRow[] {
-  const { edit_made_at: planMadeAt, edit_by: planBy, edit_kind: planKind, ...plan } = changes.plan;
+  const {
+    edit_made_at: planMadeAt,
+    edit_saved_at: planSavedAt,
+    edit_by: planBy,
+    edit_kind: planKind,
+    ...plan
+  } = changes.plan;
   return [
-    mirrorRowOf('plans', plan, { madeAt: planMadeAt, by: planBy, kind: planKind }),
-    ...changes.rows.map(({ table, row, edit_made_at: madeAt, edit_by: by, edit_kind: kind }) =>
-      mirrorRowOf(table, row, { madeAt, by, kind }),
+    mirrorRowOf('plans', plan, {
+      madeAt: planMadeAt,
+      savedAt: planSavedAt,
+      by: planBy,
+      kind: planKind,
+    }),
+    ...changes.rows.map(
+      ({
+        table,
+        row,
+        edit_made_at: madeAt,
+        edit_saved_at: savedAt,
+        edit_by: by,
+        edit_kind: kind,
+      }) => mirrorRowOf(table, row, { madeAt, savedAt, by, kind }),
     ),
   ];
 }

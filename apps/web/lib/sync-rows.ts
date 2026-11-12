@@ -78,6 +78,8 @@ export interface MirrorRow {
   /** The edit that last saved it, when it was made and by whom (step 3d): for clashes. */
   readonly editId?: string;
   readonly editMadeAt?: string;
+  /** When that edit reached the account, by the server's clock (D492): for "Changed by Tom, 2 hours ago". */
+  readonly editSavedAt?: string;
   readonly editBy?: string;
   /** What kind of change that was (step 3g), so sharing an account isn't "Changed by" anyone: "tick", "share-accounts". */
   readonly editKind?: string;
@@ -971,6 +973,8 @@ function withoutSyncFields(row: Readonly<Record<string, unknown>>): Record<strin
 export interface SavedBy {
   readonly id?: unknown;
   readonly madeAt?: unknown;
+  /** When it reached the account, by the server's clock (D492). */
+  readonly savedAt?: unknown;
   readonly by?: unknown;
   readonly kind?: unknown;
 }
@@ -993,6 +997,7 @@ export function mirrorRowOf(
     ...(typeof row.changed_at === 'string' ? { changedAt: row.changed_at } : {}),
     ...(typeof editId === 'string' ? { editId } : {}),
     ...(typeof edit.madeAt === 'string' ? { editMadeAt: edit.madeAt } : {}),
+    ...(typeof edit.savedAt === 'string' ? { editSavedAt: edit.savedAt } : {}),
     // A change by someone whose account has been deleted names nobody: it's
     // still a change, by "someone who has left" (D482).
     ...(typeof edit.by === 'string'
