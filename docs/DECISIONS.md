@@ -5286,6 +5286,7 @@ Decided 12 Nov 2026 in the polish step.
 - `apps/web/e2e/polish.spec.ts`: tests 1 to 3 at 320px and 360px, in light and dark, with axe, and the fit test on a 320 by 568 phone (and 360 by 640 in the 360px run), in light and dark.
 - The screenshots are at 320px in light, in `docs/screens/polish`. The older steps' tests write their screenshots into their own folders on every run; those are put back as they were, so each step's folder keeps showing that step.
 - The sign-in tests (the `sign-in-320` and `sign-in-360` projects) and the database tests need a local Supabase. On the computer this step was built on, downloading Supabase's command line was refused by the session's safety rules, so they couldn't run there. This step changes no database code and no sign-in code; GitHub runs them all once the pull request is ready.
+- The rest of the end-to-end tests ran on the building computer at 320px and 360px, in light and dark, three at a time: 628 passed, and the only failures were PLAN.md item 47's offline test at each width, which then passed 3 runs in 3 on its own at each width. 72 were skipped by design: the screenshot-only file, which passed when asked (all but its sign-in screenshot, which needs Supabase), and two checks that run at one width only.
 
 Why: the owner's instructions for the step, and what the building computer allowed.
 
