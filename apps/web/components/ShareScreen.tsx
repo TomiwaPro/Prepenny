@@ -68,6 +68,9 @@ export function ShareScreen() {
   const [info, setInfo] = useState<Loaded>({ kind: 'loading' });
   const [answers, setAnswers] = useState<Readonly<Record<string, Answered>>>({});
   const [roleFor, setRoleFor] = useState<string | null>(null);
+  // The role chosen in "Change what Tom can do": set from their role when it's
+  // tapped, and kept here, so the sheet being drawn again never changes it.
+  const [roleChoice, setRoleChoice] = useState<Role>('editor');
   const [roleSaid, setRoleSaid] = useState('');
 
   const load = useCallback(async () => {
@@ -202,6 +205,7 @@ export function ShareScreen() {
                   aria-haspopup="dialog"
                   onClick={() => {
                     setRoleSaid('');
+                    setRoleChoice(one.role === 'viewer' ? 'viewer' : 'editor');
                     setRoleFor(one.person);
                   }}
                 >
@@ -254,6 +258,8 @@ export function ShareScreen() {
       <RoleSheet
         planId={planId}
         member={sharing.members.find((one) => one.person === roleFor) ?? null}
+        role={roleChoice}
+        onRole={setRoleChoice}
         onClose={(said, role) => {
           const person = roleFor;
           setRoleFor(null);
@@ -547,25 +553,26 @@ function Invite({
 function RoleSheet({
   planId,
   member,
+  role,
+  onRole,
   onClose,
 }: {
   readonly planId: string | null;
   readonly member: Sharing['members'][number] | null;
+  /** The role chosen, kept by Share with my partner from when the sheet was opened. */
+  readonly role: Role;
+  readonly onRole: (role: Role) => void;
   /** Closed: what was saved, in words, and the role now, or null when nothing was. */
   readonly onClose: (said: string | null, role?: Role) => void;
 }) {
   const id = useId();
-  const [role, setRole] = useState<Role>('editor');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const name = called(member?.nickname ?? '');
   const person = member?.person ?? null;
-  const startsAs = member?.role === 'viewer' ? 'viewer' : 'editor';
-  // Starts from their role as the sheet opens, and not again while it's open.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only when it opens for someone
+  // Nothing from an earlier time it was open.
   useEffect(() => {
     if (person !== null) {
-      setRole(startsAs);
       setProblem(null);
       setBusy(false);
     }
@@ -604,7 +611,7 @@ function RoleSheet({
             { value: 'editor', label: t.canEdit, hint: t.canEditHint },
             { value: 'viewer', label: t.canView, hint: t.canViewHint },
           ]}
-          onChange={setRole}
+          onChange={onRole}
         />
         <p className={formStyles.lede} role="status">
           {busy ? g.savingRole : ''}

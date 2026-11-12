@@ -406,7 +406,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.goto('/app/goals/');
       await expect(page.locator('[data-goal="Holiday"]').getByTestId('put-in-line')).toHaveText(
         [`${g.putInStart}£100.00`, 'Tom£50.00'],
-        { timeout: 30_000 },
+        // The live nudge, or else the look every minute (step 3c).
+        { timeout: 70_000 },
       );
       await noAxeProblems(page);
       await noSidewaysScroll(page);
