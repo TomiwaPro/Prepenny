@@ -403,7 +403,10 @@ declare
   ids text[] := array[]::text[];
 begin
   for t in select unnest(app.record_tables()) loop
-    execute format('select array_agg(id::text) from public.%I where private_to is null', t) into found_ids;
+    -- Only the test's own plan, so records the end-to-end tests left in the
+    -- same local database change nothing (PLAN.md item 41).
+    execute format('select array_agg(id::text) from public.%I where private_to is null and plan_id = $1', t)
+      into found_ids using tests.id('plan');
     ids := ids || coalesce(found_ids, '{}');
   end loop;
   return ids;
