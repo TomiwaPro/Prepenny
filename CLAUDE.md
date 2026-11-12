@@ -42,6 +42,10 @@ The owner of PrePenny is not a developer. Write to them in plain English, with n
 - No third-party scripts on money screens.
 - Fonts are self-hosted.
 
+## The repository is public
+
+Anyone can read this repository (since 12 Nov 2026, D452). Never put real email addresses, names, keys, account IDs or anything else personal into files, commit messages, pull requests or screenshots. Keep using made-up examples: `yourname+jess@gmail.com`, `sam@example.com`, `https://abcdefghijklmnopqrst.supabase.co`. The support address hello@prepenny.co.uk is PrePenny's own and can stay. Keys and IDs go in GitHub's secrets and variables, never in a file.
+
 ## How to work
 
 - Small commits with clear messages.

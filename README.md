@@ -465,31 +465,31 @@ To check it worked, after merging: **Actions**, then **Database**, then the newe
 
 #### Trying "bring your plan" on the live app, alone, with two devices
 
-You need your phone (device A, playing Jess) and a computer or a second browser where you can open a **private or incognito window** (device B, playing Sam). Use two new Gmail "+" addresses: Gmail delivers mail for `tomiwaprofficial+jess2@gmail.com` and `tomiwaprofficial+sam@gmail.com` to your own inbox, but PrePenny treats them as two new people. Your own plan isn't touched.
+You need your phone (device A, playing Jess) and a computer or a second browser where you can open a **private or incognito window** (device B, playing Sam). Use two new Gmail "+" addresses made from your own: if your address is `yourname@gmail.com`, Gmail delivers mail for `yourname+jess2@gmail.com` and `yourname+sam@gmail.com` to your own inbox, but PrePenny treats them as two new people. Put your own name where these steps say `yourname`. Your own plan isn't touched.
 
 Jess's plan, on device A:
 
 1. Open https://prepenny.co.uk/app/, tap **More**, then **Sign out**, then **Sign out** again. Your own plan is safe in your account.
 2. Tap **Make my plan**. On **Your account**, tap **Joint account**: the name changes to "Joint account" by itself (fix A). Type `800` as what the bank shows. Under **Which part of the UK do you live in?** choose **Scotland**. Tap **Next**, then **Skip this step** on each screen, then **Go to my plan**.
-3. Tap **More**, then **Sign up or sign in**, and sign up with `tomiwaprofficial+jess2@gmail.com` (the code comes to your Gmail).
+3. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+jess2@gmail.com` (the code comes to your Gmail).
 4. Tap **More**, then **Share with my partner**, then **Choose shared accounts**. Tick **Joint account**, tap **Share these accounts**, then **Yes, share**.
 5. Back on **Share with my partner**, under **Invite your partner**, type `Jess`, keep **Can edit** and **A link I send myself**, and tap **Make the invite link**. The link starts with `https://prepenny.co.uk/join/` (fix B). Tap **Copy the link** and send it to yourself, for example by email, so you can open it on device B.
 
 Sam's own plan, on device B, in a private or incognito window:
 
 6. Open https://prepenny.co.uk/ and tap **Make my plan**. Keep **Current account**, type `267.54`, keep **England and Wales**, tap **Next**, then **Skip this step** on each screen, then **Go to my plan**.
-7. On Home, under the account card, tap **+ Add an account** (fix C). It starts as **Savings**; tap **Joint account** and back to **Savings**: the name follows (fix A). Type `500` as what the bank shows, and tap **Add account**.
-8. Tap **Add a payment**: name `Phone bill`, amount `20`, from **Current account**, with today's date, **Once**. Tap **Add payment**. Home's big figure now says "About £247.54 now", with "Your bank showed £267.54 today" under it (fix D): the bill is due today and not ticked yet.
-9. Tap **More**, then **Sign up or sign in**, and sign up with `tomiwaprofficial+sam@gmail.com`. More says "Your plan is saved in your account."
+7. On Home, under the four buttons, tap **+ Add an account** (fix C; it was under the account card until D442). It starts as **Savings**; tap **Joint account** and back to **Savings**: the name follows (fix A). Type `500` as what the bank shows, and tap **Add account**.
+8. Tap **Add a payment**: name `Phone bill`, amount `20`, from **Current account**, with today's date, **Once**. Tap **Add payment**. Home's big figure now says "About £247.54 now", with "Bank: £267.54 today" under it (fix D, in D450's words): the bill is due today and not ticked yet.
+9. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+sam@gmail.com`. More says "Your plan is saved in your account."
 10. Paste the invite link into the address bar. The page says "Jess has invited you to share their plan." and "You have a plan of your own, and it comes with you…". It says nothing about Jess's plan itself, not even its bank holidays, until Jess lets you in. Type `Sam` and tap **Ask to join**. It says "Waiting for Jess to allow it."
 
 Allowing, on device A:
 
-11. Within a few seconds, a sheet says "Sam wants to join your plan", with "Signed in as tomiwaprofficial+sam@gmail.com". Tap **Allow**. It says "Sam can join now. It finishes on Sam's phone, as soon as PrePenny is open there." Tap **Got it**.
+11. Within a few seconds, a sheet says "Sam wants to join your plan", with "Signed in as yourname+sam@gmail.com". Tap **Allow**. It says "Sam can join now. It finishes on Sam's phone, as soon as PrePenny is open there." Tap **Got it**.
 
 Bringing the plan in, on device B:
 
-12. Within a few seconds the page says "Jess let you in.", "Bank holidays: Jess's plan uses Scotland, and yours uses England and Wales…", and **Bring my plan and join**. Tap it. Home opens with your Current account, "About £247.54 now" and "Your bank showed £267.54 today", and the phone bill under **Next due**.
+12. Within a few seconds the page says "Jess let you in.", "Bank holidays: Jess's plan uses Scotland, and yours uses England and Wales…", and **Bring my plan and join**. Tap it. Home opens with your Current account, "About £247.54 now" and "Bank: £267.54 today", and the phone bill under **Next due**.
 13. Tap **More**, then **Accounts**: **Current account**, **Savings** and Jess's **Joint account**, and "Payments that move on bank holidays follow Scotland." Under **Share with my partner**, **Choose shared accounts** lists Current account and Savings: yours to share when you choose. Don't share them for this test.
 
 What Jess sees, on device A:
@@ -508,7 +508,7 @@ This removes the test accounts and everything of theirs, and nothing else, with 
 1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
 2. Paste the query from part H. On its first line, put all four test addresses, keeping the quote marks:
 
-   `addresses text[] := array['tomiwaprofficial+tom@gmail.com', 'tomiwaprofficial+jess@gmail.com', 'tomiwaprofficial+jess2@gmail.com', 'tomiwaprofficial+sam@gmail.com'];`
+   `addresses text[] := array['yourname+tom@gmail.com', 'yourname+jess@gmail.com', 'yourname+jess2@gmail.com', 'yourname+sam@gmail.com'];`
 
 3. Tap **Run**. It should say **Success. No rows returned**, and under it how many plans and accounts it removed, such as "Removed 2 plans and 4 accounts." (step 3f's plan, Tom's with Jess in it, and this step's, Jess's with Sam in it; Sam's own plan went when he joined).
 4. If it says "Found 3 of the 4 addresses", one of them was never used or is gone already: nothing was removed. Take that address out of the first line and run it again. If it says "Someone else is in one of their plans", someone not on the list joined one of them: nothing was removed; tell Claude Code.
