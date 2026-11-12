@@ -38,6 +38,50 @@ export function sql(query: string): string {
 
 export const quoted = (text: string) => `'${text.replaceAll("'", "''")}'`;
 
+/**
+ * Every table in the database that holds this text anywhere in a row, read
+ * past every rule, as "schema.table" (step 3h): empty when nothing names a
+ * person, their address or their name any more.
+ */
+export function namedAnywhere(needle: string): string {
+  return sql(`
+    select coalesce(string_agg(t, ', '), '') from (
+      select c.oid::regclass::text as t
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where c.relkind in ('r', 'p') and not c.relispartition
+        and n.nspname in ('public', 'app', 'auth', 'realtime', 'storage', 'supabase_functions')
+    ) tables
+    where (xpath('/row/c/text()', query_to_xml(
+      format('select count(*) as c from %s r where to_jsonb(r)::text ilike %L', t, '%' || ${quoted(needle)} || '%'),
+      false, true, '')))[1]::text::bigint > 0`);
+}
+
+/** Everything PrePenny keeps on a phone, as text: every record in its database and its small stores (step 3h). */
+export async function everythingOnThePhone(page: Page): Promise<string> {
+  return page.evaluate(async () => {
+    const found: unknown[] = [Object.entries(localStorage), Object.entries(sessionStorage)];
+    for (const { name } of await indexedDB.databases()) {
+      if (name === undefined) continue;
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(name);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      for (const store of Array.from(db.objectStoreNames)) {
+        found.push(
+          await new Promise<unknown>((resolve, reject) => {
+            const all = db.transaction(store).objectStore(store).getAll();
+            all.onsuccess = () => resolve(all.result);
+            all.onerror = () => reject(all.error);
+          }),
+        );
+      }
+      db.close();
+    }
+    return JSON.stringify(found);
+  });
+}
+
 /** A second phone: a fresh browser with nothing on it, the same size and colours as the first. */
 export async function secondPhone(
   browser: Browser,

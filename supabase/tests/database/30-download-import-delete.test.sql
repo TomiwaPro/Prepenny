@@ -11,13 +11,15 @@
 -- - a deleted person's devices get nothing more.
 -- And: deleting needs a sign-in in the last 10 minutes, the authenticator
 -- app's code when two-step sign-in is on, and "delete" typed; an email says
--- it's done; someone who is or has been in a shared plan waits for the
--- owner's choice of what the other person's history says (PLAN.md item 66).
+-- it's done. In a shared plan (the owner's choice B, D482): the person leaves
+-- first, their changes stay in the other person's Activity, History and
+-- "Changed by", made by nobody ("Someone who has left" on the phone), and
+-- their id, address and name appear nowhere afterwards.
 
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(66);
+select plan(85);
 
 select tests.make_jess_and_tom();
 
@@ -276,14 +278,6 @@ select is(pg_temp.refusal($$ select public.delete_my_account('remove') $$), 'con
   'and "delete" typed');
 select is(pg_temp.refusal($$ select public.delete_my_account(null) $$), 'confirm', 'not nothing');
 
--- Jess and Tom signed in just now, as Supabase notes on each sign-in.
-select tests.as_test();
-update auth.sessions set created_at = now() where user_id in (tests.id('jess'), tests.id('tom'));
-select tests.as_person('tom');
-select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan',
-  'Tom, in a shared plan, waits for the owner''s choice of what Jess''s history says');
-select tests.as_person('jess');
-select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan', 'and so does Jess');
 select tests.as_test();
 select is((select count(*) from auth.users where id in (tests.id('alex'), tests.id('jess'), tests.id('tom'))),
   3::bigint, 'Nobody was deleted by a refusal');
@@ -343,32 +337,130 @@ select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'not
 select tests.as_test();
 
 -- ---------------------------------------------------------------------------
--- 5. Someone who left a shared plan, and the plan they left, wait for the
--- owner's choice too: their name is in the other person's history.
+-- 5. Tom deletes his account while he shares Jess's plan (D482).
 
-update auth.sessions set created_at = now() where user_id in (tests.id('jess'), tests.id('tom'));
-select tests.as_person('tom');
-select public.leave_plan(tests.id('plan'), false, tests.id('tom-plan'), gen_random_uuid(), '2026-11-12T10:00:00Z');
-select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan',
-  'Tom, who left Jess''s plan, waits for the owner''s choice');
-select tests.as_person('jess');
-select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan',
-  'and so does Jess, alone in it now');
-
--- Found by the outside review: importing a backup took the plan Tom had been
--- in away, and with it the only sign that she'd shared it.
-select is(public.replace_plan(tests.id('plan'), tests.id('jess-new-plan'), 'england-and-wales') ->> 'plan',
-  tests.id('jess-new-plan')::text, 'Jess can import a backup in place of the plan Tom left');
-select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan',
-  'but still waits for the owner''s choice: having shared a plan is kept');
-select tests.as_person('tom');
-select is(pg_temp.refusal($$ select public.delete_my_account('delete') $$), 'shared-plan', 'and so does Tom');
+-- Tom has a name of his own, and makes changes in the shared plan: Rent goes
+-- up, he ticks a payment and records a spend. Jess has a notice about his
+-- change, with the device he made it on.
+update public.people set nickname = 'Tomasz-Nick' where id = tests.id('tom');
+select tests.in_an_edit('tom');
+update public.series set amount = 112000 where id = tests.id('rent');
+insert into public.ticks (id, plan_id, series_id, original_date, payment_number, paid_on, ticked_at)
+  values (tests.id('tom-rent-tick'), tests.id('plan'), tests.id('rent'), '2026-12-01', 1, '2026-12-01',
+    '2026-12-01T09:00:00Z');
+insert into public.spends (id, plan_id, budget_id, amount, spent_on, recorded_at)
+  values (tests.id('tom-spend'), tests.id('plan'), tests.id('joint-food'), 1250, '2026-11-02', '2026-11-02T10:00:00Z');
+insert into kept values ('tom edit', current_setting('prepenny.edit'));
 select tests.as_test();
-select ok(not has_table_privilege('authenticated', 'app.shared_once', 'select'),
-  'Nobody can read who has shared a plan');
+insert into app.edit_devices (edit_id, session_id, browser, device)
+  values ((select value::uuid from kept where name = 'tom edit'), tests.id('tom-session'), 'chrome', 'android')
+  on conflict (edit_id) do update set browser = 'chrome', device = 'android';
+insert into public.notices (plan_id, for_person, kind, edit_id, data)
+  values (tests.id('plan'), tests.id('jess'), 'clash', (select value::uuid from kept where name = 'tom edit'),
+    jsonb_build_object('by', tests.id('tom'), 'made_at', '2026-11-12T10:00:00Z',
+      'from', jsonb_build_object('session', tests.id('tom-session'), 'browser', 'chrome', 'device', 'android'),
+      'rows', jsonb_build_array(jsonb_build_object('table', 'series', 'id', tests.id('rent')))));
+insert into app.backup_emails (person_id, email) values (tests.id('tom'), 'tom-backup@example.test');
+update auth.sessions set created_at = now() where user_id in (tests.id('jess'), tests.id('tom'));
+
+select tests.as_person('tom');
+select is(public.delete_my_account('delete') ->> 'deleted', 'true',
+  'Tom deletes his account while he shares Jess''s plan');
+select tests.as_test();
+
+select is_empty($$ select pg_temp.naming(tests.id('tom')::text) $$,
+  'Nothing in the database names Tom''s id any more, in any table');
+select is_empty($$ select pg_temp.naming('tom@example.test') $$, 'nor the address he signed in with');
+select is_empty($$ select pg_temp.naming('tom-backup@example.test') $$, 'nor his backup email');
+select is_empty($$ select pg_temp.naming('Tomasz-Nick') $$, 'nor the name he gave');
+select is_empty($$ select pg_temp.naming(tests.id('tom-current')::text) $$,
+  'His own account has gone, with everything only he saw');
+select is((select owner from public.plans where id = tests.id('plan')), tests.id('jess'),
+  'Jess''s plan is still hers');
+select is((select array_agg(person_id::text) from public.plan_members where plan_id = tests.id('plan')),
+  array[tests.id('jess')::text], 'with only her in it');
+select is((select amount::bigint from public.series where id = tests.id('rent')), 112000::bigint,
+  'The shared accounts stay as they are: Rent keeps the amount Tom gave it');
+select is((select count(*) from public.ticks where id = tests.id('tom-rent-tick') and ticked_by is null
+    and not deleted), 1::bigint, 'his tick stays, ticked by nobody');
+select is((select count(*) from public.spends where id = tests.id('tom-spend') and recorded_by is null
+    and not deleted), 1::bigint, 'and his spend, recorded by nobody');
+select is((select count(*) from public.series where id = tests.id('rent') and created_by = tests.id('jess')
+    and changed_by is null), 1::bigint, 'and Rent still says Jess made it, and nobody changed it last');
+
+select tests.as_person('jess');
+select ok(exists (select 1 from jsonb_array_elements(public.plan_activity(tests.id('plan')) -> 'edits') e
+    where e ->> 'by' is null and e ->> 'kind' = 'test'
+      and e::text like '%112000%' and e::text like '%110000%'),
+  'Jess''s Activity keeps Tom''s change from £1,100.00 to £1,120.00, made by nobody');
+select ok(exists (select 1 from jsonb_array_elements(public.plan_activity(tests.id('plan')) -> 'edits') e
+    where e ->> 'kind' = 'leave' and e ->> 'by' is null and e -> 'summary' ->> 'person' is null),
+  'and says someone left the plan, naming nobody');
+select ok(not (public.plan_activity(tests.id('plan')) -> 'people') ? tests.id('tom')::text,
+  'and lists nobody of that name');
+select ok(exists (select 1 from jsonb_array_elements(
+      public.payment_history(tests.id('plan'), tests.id('rent'), '2026-12-01') -> 'edits') e
+    where e ->> 'by' is null),
+  'Rent''s History keeps his change, made by nobody');
+select ok(exists (select 1 from jsonb_array_elements(public.plan_changes(tests.id('plan'), 0, 0) -> 'rows') r
+    where r ->> 'table' = 'series' and r -> 'row' ->> 'id' = tests.id('rent')::text
+      and r ->> 'edit_by' is null and r ->> 'edit_made_at' is not null),
+  'and "Changed by" says it was changed, by nobody');
+select tests.as_test();
+select is((select count(*) from public.notices where for_person = tests.id('jess')
+    and edit_id = (select value::uuid from kept where name = 'tom edit')
+    and data ->> 'by' is null and not data ? 'from'), 1::bigint,
+  'Jess''s notice about his change stays, naming nobody and no device');
+select is((select count(*) from net.http_request_queue
+    where convert_from(body, 'utf8') like '%Your PrePenny account has been deleted%'
+      and convert_from(body, 'utf8') like '%tom@example.test%'), 1::bigint,
+  'An email to the address he signed in with says it''s done');
+
+-- His phones, with the token they still hold, get nothing more.
+select tests.as_person('tom');
+select is(public.hello() ->> 'sign_in', 'deleted', 'His phones are told the account was deleted');
+select is_empty($$ select tests.readable_rows() $$, 'and read nothing, in any table');
+select ok(not app.may_hear('plan:' || tests.id('plan')), 'and hear nothing of Jess''s plan');
+select tests.as_test();
 
 -- ---------------------------------------------------------------------------
--- 6. A backup from before put back: the deletion is made again.
+-- 6. Sam was in Jess's plan, left it with a copy, and deletes his account
+-- later: the same.
+
+select tests.make_person('sam');
+update public.people set nickname = 'Samwise-Nick' where id = tests.id('sam');
+insert into public.plan_members (plan_id, person_id, role) values (tests.id('plan'), tests.id('sam'), 'editor');
+select tests.in_an_edit('sam');
+update public.series set amount = 113000 where id = tests.id('rent');
+select tests.as_person('sam');
+select public.leave_plan(tests.id('plan'), true, tests.id('sam-plan'), gen_random_uuid(), '2026-11-12T10:00:00Z');
+select tests.as_test();
+update auth.sessions set created_at = now() where user_id = tests.id('sam');
+select tests.as_person('sam');
+select is(public.delete_my_account('delete') ->> 'deleted', 'true',
+  'Sam, who left the plan earlier, deletes his account');
+select tests.as_test();
+select is_empty($$ select pg_temp.naming(tests.id('sam')::text)
+    union all select pg_temp.naming('sam@example.test')
+    union all select pg_temp.naming('Samwise-Nick')
+    union all select pg_temp.naming(tests.id('sam-plan')::text) $$,
+  'Nothing names Sam, his address, his name or his own plan any more');
+select is((select amount::bigint from public.series where id = tests.id('rent')), 113000::bigint,
+  'and Jess''s Rent keeps his change');
+
+-- ---------------------------------------------------------------------------
+-- 7. Then Jess deletes hers: the plan goes, with everything in it.
+
+select tests.as_person('jess');
+select is(public.delete_my_account('delete') ->> 'deleted', 'true', 'Jess deletes her account too');
+select tests.as_test();
+select is_empty($$ select pg_temp.naming(tests.id('jess')::text)
+    union all select pg_temp.naming('jess@example.test')
+    union all select pg_temp.naming(tests.id('plan')::text) $$,
+  'Nothing names Jess, her address or the plan any more');
+
+-- ---------------------------------------------------------------------------
+-- 8. A backup from before put back: the deletion is made again.
 
 insert into auth.users (id, email) values (tests.id('alex'), 'alex@example.test');
 insert into public.people (id, nickname) values (tests.id('alex'), 'Alex');

@@ -2,8 +2,10 @@
 
 // "Changed by Tom, 2 hours ago" (brief 4.14, step 3g, D459), for every
 // payment row and the edit sheet, from one read of the plan's sharing for the
-// whole app. Only in a plan with someone else in it: on a plan of one's own,
-// every change is one's own, and nothing is shown.
+// whole app. Only in a plan with someone else in it, or for a change by
+// someone whose account was deleted ("Changed by someone who has left",
+// D482): on a plan of one's own, every change is one's own, and nothing is
+// shown.
 
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import { hasPartner, type SharedPlan, useSharedPlan } from '../data/shared-plan.ts';
@@ -28,14 +30,16 @@ interface Payment {
 function useMark(payment: Payment | null) {
   const shared = useContext(SharedContext);
   return useMemo(() => {
-    if (payment === null || shared === null || !hasPartner(shared)) return null;
+    if (payment === null || shared === null) return null;
     const mark = lastChange(
       shared.marks,
       payment.seriesId,
       payment.originalDate,
       shared.seriesVersion.get(payment.seriesId) ?? null,
     );
-    return mark === null ? null : { mark, shared };
+    // Alone in the plan, only a change by someone whose account was deleted shows (D482).
+    if (mark === null || (!hasPartner(shared) && mark.by !== '')) return null;
+    return { mark, shared };
   }, [payment, shared]);
 }
 

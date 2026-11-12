@@ -487,9 +487,17 @@ async function bringDown(
   const known = new Map(
     (await rowsOn(db, link.planId)).map((row) => [`${row.table}|${row.id}`, row]),
   );
-  const changed = rows.filter(
-    (row) => known.get(`${row.table}|${row.id}`)?.version !== row.version,
-  );
+  // A row is new to this phone at a new version, or when who made or last
+  // changed it is different, as when someone's account was deleted and their
+  // name taken off it, with nothing else changed (D482).
+  const changed = rows.filter((row) => {
+    const before = known.get(`${row.table}|${row.id}`);
+    return (
+      before?.version !== row.version ||
+      before.editBy !== row.editBy ||
+      before.createdBy !== row.createdBy
+    );
+  });
   let shared = link.shared;
   let mine = link.mine;
   for (const row of rows) {

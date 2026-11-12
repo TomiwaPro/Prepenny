@@ -32,9 +32,7 @@ export type SecurityProblem =
   /** Deleting the account (step 3h): the sign-in made just now is more than 10 minutes old. */
   | 'sign-in-again'
   /** Deleting the account: "delete" wasn't typed. */
-  | 'confirm'
-  /** Deleting the account: the person is, or has been, in a plan with someone else. */
-  | 'shared-plan';
+  | 'confirm';
 
 export type Done<T = true> =
   | { readonly ok: true; readonly value: T }
@@ -63,7 +61,6 @@ function problemOf(error: unknown): SecurityProblem {
       'not-found',
       'sign-in-again',
       'confirm',
-      'shared-plan',
     ] as const) {
       if (message === known) return known;
     }

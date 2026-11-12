@@ -2492,6 +2492,8 @@ export const strings = {
   /** Living together (step 3g): "Changed by Tom", Activity, roles, and who sees what. */
   together: {
     /** On a payment (brief 4.14): "Changed by Tom, 2 hours ago". */
+    /** Inside a sentence, someone whose account has been deleted (D482). */
+    someoneWhoLeft: 'someone who has left',
     changedBy: (who: string, when: string) => `Changed by ${who}, ${when}`,
     addedBy: (who: string, when: string) => `Added by ${who}, ${when}`,
     sharedBy: (who: string, when: string) => `Shared by ${who}, ${when}`,
@@ -2526,6 +2528,10 @@ export const strings = {
     sentence: (who: string, what: string) => `${who} ${what}.`,
     You: 'You',
     YourPartner: 'Your partner',
+    /** Someone whose account has been deleted (D482): their changes stay, with no name. */
+    SomeoneWhoLeft: 'Someone who has left',
+    /** "Someone left the plan.", for someone who left and then deleted their account (D482). */
+    someoneLeft: 'Someone left the plan.',
     at: (time: string) => `At ${time}`,
     undone: 'Undone',
     undo: 'Undo this change',
@@ -3018,8 +3024,11 @@ export const strings = {
     whenGoneHeading: "When it's gone",
     whenGone:
       "It's deleted from PrePenny straight away. Copies in PrePenny's backups, and in the records of the services that run it, are gone within 30 days.",
-    sharedNotYet: (name: string) =>
-      `You share a plan with ${name}. Deleting an account in a shared plan isn't ready yet, because your changes are in ${name}'s history too. You can leave the plan from Share with my partner.`,
+    sharedHeading: 'Your shared plan',
+    sharedWhat: (name: string) =>
+      `You share a plan with ${name}. Deleting your account takes you out of it first, as Leave this plan does: every shared account stays with ${name} as it is, and everything only you see is deleted.`,
+    sharedHistory: (name: string) =>
+      `Your changes stay in ${name}'s Activity and History, as made by "Someone who has left". Your name, email address and account go.`,
     checkHeading: "Check it's you",
     checkLine: (email: string) =>
       `To delete your account, sign in again first. PrePenny sends a 6-digit code to ${email}.`,
@@ -3034,8 +3043,6 @@ export const strings = {
     keepAccount: 'Keep my account',
     deleting: 'Deleting your account.',
     signInAgain: 'The check has run out. Send a new code, then try again.',
-    sharedRefused:
-      "Your account can't be deleted here yet, because you share or have shared a plan, and your changes are in the other person's history. Nothing has been deleted.",
     notSignedIn: "You're not signed in, so your plan is kept only on this phone.",
     removeHere: 'Remove everything from this phone',
     removeTitle: 'Remove everything from this phone?',

@@ -993,7 +993,13 @@ export function mirrorRowOf(
     ...(typeof row.changed_at === 'string' ? { changedAt: row.changed_at } : {}),
     ...(typeof editId === 'string' ? { editId } : {}),
     ...(typeof edit.madeAt === 'string' ? { editMadeAt: edit.madeAt } : {}),
-    ...(typeof edit.by === 'string' ? { editBy: edit.by } : {}),
+    // A change by someone whose account has been deleted names nobody: it's
+    // still a change, by "someone who has left" (D482).
+    ...(typeof edit.by === 'string'
+      ? { editBy: edit.by }
+      : edit.by === null && typeof edit.madeAt === 'string'
+        ? { editBy: '' }
+        : {}),
     ...(typeof edit.kind === 'string' ? { editKind: edit.kind } : {}),
     ...(typeof row.created_by === 'string' ? { createdBy: row.created_by } : {}),
     values,

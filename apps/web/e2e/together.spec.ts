@@ -30,8 +30,17 @@ import { strings } from '../strings/en-GB.ts';
 import { layoutProblems, named } from './coming-up.ts';
 import { addPayment, noSidewaysScroll, openHome, undoBar } from './journeys.ts';
 import { box, fillAccount, noAxeProblems, radio } from './setup.ts';
-import { askForCode, makeAPlan, newEmail, signInEmail } from './sign-in-helpers.ts';
-import { openMore, personOn, quoted, secondPhone, signUpFromMore, sql } from './two-phones.ts';
+import { askForCode, makeAPlan, makeCodeRunOut, newEmail, signInEmail } from './sign-in-helpers.ts';
+import {
+  everythingOnThePhone,
+  namedAnywhere,
+  openMore,
+  personOn,
+  quoted,
+  secondPhone,
+  signUpFromMore,
+  sql,
+} from './two-phones.ts';
 
 const s = strings.share;
 const j = strings.join;
@@ -99,6 +108,8 @@ async function jessAndTom(
   browser: Browser,
   info: TestInfo,
   colorScheme: 'light' | 'dark',
+  /** The name Tom gives: one found nowhere else, to look for it after he's gone (step 3h). */
+  tomName = 'Tom',
 ) {
   await page.emulateMedia({ colorScheme });
   await makeAPlan(page);
@@ -132,10 +143,10 @@ async function jessAndTom(
   await box(tom.page, '6-digit code').fill((await signInEmail(address)).code);
   await tom.page.getByRole('button', { name: 'Sign up', exact: true }).click();
   await expect(tom.page.getByTestId('join-message')).toHaveText(j.invitedBy('Jess'));
-  await box(tom.page, j.nameLabel('Jess')).fill('Tom');
+  await box(tom.page, j.nameLabel('Jess')).fill(tomName);
   await tom.page.getByRole('button', { name: j.ask }).click();
 
-  const sheet = page.getByRole('dialog', { name: s.requestTitle('Tom') });
+  const sheet = page.getByRole('dialog', { name: s.requestTitle(tomName) });
   await expect(sheet).toBeVisible({ timeout: 20_000 });
   await sheet.getByRole('button', { name: s.allow, exact: true }).click();
   await sheet.getByRole('button', { name: s.gotIt }).click();
@@ -753,6 +764,110 @@ for (const colorScheme of ['light', 'dark'] as const) {
         sql(`select count(*) from public.accounts where plan_id = ${quoted(tomPlan)}
           and private_to is null`),
       ).toBe('0');
+      await tom.context.close();
+    });
+
+    test('6. Tom deletes his account: his change stays on Jess\'s phone, by "Someone who has left", and nothing names him (D482)', async ({
+      page,
+      browser,
+    }, info) => {
+      test.slow();
+      const y = strings.yourData;
+      const tom = await jessAndTom(page, browser, info, colorScheme, 'Tomasz');
+      const tomId = await personOn(tom.page);
+      const tomAddress = sql(`select email from auth.users where id = ${quoted(tomId)}`);
+      await allSentOn(page);
+      await openHome(page);
+      await expect(rentDue(page)).toBeVisible();
+
+      // Tom changes Rent on Sun 1 Nov to £560, just this one, on his phone.
+      await openHome(tom.page);
+      await rentDue(tom.page).click();
+      const edit = tom.page.getByRole('dialog', { name: 'Rent' });
+      await edit.getByLabel('Amount').fill('560');
+      await edit.getByRole('button', { name: 'Save' }).click();
+      await expect(undoBar(tom.page)).toContainText('Rent changed for just this one.');
+      await expect(rentDue(page).getByTestId('changed-by')).toHaveText(
+        g.changedBy('Tomasz', g.justNow),
+        { timeout: 20_000 },
+      );
+
+      // Tom deletes his account. The screen says what happens in a shared plan.
+      await openMore(tom.page);
+      await tom.page
+        .getByTestId('your-data')
+        .getByRole('link', { name: new RegExp(y.delete) })
+        .click();
+      const shared = tom.page.getByTestId('delete-shared');
+      await expect(shared).toContainText(y.sharedWhat('Jess'));
+      await expect(shared).toContainText(y.sharedHistory('Jess'));
+      await noAxeProblems(tom.page);
+      await noSidewaysScroll(tom.page);
+      if (shoots(info, colorScheme)) {
+        const size = tom.page.viewportSize();
+        const height = await tom.page.evaluate(() => document.documentElement.scrollHeight);
+        await tom.page.setViewportSize({
+          width: 360,
+          height: Math.max(size?.height ?? 780, height),
+        });
+        await tom.page.screenshot({
+          path: '../../docs/screens/3h/delete-shared-360-light.png',
+          fullPage: true,
+        });
+        if (size !== null) await tom.page.setViewportSize(size);
+      }
+      makeCodeRunOut(tomAddress);
+      await tom.page.getByRole('button', { name: y.sendCode }).click();
+      const { code } = await signInEmail(tomAddress, 2);
+      const check = tom.page.getByTestId('delete-check');
+      await box(check, y.emailCodeLabel).fill(code);
+      await box(check, y.confirmLabel).fill('delete');
+      await check.getByRole('button', { name: y.deleteButton }).click();
+      await expect(tom.page.getByText(y.deleted)).toBeVisible({ timeout: 20_000 });
+      expect(await tom.page.evaluate(() => localStorage.length)).toBe(0);
+
+      // On Jess's phone, left open on Home: Rent keeps £560, changed by someone who has left.
+      await expect(rentDue(page).getByTestId('changed-by')).toHaveText(
+        /^Changed by someone who has left, /,
+        { timeout: 70_000 },
+      );
+      await expect(rentDue(page)).toContainText('−£560.00');
+      await rentDue(page).click();
+      const jessEdit = page.getByRole('dialog', { name: 'Rent' });
+      const history = await historyOf(jessEdit);
+      await expect(history.getByTestId('history-line').first()).toContainText(
+        /^Someone who has left changed it from £550\.00 to £560\.00, /,
+      );
+      await noAxeProblems(page);
+      await jessEdit.getByRole('button', { name: strings.sheet.close }).click();
+
+      // Her Activity keeps his change and his leaving, and names nobody.
+      await openActivity(page);
+      await expect(
+        entries(page).filter({
+          hasText: 'Someone who has left changed Rent on Sun 1 Nov from £550.00 to £560.00.',
+        }),
+      ).toHaveCount(1);
+      await expect(entries(page).filter({ hasText: g.someoneLeft })).toHaveCount(1);
+      await noAxeProblems(page);
+      await noSidewaysScroll(page);
+      if (shoots(info, colorScheme)) {
+        await page.screenshot({
+          path: '../../docs/screens/3h/activity-after-delete-360-light.png',
+        });
+      }
+      expect(await page.locator('body').textContent()).not.toContain('Tomasz');
+      await openShare(page);
+      expect(await page.locator('body').textContent()).not.toContain('Tomasz');
+
+      // Nothing names Tom any more: not in the database, nor on Jess's phone.
+      expect(namedAnywhere(tomId)).toBe('');
+      expect(namedAnywhere(tomAddress)).toBe('');
+      expect(namedAnywhere('Tomasz')).toBe('');
+      const kept = await everythingOnThePhone(page);
+      expect(kept).not.toContain('Tomasz');
+      expect(kept).not.toContain(tomId);
+      expect(kept).not.toContain(tomAddress);
       await tom.context.close();
     });
   });

@@ -14,8 +14,10 @@
 --    Supabase's own sign-in records, in one step, or nothing. It needs a
 --    sign-in made in the last 10 minutes, the authenticator app's code in
 --    the last 5 when two-step sign-in is on, and "delete" typed. An email
---    says it's done. Someone who has ever shared a plan waits for the
---    owner's choice of what a partner's history then says (PLAN.md item 66).
+--    says it's done. In a shared plan, it leaves first (D468), then the
+--    person is forgotten in every plan they've been in: their changes stay
+--    in the other person's Activity, History and "Changed by", made by
+--    "Someone who has left" (the owner's choice, D482).
 --
 -- Nothing here writes an amount, a name, a note or an email address to a
 -- log or an error (CLAUDE.md): every refusal is a short code.
@@ -139,48 +141,183 @@ language sql stable security definer set search_path = '' as $$
   )
 $$;
 
--- Everyone who has ever been in a plan with someone else, kept for as long
--- as their sign-in is: removing or replacing the plan they shared doesn't
--- take it away (found by step 3h's outside review). Filled in as someone
--- joins a plan, for them and everyone in it, and for everyone already so.
-create table app.shared_once (
-  person_id uuid primary key references auth.users (id) on delete cascade
-);
-alter table app.shared_once enable row level security;
-revoke all on app.shared_once from public, anon, authenticated;
+-- True for someone who is, or has been, in a plan with someone else. Only
+-- putting a backup of the database back reads it: such a person is left for
+-- someone to look at, since leaving needs their own sign-in.
+create function app.ever_shared(person uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.plan_members mine
+    join public.plan_members other on other.plan_id = mine.plan_id and other.person_id <> mine.person_id
+    where mine.person_id = person
+  )
+$$;
 
-create function app.note_shared() returns trigger
+-- ---------------------------------------------------------------------------
+-- Forgetting someone in the plans they've been in (D482): their changes stay
+-- in the other person's Activity, History and "Changed by", by "Someone who
+-- has left", and nothing names them any more: not their id, their address,
+-- or the name they gave.
+
+-- Who is being forgotten, while it happens: the database's own stamps keep
+-- every record as it was, with only that person taken off it.
+create function app.forgetting() returns uuid
+language sql stable set search_path = '' as $$
+  select nullif(current_setting('prepenny.forgetting', true), '')::uuid
+$$;
+
+-- A copy of a record, a summary or a notice with the person taken off it:
+-- wherever their id is a value, it's empty instead.
+create function app.without_person(value jsonb, person uuid) returns jsonb
+language sql immutable set search_path = '' as $$
+  select case when value is null then null
+    else replace(value::text, '"' || person::text || '"', 'null')::jsonb end
+$$;
+
+-- Every record's sync fields, as step 3c filled them in, and, while someone
+-- is being forgotten, the record exactly as it was with them taken off it,
+-- under a new change number so every phone brings it down again.
+create or replace function app.fill_sync_fields() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
-  if exists (select 1 from public.plan_members m
-      where m.plan_id = new.plan_id and m.person_id <> new.person_id) then
-    insert into app.shared_once (person_id)
-      select m.person_id from public.plan_members m where m.plan_id = new.plan_id
-      on conflict (person_id) do nothing;
+  if tg_op = 'UPDATE' and app.forgetting() is not null then
+    new := jsonb_populate_record(old, app.without_person(to_jsonb(old), app.forgetting()));
+    new.seq := app.next_seq(new.plan_id, new.private_to);
+    return new;
   end if;
-  return null;
+  -- Someone outside the plan is refused before anything is counted.
+  if app.from_a_person() and not exists (select 1 from app.my_plans() p where p = new.plan_id) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  -- Inside save_edit, the record names the edit being saved, whatever was sent.
+  if app.current_edit() is not null then
+    new.edit_id := app.edit_for(new.private_to);
+  end if;
+  -- The edit that saved it is in the plan, and everyone who can read this
+  -- record can read the edit too, so a shared record never names a private
+  -- edit (D291). One that doesn't exist is refused the same way.
+  if new.edit_id is not null and not exists (select 1 from public.edits e
+      where e.id = new.edit_id and e.plan_id = new.plan_id
+        and (e.private_to is null or e.private_to is not distinct from new.private_to)) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  if tg_op = 'INSERT' then
+    new.created_at := now();
+    new.created_by := auth.uid();
+    new.version := 1;
+  else
+    if new.id <> old.id or new.plan_id <> old.plan_id then
+      perform app.refuse('fixed-field');
+    end if;
+    new.created_at := old.created_at;
+    new.created_by := old.created_by;
+    new.version := old.version + 1;
+  end if;
+  new.changed_at := now();
+  new.changed_by := auth.uid();
+  new.seq := app.next_seq(new.plan_id, new.private_to);
+  return new;
 end;
 $$;
 
-create trigger note_shared after insert on public.plan_members
-  for each row execute function app.note_shared();
+-- The plan's own row, as step 3g made it, the same way.
+create or replace function app.before_plan() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'UPDATE' and app.forgetting() is not null then
+    new := jsonb_populate_record(old, app.without_person(to_jsonb(old), app.forgetting()));
+    new.seq := app.next_seq(new.id, null);
+    return new;
+  end if;
+  if tg_op = 'INSERT' then
+    new.owner := coalesce(auth.uid(), new.owner);
+    new.created_at := now();
+    new.created_by := auth.uid();
+    new.version := 1;
+    new.seq := 1;
+  else
+    if new.id <> old.id or (new.owner <> old.owner
+      and not (app.leaving_now() is not null and app.leaving_now() = old.owner
+        and exists (select 1 from public.plan_members m
+          where m.plan_id = new.id and m.person_id = new.owner and m.left_at is null))) then
+      perform app.refuse('fixed-field');
+    end if;
+    -- Only the owner renames the plan (ARCHITECTURE.md 3.6).
+    if new.name is distinct from old.name
+      and not exists (select 1 from app.my_owned_plans() p where p = new.id)
+      and auth.uid() is not null then
+      perform app.refuse('owner-only', '42501');
+    end if;
+    new.created_at := old.created_at;
+    new.created_by := old.created_by;
+    new.version := old.version + 1;
+    new.seq := app.next_seq(new.id, null);
+    if app.current_edit() is not null then
+      new.edit_id := app.edit_for(null);
+    end if;
+  end if;
+  new.changed_at := now();
+  new.changed_by := auth.uid();
+  return new;
+end;
+$$;
 
-insert into app.shared_once (person_id)
-  select distinct mine.person_id from public.plan_members mine
-  join public.plan_members other on other.plan_id = mine.plan_id and other.person_id <> mine.person_id
-  on conflict (person_id) do nothing;
+-- A change by someone whose account is gone names nobody.
+alter table public.edits alter column person_id drop not null;
 
--- True for someone who is, or has ever been, in a plan with someone else:
--- their name is then in the other person's history, which waits for the
--- owner's choice (PLAN.md item 66).
-create function app.ever_shared(person uuid) returns boolean
-language sql stable security definer set search_path = '' as $$
-  select exists (select 1 from app.shared_once s where s.person_id = person)
-    or exists (
-      select 1 from public.plan_members mine
-      join public.plan_members other on other.plan_id = mine.plan_id and other.person_id <> mine.person_id
-      where mine.person_id = person
-    )
+-- Takes the person off everything in the plans they've been in that aren't
+-- their own, which go with them: every record they made or changed (whose
+-- stamps then name nobody), every copy of a record in the history of
+-- changes, their changes themselves (made by nobody now), the server's words
+-- for its own steps ("Tom left the plan"), the other person's notices about
+-- their changes, with the device they were made on, and invites. The other
+-- person's records, amounts and history otherwise stay exactly as they were.
+create function app.forget_person(me uuid, addresses text[]) returns void
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  plans uuid[];
+  t text;
+  claims text := current_setting('request.jwt.claims', true);
+  pattern text := '%' || me::text || '%';
+begin
+  select coalesce(array_agg(m.plan_id), '{}') into plans
+    from public.plan_members m join public.plans p on p.id = m.plan_id
+    where m.person_id = me and p.owner <> me;
+  if cardinality(plans) = 0 then
+    return;
+  end if;
+  -- As the database itself, not as the person, who is no longer in them.
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('prepenny.forgetting', me::text, true);
+  for t in select unnest(app.record_tables()) loop
+    execute format('update public.%I r set id = r.id where r.plan_id = any ($1) and to_jsonb(r)::text like $2', t)
+      using plans, pattern;
+  end loop;
+  update public.plans p set id = p.id where p.id = any (plans) and to_jsonb(p)::text like pattern;
+  perform set_config('prepenny.forgetting', '', true);
+
+  delete from app.edit_devices d
+    where d.edit_id in (select e.id from public.edits e where e.plan_id = any (plans) and e.person_id = me);
+  update public.edits e
+    set person_id = nullif(e.person_id, me), summary = app.without_person(e.summary, me)
+    where e.plan_id = any (plans) and (e.person_id = me or e.summary::text like pattern);
+  update app.edit_records r
+    set before = app.without_person(r.before, me), after = app.without_person(r.after, me),
+      context = app.without_person(r.context, me)
+    where r.plan_id = any (plans)
+      and (r.before::text like pattern or r.after::text like pattern or r.context::text like pattern);
+  update public.notices n set data = app.without_person(n.data - 'from', me)
+    where n.plan_id = any (plans) and n.data ->> 'by' = me::text;
+  update public.notices n set data = app.without_person(n.data, me)
+    where n.plan_id = any (plans) and n.data::text like pattern;
+  update public.invites i
+    set created_by = nullif(i.created_by, me), accepted_by = nullif(i.accepted_by, me),
+      asked_by = nullif(i.asked_by, me),
+      email = case when lower(i.email) = any (addresses) then null else i.email end
+    where i.plan_id = any (plans);
+  delete from app.plan_counters c where c.plan_id = any (plans) and c.counts_for = me;
+  perform set_config('request.jwt.claims', coalesce(claims, ''), true);
+end;
 $$;
 
 -- Removes everything of one person's: their plans, with every record, change
@@ -264,8 +401,6 @@ $$;
 -- - "second-step-needed" unless, with two-step sign-in on, the
 --   authenticator app's code was typed in the last 5 minutes,
 -- - "confirm" unless "delete" was typed,
--- - "shared-plan" for someone who is or has been in a plan with someone
---   else, until the owner chooses what their partner's history then says,
 -- - "not-deleted" if the database refused any part of it.
 -- Only ever the person asking: there's nobody else it can name.
 create function public.delete_my_account(confirm text) returns jsonb
@@ -273,6 +408,8 @@ language plpgsql volatile security definer set search_path = '' as $$
 declare
   me uuid := auth.uid();
   address text;
+  addresses text[];
+  shared uuid;
   emailed boolean := true;
 begin
   if me is null or not app.session_ok() then
@@ -292,13 +429,23 @@ begin
   if confirm is null or lower(btrim(confirm)) <> 'delete' then
     perform app.refuse('confirm');
   end if;
-  if app.ever_shared(me) then
-    perform app.refuse('shared-plan');
-  end if;
-
   -- All of it or nothing. Anything the database itself refused part-way is
   -- answered with a code only, so no row or address reaches its logs.
   begin
+    -- In a plan with someone else: it leaves first, as "Leave this plan"
+    -- does without a copy (D468), so the other person keeps every shared
+    -- account as it is, and everything only this person sees goes with
+    -- them, to be deleted with the rest.
+    select m.plan_id into shared from public.plan_members m
+      where m.person_id = me and m.left_at is null and app.others_in(m.plan_id) limit 1;
+    if shared is not null then
+      perform public.leave_plan(shared, false, gen_random_uuid(), gen_random_uuid(), app.utc_words(now()));
+    end if;
+    -- Then they're forgotten in every plan they've been in (D482).
+    select array_remove(array[lower(u.email),
+        (select lower(b.email) from app.backup_emails b where b.person_id = me)], null)
+      into addresses from auth.users u where u.id = me;
+    perform app.forget_person(me, addresses);
     address := app.delete_person(me);
   exception when others then
     perform app.refuse('not-deleted');

@@ -32,6 +32,7 @@ import {
 import { appCode } from './totp.ts';
 import {
   DEVICES,
+  namedAnywhere,
   openMore,
   personOn,
   quoted,
@@ -70,20 +71,6 @@ async function downloadFrom(page: Page, button: string): Promise<{ name: string;
   ]);
   const path = await file.path();
   return { name: file.suggestedFilename(), text: await readFile(path, 'utf8') };
-}
-
-/** Everything in the database that names a person or their address, as "table: rows". */
-function namingAnywhere(needle: string): string {
-  return sql(`
-    select coalesce(string_agg(t, ', '), '') from (
-      select c.oid::regclass::text as t
-      from pg_class c join pg_namespace n on n.oid = c.relnamespace
-      where c.relkind in ('r', 'p') and not c.relispartition
-        and n.nspname in ('public', 'app', 'auth', 'realtime', 'storage', 'supabase_functions')
-    ) tables
-    where (xpath('/row/c/text()', query_to_xml(
-      format('select count(*) as c from %s r where to_jsonb(r)::text ilike %L', t, '%' || ${quoted(needle)} || '%'),
-      false, true, '')))[1]::text::bigint > 0`);
 }
 
 /** A screenshot of the whole screen, as tall as what's on it, so the tabs at the bottom don't cover any of it. */
@@ -319,8 +306,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       }
 
       // Nothing of the person is left in the database, in any table.
-      expect(namingAnywhere(person)).toBe('');
-      expect(namingAnywhere(address)).toBe('');
+      expect(namedAnywhere(person)).toBe('');
+      expect(namedAnywhere(address)).toBe('');
       // An email says it's done.
       await expect.poll(() => countEmails(address, DELETED_SUBJECT), { timeout: 20_000 }).toBe(1);
       // Nothing is left on this phone.
@@ -374,7 +361,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await box(check, s.appCodeLabel).fill(next);
       await check.getByRole('button', { name: t.deleteButton }).click();
       await expect(page.getByText(t.deleted)).toBeVisible();
-      expect(namingAnywhere(person)).toBe('');
+      expect(namedAnywhere(person)).toBe('');
     });
 
     test('6. not signed in: "Remove everything from this phone"', async ({ page }) => {

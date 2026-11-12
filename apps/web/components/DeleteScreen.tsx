@@ -228,9 +228,6 @@ function DeleteAccount({ email }: { readonly email: string }) {
         case 'confirm':
           setErrors({ confirm: t.confirmMissing });
           return;
-        case 'shared-plan':
-          setProblem(t.sharedRefused);
-          return;
         default:
           setProblem(securityWords(done.problem));
           return;
@@ -245,16 +242,6 @@ function DeleteAccount({ email }: { readonly email: string }) {
       <p className={styles.line} role="status" data-testid="delete-said">
         {said}
       </p>
-      {partner !== null ? (
-        <section className={styles.card} data-testid="delete-shared">
-          <p className={styles.line}>{t.sharedNotYet(partner.name ?? strings.share.someone)}</p>
-          <div className={styles.actions}>
-            <Link className={formStyles.outlined} href="/app/share/">
-              {t.goToShare}
-            </Link>
-          </div>
-        </section>
-      ) : null}
       <section className={styles.card} aria-labelledby={`${id}-what`}>
         <h2 id={`${id}-what`} className={styles.cardTitle}>
           {t.whatGoesHeading}
@@ -265,91 +252,102 @@ function DeleteAccount({ email }: { readonly email: string }) {
           <Link href="/app/download/">{t.cantUndo}</Link>
         </p>
       </section>
+      {partner !== null ? (
+        <section
+          className={styles.card}
+          aria-labelledby={`${id}-shared`}
+          data-testid="delete-shared"
+        >
+          <h2 id={`${id}-shared`} className={styles.cardTitle}>
+            {t.sharedHeading}
+          </h2>
+          <p className={styles.line}>{t.sharedWhat(partner.name ?? strings.share.someone)}</p>
+          <p className={styles.line}>{t.sharedHistory(partner.name ?? strings.share.someone)}</p>
+        </section>
+      ) : null}
       <section className={styles.card} aria-labelledby={`${id}-when`}>
         <h2 id={`${id}-when`} className={styles.cardTitle}>
           {t.whenGoneHeading}
         </h2>
         <p className={styles.line}>{t.whenGone}</p>
       </section>
-      {partner !== null ? null : (
-        <section className={styles.card} aria-labelledby={`${id}-check`} data-testid="delete-check">
-          <h2 id={`${id}-check`} className={styles.cardTitle}>
-            {t.checkHeading}
-          </h2>
-          {!sent ? (
-            <>
-              <p className={styles.line}>{t.checkLine(email)}</p>
-              <div className={styles.actions}>
-                <button
-                  type="button"
-                  className={formStyles.main}
-                  aria-disabled={sending}
-                  onClick={() => void send()}
-                >
-                  {t.sendCode}
-                </button>
-              </div>
-            </>
-          ) : (
-            <form
-              className={formStyles.form}
-              noValidate
-              onSubmit={(event) => {
-                event.preventDefault();
-                void remove();
-              }}
-            >
-              <CodeBox
-                id={`${id}-code`}
-                label={t.emailCodeLabel}
-                error={errors.code}
-                value={code}
-                onChange={setCode}
-              />
-              {twoStepOn ? (
-                <CodeBox
-                  id={`${id}-app`}
-                  label={s.appCodeLabel}
-                  hint={s.appCodeHint}
-                  error={errors.app}
-                  value={appCode}
-                  onChange={setAppCode}
-                />
-              ) : null}
-              <Field
-                id={`${id}-confirm`}
-                label={t.confirmLabel}
-                hint={t.confirmHint}
-                error={errors.confirm}
+      <section className={styles.card} aria-labelledby={`${id}-check`} data-testid="delete-check">
+        <h2 id={`${id}-check`} className={styles.cardTitle}>
+          {t.checkHeading}
+        </h2>
+        {!sent ? (
+          <>
+            <p className={styles.line}>{t.checkLine(email)}</p>
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={formStyles.main}
+                aria-disabled={sending}
+                onClick={() => void send()}
               >
-                <input
-                  id={`${id}-confirm`}
-                  className={formStyles.input}
-                  type="text"
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  value={typed}
-                  onChange={(event) => setTyped(event.target.value)}
-                  aria-invalid={errors.confirm !== undefined}
-                  aria-describedby={describedBy(`${id}-confirm`, errors.confirm, [
-                    `${id}-confirm-hint`,
-                  ])}
-                />
-              </Field>
-              <div className={formStyles.actions}>
-                <button type="submit" className={formStyles.main} aria-disabled={busy}>
-                  {t.deleteButton}
-                </button>
-                <Link className={formStyles.quiet} href="/app/more/">
-                  {t.keepAccount}
-                </Link>
-              </div>
-            </form>
-          )}
-          <Problem text={problem} />
-        </section>
-      )}
+                {t.sendCode}
+              </button>
+            </div>
+          </>
+        ) : (
+          <form
+            className={formStyles.form}
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault();
+              void remove();
+            }}
+          >
+            <CodeBox
+              id={`${id}-code`}
+              label={t.emailCodeLabel}
+              error={errors.code}
+              value={code}
+              onChange={setCode}
+            />
+            {twoStepOn ? (
+              <CodeBox
+                id={`${id}-app`}
+                label={s.appCodeLabel}
+                hint={s.appCodeHint}
+                error={errors.app}
+                value={appCode}
+                onChange={setAppCode}
+              />
+            ) : null}
+            <Field
+              id={`${id}-confirm`}
+              label={t.confirmLabel}
+              hint={t.confirmHint}
+              error={errors.confirm}
+            >
+              <input
+                id={`${id}-confirm`}
+                className={formStyles.input}
+                type="text"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={typed}
+                onChange={(event) => setTyped(event.target.value)}
+                aria-invalid={errors.confirm !== undefined}
+                aria-describedby={describedBy(`${id}-confirm`, errors.confirm, [
+                  `${id}-confirm-hint`,
+                ])}
+              />
+            </Field>
+            <div className={formStyles.actions}>
+              <button type="submit" className={formStyles.main} aria-disabled={busy}>
+                {t.deleteButton}
+              </button>
+              <Link className={formStyles.quiet} href="/app/more/">
+                {t.keepAccount}
+              </Link>
+            </div>
+          </form>
+        )}
+        <Problem text={problem} />
+      </section>
     </>
   );
 }
