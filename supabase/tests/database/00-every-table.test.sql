@@ -108,7 +108,7 @@ select set_eq(
     'look_at_my_invite', 'join_with_my_plan',
     -- Step 3g: Activity, undo, roles, and who sees what, with what they call.
     'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record',
-    'privacy_step', 'undo_writes', 'mark_undone'],
+    'privacy_step', 'undo_writes', 'mark_undone', 'server_kind', 'others_in', 'check_made_at'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 

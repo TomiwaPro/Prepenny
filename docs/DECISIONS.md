@@ -5517,7 +5517,7 @@ Decided 12 Nov 2026 in step 3g. Replaces D413's "A shared account can't be made 
 - **Who:** only the person who shared it (who added it), whatever their role: it was theirs to share and is theirs to take back. Nobody can take a joint account away from the other person this way.
 - **Not while the other person has things of their own in it:** payments or budgets they added, their pay, or money kept as theirs ("From Tom"): "Tom has payments of their own in Joint: Gym. While they're there, it stays shared. Tom can remove them or move them to an account of their own." Those are Tom's to see, so it stays shared. A goal of Tom's own kept in it isn't named: "Tom has things of their own in Joint, so it stays shared for now."
 - **Also refused, in plain words:** a shared savings goal kept in it ("Make the goal private first"); money moving between it and another shared account; money from your own account kept as "From Jess" in it (as D413).
-- **What happens:** the account and everything on it become private to its person in one step of the server's own (`make_private`), or nothing does. Ticks, one-off changes and spends Tom made on her payments go with them. Records removed before stay as they were. Links kept apart (D291) go back on the payments, exactly as the phone keeps them.
+- **What happens:** the account and everything on it become private to its person in one step of the server's own (`make_private`), or nothing does. Ticks, one-off changes and spends Tom made on her payments go with them. What she removed from it before goes private too (D467); only what Tom added and removed himself stays his to see. Links kept apart (D291) go back on the payments, exactly as the phone keeps them.
 - Tom's phone removes the account within seconds, and his Activity keeps only "Jess made a shared account private, so you no longer see it." (D458).
 
 Test: `26-living-together.test.sql` ("Making a shared account private again", 11 checks; breaking "only the person who shared it" fails 2), `apps/web/e2e/together.spec.ts` test 4. Screenshot: `docs/screens/3g/make-private-360-light.png`.
@@ -5570,3 +5570,21 @@ Decided 12 Nov 2026 in step 3g.
 - Screenshots are in `docs/screens/3g`. The leaving screens come with leaving (D454).
 
 Why: the owner's list of what the tests must prove.
+
+## From the outside review of step 3g
+
+### D467. What the outside review of step 3g changed
+
+Decided 12 Nov 2026 in step 3g, from an outside review of its database changes, which tried each hole on the local database. Adds to D455 to D465.
+
+- **A phone could send a change as one of the server's own kinds**, such as "first-copy", which keeps no history: Tom's change to Rent then showed nowhere in Activity, and not as "Changed by Tom". Now `save_edit` refuses the kinds only the server's own steps make (joining with a plan, sharing an account, claiming pay, making something private or shared, changing a role), and a first copy while anyone else is in the plan ("bad-edit").
+- **Making a debt or goal private could take over the other person's own link.** A link kept apart (D291) has an id worked out from the plan and the payment's family, not the person (`lib/sync-ids.ts`, D413), so Tom's own link from shared Rent to his own loan has the same id Jess's link to her card would. Making her card private then rewrote Tom's link, or was refused with "not-found". Now it's refused plainly while the other person's link holds that id ("partner-things", naming nothing), and never writes a link that isn't the person's own. Putting the person into those ids is PLAN.md item 64.
+- **Putting links back could write a payment private to the other person**, through a stale link of one's own. Now it writes only shared payments and one's own, and making an account private is refused while the other person has a private link of their own on a payment in it ("partner-things", naming nothing), so no stale link is left behind.
+- **What Jess removed from an account stayed shared once she made it private**, so its name and amount still reached Tom, in Activity too, against D458. Now her removed records go private with the account (D462). A removed transfer to another shared account, or a removed "From Jess", stays as it was, since it's about an account that's still shared.
+- **Two at once:** making something private now holds it for the whole step, so nothing the other person adds at that moment can be missed by its checks and made theirs.
+- **A time that isn't one** is refused with "bad-edit" in Activity and the server's own steps, never the database's own message.
+- **Accepted:** a change already on its way when a role changes is saved, as it was made before; the very next one is refused (D461). A refusal with nothing named still tells a person their partner has something of their own there, as D462 says on purpose.
+
+Test: `supabase/tests/database/27-living-together-review.test.sql` (20 checks). With the code from before the review put back on the local database for a moment, 9 of them failed, and the plan count with them.
+
+Why: each was shown by the review with a case that went wrong.

@@ -233,8 +233,8 @@ begin
   if plan is null or not app.session_ok() or not exists (select 1 from app.my_plans() p where p = plan) then
     perform app.refuse('not-found', '42501');
   end if;
-  if older_than is not null and older_than !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$' then
-    perform app.refuse('bad-edit');
+  if older_than is not null then
+    perform app.check_made_at(older_than);
   end if;
   for one in
     select * from public.edits e
@@ -516,7 +516,9 @@ $$;
 
 -- Puts each link to a debt or goal where the phone keeps it (apps/web/lib/
 -- sync-rows.ts): on the payment itself when everyone who reads the payment
--- can read what it names, or else in its person's private links (D291). So
+-- can read what it names, or else in its person's private links (D291).
+-- Only the person's own links, onto shared payments or their own: never a
+-- payment private to someone else (D467). So
 -- after a debt or goal is shared, or a record made private, the plan on the
 -- server is exactly the one the phone would send, and no phone sends a
 -- change just to put a link back.
@@ -528,6 +530,7 @@ begin
     from public.private_links l
     where l.plan_id = plan and l.private_to = me and not l.deleted and l.debt_id is not null
       and s.plan_id = plan and s.family_id = l.family_id and not s.deleted and s.debt_id is null
+      and (s.private_to is null or s.private_to = me)
       and exists (select 1 from public.debts d where d.id = l.debt_id
         and (d.private_to is null or d.private_to is not distinct from s.private_to));
   update public.private_links l set deleted = true
@@ -537,6 +540,7 @@ begin
     from public.private_links l
     where l.plan_id = plan and l.private_to = me and not l.deleted and l.goal_id is not null
       and s.plan_id = plan and s.family_id = l.family_id and not s.deleted and s.goal_id is null
+      and (s.private_to is null or s.private_to = me)
       and exists (select 1 from public.goals g where g.id = l.goal_id
         and (g.private_to is null or g.private_to is not distinct from s.private_to));
   update public.private_links l set deleted = true
@@ -546,6 +550,7 @@ begin
     from public.private_links l
     where l.plan_id = plan and l.private_to = me and not l.deleted and l.in_debt_update is not null
       and t.id = l.tick_id and not t.deleted and t.in_debt_update is null
+      and (t.private_to is null or t.private_to = me)
       and exists (select 1 from public.debts d where d.id = l.in_debt_update and d.private_to is null);
   update public.private_links l set deleted = true
     where l.plan_id = plan and l.private_to = me and not l.deleted and l.in_debt_update is not null
@@ -588,21 +593,24 @@ begin
   select distinct app.derived_id(plan, 'family-debt', s.family_id::text), plan, s.family_id, s.debt_id
     from public.series s
     where s.plan_id = plan and s.debt_id = debt and s.private_to is null and not s.deleted
-  on conflict (id) do update set debt_id = excluded.debt_id, deleted = false;
+  on conflict (id) do update set debt_id = excluded.debt_id, deleted = false
+    where public.private_links.private_to is not distinct from excluded.private_to;
   update public.series s set debt_id = null
     where s.plan_id = plan and s.debt_id = debt and s.private_to is null and not s.deleted;
   insert into public.private_links (id, plan_id, tick_id, in_debt_update)
   select app.derived_id(plan, 'tick-debt', t.id::text), plan, t.id, t.in_debt_update
     from public.ticks t
     where t.plan_id = plan and t.in_debt_update = debt and t.private_to is null and not t.deleted
-  on conflict (id) do update set in_debt_update = excluded.in_debt_update, deleted = false;
+  on conflict (id) do update set in_debt_update = excluded.in_debt_update, deleted = false
+    where public.private_links.private_to is not distinct from excluded.private_to;
   update public.ticks t set in_debt_update = null
     where t.plan_id = plan and t.in_debt_update = debt and t.private_to is null and not t.deleted;
   insert into public.private_links (id, plan_id, family_id, goal_id)
   select distinct app.derived_id(plan, 'family-goal', s.family_id::text), plan, s.family_id, s.goal_id
     from public.series s
     where s.plan_id = plan and s.goal_id = goal and s.private_to is null and not s.deleted
-  on conflict (id) do update set goal_id = excluded.goal_id, deleted = false;
+  on conflict (id) do update set goal_id = excluded.goal_id, deleted = false
+    where public.private_links.private_to is not distinct from excluded.private_to;
   update public.series s set goal_id = null
     where s.plan_id = plan and s.goal_id = goal and s.private_to is null and not s.deleted;
 end;
@@ -634,15 +642,21 @@ begin
     or not exists (select 1 from app.my_plans() p where p = plan) or what not in ('account', 'debt', 'goal') then
     perform app.refuse('not-found', '42501');
   end if;
+  perform app.check_made_at(made_at);
   if exists (select 1 from public.edits e where e.id = edit and e.plan_id = plan and e.person_id = me) then
     return jsonb_build_object('saved', 'already', 'now', app.server_time());
   end if;
+  -- The record is held until this step ends, so nothing can be added to it
+  -- between the checks below and the change (D467).
   if what = 'account' then
-    select a.private_to, a.created_by, a.deleted into found_one from public.accounts a where a.id = record and a.plan_id = plan;
+    select a.private_to, a.created_by, a.deleted into found_one from public.accounts a
+      where a.id = record and a.plan_id = plan for update;
   elsif what = 'debt' then
-    select d.private_to, d.created_by, d.deleted into found_one from public.debts d where d.id = record and d.plan_id = plan;
+    select d.private_to, d.created_by, d.deleted into found_one from public.debts d
+      where d.id = record and d.plan_id = plan for update;
   else
-    select g.private_to, g.created_by, g.deleted into found_one from public.goals g where g.id = record and g.plan_id = plan;
+    select g.private_to, g.created_by, g.deleted into found_one from public.goals g
+      where g.id = record and g.plan_id = plan for update;
   end if;
   if found_one.deleted is distinct from false or found_one.private_to is not null then
     perform app.refuse('not-found', '42501');
@@ -661,9 +675,17 @@ begin
           or exists (select 1 from public.series first where first.id = s.family_id and first.created_by <> me));
     ids := coalesce(ids, '{}') || coalesce((select array_agg(b.id) from public.budgets b
       where b.plan_id = plan and not b.deleted and b.account_id = record and b.created_by <> me), '{}');
-    -- A goal of the other person's own kept in it: not named, as it's theirs alone.
+    -- A goal of the other person's own kept in it, or their own private link
+    -- on a payment in it, such as one to their own card: not named, as each
+    -- is theirs alone (D467).
     if cardinality(ids) > 0 or exists (select 1 from public.goals g where g.plan_id = plan and not g.deleted
-        and g.account_id = record and g.private_to is not null and g.private_to <> me) then
+        and g.account_id = record and g.private_to is not null and g.private_to <> me)
+      or exists (select 1 from public.private_links l
+        where l.plan_id = plan and not l.deleted and l.private_to is distinct from me
+          and (l.family_id in (select s.family_id from public.series s where s.plan_id = plan and s.account_id = record)
+            or l.series_id in (select s.id from public.series s where s.plan_id = plan and s.account_id = record)
+            or l.tick_id in (select t.id from public.ticks t join public.series s on s.id = t.series_id
+              where t.plan_id = plan and s.account_id = record))) then
       raise exception using errcode = 'P0001', message = 'partner-things', detail = to_jsonb(ids)::text;
     end if;
     select array_agg(g.id) into ids from public.goals g
@@ -700,6 +722,23 @@ begin
       raise exception using errcode = 'P0001', message = 'partner-things', detail = (select to_jsonb(coalesce(array_agg(s.id), '{}'))::text
         from public.series s where s.id = any (ids) and s.private_to is null);
     end if;
+    -- The link it would keep apart has an id someone else's link holds:
+    -- theirs, not named (D467).
+    if exists (select 1 from public.private_links l
+        where l.plan_id = plan and l.private_to is distinct from me
+          and l.id in (
+            select app.derived_id(plan, case when what = 'debt' then 'family-debt' else 'family-goal' end,
+                s.family_id::text)
+              from public.series s
+              where s.plan_id = plan and not s.deleted and s.private_to is null
+                and ((what = 'debt' and s.debt_id = record) or (what = 'goal' and s.goal_id = record))
+            union
+            select app.derived_id(plan, 'tick-debt', t.id::text)
+              from public.ticks t
+              where what = 'debt' and t.plan_id = plan and t.in_debt_update = record
+                and t.private_to is null and not t.deleted)) then
+      raise exception using errcode = 'P0001', message = 'partner-things', detail = '[]';
+    end if;
   end if;
 
   if app.begin_edit(plan, edit, made_at, 'make-private') = 'already' then
@@ -710,24 +749,31 @@ begin
   begin
     if what = 'account' then
       update public.accounts set private_to = me, belongs_to = me where id = record and plan_id = plan;
-      -- Everything on it saved again, so the database fills in its privacy
-      -- from the account. Records removed before stay as they were.
-      update public.balance_updates set deleted = false where plan_id = plan and account_id = record and not deleted;
-      update public.budgets set deleted = false where plan_id = plan and account_id = record and not deleted;
-      update public.series s set deleted = false where s.plan_id = plan and s.account_id = record and not s.deleted;
-      update public.payment_changes c set deleted = false
-        where c.plan_id = plan and not c.deleted
+      -- Everything on it saved again, as it is, so the database fills in its
+      -- privacy from the account: removed records too, so nothing of it
+      -- stays where the other person reads it (D467). Only what the other
+      -- person added and removed themselves stays as it was, theirs to see.
+      update public.balance_updates set deleted = deleted
+        where plan_id = plan and account_id = record and (not deleted or created_by = me);
+      update public.budgets set deleted = deleted
+        where plan_id = plan and account_id = record and (not deleted or created_by = me);
+      update public.series s set deleted = s.deleted
+        where s.plan_id = plan and s.account_id = record
+          and (not s.deleted or (s.created_by = me and s.locked_to is null
+            and coalesce(s.to_account_id, record) = record and coalesce(s.set_aside_account_id, record) = record));
+      update public.payment_changes c set deleted = c.deleted
+        where c.plan_id = plan
           and (c.series_id in (select s.id from public.series s where s.plan_id = plan and s.account_id = record)
             or c.budget_id in (select b.id from public.budgets b where b.plan_id = plan and b.account_id = record));
-      update public.ticks t set deleted = false
-        where t.plan_id = plan and not t.deleted
+      update public.ticks t set deleted = t.deleted
+        where t.plan_id = plan
           and (t.series_id in (select s.id from public.series s where s.plan_id = plan and s.account_id = record)
             or t.budget_id in (select b.id from public.budgets b where b.plan_id = plan and b.account_id = record));
-      update public.spends p set deleted = false
-        where p.plan_id = plan and not p.deleted
+      update public.spends p set deleted = p.deleted
+        where p.plan_id = plan
           and p.budget_id in (select b.id from public.budgets b where b.plan_id = plan and b.account_id = record);
-      update public.pay_adjustments a set deleted = false
-        where a.plan_id = plan and not a.deleted
+      update public.pay_adjustments a set deleted = a.deleted
+        where a.plan_id = plan
           and a.family_id in (select s.family_id from public.series s where s.plan_id = plan and s.account_id = record);
       perform app.put_links_back(plan, me);
     elsif what = 'debt' then
@@ -774,6 +820,7 @@ begin
     or not exists (select 1 from app.my_plans() p where p = plan) or what not in ('debt', 'goal') then
     perform app.refuse('not-found', '42501');
   end if;
+  perform app.check_made_at(made_at);
   if exists (select 1 from public.edits e where e.id = edit and e.plan_id = plan and e.person_id = me) then
     return jsonb_build_object('saved', 'already', 'now', app.server_time());
   end if;
@@ -782,10 +829,10 @@ begin
   end if;
   if what = 'debt' then
     select d.private_to, d.deleted, null::uuid as account into found_one
-      from public.debts d where d.id = record and d.plan_id = plan;
+      from public.debts d where d.id = record and d.plan_id = plan for update;
   else
     select g.private_to, g.deleted, g.account_id as account into found_one
-      from public.goals g where g.id = record and g.plan_id = plan;
+      from public.goals g where g.id = record and g.plan_id = plan for update;
   end if;
   if found_one.deleted is distinct from false or found_one.private_to is distinct from me then
     perform app.refuse('not-found', '42501');
@@ -936,6 +983,260 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 8. From the outside review of step 3g (D467).
+
+-- Kinds of change only the server's own steps make: never sent by a phone.
+create function app.server_kind(kind text) returns boolean
+language sql immutable set search_path = '' as $$
+  select kind in ('join-with-plan', 'share-accounts', 'claim-pay', 'make-private', 'share-record',
+    'change-role')
+$$;
+
+-- Whether anyone else is in the plan now.
+create function app.others_in(plan uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.plan_members m
+    where m.plan_id = plan and m.left_at is null and m.person_id is distinct from auth.uid())
+$$;
+
+-- A time a phone sends, written as save_edit takes it, or else refused.
+create function app.check_made_at(made text) returns void
+language plpgsql volatile set search_path = '' as $$
+begin
+  if made is null
+    or made !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$' then
+    perform app.refuse('bad-edit');
+  end if;
+  perform made::timestamptz;
+exception when others then
+  perform app.refuse('bad-edit');
+end;
+$$;
+
+-- save_edit, as step 3d made it (D330, D331, D345, D365 to D375), refusing
+-- the kinds above.
+create or replace function public.save_edit(plan uuid, edit uuid, made_at text, kind text, writes jsonb,
+  overrides uuid[] default null)
+returns jsonb
+language plpgsql security invoker set search_path = '' as $$
+declare
+  write jsonb;
+  t text;
+  record_id uuid;
+  base integer;
+  new_row jsonb;
+  column_list text;
+  saved_version integer;
+  saved_seq bigint;
+  saved_private uuid;
+  saved_deleted boolean;
+  seen integer;
+  old_edit uuid;
+  results jsonb := '[]'::jsonb;
+  changed jsonb := '[]'::jsonb;
+  lost jsonb := '[]'::jsonb;
+  families uuid[] := '{}'::uuid[];
+  shared boolean := false;
+  mine boolean := false;
+  problem text;
+begin
+  if plan is null or edit is null or writes is null or jsonb_typeof(writes) <> 'array'
+    or jsonb_array_length(writes) > 1000
+    or kind is null or kind !~ '^[a-z][a-z-]{0,39}$'
+    or made_at is null
+    or made_at !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$'
+    or coalesce(cardinality(overrides), 0) > 1000 then
+    perform app.refuse('bad-edit');
+  end if;
+  -- Kinds only the server's own steps make (step 3g): a change sent as one of
+  -- them would keep no history, or hide from Activity and "Changed by". A
+  -- plan's first copy only while nobody else is in the plan (D467).
+  if app.server_kind(kind) or (kind = 'first-copy' and app.others_in(plan)) then
+    perform app.refuse('bad-edit');
+  end if;
+
+  -- Only someone in the plan, while their sign-in lasts (D21).
+  if app.begin_edit(plan, edit, made_at, kind) = 'already' then
+    -- Sent before and saved: nothing changes, and nobody is told twice. The
+    -- phone gets each record's version as it is now, as far as it can read it.
+    for write in select * from jsonb_array_elements(writes) loop
+      t := write ->> 'table';
+      saved_version := null;
+      if t = 'plans' then
+        select p.version, p.seq, null::uuid, false into saved_version, saved_seq, saved_private, saved_deleted
+          from public.plans p where p.id = plan;
+      elsif t = any (app.record_tables()) then
+        execute format('select version, seq, private_to, deleted from public.%I where id = $1 and plan_id = $2', t)
+          into saved_version, saved_seq, saved_private, saved_deleted using (write ->> 'id')::uuid, plan;
+      else
+        perform app.refuse('bad-edit');
+      end if;
+      if saved_version is not null then
+        results := results || jsonb_build_object('table', t, 'id', write ->> 'id', 'version', saved_version,
+          'seq', saved_seq, 'private_to', saved_private, 'deleted', saved_deleted);
+      end if;
+    end loop;
+    return jsonb_build_object('saved', 'already', 'rows', results, 'now', app.server_time());
+  end if;
+
+  -- From here, every record saved names this edit (app.fill_sync_fields).
+  perform set_config('prepenny.edit', edit::text, true);
+
+  begin
+    for write in select * from jsonb_array_elements(writes) loop
+      t := write ->> 'table';
+      record_id := (write ->> 'id')::uuid;
+      base := (write ->> 'version')::integer;
+      new_row := write -> 'row';
+      if new_row = 'null'::jsonb then
+        new_row := null;
+      end if;
+      if record_id is null or (new_row is not null and jsonb_typeof(new_row) <> 'object')
+        or (new_row is null and base is null) then
+        perform app.refuse('bad-edit');
+      end if;
+      saved_version := null;
+
+      -- The edit that saved this record last, when this one may replace it
+      -- after a clash (step 3d). Read as the person, under the privacy rules.
+      old_edit := null;
+      if base is not null and coalesce(cardinality(overrides), 0) > 0 then
+        if t = 'plans' then
+          select p.edit_id into old_edit from public.plans p where p.id = plan and p.version = base;
+        elsif t = any (app.record_tables()) then
+          execute format('select edit_id from public.%I where id = $1 and plan_id = $2 and version = $3', t)
+            into old_edit using record_id, plan, base;
+        end if;
+      end if;
+
+      if t = 'plans' then
+        -- Only the plan's bank holidays change through an edit (D155, D289).
+        if record_id <> plan or base is null or new_row is null then
+          perform app.refuse('bad-edit');
+        end if;
+        update public.plans p set nation = new_row ->> 'nation'
+          where p.id = plan and p.version = base
+          returning p.version, p.seq, null::uuid, false into saved_version, saved_seq, saved_private, saved_deleted;
+      elsif t = any (app.record_tables()) then
+        if new_row is null then
+          execute format('update public.%I set deleted = true where id = $1 and plan_id = $2 and version = $3
+              returning version, seq, private_to, deleted', t)
+            into saved_version, saved_seq, saved_private, saved_deleted using record_id, plan, base;
+        else
+          -- The columns sent, of those a phone may send. The phone sends every
+          -- one, null where empty; one left out keeps its default or its value.
+          select string_agg(format('%I', c), ', ') into column_list
+            from unnest(app.sent_columns(t)) c where new_row ? c;
+          if column_list is null then
+            perform app.refuse('bad-edit');
+          end if;
+          if base is null then
+            -- Made already, by this person's other phone or someone else in
+            -- the plan: changed since (a clash).
+            execute format('select count(*) from public.%I where id = $1 and plan_id = $2', t)
+              into seen using record_id, plan;
+            if seen = 0 then
+              execute format('insert into public.%1$I (id, plan_id, %2$s)
+                  select $1, $2, %2$s from jsonb_populate_record(null::public.%1$I, $3)
+                  returning version, seq, private_to, deleted', t, column_list)
+                into saved_version, saved_seq, saved_private, saved_deleted using record_id, plan, new_row;
+            end if;
+          else
+            execute format('update public.%1$I set (%2$s, deleted) =
+                  (select %2$s, false from jsonb_populate_record(null::public.%1$I, $2))
+                where id = $1 and plan_id = $3 and version = $4
+                returning version, seq, private_to, deleted', t, column_list)
+              into saved_version, saved_seq, saved_private, saved_deleted using record_id, new_row, plan, base;
+          end if;
+        end if;
+      else
+        perform app.refuse('bad-edit');
+      end if;
+
+      if saved_version is null then
+        -- Nothing was saved. Either it isn't at the version the phone saw
+        -- (changed since), or the person may read it but not change it ("Can
+        -- view only", or locked to someone else), or they can't see it at
+        -- all, which is refused as not found (D290).
+        if t = 'plans' then
+          select p.version into seen from public.plans p where p.id = plan;
+        else
+          execute format('select version from public.%I where id = $1 and plan_id = $2', t)
+            into seen using record_id, plan;
+        end if;
+        if seen is null then
+          perform app.refuse('not-found', '42501');
+        end if;
+        if base is not null and seen = base then
+          perform app.refuse('not-allowed', '42501');
+        end if;
+        changed := changed || jsonb_build_object('table', t, 'id', record_id);
+        continue;
+      end if;
+
+      -- A record a newer change has replaced, from an edit the phone named.
+      if old_edit is not null and old_edit <> edit and old_edit = any (overrides) then
+        lost := lost || jsonb_build_object('edit', old_edit, 'table', t, 'id', record_id);
+      end if;
+
+      if t = 'series' then
+        families := families || (select s.family_id from public.series s where s.id = record_id);
+      end if;
+      if saved_private is null then
+        shared := true;
+      else
+        mine := true;
+      end if;
+      results := results || jsonb_build_object('table', t, 'id', record_id, 'version', saved_version,
+        'seq', saved_seq, 'private_to', saved_private, 'deleted', saved_deleted);
+    end loop;
+
+    -- The people whose changes this one replaced are told (step 3d), while
+    -- the mark still says which edit is being saved.
+    if jsonb_array_length(lost) > 0 then
+      perform app.tell_clashes(plan, edit, lost);
+    end if;
+  exception
+    -- PrePenny's own refusals and the privacy rules' own say no more than a code.
+    when sqlstate 'P0001' or insufficient_privilege then
+      raise;
+    -- Anything else, such as a box the database checks, would say what the
+    -- record holds, and that could be an amount or a name. So only a code
+    -- goes back, and into the database's logs (CLAUDE.md).
+    when unique_violation then
+      perform app.refuse('not-found', '42501');
+    when others then
+      perform app.refuse('bad-record');
+  end;
+
+  -- Every record is written: from here nothing more is, so the mark goes. A
+  -- person can't follow save_edit with a write of their own in the same
+  -- request, as one GraphQL request with two steps could (D345).
+  perform set_config('prepenny.edit', '', true);
+
+  -- Anything changed since the phone saw it refuses the whole edit, cleanly:
+  -- nothing of it is saved, notices included, and the phone hears which
+  -- records, then looks at what's new and works out the clash (step 3d).
+  if jsonb_array_length(changed) > 0 then
+    raise exception using errcode = 'P0001', message = 'changed-since', detail = changed::text;
+  end if;
+
+  problem := app.family_rules_problem(plan, families);
+  if problem is not null then
+    perform app.refuse(problem);
+  end if;
+
+  if shared then
+    perform app.nudge(plan, true);
+  end if;
+  if mine then
+    perform app.nudge(plan, false);
+  end if;
+  return jsonb_build_object('saved', 'new', 'rows', results, 'now', app.server_time());
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Who can use which function, as at the end of every migration that adds to
 -- `app` (00-every-table.test.sql): everything taken back, then only what the
 -- rules and these steps call given to signed-in people.
@@ -955,7 +1256,8 @@ grant execute on function
   app.send_nudge(text), app.family_rules_problem(uuid, uuid[]), app.sent_columns(text), app.may_hear(text),
   app.server_time(), app.tell_clashes(uuid, uuid, jsonb),
   app.sharing_now(), app.claiming_now(), app.privacy_step(uuid, uuid, uuid, uuid),
-  app.undo_writes(uuid, uuid), app.mark_undone(uuid, uuid, uuid)
+  app.undo_writes(uuid, uuid), app.mark_undone(uuid, uuid, uuid),
+  app.server_kind(text), app.others_in(uuid), app.check_made_at(text)
   to authenticated;
 grant execute on function public.plan_activity(uuid, text), public.undo_change(uuid, uuid, uuid, text),
   public.change_role(uuid, uuid, text), public.make_private(uuid, text, uuid, uuid, text),
