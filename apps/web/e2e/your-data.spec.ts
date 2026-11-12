@@ -86,10 +86,11 @@ function namingAnywhere(needle: string): string {
       false, true, '')))[1]::text::bigint > 0`);
 }
 
-/** A screenshot of the whole screen, tall enough that the tabs at the bottom don't cover any of it. */
+/** A screenshot of the whole screen, as tall as what's on it, so the tabs at the bottom don't cover any of it. */
 async function shootWhole(page: Page, name: string) {
   const size = page.viewportSize();
-  await page.setViewportSize({ width: 360, height: 1800 });
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width: 360, height: Math.max(size?.height ?? 780, height) });
   await page.screenshot({ path: `${SCREENS}/${name}`, fullPage: true });
   if (size !== null) await page.setViewportSize(size);
 }
