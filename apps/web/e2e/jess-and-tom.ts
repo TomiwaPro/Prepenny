@@ -90,33 +90,7 @@ export async function jessAndTom(
   await allSentOn(page);
   await shareAccount(page, 'Current account');
 
-  await openShare(page);
-  const invite = page.getByTestId('invite');
-  await box(invite, s.nameLabel).fill('Jess');
-  await radio(invite, s.canEdit).check();
-  await radio(invite, s.byLink).check();
-  await invite.getByRole('button', { name: s.makeLink }).click();
-  const link = await page.getByTestId('invite-link').getByLabel(s.linkLabel).inputValue();
-
-  const tom = await secondPhone(browser, info, colorScheme);
-  const address = newEmail('tom');
-  await tom.page.goto(link);
-  await expect(tom.page.getByRole('heading', { level: 1, name: j.heading })).toBeVisible();
-  await tom.page.getByRole('link', { name: j.signIn }).click();
-  await askForCode(tom.page, address);
-  await box(tom.page, '6-digit code').fill((await signInEmail(address)).code);
-  await tom.page.getByRole('button', { name: 'Sign up', exact: true }).click();
-  await expect(tom.page.getByTestId('join-message')).toHaveText(j.invitedBy('Jess'));
-  await box(tom.page, j.nameLabel('Jess')).fill(tomName);
-  await tom.page.getByRole('button', { name: j.ask }).click();
-
-  const sheet = page.getByRole('dialog', { name: s.requestTitle(tomName) });
-  await expect(sheet).toBeVisible({ timeout: 20_000 });
-  await sheet.getByRole('button', { name: s.allow, exact: true }).click();
-  await sheet.getByRole('button', { name: s.gotIt }).click();
-  await expect(tom.page).toHaveURL(/\/app\/$/, { timeout: 20_000 });
-  await expect(tom.page.getByTestId('balance')).toBeVisible();
-  return tom;
+  return inviteTom(page, browser, info, colorScheme, tomName);
 }
 
 /** Rent's sheet's History list, shown. */
@@ -141,3 +115,45 @@ export const rentDue = (page: Page) =>
     .getByTestId('next-due')
     .getByRole('button', { name: named('Rent') })
     .first();
+
+/**
+ * Jess, signed in on `page` with her plan saved, invites Tom with "Can edit"
+ * by a link; Tom signs up on a phone of his own (today `today`), asks to join
+ * with `tomName`, and Jess allows it. Returns Tom's phone, on Home.
+ */
+export async function inviteTom(
+  page: Page,
+  browser: Browser,
+  info: TestInfo,
+  colorScheme: 'light' | 'dark',
+  tomName = 'Tom',
+  today?: string,
+) {
+  await openShare(page);
+  const invite = page.getByTestId('invite');
+  await box(invite, s.nameLabel).fill('Jess');
+  await radio(invite, s.canEdit).check();
+  await radio(invite, s.byLink).check();
+  await invite.getByRole('button', { name: s.makeLink }).click();
+  const link = await page.getByTestId('invite-link').getByLabel(s.linkLabel).inputValue();
+
+  const tom = await secondPhone(browser, info, colorScheme, today);
+  const address = newEmail('tom');
+  await tom.page.goto(link);
+  await expect(tom.page.getByRole('heading', { level: 1, name: j.heading })).toBeVisible();
+  await tom.page.getByRole('link', { name: j.signIn }).click();
+  await askForCode(tom.page, address);
+  await box(tom.page, '6-digit code').fill((await signInEmail(address)).code);
+  await tom.page.getByRole('button', { name: 'Sign up', exact: true }).click();
+  await expect(tom.page.getByTestId('join-message')).toHaveText(j.invitedBy('Jess'));
+  await box(tom.page, j.nameLabel('Jess')).fill(tomName);
+  await tom.page.getByRole('button', { name: j.ask }).click();
+
+  const sheet = page.getByRole('dialog', { name: s.requestTitle(tomName) });
+  await expect(sheet).toBeVisible({ timeout: 20_000 });
+  await sheet.getByRole('button', { name: s.allow, exact: true }).click();
+  await sheet.getByRole('button', { name: s.gotIt }).click();
+  await expect(tom.page).toHaveURL(/\/app\/$/, { timeout: 20_000 });
+  await expect(tom.page.getByTestId('balance')).toBeVisible();
+  return tom;
+}
