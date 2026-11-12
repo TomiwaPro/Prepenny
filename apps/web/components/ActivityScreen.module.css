@@ -1,0 +1,36 @@
+/* Activity (step 3g): each change as a row in its day's card, split by 1px
+   lines (DESIGN.md), with its time under it and, for one's own, Undo. */
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+}
+
+.words {
+  font-size: var(--size-body);
+  overflow-wrap: anywhere;
+}
+
+.when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+/* "Undone", a word as well as its look (brief Part 6). */
+.undone {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  color: var(--ink);
+  font-size: var(--size-label);
+  font-weight: 600;
+}

@@ -140,6 +140,12 @@ export interface NewOtherHalf {
   readonly accountId: string;
   /** "From Jess" or "To Jess": all the shared plan sees of it, with the date and amount. */
   readonly name: string;
+  /**
+   * A shared savings goal kept in the shared account, which the money goes
+   * into or comes out of (step 3g, D464): so the goal counts it, as the
+   * person's own money.
+   */
+  readonly goalId?: string;
 }
 
 /** What can change about an account (D151). */

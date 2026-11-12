@@ -366,8 +366,14 @@ interface PlanChanges {
     /** When the edit that last saved it was made, and by whom (step 3d). */
     readonly edit_made_at?: string | null;
     readonly edit_by?: string | null;
+    /** What kind of change that was (step 3g). */
+    readonly edit_kind?: string | null;
   }[];
-  readonly members?: readonly { readonly person: string; readonly nickname?: string }[];
+  readonly members?: readonly {
+    readonly person: string;
+    readonly nickname?: string;
+    readonly role?: string;
+  }[];
   /** This person's own notices not read yet: a change of theirs a newer one replaced (step 3d). */
   readonly notices?: readonly Notice[];
 }
@@ -392,13 +398,19 @@ interface Notice {
 
 /** The server's rows as this phone keeps them, from what plan_changes gave back. */
 function rowsFrom(changes: PlanChanges): MirrorRow[] {
-  const { edit_made_at: planMadeAt, edit_by: planBy, ...plan } = changes.plan;
+  const { edit_made_at: planMadeAt, edit_by: planBy, edit_kind: planKind, ...plan } = changes.plan;
   return [
-    mirrorRowOf('plans', plan, { madeAt: planMadeAt, by: planBy }),
-    ...changes.rows.map(({ table, row, edit_made_at: madeAt, edit_by: by }) =>
-      mirrorRowOf(table, row, { madeAt, by }),
+    mirrorRowOf('plans', plan, { madeAt: planMadeAt, by: planBy, kind: planKind }),
+    ...changes.rows.map(({ table, row, edit_made_at: madeAt, edit_by: by, edit_kind: kind }) =>
+      mirrorRowOf(table, row, { madeAt, by, kind }),
     ),
   ];
+}
+
+/** Each person in the plan's role (step 3g): "owner", "editor" ("Can edit") or "viewer" ("Can view only"). */
+function rolesOf(changes: PlanChanges): Record<string, string> | undefined {
+  if (changes.members === undefined) return undefined;
+  return Object.fromEntries(changes.members.map((one) => [one.person, one.role ?? 'editor']));
 }
 
 /** Each person in the plan's nickname, for "Tom changed Rent" (step 3d). */
@@ -460,6 +472,7 @@ async function bringDown(
   if (!answer.ok) return answer.failure;
   const rows = rowsFrom(answer.data);
   const nicknames = nicknamesOf(answer.data);
+  const roles = rolesOf(answer.data);
   const known = new Map(
     (await rowsOn(db, link.planId)).map((row) => [`${row.table}|${row.id}`, row]),
   );
@@ -479,9 +492,17 @@ async function bringDown(
     shared,
     mine,
     ...(nicknames === undefined ? {} : { nicknames }),
+    ...(roles === undefined ? {} : { roles }),
   };
   await db.links.put(now);
   if (changed.length > 0) await rebuild(db, now);
+  else if (
+    JSON.stringify(roles ?? link.roles ?? {}) !== JSON.stringify(link.roles ?? {}) ||
+    JSON.stringify(nicknames ?? link.nicknames ?? {}) !== JSON.stringify(link.nicknames ?? {})
+  ) {
+    // Someone's role or name changed, and no record (step 3g): the screens look again.
+    for (const listener of updatedListeners) listener();
+  }
   await hearNotices(client, db, now, answer.data.notices ?? []);
   return changed.length > 0;
 }
@@ -740,7 +761,7 @@ async function saveOnServer(
   await keepRows(
     db,
     link.planId,
-    savedRows(writes, answer.data.rows, before, { id: editId, madeAt, by: link.personId }),
+    savedRows(writes, answer.data.rows, before, { id: editId, madeAt, by: link.personId, kind }),
   );
   return true;
 }
@@ -1268,6 +1289,7 @@ async function bringDownInstead(
 ): Promise<'done' | 'changed-here' | 'not-now'> {
   let all = rows;
   let nicknames: Record<string, string> | undefined;
+  let roles: Record<string, string> | undefined;
   if (all === null) {
     const answer = await rpc<PlanChanges>(
       client,
@@ -1278,6 +1300,7 @@ async function bringDownInstead(
     if (!answer.ok) return 'not-now';
     all = rowsFrom(answer.data);
     nicknames = nicknamesOf(answer.data);
+    roles = rolesOf(answer.data);
   }
   let shared = 0;
   let mine = 0;
@@ -1292,6 +1315,7 @@ async function bringDownInstead(
     shared,
     mine,
     ...(nicknames === undefined ? {} : { nicknames }),
+    ...(roles === undefined ? {} : { roles }),
   };
   const arrived = all;
   const swapped = await db.transaction(

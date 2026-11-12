@@ -9,6 +9,7 @@ import {
   editPlan,
   type NewSeries,
   type PlanInput,
+  workOutGoals,
   workOutPlan,
 } from '../../src/index.ts';
 import { canonical, edited, halvesProblems } from '../fixtures/edit.ts';
@@ -168,5 +169,79 @@ describe('what the other half refuses', () => {
         otherHalf: { id: 'to-joint', accountId: 'joint', name: 'From Jess' },
       }),
     ).not.toBe('not refused');
+  });
+});
+
+describe('"From Jess" into a shared savings goal kept in the joint account (step 3g, D464)', () => {
+  const withGoal: PlanInput = {
+    ...jess,
+    goals: [
+      {
+        id: 'holiday',
+        name: 'Holiday',
+        target: pounds('1200.00'),
+        accountId: 'joint',
+        startingAmount: pounds('100.00'),
+      },
+    ],
+  };
+  const intoGoal: EditCommand = {
+    ...fromJess,
+    otherHalf: { id: 'from-jess', accountId: 'joint', name: 'From Jess', goalId: 'holiday' },
+  };
+
+  it('puts the goal on the shared half only, which counts towards it once ticked', () => {
+    const { after } = edited(withGoal, intoGoal);
+    const half = after.series.find((one) => one.id === 'from-jess');
+    const mine = after.series.find((one) => one.id === 'to-joint');
+    expect(half?.goalId).toBe('holiday');
+    expect(mine?.goalId).toBeUndefined();
+    expect(halvesProblems(after, '2026-10-01', '2027-12-31')).toEqual([]);
+    const ticked = edited(after, {
+      kind: 'tick',
+      seriesId: 'from-jess',
+      originalDate: '2026-10-28',
+      tickedAt: '2026-10-28T09:00:00Z',
+    }).after;
+    const goal = workOutGoals({
+      ...ticked,
+      goals: ticked.goals ?? [],
+      today: '2026-10-28',
+      to: '2027-03-31',
+    }).goals[0];
+    expect(goal?.savedSoFar).toBe(pounds('700.00'));
+    expect(goal?.rows[0]?.payment.seriesId).toBe('from-jess');
+  });
+
+  it('refuses a goal kept in another account, an unknown goal and a closed one', () => {
+    const refusedOn = (input: PlanInput, command: EditCommand) => {
+      try {
+        editPlan(input, command);
+      } catch (error) {
+        if (error instanceof EngineInputError) return error.code;
+        throw error;
+      }
+      return 'not refused';
+    };
+    const elsewhere: PlanInput = {
+      ...withGoal,
+      goals: [
+        { ...(withGoal.goals?.[0] as NonNullable<PlanInput['goals']>[number]), accountId: 'jess' },
+      ],
+    };
+    expect(refusedOn(elsewhere, intoGoal)).toBe('bad-goal-link');
+    expect(
+      refusedOn(withGoal, {
+        ...fromJess,
+        otherHalf: { id: 'from-jess', accountId: 'joint', name: 'From Jess', goalId: 'nowhere' },
+      }),
+    ).toBe('unknown-goal');
+    const closed: PlanInput = {
+      ...withGoal,
+      goals: [
+        { ...(withGoal.goals?.[0] as NonNullable<PlanInput['goals']>[number]), closed: true },
+      ],
+    };
+    expect(refusedOn(closed, intoGoal)).toBe('goal-closed');
   });
 });

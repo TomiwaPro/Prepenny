@@ -14,7 +14,8 @@ import styles from './ChoiceList.module.css';
 export interface ChoiceListProps<T extends string> {
   readonly legend: string;
   readonly name: string;
-  readonly value: T;
+  /** The chosen option, or null while nothing is chosen yet. */
+  readonly value: T | null;
   readonly options: readonly {
     readonly value: T;
     readonly label: string;

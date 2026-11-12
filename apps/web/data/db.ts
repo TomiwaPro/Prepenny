@@ -202,6 +202,8 @@ export interface PlanLink {
   readonly sending?: true;
   /** Each person in the plan's nickname, for "Tom changed Rent" (step 3d). */
   readonly nicknames?: Readonly<Record<string, string>>;
+  /** Each person in the plan's role, "owner", "editor" or "viewer" (step 3g). */
+  readonly roles?: Readonly<Record<string, string>>;
 }
 
 export type PrePennyDb = Dexie & {

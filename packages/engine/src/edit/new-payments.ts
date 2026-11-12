@@ -120,10 +120,29 @@ export function addPayment(
 /**
  * The shared half of a private transfer (D16, D94): the same money and
  * timing as the private half, the other way, in the shared account, named
- * "From Jess" or "To Jess", with no note, debt, goal, job or money set aside.
+ * "From Jess" or "To Jess", with no note, debt, job or money set aside, and
+ * no goal but one kept in that shared account (D464).
  * The private half is money going out of or coming into the person's own
  * account, never a transfer, so each account counts it once (ARCHITECTURE.md 3.6).
  */
+/** The other half's goal, when it names one: open, and kept in the half's own account (D114, D464). */
+function halfGoal(context: Context, raw: NewOtherHalf, what: string): string | undefined {
+  if (raw.goalId === undefined) return undefined;
+  const goal =
+    recordNow(context, 'goal', raw.goalId) ??
+    refuse('unknown-goal', `${what} is linked to goal ${raw.goalId}, which isn't in the plan.`);
+  if (goal.closed === true) {
+    refuse('goal-closed', `${what} is linked to goal ${raw.goalId}, which is closed.`);
+  }
+  if (goal.accountId !== raw.accountId) {
+    refuse(
+      'bad-goal-link',
+      `${what} doesn't move money into or out of goal ${raw.goalId}'s account.`,
+    );
+  }
+  return raw.goalId;
+}
+
 function addOtherHalf(context: Context, mine: Series, raw: NewOtherHalf): void {
   checkObject(raw, 'the other half');
   const what = `Series ${mine.id}: its other half`;
@@ -169,6 +188,7 @@ function addOtherHalf(context: Context, mine: Series, raw: NewOtherHalf): void {
     familyId: id,
     familyCreatedAt: mine.familyCreatedAt,
     mirrorOf: mine.id,
+    goalId: halfGoal(context, raw, what),
   });
   context.draft.set(seriesWrite(id, half));
 }

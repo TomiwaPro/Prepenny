@@ -1,11 +1,14 @@
 // One row of the plan, from the engine's figures: the date tile, the name,
 // its date (with "estimate" or "paid"), the amount and "Left after this",
-// with Tight or Short in words (VOICE.md). Tapping it opens the edit sheet.
+// with Tight or Short in words (VOICE.md), and in a shared plan who changed
+// it, when it was the other person lately (step 3g). Tapping it opens the
+// edit sheet.
 
 import { dateTile, formatDay } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
+import { useRowChangedBy } from './ChangedBy.tsx';
 import { PaymentRow } from './PaymentRow.tsx';
 
 /** "Fri 30 Oct", "Fri 30 Oct, estimate", "Sun 25 Oct, paid", or "arrived" for money coming in (D278). */
@@ -28,6 +31,7 @@ export function RowItem({
   readonly today: string;
   readonly onOpen: (row: RowView) => void;
 }) {
+  const changedBy = useRowChangedBy(row);
   return (
     <PaymentRow
       rowKey={row.key}
@@ -35,6 +39,7 @@ export function RowItem({
       name={row.name}
       second={secondLine(row, today)}
       third={row.isLowest ? strings.rows.lowestPoint : null}
+      changedBy={changedBy}
       amount={formatMoney(row.change, { sign: 'always' })}
       moneyIn={row.change > 0}
       left={strings.rows.left(formatMoney(row.leftAfter))}

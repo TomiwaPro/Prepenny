@@ -5,13 +5,20 @@
 // its target, its progress, and the date the plan reaches it, looking 24
 // months ahead, marked as an estimate when it depends on one. Each can be
 // changed or closed, and money can be planned into it.
+//
+// In a shared plan (step 3g): who sees each goal, with "Share this goal" or
+// "Make it private" (D463), and for a shared goal what each person has put in
+// so far (brief 4.14, D114, D465).
 
 import { useState } from 'react';
+import { hasPartner } from '../data/shared-plan.ts';
 import { formatDay } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { GoalCard, GoalsView } from '../lib/money-views.ts';
+import { putInLines } from '../lib/put-in.ts';
 import { strings } from '../strings/en-GB.ts';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
+import { useShared } from './ChangedBy.tsx';
 import { ConfirmSheet } from './ConfirmSheet.tsx';
 import formStyles from './Form.module.css';
 import { focusUndoBar } from './focusUndo.ts';
@@ -20,8 +27,40 @@ import { usePlanActions } from './PlanProvider.tsx';
 import { ProgressBar, ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
 import { useScreenView } from './useScreenView.ts';
+import { WhoSees } from './WhoSees.tsx';
 
 const t = strings.goals;
+const g = strings.together;
+
+function PutIn({
+  goal,
+  accountName,
+}: {
+  readonly goal: GoalCard;
+  readonly accountName: (id: string) => string;
+}) {
+  const shared = useShared();
+  if (shared === null || !hasPartner(shared) || !shared.sharedGoals.has(goal.id)) return null;
+  const lines = putInLines(goal, shared, accountName);
+  return (
+    <div data-testid="put-in">
+      <h3 className={styles.cardTitle}>{g.putInHeading}</h3>
+      <p className={styles.second}>{g.putInLine}</p>
+      {lines.length === 0 ? (
+        <p className={`${styles.line} num`}>{formatMoney(0)}</p>
+      ) : (
+        <ul className={styles.list}>
+          {lines.map((line) => (
+            <li key={line.label} className={styles.lineRow} data-testid="put-in-line">
+              <span className={styles.line}>{line.label}</span>
+              <span className={`${styles.rowAmount} num`}>{formatMoney(line.amount)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 type Open = { readonly kind: 'change' | 'move' | 'close'; readonly id: string } | 'new' | null;
 
@@ -41,6 +80,7 @@ function Goal({
   readonly view: GoalsView;
   readonly onOpen: (kind: 'change' | 'move' | 'close') => void;
 }) {
+  const accountName = (id: string) => view.accounts.find((one) => one.id === id)?.name ?? '';
   // A closed goal sits under "Closed goals", one level down.
   const Heading = goal.closed ? 'h3' : 'h2';
   return (
@@ -76,6 +116,13 @@ function Goal({
           )}
           <p className={styles.second}>{t.keptIn(goal.accountName)}</p>
           {goal.moves === 0 ? <p className={styles.second}>{t.noMoves}</p> : null}
+          <PutIn goal={goal} accountName={accountName} />
+          <WhoSees
+            what="goal"
+            id={goal.id}
+            name={goal.name}
+            account={{ id: goal.accountId, name: goal.accountName }}
+          />
           <div className={styles.actions}>
             <button
               type="button"

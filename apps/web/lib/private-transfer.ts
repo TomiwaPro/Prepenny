@@ -18,8 +18,8 @@ export interface SharingNow {
 /**
  * The command that adds a new payment: as it is, or, for money between a
  * private account and a shared one, as the private half with its shared
- * half. A savings goal stays on the private half only when it's kept in the
- * private account; the shared half carries nothing but the money and its timing.
+ * half. A savings goal goes on the half in the account it's kept in; the
+ * shared half carries nothing else but the money and its timing.
  */
 export function addPaymentCommand(
   series: NewSeries,
@@ -39,6 +39,9 @@ export function addPaymentCommand(
   const sharedAccount = fromShared ? series.accountId : to;
   const { toAccountId: _to, goalId, ...rest } = series;
   const keepGoal = goalId !== undefined && goalAccount(goalId) === privateAccount;
+  // A shared goal kept in the shared account goes on the shared half, so it
+  // counts as this person's money towards it (step 3g, D464).
+  const halfGoal = goalId !== undefined && goalAccount(goalId) === sharedAccount;
   return {
     kind: 'add-payment',
     series: {
@@ -52,6 +55,7 @@ export function addPaymentCommand(
       id: otherHalfId,
       accountId: sharedAccount,
       name: fromShared ? strings.share.toPerson(name) : strings.share.fromPerson(name),
+      ...(halfGoal ? { goalId } : {}),
     },
   };
 }

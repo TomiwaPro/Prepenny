@@ -79,6 +79,10 @@ export interface MirrorRow {
   readonly editId?: string;
   readonly editMadeAt?: string;
   readonly editBy?: string;
+  /** What kind of change that was (step 3g), so sharing an account isn't "Changed by" anyone: "tick", "share-accounts". */
+  readonly editKind?: string;
+  /** Who added it (step 3g): "Added by Tom", and who may make a shared account private again. */
+  readonly createdBy?: string;
   /** Its own columns: everything but the sync fields. */
   readonly values: Readonly<Record<string, unknown>>;
 }
@@ -968,6 +972,7 @@ export interface SavedBy {
   readonly id?: unknown;
   readonly madeAt?: unknown;
   readonly by?: unknown;
+  readonly kind?: unknown;
 }
 
 /** A row as plan_changes gives it, kept on the phone, with the edit that last saved it (step 3d). */
@@ -989,6 +994,8 @@ export function mirrorRowOf(
     ...(typeof editId === 'string' ? { editId } : {}),
     ...(typeof edit.madeAt === 'string' ? { editMadeAt: edit.madeAt } : {}),
     ...(typeof edit.by === 'string' ? { editBy: edit.by } : {}),
+    ...(typeof edit.kind === 'string' ? { editKind: edit.kind } : {}),
+    ...(typeof row.created_by === 'string' ? { createdBy: row.created_by } : {}),
     values,
   };
 }
@@ -1006,7 +1013,12 @@ export function savedRows(
   }[],
   mirrorRows: readonly MirrorRow[],
   /** The edit that saved them: this phone's own (step 3d). */
-  edit?: { readonly id: string; readonly madeAt: string; readonly by: string },
+  edit?: {
+    readonly id: string;
+    readonly madeAt: string;
+    readonly by: string;
+    readonly kind?: string;
+  },
 ): MirrorRow[] {
   const mirror = mirrorMap(mirrorRows);
   const answers = new Map(saved.map((one) => [keyOf(one.table, one.id), one]));
@@ -1023,6 +1035,11 @@ export function savedRows(
       seq: answer.seq,
       privateTo: answer.private_to,
       deleted: answer.deleted,
+      ...(before?.createdBy !== undefined
+        ? { createdBy: before.createdBy }
+        : write.version === null && edit !== undefined
+          ? { createdBy: edit.by }
+          : {}),
       ...(edit === undefined
         ? before?.editId === undefined
           ? {}
@@ -1030,8 +1047,14 @@ export function savedRows(
               editId: before.editId,
               ...(before.editMadeAt === undefined ? {} : { editMadeAt: before.editMadeAt }),
               ...(before.editBy === undefined ? {} : { editBy: before.editBy }),
+              ...(before.editKind === undefined ? {} : { editKind: before.editKind }),
             }
-        : { editId: edit.id, editMadeAt: edit.madeAt, editBy: edit.by }),
+        : {
+            editId: edit.id,
+            editMadeAt: edit.madeAt,
+            editBy: edit.by,
+            ...(edit.kind === undefined ? {} : { editKind: edit.kind }),
+          }),
       values: withoutSyncFields({ ...(before?.values ?? {}), ...(write.row ?? {}) }),
     });
   }

@@ -9,11 +9,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { hasPartner, partnerOf } from '../data/shared-plan.ts';
 import { formatDay } from '../lib/dates.ts';
 import type { DebtsView, DebtView } from '../lib/debts-view.ts';
 import { formatIn, formatMoney, perPoundWords } from '../lib/money.ts';
 import { recordAddress } from '../lib/record-id.ts';
 import { strings } from '../strings/en-GB.ts';
+import { useShared } from './ChangedBy.tsx';
 import { DebtSheet } from './DebtSheet.tsx';
 import formStyles from './Form.module.css';
 import { EstimateTag, ProgressBar, ScreenHeader } from './ScreenParts.tsx';
@@ -31,6 +33,7 @@ export function paidOffWords(debt: DebtView, view: { today: string; to: string }
 }
 
 function DebtItem({ debt, view }: { readonly debt: DebtView; readonly view: DebtsView }) {
+  const shared = useShared();
   return (
     <li data-testid="debt" data-debt={debt.name}>
       <Link className={styles.rowLink} href={recordAddress('/app/debt/', debt.id)}>
@@ -49,6 +52,13 @@ function DebtItem({ debt, view }: { readonly debt: DebtView; readonly view: Debt
           <span className={styles.line}>
             {debt.closed ? t.closedLine : paidOffWords(debt, view)}
           </span>
+          {shared === null || !hasPartner(shared) ? null : (
+            <span className={styles.second} data-testid="debt-who-sees">
+              {shared.sharedDebts.has(debt.id)
+                ? strings.together.sharedWith(partnerOf(shared)?.name ?? strings.share.someone)
+                : strings.together.onlyYou}
+            </span>
+          )}
           {debt.isEstimate && !debt.closed ? (
             <span>
               <EstimateTag />

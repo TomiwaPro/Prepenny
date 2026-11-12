@@ -144,6 +144,14 @@ const SCREENS = [
     purpose: strings.share.accountsPurpose,
   },
   { path: '/join/', heading: strings.join.heading, purpose: strings.join.purpose },
+  // Activity (step 3g), as the example plan sees it.
+  { path: '/app/activity/', heading: strings.together.heading, purpose: strings.together.purpose },
+  // Leave this plan (step 3g, D468), as the example plan sees it.
+  {
+    path: '/app/share/leave/',
+    heading: strings.together.leave.heading,
+    purpose: strings.together.leave.purpose(strings.together.yourPartner),
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,
