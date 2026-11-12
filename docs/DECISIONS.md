@@ -5674,3 +5674,171 @@ Decided 12 Nov 2026 in step 3g. Builds D469.
 Test: `supabase/tests/database/29-payment-history.test.sql` (12 checks: what Tom sees of a payment shared later, nothing of a payment only Jess sees or one made private again, each payment's own changes only, and a change more than 12 months old). Breaking its privacy checks or its filter fails them. `apps/web/test/unit/lasting-history.test.ts` (12 tests). `apps/web/e2e/together.spec.ts` test 5. Screenshot: `docs/screens/3g/history-360-light.png`.
 
 Why: D469.
+
+## From the owner's instructions for step 3h
+
+D475 is the owner's instruction for step 3h, export, import and delete, on 12 Nov 2026. D476 to D482 were decided while building it, the same day. Points marked "decided in step 3h" weren't in the owner's words.
+
+### D475. Deleting in a shared plan waits for the owner's choice
+
+The owner's instruction, 12 Nov 2026.
+
+- In a shared plan, deleting works like leaving (D468, option A) first, then deletes. Before building that part, the options for what Jess's history then says about Tom's changes are shown to the owner with a plain example (Tom and Jess), with a recommendation, as a question in the report. It's built once the owner has answered.
+- So step 3h builds Download my data, Import a backup and deleting an account that has never shared a plan. Anyone who is, or has been, in a plan with someone else is refused for now ("shared-plan"), because their name is in the other person's history (PLAN.md item 66). The options are in `PLAN.md`, "Waiting for the owner".
+- **Answered the same day: option B (D482), built in step 3h.** The refusal is gone.
+
+Why: the owner's instruction.
+
+## Made during step 3h
+
+### D476. Download my data: two files, made on the phone
+
+Decided 12 Nov 2026 in step 3h. Builds brief 4.12, 4.13 ("download my data") and 7.2 ("a working data export").
+
+- Under More, a **Your data** card: "Keep a copy of your plan, bring one back, or delete everything.", with **Download my data**, **Import a backup** and **Delete my account and all my data**.
+- **Download my data** has two buttons: **Download the spreadsheet** (CSV) and **Download the backup** (JSON). Both files are made on the phone and saved straight to its downloads; nothing is sent anywhere. The screen says what's in them and "The files aren't locked. Keep them somewhere only you can open, as you would a bank statement."
+- **What's in them**: the plan as the phone has it, which only ever holds what the person may see, so never anything only their partner sees (the database's tests since step 3a prove the server never sends it); for someone signed in, their account from the server's own step for them alone (`my_account_data`: the address they sign in with, when they signed up, the name their partner sees, their backup email, whether two-step sign-in is on and Google signs them in, their signed-in devices by plain name, and the plans they've been in, with roles and dates); who's in the plan, by name; and the plan's history in Activity's own words, with Activity's own rule (D458). Signed out, the plan only. If the account or its history can't be fetched, the file has the plan and the screen says so.
+- **The spreadsheet** is one CSV file with a part for each kind of thing under its own heading: Your account, Signed-in devices, Who's in the plan, Accounts, Coming up in the next 12 months (every payment with Left after this, as the plan works it out), Payments, Changes to one payment, Ticked payments, Balance updates, Debts, Budgets, What you spent, Savings goals, Your job, Overtime and missed shifts, History. Decided in step 3h: as it's for a spreadsheet, amounts are plain numbers in pounds ("-30.00") and dates "2026-11-12", which a spreadsheet can sort and add up, and times are the UK's clock ("2026-11-12 14:05"); the words people read (headings and columns) follow VOICE.md. Anything a person typed that a spreadsheet could take for a formula starts with an apostrophe, so opening the file can't run it. It starts with a mark saying it's UTF-8, so "£" shows as it is.
+- **The backup** is JSON a person can read: `"app": "PrePenny"`, `"kind": "backup"`, `"version": 1`, a sentence saying what it is and how to use it, when it was made, the plan (its bank holidays and the engine's own records, D87), and the account, people and history as above. Who a debt or goal belongs to is left out: it names a person by id, and on import the database decides it.
+- File names: `prepenny-2026-11-12.csv` and `prepenny-backup-2026-11-12.json`.
+- Sam's example isn't the person's own, so with no plan of their own: "You haven't made a plan of your own yet, so there's nothing to download."
+
+Test: `apps/web/test/unit/backup-csv.test.ts` (7), `supabase/tests/database/30-download-import-delete.test.sql` (part 1), `apps/web/e2e/your-data.spec.ts` test 1. Screenshot: `docs/screens/3h/download-360-light.png`.
+
+Why: the owner's instruction: "everything the person can see, and never a partner's private records".
+
+### D477. Import a backup: checked before it's trusted, and only ever into a plan of one's own
+
+Decided 12 Nov 2026 in step 3h. Builds brief 4.12 ("import a JSON backup").
+
+- **The checks**, on the phone, before anything is saved (`lib/backup.ts`), each refusing in plain words with nothing changed:
+  - the file's size, at most 20 MB, before it's read;
+  - that it's JSON, and says it's a PrePenny backup of a version this app reads ("This backup is from a newer version of PrePenny. Update PrePenny, then try again.");
+  - **every record and every field**, with Zod (ARCHITECTURE.md 1.1), against the engine's own types and the database's limits: no field left over; kinds from their fixed lists; dates that exist; times in UTC; amounts in whole pence, exact (`Number.isSafeInteger`), never below zero where the database says so; decimals as text; names up to 500 characters and notes up to 5,000, with no hidden control characters; ids of up to 100 letters, numbers, dashes and underscores;
+  - how many of each kind: at most 50 accounts, 5,000 payments, 20,000 one-off changes, 50,000 ticks and so on, far more than any real plan;
+  - every link between records, which must name a record in the same file, with no id used twice and no payment ticked twice;
+  - then the engine works the plan, its debts and its goals out, as Home, Debts and Savings goals do, and refuses anything it can't use.
+- **Nothing is taken on trust**: every id is made new on the phone, so nothing in the file can name or replace a record anywhere; who a record belongs to and who may see it are never read (the database decides each record's privacy as it saves it, as for a plan made on the phone, and refuses a record private to or owned by anyone else); a "From Jess" half comes in as two payments of the importer's own (D426, D437). A file only ever changes the person's own plan, and only after they say yes: "Import this backup?", "It was made on Thu 12 Nov. It has 1 account, 18 payments, 6 debts and no savings goals. Your plan now will be replaced. It can't be brought back.", **Yes, replace my plan** and **No, keep my plan**.
+- **What happens** (decided in step 3h):
+  - With a plan of one's own, signed in: the backup's plan takes its place, in the account and on the phone. The server swaps the plans in one step (`replace_plan`: the old plan goes and an empty new one starts, or neither), then the phone sends the backup up as the new plan's first copy, through save_edit, so every privacy rule and check applies to each record; a first copy cut off part-way is sent again from where it stopped (step 3c). The old plan's Activity goes with it, and the new plan's starts again, so the screen says "Its Activity starts again." and "Download your data first if you want to keep your plan as it is now."
+  - Signed out: the backup's plan takes the place of the plan on this phone.
+  - With no plan of one's own yet: it becomes their plan, finished setup and all.
+  - **In a shared plan: never.** "You share a plan with Tom, so a backup can't go in. A backup only ever goes into a plan of your own, so nothing in it can reach Tom. To use it, leave the shared plan first." The server refuses it too ("shared-plan"), for the owner and the partner alike, and refuses a first copy into a plan anyone else is in (D467). Putting a backup's accounts into a shared plan as the person's own private accounts would be possible later, if the owner wants it.
+- After importing, the page loads afresh: "Your backup is in. Your plan is now the one from the backup." with **Go to Home**.
+
+Test: `apps/web/test/unit/backup.test.ts` (35: every one of the seven test people's plans comes back with every account's balance at the end of every day for a year the same, every id new, and each kind of broken file refused), `30-download-import-delete.test.sql` (part 2: nobody imports into someone else's plan or a shared one, and a first copy can't make a record private to or owned by anyone else, take another record's id or name a record in another plan; what a record says about its plan, its maker, its version and whether it's removed is the database's), `apps/web/e2e/your-data.spec.ts` tests 2 and 3. Screenshots: `docs/screens/3h/import-360-light.png`, `import-broken-file-360-light.png`.
+
+Why: the owner's instruction: "checked before it's trusted: size limits, every field checked, nothing taken on trust from the file (ids, owners, privacy)", and "say what happens if the person already has a plan or is in a shared one".
+
+### D478. Delete my account and all my data
+
+Decided 12 Nov 2026 in step 3h. Builds brief 4.12, 4.13 and 7.2; changes D17's "account deletion runs in Edge Functions".
+
+- **The screen** says what's deleted ("Your plan, with every account, payment, debt, budget and savings goal, and its history." and "Your signed-in devices, your backup email, your two-step sign-in and your sign-in itself."), "It can't be undone. Download your data first if you want a copy.", and when it's gone (D479). Then **Check it's you**: **Send me a code** emails a 6-digit code to the address the person signs in with; they type it, the authenticator app's code when two-step sign-in is on, and **Type delete to confirm**, then tap **Delete my account and all my data**, or **Keep my account**.
+- **The checks, on the server** (`delete_my_account`), each refusing with nothing changed: a sign-in session made in the last 10 minutes on this device ("sign-in-again": the code signs the phone in again, and the sign-in it replaces is ended so it doesn't stay in Signed-in devices); with two-step sign-in on, the app's code in the last 5 minutes (as for signing other devices out, D382); "delete" typed, in any case and with spaces around it; and nobody who is or has been in a shared plan, until the owner chooses (D475). It names nobody: it only ever deletes the person asking.
+- **What goes, in one step of the database's own, or nothing** (`app.delete_person`): their plan with every record, change and copy in its history, members, invites, notices and counts; their name and address on invites to someone else's plan they asked to join (no longer waiting); their codes, wrong tries and locks, by address too; their devices, backup email and getting-back-in requests; the nudges sent to their phones; Supabase's own log of their sign-ins where it's kept in the database; and their sign-in, which takes their identities (Google included), sessions, refresh tokens, authenticator app and one-time codes with it. Decided in step 3h: in the database rather than through Supabase's admin route from an Edge Function, so it's all or nothing, needs no key and nothing new to set up; and the admin route writes the deleted person's address into Supabase's own log.
+- **Kept**: a scrambled id and the time, for 30 days, so if a backup from before is ever put back, the deletion can be made again (`app.delete_again_after_restore()`, from the SQL Editor; README.md part K). It's scrambled with the database's own secret, so it can't be checked against anyone without it, and holds nothing else.
+- **The email** "Your PrePenny account has been deleted": "As you asked, at 2:05pm on Thu 12 Nov we deleted your account and everything in it: your plan and its history, your signed-in devices, your backup email and your sign-in.", "Nothing of it is left in PrePenny. Copies in PrePenny's backups, and in the records of the services that run it, are gone within 30 days.", "You can make a new account with this email address at any time.", and "If you didn't ask for this, write to hello@prepenny.co.uk." No amount, payment or note. With emails switched off, the account is deleted all the same.
+- **The phone** forgets everything, a change not sent included, and opens the welcome: "Your account and all your data have been deleted, and nothing of yours is left on this phone. An email is on its way to say so."
+- **Their other phones get nothing more**: every rule needs the sign-in session, which went with the account, so every request is refused and the live channel names a plan that's gone. While their sign-in token lasts (up to an hour), `hello` says "deleted", so each removes everything at its next look, within a minute, a change not sent included, with "This account has been deleted, so nothing of it is left on this phone." After that, Supabase's client can't renew the sign-in, and the phone does what it does for a sign-in that ended (D326).
+- **Not signed in**: the plan is only on the phone, so the screen says "You're not signed in, so your plan is kept only on this phone." with **Remove everything from this phone** (a sheet asks first), then "Everything PrePenny kept on this phone has been removed.", and "Have an account? Sign in first to delete it."
+
+Test: `30-download-import-delete.test.sql` (parts 3 to 6, 66 checks in all with D481's: every refusal, nothing anywhere in the database naming the person's id, address or backup address afterwards, in any table of any part, the email queued with no amount in it, Jess's plan untouched, his phones' token reading, saving, starting, hearing and downloading nothing, and the deletion made again after a backup is put back), `apps/web/e2e/your-data.spec.ts` tests 4 to 6. Each new rule was broken on purpose to see the checks fail: without the 10-minute check, the sign-in-again check failed and the run stopped; without the log and address clean-up, 3 failed; without the shared-plan refusal, 6 failed. Screenshots: `docs/screens/3h/delete-360-light.png`, `delete-check-360-light.png`, `deleted-360-light.png`.
+
+Why: the owner's instruction: "really deletes it: their records, history, devices, backup email, sign-in and everything else", "a fresh sign-in, and the two-step code when that's on", "the person types a confirmation, and an email confirms it's done", and "a deleted person's devices get nothing more".
+
+### D479. When deleted data is gone from backups and logs
+
+Decided 12 Nov 2026 in step 3h, from Supabase's own documentation and pricing pages (read from Supabase's public repository, as supabase.com couldn't be opened from the computer this was built on) and Resend's pricing page as search engines quote it.
+
+- **PrePenny's database**: everything goes at once (D478).
+- **Supabase's backups**: the free plan, which PrePenny is on now, takes **none**. The paid plan, before launch (launch checklist, item 3), takes one a day and keeps the last **7 days**; none can be deleted early, so a deleted account is in the backups for up to 7 days after, then gone. Point-in-Time Recovery is an add-on keeping 7, 14 or 28 days of changes; PrePenny doesn't plan to use it, and if it ever did, these words would need checking.
+- **Supabase's logs** of requests and sign-ins (which can hold an email address, a device and an IP address, never an amount, name or note): 1 day on the free plan, 7 on the paid plan.
+- **Resend**, which sends PrePenny's emails, keeps each one it sent, the deletion email included, for **30 days** on its free and paid plans. Not confirmed on Resend's own site, which couldn't be opened from here: worth checking at resend.com/pricing.
+- So the screen and the email say: "It's deleted from PrePenny straight away. Copies in PrePenny's backups, and in the records of the services that run it, are gone within 30 days.", inside brief 7.2's 30 days. The privacy notice (Phase 5) should say the same, service by service.
+
+Why: the owner's instruction: "Find out how long Supabase keeps backups on the free and paid plans, and say in plain words when the data is gone from those too."
+
+### D480. How step 3h is tested, and smaller choices
+
+Decided 12 Nov 2026 in step 3h.
+
+- `supabase/tests/database/30-download-import-delete.test.sql`, 66 checks with the outside review's (D481), on step 3a's `tests.make_jess_and_tom()` with Alex, who has a plan of his own; `00-every-table.test.sql` lists the three new steps.
+- `apps/web/test/unit/backup.test.ts` (35) and `backup-csv.test.ts` (7).
+- `apps/web/e2e/your-data.spec.ts`, six tests at 320px and 360px in light and dark, with axe, against the local Supabase: 24 runs, all passing. Download, Import a backup and Delete my account join the every-screen checks (`checks.spec.ts`: axe, keyboard, 200% text, reduced motion, offline and nothing sent), as the example plan sees them: 12 runs, all passing.
+- **The full end-to-end run on the building computer**, every test at 320px and 360px in light and dark, three at a time: 891 passed and 76 were skipped by design. Of the 7 that failed: "Continue with Google" at both widths in light and dark (PLAN.md item 56: this computer's network refuses Google's address), item 47's offline test at both widths, which then passed 3 runs in 3 on its own at each width, and the pay calculator's test 3 at 360px in light, which passed 4 runs in 4 on its own at both widths. After the outside review's database changes (D481), on a fresh database: 1,088 database checks pass, and the new tests, your plan, sharing, living together and bringing your plan, at both widths: 110 passed, 4 skipped by design, and `your-plan.spec.ts` test 9 failed twice three at a time (PLAN.md item 65), then passed 4 runs in 4 on its own.
+- Smaller choices: Zod is set to check without making code at run time (`jitless`), as the security policy allows no eval (found by the every-screen checks); Zod is the one new package, exactly 4.6.7, a month old, the version ARCHITECTURE.md planned; the email code for "Check it's you" never makes an account (`shouldCreateUser: false`); the "Code from the email" box and the typed word are on one form, so it's one tap after the code arrives; "delete" is lower case in the words, and any case is taken.
+
+Why: the owner's list of what the tests must prove.
+
+## From the outside review of step 3h
+
+### D481. What the outside review of step 3h changed
+
+Decided 12 Nov 2026 in step 3h, from an outside review of its database steps and the import's checks, which tried each hole on the local database and forged files against `readBackup`. It found no way for anyone to download, import into or delete someone else's account, or to make an imported record someone else's. Adds to D477 and D478.
+
+- **Deleting, or importing, at the very moment a partner joins** could have removed the joiner's newly brought plan: the check of who's in the plan came before the plan was held. Now deleting holds the person's plans, and removing a plan (for an import, or "Keep the plan on this phone") holds that plan, before checking who's in it, so a join under way finishes first and is then seen, and the step is refused. Worked out from the code; a test needs two sessions at once, which the database tests can't do. Accepted: a join that starts at the very moment its plan is being deleted fails with the database's own error, and nothing changes.
+- **"Has shared a plan" could be got round**: once Tom had left, Jess could import a backup in place of the plan he'd been in, which took away the only sign that she'd shared it, and then delete her account. Now the database keeps a mark for everyone who has ever been in a plan with someone else (`app.shared_once`, filled in as anyone joins, and for everyone already so), which removing a plan doesn't take away. **Replaced by D482**: nobody is refused for having shared a plan any more, so the mark is gone.
+- **Nudges for a person's plan** (live updates naming the plan, not the person) stayed after deleting. Now deleting removes the nudges for the person and their plans, and any for a plan that's no longer there, such as one a backup replaced.
+- **Supabase's own sign-in log in the database** (`auth.audit_log_entries`) has no index the database may add, so deleting reads all of it: about 2.3 seconds for a million rows, against the 8 seconds a request may take. Supabase adds a row at every sign-in and every hourly renewal, so with many people it could grow past what deleting can read. Supabase lets the database copy be switched off (Authentication, Audit Logs, "Write audit logs to the database"), keeping the log in its own log storage, which it keeps 1 or 7 days (D479). It's a new setting for the owner (README.md part K): with it off, the table stops growing, and deleting stays quick.
+- **Putting a backup of the database back** now skips anyone in a plan with someone else, and anyone the database won't remove, and says how many it left, rather than stopping.
+- **Any problem sending the deletion email** leaves the deletion done, not just "emails switched off".
+- **Accepted**: a phone that stays offline for longer than its sign-in token lasts (an hour) never hears "deleted"; if it has changes not sent, it keeps the plan as a phone whose sign-in ended does (D326, D478), with nothing left on the server to send them to. The test that searches every table for the person can't read pg_net's queue of emails waiting to go, which holds the deletion email itself until it's sent; that email is checked on its own.
+
+Test: `30-download-import-delete.test.sql` (4 new checks, 66 in all: importing in place of a plan someone left still leaves the person waiting for the owner's choice, and the mark can't be read). Taking the mark out fails 2 of them.
+
+Why: each was shown by the review with a case that went wrong, or by reading the code.
+
+## The owner's answers to step 3h
+
+D482 to D486 are the owner's answers to step 3h's question and their instructions, on 12 Nov 2026. Points marked "decided in step 3h" weren't in the owner's words.
+
+### D482. Deleting an account in a shared plan: option B, "Someone who has left"
+
+Decided by the owner 12 Nov 2026, answering step 3h's question (D475). Replaces D475's refusal and D481's lasting mark, which only kept that refusal; builds PLAN.md item 66.
+
+- When Tom deletes his account while he shares Jess's plan, or after having been in it, his changes stay in Jess's Activity, History and "Changed by", with **"Someone who has left"** in place of his name: "Someone who has left changed Rent on Sun 1 Nov from £550.00 to £560.00.", "Someone who has left changed it from £550.00 to £560.00, Tue 10 Nov, 2:05pm", "Changed by someone who has left, 2 hours ago". His leaving says "Someone left the plan.", and a role he was given, "You changed what someone who has left can do to Can view only." Amounts on shared payments stay, as they're Jess's records too. His name, email address, account and id appear nowhere afterwards.
+- **How it's built** (decided in step 3h):
+  - Deleting leaves the shared plan first, exactly as Leave this plan does without a copy (D468, D473): every shared account stays with Jess as it is, she owns the plan if Tom did, and everything only Tom sees goes into a plan of his own, which is deleted with the rest.
+  - Then he's **forgotten** in every plan he's been in that isn't his own (`app.forget_person`): every record he made or changed keeps everything but his id (made, changed, ticked and recorded by nobody), and so does every copy of a record in the history of changes, the server's own words for its steps ("Tom left the plan"), Jess's notices about his changes (with the device he made them on taken off), and invites. His changes are made by nobody now (`edits.person_id` empty). The database's own stamps, which would otherwise mark each record as changed just now by the person deleting, keep everything as it was while someone is forgotten (`app.forgetting`), only giving each record a new change number so Jess's phones bring it down again.
+  - All of it, leaving, forgetting and deleting, is one step, or nothing ("not-deleted").
+  - Jess's phone keeps a row it's sent again when who made or changed it is different, not only at a new version, so nothing she's changing at that moment clashes with it.
+  - "Changed by" on a payment shows for a change by someone whose account was deleted even once Jess is alone in the plan; otherwise a plan with one person in it still shows none (D459).
+- The delete screen, in a shared plan, under **Your shared plan**: "You share a plan with Jess. Deleting your account takes you out of it first, as Leave this plan does: every shared account stays with Jess as it is, and everything only you see is deleted." and "Your changes stay in Jess's Activity and History, as made by "Someone who has left". Your name, email address and account go."
+- Putting a backup of the database back (D478) still leaves anyone who has been in a plan with someone else for a person to look at, as leaving needs their own sign-in.
+
+Test: `supabase/tests/database/30-download-import-delete.test.sql` (85 checks: Tom deletes while in the plan, Sam after having left it, then Jess; after each, nothing in any table of any part of the database names their id, address, backup address or name, and Jess's plan, Activity, History, "Changed by" and notices keep the changes by nobody). Taking out any one of the three clean-ups (the changes, the history's copies, the notices) fails the checks, or the deletion refuses as a whole. `apps/web/test/unit/someone-who-left.test.ts` (5). `apps/web/e2e/together.spec.ts` test 6: on two phones, Tom (named "Tomasz", to look for it afterwards) changes Rent and deletes his account; Jess's phone, left open, shows "Changed by someone who has left", History and Activity keep the change, and neither the database nor anything on her phone holds his id, address or name. Screenshots: `docs/screens/3h/delete-shared-360-light.png`, `activity-after-delete-360-light.png`.
+
+Why: the owner's choice: "Their changes stay in the other person's Activity, History and "Changed by", with "Someone who has left" in place of their name", with tests proving the deleted person's name, email and nickname appear nowhere afterwards.
+
+### D483. Importing a backup into a shared plan: not now
+
+Decided by the owner 12 Nov 2026. Confirms D477.
+
+A backup only ever replaces a plan of one's own. Bringing a backup's accounts into a shared plan as the person's own private accounts stays an idea (PLAN.md item 69).
+
+Why: the owner's choice.
+
+### D484. "Delete my account" for the test accounts of README parts H and J
+
+The owner's instruction, 12 Nov 2026.
+
+Since D482, the two test accounts of parts H and J, which share a plan, are removed with Delete my account on each phone, in either order (README.md). The SQL query of part H is kept only as a fallback, for an account that can't be signed in to any more.
+
+Why: the owner's instruction.
+
+### D485. The launch checklist checks how long Resend keeps sent emails
+
+The owner's instruction, 12 Nov 2026. Builds D479 and PLAN.md item 68.
+
+Launch checklist item 9: check on resend.com how long Resend keeps the emails it has sent, and if it's longer than 30 days, change "within 30 days" in the app and the deletion email.
+
+Why: D479 couldn't confirm Resend's 30 days from Resend's own site.
+
+### D486. Supabase's sign-in log is no longer written to the database
+
+The owner, 12 Nov 2026, as README.md part K asked (D481).
+
+The owner turned off **Write audit logs to the database** in Supabase (Authentication, Audit Logs). Supabase keeps the log in its own log storage, 1 day on the free plan and 7 on the paid plan (D479), and deleting an account no longer has a growing table to read. Rows written before stay until someone they name deletes their account, which removes theirs.
+
+Why: the owner's action.

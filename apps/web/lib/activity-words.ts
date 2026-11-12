@@ -25,6 +25,13 @@ import { mirrorRowOf, recordsFromRows } from './sync-rows.ts';
 const t = strings.together;
 const w = t.what;
 
+/**
+ * Who made a change, when it was someone whose account has since been
+ * deleted (D482): the server names nobody, and the words say "Someone who
+ * has left". No real person's id is ever empty.
+ */
+export const SOMEONE_WHO_LEFT = '';
+
 type Copy = Readonly<Record<string, unknown>>;
 
 /** One record a change saved, as this person may see it: before (null when the change made it) and after. */
@@ -107,6 +114,7 @@ export function paymentFactsOf(
 
 /** Who made it, at the start of a sentence: "You", "Tom", or "Your partner". */
 export function whoStarts(person: string, context: ActivityContext): string {
+  if (person === SOMEONE_WHO_LEFT) return t.SomeoneWhoLeft;
   if (person === context.me) return t.You;
   const name = context.nicknames[person];
   return name === undefined || name === '' ? t.YourPartner : name;
@@ -114,6 +122,7 @@ export function whoStarts(person: string, context: ActivityContext): string {
 
 /** Who someone is inside a sentence: "you", "Tom" or "your partner". */
 function whoInside(person: string, context: ActivityContext): string {
+  if (person === SOMEONE_WHO_LEFT) return t.someoneWhoLeft;
   if (person === context.me) return t.you;
   const name = context.nicknames[person];
   return name === undefined || name === '' ? t.yourPartner : name;
@@ -479,7 +488,7 @@ export function whatItDid(edit: ActivityEdit, context: ActivityContext): string 
         return edit.mine ? w.claimedMine(name) : w.claimedTheirs(name);
       }
       case 'change-role': {
-        const person = text(summary.person);
+        const person = summary.person === null ? SOMEONE_WHO_LEFT : text(summary.person);
         const role = text(summary.role);
         if (person === null || role === null) return null;
         const words = strings.share.roles[role];
@@ -504,6 +513,8 @@ export function whatItDid(edit: ActivityEdit, context: ActivityContext): string 
 
 /** The whole sentence: "Tom changed Rent on Tue 1 Dec to £560.00." */
 export function activityWords(edit: ActivityEdit, context: ActivityContext): string {
+  // Someone who left and then deleted their account (D482).
+  if (edit.kind === 'leave' && edit.by === SOMEONE_WHO_LEFT) return t.someoneLeft;
   return t.sentence(whoStarts(edit.by, context), whatItDid(edit, context));
 }
 
@@ -516,7 +527,8 @@ export function activityEditsFrom(value: unknown): ActivityEdit[] {
     if (raw === null || typeof raw !== 'object') return [];
     const one = raw as Record<string, unknown>;
     const id = text(one.id);
-    const by = text(one.by);
+    // A change by someone whose account has been deleted names nobody (D482).
+    const by = one.by === null ? SOMEONE_WHO_LEFT : text(one.by);
     const madeAt = text(one.made_at);
     const kind = text(one.kind);
     if (id === null || by === null || madeAt === null || kind === null) return [];

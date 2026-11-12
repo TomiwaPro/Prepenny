@@ -195,7 +195,7 @@ export function isSamsExample(plan: StoredPlan): boolean {
 }
 
 /** Today for a plan, or the end-to-end tests' own today when they set one (D201). */
-function todayOf(plan: StoredPlan): string {
+export function todayOf(plan: StoredPlan): string {
   return testSetting()?.today ?? todayFor(plan);
 }
 

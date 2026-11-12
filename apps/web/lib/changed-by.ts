@@ -85,6 +85,8 @@ export function whoInSentence(
   me: string,
   nicknames: Readonly<Record<string, string>>,
 ): string {
+  // Someone whose account has been deleted (D482): their changes stay, with no name.
+  if (person === '') return t.someoneWhoLeft;
   if (person === me) return t.you;
   const name = nicknames[person];
   return name === undefined || name === '' ? t.yourPartner : name;

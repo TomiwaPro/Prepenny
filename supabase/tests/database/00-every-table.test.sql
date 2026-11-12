@@ -91,6 +91,8 @@ select is_empty(
 -- joining, sharing accounts and claiming pay, and the two marks the
 -- series check reads. Step 3g adds Activity, undo for one's own changes,
 -- roles, and making things private or shared, with the checks they call.
+-- Step 3h adds the person's own account for "Download my data", a new plan
+-- in place of their own for "Import a backup", and "Delete my account".
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('authenticated', p.oid, 'execute') $$,
@@ -110,7 +112,9 @@ select set_eq(
     'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record',
     'privacy_step', 'undo_writes', 'mark_undone', 'server_kind', 'others_in', 'check_made_at',
     -- Leaving (D468) and a payment's history (D469).
-    'leave_plan', 'leaving_now', 'payment_history'],
+    'leave_plan', 'leaving_now', 'payment_history',
+    -- Step 3h: download my data, import a backup and delete my account.
+    'my_account_data', 'replace_plan', 'delete_my_account'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -128,7 +132,9 @@ select set_eq(
     'look_at_my_invite', 'join_with_my_plan',
     -- Step 3g: Activity, undo, roles, and who sees what.
     'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record',
-    'leave_plan', 'payment_history'],
+    'leave_plan', 'payment_history',
+    -- Step 3h: download my data, import a backup and delete my account.
+    'my_account_data', 'replace_plan', 'delete_my_account'],
   'The Data API''s part holds only the steps the phone calls'
 );
 

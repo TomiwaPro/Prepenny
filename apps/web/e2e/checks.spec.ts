@@ -152,6 +152,22 @@ const SCREENS = [
     heading: strings.together.leave.heading,
     purpose: strings.together.leave.purpose(strings.together.yourPartner),
   },
+  // Your data (step 3h), as the example plan sees them, signed out.
+  {
+    path: '/app/download/',
+    heading: strings.yourData.download,
+    purpose: strings.yourData.downloadPurpose,
+  },
+  {
+    path: '/app/import/',
+    heading: strings.yourData.import,
+    purpose: strings.yourData.importPurpose,
+  },
+  {
+    path: '/app/delete/',
+    heading: strings.yourData.deleteHeading,
+    purpose: strings.yourData.deletePurpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

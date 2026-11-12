@@ -533,6 +533,93 @@ export async function signOutAndForget(): Promise<void> {
 const SIGN_OUT_WAIT_MS = 3000;
 
 // ---------------------------------------------------------------------------
+// Deleting the account (step 3h).
+
+/** The sign-in session a Supabase token is for, from the token itself, or null. */
+function sessionIdOf(token: string | undefined): string | null {
+  try {
+    const payload = token?.split('.')[1];
+    if (payload === undefined) return null;
+    const json = atob(payload.replaceAll('-', '+').replaceAll('_', '/'));
+    const id = (JSON.parse(json) as { session_id?: unknown }).session_id;
+    return typeof id === 'string' ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * "Check it's you" before deleting the account: emails a 6-digit code to the
+ * address this phone is signed in with. Never makes an account.
+ */
+export async function sendCodeAgain(email: string): Promise<Outcome> {
+  try {
+    const { error } = await (await supabase()).auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
+    if (error !== null) return { ok: false, problem: problemOf(error) };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, problem: problemOf(error) };
+  }
+}
+
+/**
+ * Signs in again with that code, so the server sees a sign-in made just now,
+ * as deleting the account needs. The sign-in it takes the place of on this
+ * phone is ended, so it doesn't stay in Signed-in devices.
+ */
+export async function signInAgainWithCode(email: string, code: string): Promise<Outcome> {
+  try {
+    const made = await supabase();
+    const before = (await made.auth.getSession()).data.session;
+    const { data, error } = await made.auth.verifyOtp({ email, token: code, type: 'email' });
+    if (error !== null) return { ok: false, problem: problemOf(error) };
+    if (data.session === null) return { ok: false, problem: { kind: 'server' } };
+    const old = sessionIdOf(before?.access_token);
+    if (old !== null && old !== sessionIdOf(data.session.access_token)) {
+      await made.rpc('end_device', { device: old }).then(
+        () => undefined,
+        () => undefined,
+      );
+    }
+    setAccount(accountOf(data.session));
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, problem: problemOf(error) };
+  }
+}
+
+/**
+ * Once the account is deleted, on this phone: its sign-in and everything
+ * PrePenny kept here go, whatever was waiting to be sent, as nothing is
+ * left to send it to.
+ */
+export async function accountDeletedHere(): Promise<void> {
+  forgetting = true;
+  signingOutOnPurpose = true;
+  try {
+    await Promise.race([
+      supabase()
+        .then((made) => made.auth.signOut({ scope: 'local' }))
+        .catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
+    ]);
+  } finally {
+    signingOutOnPurpose = false;
+  }
+  await forgetEverything();
+  setAccount({ status: 'signed-out' });
+}
+
+/** The server says this phone's account was deleted, on another phone: everything here goes too. */
+export async function accountDeletedOnServer(): Promise<void> {
+  await accountDeletedHere();
+  window.location.replace('/?account-deleted-elsewhere');
+}
+
+// ---------------------------------------------------------------------------
 // The code that was sent, for this tab: the email address and when, so the
 // code step comes back after the phone has reloaded PrePenny while the person
 // read their email, and so a refused code can be told apart from one that has

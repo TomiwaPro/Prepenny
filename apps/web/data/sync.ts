@@ -29,10 +29,11 @@
 //   sent (D182). Nothing here writes an amount, a name, a note or an email
 //   address to the console or anywhere else (CLAUDE.md).
 
-import type { RecordWrite } from '@prepenny/engine';
+import type { PlanRecords, RecordWrite } from '@prepenny/engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import {
+  accountDeletedOnServer,
   finishBeforeSigningOut,
   signedInClient,
   signInEndedOnServer,
@@ -70,6 +71,7 @@ import {
   type StoredRow,
   savePlan,
   setShowing,
+  rowsOf as storedRowsOf,
   type UnsentEdit,
 } from './db.ts';
 import { getBackInNoticeChanges, setGetBackInNotice } from './get-back-in-notice.ts';
@@ -224,6 +226,8 @@ type Standing =
   | 'ok'
   /** The sign-in has ended, as after "Sign out of all other devices" on another phone (D21). */
   | 'ended'
+  /** The account was deleted, on this phone or another (step 3h). */
+  | 'deleted'
   /** Two-step sign-in is on and this sign-in hasn't passed the second step yet. */
   | 'second-step'
   /** A newer version of PrePenny is live: this phone updates itself first. */
@@ -258,6 +262,7 @@ async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
   // This person let into a plan, with their own plan still to bring (step 3f-2).
   setJoining(answer.data.sign_in === 'ok' ? answer.data.joining : []);
   if (answer.data.sign_in === 'ended') return 'ended';
+  if (answer.data.sign_in === 'deleted') return 'deleted';
   if (answer.data.sign_in === 'second-step') return 'second-step';
   if (answer.data.sign_in !== 'ok') return 'wait';
   const live = await liveVersion();
@@ -276,6 +281,10 @@ async function actOn(standing: Standing, person: string | null): Promise<boolean
   if (standing === 'ok') return true;
   if (standing === 'ended') {
     await signInEndedOnServer();
+    return false;
+  }
+  if (standing === 'deleted') {
+    await accountDeletedOnServer();
     return false;
   }
   if (standing === 'second-step') tell('second-step');
@@ -299,7 +308,9 @@ async function actOn(standing: Standing, person: string | null): Promise<boolean
 export async function lookAtSignInOnly(): Promise<void> {
   const client = await signedInClient();
   if (client === null) return;
-  if ((await lookAtStanding(client)) === 'ended') await signInEndedOnServer();
+  const standing = await lookAtStanding(client);
+  if (standing === 'ended') await signInEndedOnServer();
+  if (standing === 'deleted') await accountDeletedOnServer();
 }
 
 let lookingForGetBackIn: Promise<void> | null = null;
@@ -476,9 +487,17 @@ async function bringDown(
   const known = new Map(
     (await rowsOn(db, link.planId)).map((row) => [`${row.table}|${row.id}`, row]),
   );
-  const changed = rows.filter(
-    (row) => known.get(`${row.table}|${row.id}`)?.version !== row.version,
-  );
+  // A row is new to this phone at a new version, or when who made or last
+  // changed it is different, as when someone's account was deleted and their
+  // name taken off it, with nothing else changed (D482).
+  const changed = rows.filter((row) => {
+    const before = known.get(`${row.table}|${row.id}`);
+    return (
+      before?.version !== row.version ||
+      before.editBy !== row.editBy ||
+      before.createdBy !== row.createdBy
+    );
+  });
   let shared = link.shared;
   let mine = link.mine;
   for (const row of rows) {
@@ -1424,6 +1443,97 @@ export function keepPhonePlan(): Promise<boolean> {
       await sendFirstCopy(client, db, own, person);
     });
     return true;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Import a backup (step 3h).
+
+/** Why a backup couldn't go into the account, as a code the screen turns into words. */
+export type ImportProblem = 'offline' | 'shared-plan' | 'has-a-plan' | 'server';
+
+/**
+ * "Import a backup" on a signed-in phone (step 3h): the backup's plan, with
+ * its ids made new on this phone (lib/backup.ts), takes the place of the
+ * person's own, in the account and here. The server swaps the plans in one
+ * step (`replace_plan`), refusing a shared plan; then this phone keeps the
+ * backup as its plan and sends it up as the new plan's first copy, through
+ * save_edit, so the database decides every record's privacy. A first copy
+ * cut off part-way is sent again from where it stopped, at the next look.
+ * Nothing changes when the swap is refused.
+ */
+export function importIntoAccount(
+  planId: string,
+  records: PlanRecords,
+): Promise<{ readonly ok: true } | { readonly ok: false; readonly problem: ImportProblem }> {
+  return inTurn(async () => {
+    const client = await signedInClient();
+    const person = client === null ? null : await personOf(client);
+    if (client === null || person === null) return { ok: false, problem: 'server' } as const;
+    return withDb(async (db) => {
+      const own = await ownPlanOnPhone(db);
+      const link = own === undefined ? undefined : await db.links.get(own.id);
+      const swapped = await rpc(
+        client,
+        'replace_plan',
+        {
+          old_plan: own !== undefined && link !== undefined ? own.id : null,
+          new_plan: planId,
+          nation: records.settings?.nation ?? 'england-and-wales',
+        },
+        db,
+      );
+      if (!swapped.ok) {
+        const { failure } = swapped;
+        if (failure.kind === 'refused' && failure.code === 'shared-plan') {
+          return { ok: false, problem: 'shared-plan' } as const;
+        }
+        if (failure.kind === 'refused' && failure.code === 'has-a-plan') {
+          return { ok: false, problem: 'has-a-plan' } as const;
+        }
+        const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+        return { ok: false, problem: offline ? 'offline' : 'server' } as const;
+      }
+      await db.transaction(
+        'rw',
+        [db.plans, db.records, db.rows, db.unsent, db.links, db.sent, db.clashes],
+        async () => {
+          if (own !== undefined) await removeFromPhone(db, own.id);
+          await db.plans.put({ id: planId, isExample: false, owner: person, setup: DONE });
+          await db.records.bulkPut(storedRowsOf(planId, records));
+          await db.links.put({ planId, personId: person, shared: 0, mine: 0, sending: true });
+        },
+      );
+      await setShowing(db, 'own');
+      accountLooked = true;
+      const sent = await sendRest(client, db, planId);
+      if ('planId' in sent) {
+        await bringDown(client, db, sent);
+        await publish(db, planId);
+        startListening(client, sent);
+      }
+      return { ok: true } as const;
+    });
+  });
+}
+
+/**
+ * "Import a backup" on a phone that isn't signed in (step 3h): the backup's
+ * plan takes the place of the plan on this phone, in one go.
+ */
+export async function importOnPhone(planId: string, records: PlanRecords): Promise<void> {
+  await withDb(async (db) => {
+    const own = await ownPlanOnPhone(db);
+    await db.transaction(
+      'rw',
+      [db.plans, db.records, db.rows, db.unsent, db.links, db.sent, db.clashes],
+      async () => {
+        if (own !== undefined) await removeFromPhone(db, own.id);
+        await db.plans.put({ id: planId, isExample: false, setup: DONE });
+        await db.records.bulkPut(storedRowsOf(planId, records));
+      },
+    );
+    await setShowing(db, 'own');
   });
 }
 

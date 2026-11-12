@@ -410,7 +410,13 @@ When you're done, sign out on both phones, and sign in again on yours with your 
 
 #### Removing the two test accounts afterwards
 
-Until "Delete my account and all my data" comes in step 3h, this removes two accounts and everything of theirs, and nothing else. It refuses unless it finds exactly the two addresses typed, and unless their plans have nobody else in them.
+Use **Delete my account** on each phone (step 3h, part K), in either order:
+
+1. On the phone signed in as one of them, tap **More**. Under **Your data**, tap **Delete my account and all my data**. In a shared plan it says what happens: the shared accounts stay with the other person, and your changes stay in their history as made by "Someone who has left".
+2. Tap **Send me a code**, type the 6-digit code from the email, type `delete`, and tap **Delete my account and all my data**. The welcome says "Your account and all your data have been deleted…", and the email "Your PrePenny account has been deleted" arrives.
+3. Do the same on the other phone. Once both are deleted, nothing of either is left.
+
+**Only if that can't be done**, for example when one of the addresses can't receive email any more, this query in Supabase is the fallback. It removes two accounts and everything of theirs, and nothing else. It refuses unless it finds exactly the two addresses typed, and unless their plans have nobody else in them.
 
 1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
 2. Paste this, and type the two spare addresses in place of the two on the first line, keeping the quote marks:
@@ -503,7 +509,9 @@ When you're done, close the private window, and on device A sign out and sign in
 
 #### Removing every test account afterwards
 
-This removes the test accounts and everything of theirs, and nothing else, with the query in part H ("Removing the two test accounts afterwards"), which takes any number of addresses. It refuses to do anything unless it finds every address typed, and unless their plans have nobody else in them.
+Sign in as each test account in turn and use **Delete my account**, as part H says ("Removing the two test accounts afterwards"), in any order.
+
+**Only if that can't be done**, this removes the test accounts and everything of theirs, and nothing else, with the query in part H, which takes any number of addresses. It refuses to do anything unless it finds every address typed, and unless their plans have nobody else in them.
 
 1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
 2. Paste the query from part H. On its first line, put all four test addresses, keeping the quote marks:
@@ -596,7 +604,9 @@ When you're done, close the private window, and on device A sign out and sign in
 
 #### Removing the two test accounts afterwards
 
-The same query as part H ("Removing the two test accounts afterwards"), with this step's two addresses. It refuses to do anything unless it finds both, and unless their plan has nobody else in it.
+Use **Delete my account** on each device, in either order, as part H says ("Removing the two test accounts afterwards"): **More**, **Delete my account and all my data**, **Send me a code**, the code, `delete`, then **Delete my account and all my data**. If Tom deletes his first, Jess's Activity then says "Someone who has left changed Rent…" and "Someone left the plan." (D482).
+
+**Only if that can't be done**, use the same query as part H, with this step's two addresses. It refuses to do anything unless it finds both, and unless their plan has nobody else in it.
 
 1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
 2. Paste the query from part H. On its first line, put the two addresses, keeping the quote marks:
@@ -608,6 +618,75 @@ The same query as part H ("Removing the two test accounts afterwards"), with thi
 5. Close the query without saving it. Any device still signed in as one of them notices within a minute that the sign-in has ended.
 
 Your own account is never touched: the query only finds the addresses typed on its first line.
+
+### K. Step 3h: download, import and delete
+
+**What you need to set up: one setting in Supabase, two minutes. Done by the owner on 12 Nov 2026 (D486).** Deleting an account also removes the person from Supabase's own sign-in log when that log is kept in the database. That log grows with every sign-in, and the database can only read all of it, so turn off its database copy and deleting stays quick (D481). Supabase still keeps the log in its own log storage, for 1 day on the free plan and 7 on the paid plan.
+
+1. On supabase.com, open the **prepenny** project, then **Authentication** in the menu on the left.
+2. Under **Configuration**, open **Audit Logs**. (Supabase moves its menus now and then: it may be under **Settings** instead.)
+3. Turn **Write audit logs to the database** off, and save if there's a **Save** button.
+4. That's all. If you can't find it, nothing breaks for now: deleting only slows down once there are hundreds of thousands of sign-ins, long after launch.
+
+Everything else, checked one by one, in this step's own changes, is nothing new:
+
+- **Supabase.** The **Database** workflow adds this step's database changes with the key it already has, after its key check of all eleven permissions (D406). No other new sign-in setting, web address, email template, function or permission. "Check it's you", before deleting, sends the same 6-digit sign-in email as signing in (part E's template). Deleting an account removes it from Supabase's sign-in tables inside the database itself, as signing devices out already does (step 3e), so no new key or function is needed. Backups: the free plan has none, and there's nothing to switch on; the paid plan's daily backups come with the move to it before launch (launch checklist, item 3).
+- **Resend.** One new email, "Your PrePenny account has been deleted", from hello@prepenny.co.uk, through the same key in Supabase's Vault (part F). Resend's free plan allows 100 emails a day.
+- **GitHub.** No new secret or variable, and no workflow changed. The new end-to-end tests run in the sign-in tests' parts, which already start a local Supabase: about 5 more minutes across the three parts.
+- **Cloudflare.** Nothing new: Download my data, Import a backup and Delete my account are ordinary pages, and the files are made on the phone.
+- **Google.** Nothing new.
+- **A new package**, Zod 4.6.7, which checks imported files. It's installed with the rest by the workflows: nothing to do.
+
+This sandbox couldn't open Supabase's, Resend's, Cloudflare's or GitHub's own websites. Supabase's settings and backup rules were checked in Supabase's own documentation, read from its public repository; Resend's were not, so its 30 days are to be checked before launch (PLAN.md item 68).
+
+To check it worked, after merging: **Actions**, then **Database**, then the newest run: a green tick. Then **Deploy**: a green tick.
+
+#### Trying it on the live app, alone
+
+You need a computer or phone with a **private or incognito window**, and one new Gmail "+" address made from your own: if your address is `yourname@gmail.com`, Gmail delivers mail for `yourname+data1@gmail.com` to your own inbox, but PrePenny treats it as a new person. Put your own name where these steps say `yourname`. Your own plan isn't touched. Optionally, your phone as a second device (step 13).
+
+A plan to try it on, in the private window:
+
+1. Open https://prepenny.co.uk/app/. Tap **Make my plan**. Keep **Current account**, type `500`, tap **Next**, then **Skip this step** on each screen, then **Go to my plan**.
+2. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+data1@gmail.com`.
+3. On Home, tap **Add a payment**: name `Rent`, amount `550`, the 1st of next month, **Every month, or every few months**, then **Add payment**.
+
+Download my data:
+
+4. Tap **More**. Under **Your data**, tap **Download my data**. It says what's in the files, and "The files aren't locked."
+5. Tap **Download the spreadsheet**. It says "Saved as prepenny-….csv. Look in your phone's downloads." Open it in a spreadsheet app: **Your account** has your "+" address; **Accounts** has £500; **Coming up in the next 12 months** has Rent on the 1st with what's left after it; **History** has "You added Rent…".
+6. Tap **Download the backup**. It says "Saved as prepenny-backup-….json".
+
+Import a backup:
+
+7. On Home, tap **Update balance**, type `400`, and finish it, so the plan has changed since the backup.
+8. Tap **More**, then **Import a backup**. It says "The plan in the backup takes the place of your plan now, on this phone and in your account. Its Activity starts again."
+9. Tap **Choose a backup file** and choose the `.csv` file from step 5 by mistake: "This isn't a PrePenny backup. Choose the file ending in .json from Download my data." Nothing changes.
+10. Tap **Choose a backup file** again and choose the `.json` file from step 6. A sheet says "Import this backup?", when it was made, and "It has 1 account, 1 payment, no debts and no savings goals. Your plan now will be replaced. It can't be brought back." Tap **Yes, replace my plan**.
+11. It says "Your backup is in. Your plan is now the one from the backup." Tap **Go to Home**: the balance is £500.00 again, with Rent.
+
+Delete my account:
+
+12. Tap **More**, then **Delete my account and all my data**. It says what's deleted, and "It's deleted from PrePenny straight away. Copies in PrePenny's backups, and in the records of the services that run it, are gone within 30 days."
+13. (Optional, a second device.) On your phone, tap **More**, then **Sign out**, then **Sign out** again (your own plan is safe in your account), then sign in with `yourname+data1@gmail.com`, and leave it on Home.
+14. In the private window, tap **Send me a code**. Type the 6-digit code from the email, type `delete` under **Type delete to confirm**, and tap **Delete my account and all my data**.
+15. The welcome says "Your account and all your data have been deleted, and nothing of yours is left on this phone. An email is on its way to say so." Your inbox has "Your PrePenny account has been deleted".
+16. (If you did step 13.) Within a minute, without touching it, your phone opens the welcome: "This account has been deleted, so nothing of it is left on this phone." Sign in again there with your own address.
+
+Nothing to remove afterwards: the account deleted itself.
+
+#### Deleting in a shared plan, with two devices
+
+Using the two test accounts of part J, or two new "+" addresses shared as part J's steps 1 to 9 do (Jess on device A, Tom in a private window on device B):
+
+17. On device B, on Home, tap **Rent**, change the amount to `560`, and tap **Save**. On device A, Rent shows "Changed by Tom, just now".
+18. On device B, tap **More**, then **Delete my account and all my data**. Under **Your shared plan**: "You share a plan with Jess. Deleting your account takes you out of it first…". Send the code, type it and `delete`, and tap **Delete my account and all my data**.
+19. On device A, within a minute: Rent shows "Changed by someone who has left". **More**, then **Activity**: "Someone left the plan." and "Someone who has left changed Rent on … from £550.00 to £560.00." Tap **Rent** on Home, then **Show its history**: "Someone who has left changed it from £550.00 to £560.00". The name Tom is nowhere.
+20. To finish, delete Jess's account the same way on device A.
+
+#### If a backup of the database is ever put back
+
+Only if Supabase's backups are used to put the database back as it was on an earlier day (with the paid plan). Accounts deleted since that day would come back with it, so delete them again straight after: on supabase.com, open the **prepenny** project, then **SQL Editor**, then **New query**, paste `select app.delete_again_after_restore();` and tap **Run**. It says how many it deleted again. It works for 30 days after each deletion, longer than the paid plan keeps its backups.
 
 ## Bank holidays
 
