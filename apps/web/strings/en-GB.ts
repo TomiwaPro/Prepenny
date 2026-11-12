@@ -5,6 +5,12 @@
 // `pnpm lint` runs scripts/check-voice.ts over this file: it fails on any
 // banned word from VOICE.md, a long dash, an exclamation mark or an emoji.
 
+/** "1 account", "2 accounts", "no savings goals". */
+function count(n: number, one: string, many: string): string {
+  if (n === 0) return `no ${many}`;
+  return n === 1 ? `1 ${one}` : `${n} ${many}`;
+}
+
 export const strings = {
   app: {
     name: 'PrePenny',
@@ -2777,6 +2783,273 @@ export const strings = {
       waiting:
         "Some changes on this phone haven't been sent to your account yet. Try again once they have.",
     },
+  },
+
+  /**
+   * Download my data, import a backup and delete my account (brief 4.12,
+   * 4.13, 7.2, step 3h).
+   */
+  yourData: {
+    /** The card on More. */
+    heading: 'Your data',
+    purpose: 'Keep a copy of your plan, bring one back, or delete everything.',
+    download: 'Download my data',
+    downloadLine: 'Your plan as a spreadsheet and as a backup file',
+    import: 'Import a backup',
+    importLine: 'Put a backup file in place of your plan',
+    delete: 'Delete my account and all my data',
+    deleteLine: 'Delete your account and everything in it for good',
+    deleteLineHere: 'Remove your plan and everything else from this phone',
+    backToMore: 'Back to More',
+
+    /** Download my data. */
+    downloadPurpose:
+      'Save a copy of everything PrePenny keeps for you, to keep or to look at in a spreadsheet.',
+    spreadsheetHeading: 'A spreadsheet file (CSV)',
+    spreadsheetLine:
+      "Opens in Excel, Numbers or Google Sheets. It has your accounts, payments, debts, budgets, spending and goals, the next 12 months with what's left after each payment, and your history.",
+    downloadSpreadsheet: 'Download the spreadsheet',
+    backupHeading: 'A backup file (JSON)',
+    backupLine:
+      'Everything in your plan, in a file PrePenny can read back with Import a backup on any phone.',
+    downloadBackup: 'Download the backup',
+    whatsInHeading: "What's in the files",
+    whatsInPlan:
+      'Your plan: every account, payment, debt, budget, spend and savings goal, and your job details.',
+    whatsInAccount:
+      'Your account: the email addresses you sign in with and get back in with, your signed-in devices, and every change in Activity.',
+    whatsInShared: (name: string) =>
+      `Everything shared with ${name}, and everything of your own. Nothing that only ${name} sees.`,
+    whatsInHere: "You're not signed in, so the files have the plan on this phone.",
+    keepSafe:
+      "The files aren't locked. Keep them somewhere only you can open, as you would a bank statement.",
+    noPlan: "You haven't made a plan of your own yet, so there's nothing to download.",
+    preparing: 'Getting your data ready.',
+    saved: (file: string) => `Saved as ${file}. Look in your phone's downloads.`,
+    planOnly:
+      "Your account and its history couldn't be fetched, so the file has your plan only. Try again with a signal to download everything.",
+    /** The first line of the spreadsheet. */
+    csvTitle: (when: string) => `PrePenny: your data, downloaded at ${when}`,
+    /** The sentence at the top of the backup file, for anyone who opens it. */
+    backupAbout:
+      'A backup of a PrePenny plan. To use it, open PrePenny, then More, then Import a backup.',
+
+    /** The spreadsheet's parts and columns. */
+    csv: {
+      account: 'Your account',
+      email: 'Email address',
+      signedUp: 'Signed up',
+      name: 'Name your partner sees',
+      backupEmail: 'Backup email',
+      twoStep: 'Two-step sign-in',
+      google: 'Continue with Google',
+      devices: 'Signed-in devices',
+      device: 'Device',
+      signedIn: 'Signed in',
+      lastUsed: 'Last used',
+      thisDevice: 'This device',
+      people: "Who's in the plan",
+      person: 'Name',
+      role: 'Can',
+      roles: { owner: 'Owner', editor: 'Can edit', viewer: 'Can view only' } as Record<
+        string,
+        string
+      >,
+      you: 'You',
+      accounts: 'Accounts',
+      accountName: 'Account',
+      kind: 'Kind',
+      bankShowed: 'Your bank showed (£)',
+      checkedOn: 'Checked on',
+      overdraft: 'Overdraft limit (£)',
+      warnUnder: 'Warn me under (£)',
+      closed: 'Closed',
+      payments: 'Payments',
+      paymentName: 'Name',
+      inOrOut: 'Coming in or going out',
+      directions: {
+        in: 'Coming in',
+        out: 'Going out',
+        transfer: 'Moving between accounts',
+      } as Record<string, string>,
+      toAccount: 'To account',
+      amount: 'Amount (£)',
+      pattern: 'Pay pattern (£)',
+      howOften: 'How often',
+      first: 'First payment',
+      ends: 'Ends',
+      endsNever: 'Never',
+      endsAfter: (count: number) => (count === 1 ? 'After 1 payment' : `After ${count} payments`),
+      endsOn: (date: string) => `On ${date}`,
+      lastAmount: 'Last payment (£)',
+      type: 'Type',
+      estimate: 'Estimate',
+      debt: 'Debt',
+      goal: 'Savings goal',
+      note: 'Note',
+      comingUp: 'Coming up in the next 12 months',
+      date: 'Date',
+      leftAfter: 'Left after this (£)',
+      ticked: 'Ticked',
+      notTickedYet: 'Not ticked yet',
+      changes: 'Changes to one payment',
+      originalDate: 'Its date before',
+      newDate: 'Moved to',
+      newAmount: 'New amount (£)',
+      newName: 'New name',
+      skipped: 'Skipped',
+      ticks: 'Ticked payments',
+      paidOn: 'Paid on',
+      tickedAt: 'Ticked at',
+      balances: 'Balance updates',
+      balance: 'Your bank showed (£)',
+      checkedAt: 'Updated at',
+      debts: 'Debts',
+      debtName: 'Debt',
+      currency: 'Currency',
+      rate: 'Rate (per £1)',
+      owed: 'Owed',
+      owedOn: 'On',
+      startedAt: 'Started at',
+      interest: 'Interest rate (%)',
+      budgets: 'Budgets',
+      budgetName: 'Budget',
+      every: 'Every',
+      everyWords: { week: 'Week', month: 'Month' } as Record<string, string>,
+      leaves: 'Leaves the account',
+      leavesWords: {
+        'at-start': 'All at the start',
+        spread: 'Spread across the days',
+        'pay-later': 'As a pay-later bill',
+      } as Record<string, string>,
+      startsOn: 'Starts',
+      endsOnHeading: 'Ends',
+      spends: 'What you spent',
+      spentOn: 'Spent on',
+      goals: 'Savings goals',
+      goalName: 'Goal',
+      target: 'Target (£)',
+      targetDate: 'By',
+      startingAmount: 'Already saved when made (£)',
+      jobs: 'Your job',
+      jobName: 'Job',
+      frequency: 'Paid',
+      frequencies: {
+        weekly: 'Weekly',
+        'two-weekly': 'Every 2 weeks',
+        'four-weekly': 'Every 4 weeks',
+        monthly: 'Monthly',
+      } as Record<string, string>,
+      taxCode: 'Tax code',
+      overtimeRate: 'Overtime rate (£)',
+      shifts: 'Overtime and missed shifts',
+      shiftKind: 'What happened',
+      shiftKinds: { overtime: 'Overtime', 'missed-shift': 'Missed shift' } as Record<
+        string,
+        string
+      >,
+      workedOn: 'Worked on',
+      hours: 'Hours',
+      change: 'Change to pay (£)',
+      history: 'History',
+      when: 'When',
+      whatHappened: 'What happened',
+      undone: 'Undone',
+      yes: 'Yes',
+      no: 'No',
+    },
+
+    /** Import a backup. */
+    importPurpose: 'Put a backup file from Download my data in place of your plan.',
+    whatHappensHeading: 'What happens',
+    replacesPlan:
+      'The plan in the backup takes the place of your plan now, on this phone and in your account. Its Activity starts again.',
+    replacesPlanHere: 'The plan in the backup takes the place of your plan on this phone.',
+    becomesPlan: 'The plan in the backup becomes your plan.',
+    downloadFirst: 'Download your data first if you want to keep your plan as it is now.',
+    sharedNoImport: (name: string) =>
+      `You share a plan with ${name}, so a backup can't go in. A backup only ever goes into a plan of your own, so nothing in it can reach ${name}. To use it, leave the shared plan first.`,
+    goToShare: 'Go to Share with my partner',
+    chooseFile: 'Choose a backup file',
+    chooseFileHint: 'The file from Download my data, ending in .json.',
+    checking: 'Checking the file.',
+    confirmTitle: 'Import this backup?',
+    madeOn: (date: string) => `It was made on ${date}.`,
+    holds: (accounts: number, payments: number, debts: number, goals: number) =>
+      `It has ${count(accounts, 'account', 'accounts')}, ${count(payments, 'payment', 'payments')}, ${count(debts, 'debt', 'debts')} and ${count(goals, 'savings goal', 'savings goals')}.`,
+    replaceWarning: "Your plan now will be replaced. It can't be brought back.",
+    confirmReplace: 'Yes, replace my plan',
+    confirmImport: 'Yes, import it',
+    keepPlan: 'No, keep my plan',
+    importing: 'Importing the backup.',
+    imported: 'Your backup is in. Your plan is now the one from the backup.',
+    goHome: 'Go to Home',
+    problems: {
+      'too-big':
+        'This file is too big to be a PrePenny backup. Choose the file from Download my data.',
+      empty: 'This file is empty. Choose the backup file from Download my data.',
+      'not-json':
+        "This isn't a PrePenny backup. Choose the file ending in .json from Download my data.",
+      'not-a-backup':
+        "This isn't a PrePenny backup. Choose the file ending in .json from Download my data.",
+      newer: 'This backup is from a newer version of PrePenny. Update PrePenny, then try again.',
+      'too-many': 'This backup has more in it than PrePenny can take, so nothing was imported.',
+      'bad-record':
+        "Part of this backup isn't as PrePenny wrote it, so nothing was imported. Choose a backup that hasn't been changed.",
+      'broken-link':
+        "Part of this backup isn't as PrePenny wrote it, so nothing was imported. Choose a backup that hasn't been changed.",
+      'cant-work-out': "PrePenny can't work out a plan from this backup, so nothing was imported.",
+      unreadable: "PrePenny couldn't read this file. Choose it again.",
+      offline: "You're offline. Connect to the internet to import a backup into your account.",
+      'has-a-plan':
+        "Your account has a saved plan this phone hasn't brought down yet. Open Home, then try again.",
+      server: "PrePenny couldn't import the backup. Nothing has changed. Try again in a minute.",
+    } as Record<string, string>,
+
+    /** Delete my account. */
+    deleteHeading: 'Delete my account',
+    deletePurpose: 'Delete your account and everything in it, for good.',
+    whatGoesHeading: "What's deleted",
+    whatGoesPlan:
+      'Your plan, with every account, payment, debt, budget and savings goal, and its history.',
+    whatGoesAccount:
+      'Your signed-in devices, your backup email, your two-step sign-in and your sign-in itself.',
+    cantUndo: "It can't be undone. Download your data first if you want a copy.",
+    whenGoneHeading: "When it's gone",
+    whenGone:
+      "It's deleted from PrePenny straight away. Copies in PrePenny's backups, and in the records of the services that run it, are gone within 30 days.",
+    sharedNotYet: (name: string) =>
+      `You share a plan with ${name}. Deleting an account in a shared plan isn't ready yet, because your changes are in ${name}'s history too. You can leave the plan from Share with my partner.`,
+    checkHeading: "Check it's you",
+    checkLine: (email: string) =>
+      `To delete your account, sign in again first. PrePenny sends a 6-digit code to ${email}.`,
+    sendCode: 'Send me a code',
+    sendingCode: 'Sending the code.',
+    codeSent: (email: string) => `We've sent a 6-digit code to ${email}. It lasts 10 minutes.`,
+    emailCodeLabel: 'Code from the email',
+    confirmLabel: 'Type delete to confirm',
+    confirmHint: "This can't be undone.",
+    confirmMissing: 'Type delete to confirm, or go back to keep your account.',
+    deleteButton: 'Delete my account and all my data',
+    keepAccount: 'Keep my account',
+    deleting: 'Deleting your account.',
+    signInAgain: 'The check has run out. Send a new code, then try again.',
+    sharedRefused:
+      "Your account can't be deleted here yet, because you share or have shared a plan, and your changes are in the other person's history. Nothing has been deleted.",
+    notSignedIn: "You're not signed in, so your plan is kept only on this phone.",
+    removeHere: 'Remove everything from this phone',
+    removeTitle: 'Remove everything from this phone?',
+    removeIntro:
+      "Your plan and everything else PrePenny keeps on this phone go for good. It can't be undone.",
+    removeConfirm: 'Yes, remove everything',
+    removeKeep: 'No, keep it',
+    haveAccount: 'Have an account? Sign in first to delete it.',
+    signIn: 'Sign in',
+    /** On the welcome, afterwards. */
+    deleted:
+      'Your account and all your data have been deleted, and nothing of yours is left on this phone. An email is on its way to say so.',
+    deletedElsewhere: 'This account has been deleted, so nothing of it is left on this phone.',
+    removed: 'Everything PrePenny kept on this phone has been removed.',
   },
 
   parts: {

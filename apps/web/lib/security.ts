@@ -28,7 +28,13 @@ export type SecurityProblem =
   | 'in-use'
   | 'too-many'
   | 'email-off'
-  | 'not-found';
+  | 'not-found'
+  /** Deleting the account (step 3h): the sign-in made just now is more than 10 minutes old. */
+  | 'sign-in-again'
+  /** Deleting the account: "delete" wasn't typed. */
+  | 'confirm'
+  /** Deleting the account: the person is, or has been, in a plan with someone else. */
+  | 'shared-plan';
 
 export type Done<T = true> =
   | { readonly ok: true; readonly value: T }
@@ -55,6 +61,9 @@ function problemOf(error: unknown): SecurityProblem {
       'too-many',
       'email-off',
       'not-found',
+      'sign-in-again',
+      'confirm',
+      'shared-plan',
     ] as const) {
       if (message === known) return known;
     }
@@ -488,4 +497,17 @@ export async function stopWithLink(token: string): Promise<Done<boolean>> {
   const answer = await call<{ stopped: boolean }>('stop_get_back_in_with_link', { token }, true);
   if (!answer.ok) return answer;
   return { ok: true, value: answer.value.stopped };
+}
+
+// ---------------------------------------------------------------------------
+// Download my data and delete my account (step 3h).
+
+/** The person's own account, for Download my data: only ever their own (my_account_data). */
+export function myAccountData(): Promise<Done<unknown>> {
+  return call('my_account_data');
+}
+
+/** "Delete my account and all my data": refused unless signed in just now and "delete" is typed. */
+export function deleteMyAccount(confirm: string): Promise<Done<unknown>> {
+  return call('delete_my_account', { confirm });
 }

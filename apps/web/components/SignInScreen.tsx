@@ -94,7 +94,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE = /^\d{6}$/;
 
 /** A problem in words. A refused code ran out when it's more than 10 minutes old. */
-function wordsFor(problem: Problem, sentAt: number | null): string {
+export function wordsFor(problem: Problem, sentAt: number | null): string {
   switch (problem.kind) {
     case 'offline':
       return t.offline;

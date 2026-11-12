@@ -5,6 +5,7 @@ import { MoreLinks } from '../../../components/MoreLinks.tsx';
 import { SecurityCard } from '../../../components/SecurityCard.tsx';
 import { SimplePage } from '../../../components/SimplePage.tsx';
 import { StartAgain } from '../../../components/StartAgain.tsx';
+import { YourDataCard } from '../../../components/YourDataCard.tsx';
 import { strings } from '../../../strings/en-GB.ts';
 
 export const metadata: Metadata = { title: strings.more.heading };
@@ -19,6 +20,7 @@ export default function MorePage() {
       <MoreLinks />
       <AccountCard />
       <SecurityCard />
+      <YourDataCard />
       <ColourChoice />
       <StartAgain />
     </SimplePage>

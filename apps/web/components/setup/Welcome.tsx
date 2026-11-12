@@ -22,14 +22,21 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
   const account = useAccount();
   const [signedOut, setSignedOut] = useState<string | null>(null);
   useEffect(() => {
-    // Just signed out from More (step 3b), or a sign-in that ended by itself
-    // (step 3c): say so once, then tidy the address.
+    // Just signed out from More (step 3b), a sign-in that ended by itself
+    // (step 3c), or the account deleted, or the phone emptied (step 3h): say
+    // so once, then tidy the address.
     const search = new URLSearchParams(window.location.search);
     const words = search.has('signed-out')
       ? strings.account.signedOut
       : search.has('sign-in-ended')
         ? strings.account.signInEnded
-        : null;
+        : search.has('account-deleted')
+          ? strings.yourData.deleted
+          : search.has('account-deleted-elsewhere')
+            ? strings.yourData.deletedElsewhere
+            : search.has('removed')
+              ? strings.yourData.removed
+              : null;
     if (words !== null) {
       setSignedOut(words);
       window.history.replaceState(null, '', window.location.pathname);
