@@ -282,3 +282,17 @@
   gap: 0 var(--space-3);
   padding: var(--space-2) 0;
 }
+
+/* A row of a list with lines under its name and a button under them (step 3g). */
+.stackRow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+}
+
+.stackRow > button,
+.stackRow > a {
+  margin-top: var(--space-2);
+}

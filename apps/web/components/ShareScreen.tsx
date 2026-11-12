@@ -190,7 +190,7 @@ export function ShareScreen() {
         </h2>
         <ul className={styles.list}>
           {sharing.members.map((one) => (
-            <li key={one.person} className={styles.rowBody} data-testid="member">
+            <li key={one.person} className={styles.stackRow} data-testid="member">
               <span className={styles.rowName}>
                 {one.person === me ? t.you(one.nickname) : called(one.nickname)}
               </span>

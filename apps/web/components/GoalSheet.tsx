@@ -9,11 +9,13 @@
 
 import type { EditCommand, GoalEdits } from '@prepenny/engine';
 import { useId, useMemo, useState } from 'react';
+import { myName } from '../data/shared-plan.ts';
 import { amountForTyping, parseAmount } from '../lib/amount.ts';
 import { holidaysFor } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import type { GoalCard } from '../lib/money-views.ts';
 import { type PaymentErrors, readDate } from '../lib/new-payment.ts';
+import { addPaymentCommand } from '../lib/private-transfer.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import {
   blankGoal,
@@ -23,6 +25,7 @@ import {
   type GoalForm,
 } from '../lib/setup-forms.ts';
 import { strings } from '../strings/en-GB.ts';
+import { useShared } from './ChangedBy.tsx';
 import { Problem } from './Fields.tsx';
 import styles from './Form.module.css';
 import { GOAL_FIELD_ORDER, GoalFields } from './GoalFields.tsx';
@@ -124,6 +127,7 @@ function GoalSheetForm({
   readonly start?: GoalStart;
 }) {
   const { loaded, makeChange, makeChanges } = usePlanActions();
+  const shared = useShared();
   const id = useId();
   const refs = useWhenRefs();
   const records = loaded?.records ?? null;
@@ -172,7 +176,26 @@ function GoalSheetForm({
     ]);
   }
 
-  async function run(commands: readonly EditCommand[], message: string) {
+  async function run(made: readonly EditCommand[], message: string) {
+    // Money from one's own account into a goal kept in a shared account is two
+    // halves, "From Jess" going towards the goal, as in Add a payment (D16, D464).
+    const goals = made.flatMap((one) => (one.kind === 'add-goal' ? [one.goal] : []));
+    const goalAccount = (goalId: string) =>
+      goals.find((one) => one.id === goalId)?.accountId ??
+      loaded?.records.goals?.find((one) => one.id === goalId)?.accountId;
+    const commands = made.map((one) =>
+      one.kind === 'add-payment' && one.otherHalf === undefined
+        ? addPaymentCommand(
+            one.series,
+            one.madeAt,
+            shared === null
+              ? null
+              : { sharedAccounts: shared.sharedAccounts, myName: myName(shared) },
+            newId(),
+            goalAccount,
+          )
+        : one,
+    );
     setErrors({});
     setBusy(true);
     setProblem(null);

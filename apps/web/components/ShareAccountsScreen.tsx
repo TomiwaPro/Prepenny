@@ -179,13 +179,40 @@ export function ShareAccountsScreen() {
             ))}
           </fieldset>
         )}
-        {alreadyShared.length === 0 ? null : (
+        <Problem text={problem} />
+        {mine.length === 0 ? null : (
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={formStyles.main}
+              aria-haspopup="dialog"
+              onClick={() => {
+                setSaid('');
+                if (chosen.length === 0) {
+                  setProblem(t.chooseOne);
+                  return;
+                }
+                setProblem(null);
+                setAsking(true);
+              }}
+            >
+              {t.shareThese}
+            </button>
+          </div>
+        )}
+      </section>
+      {alreadyShared.length === 0 ? null : (
+        <section className={styles.card} aria-labelledby="already-shared-heading">
+          <h2 id="already-shared-heading" className={styles.cardTitle}>
+            {g.sharedHeading}
+          </h2>
+          <p className={styles.second}>{g.sharedLine(partnerWords)}</p>
           <ul className={styles.list} aria-label={t.alreadyShared} data-testid="already-shared">
             {alreadyShared.map((one) => {
               const by = addedByOf(one.id);
               const theirs = by !== undefined && by !== shared.personId;
               return (
-                <li key={one.id} className={styles.rowBody}>
+                <li key={one.id} className={styles.stackRow}>
                   <span className={styles.rowName}>{one.name}</span>
                   <span className={styles.second}>{t.alreadyShared}</span>
                   {theirs ? (
@@ -210,29 +237,8 @@ export function ShareAccountsScreen() {
               );
             })}
           </ul>
-        )}
-        <Problem text={problem} />
-        {mine.length === 0 ? null : (
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={formStyles.main}
-              aria-haspopup="dialog"
-              onClick={() => {
-                setSaid('');
-                if (chosen.length === 0) {
-                  setProblem(t.chooseOne);
-                  return;
-                }
-                setProblem(null);
-                setAsking(true);
-              }}
-            >
-              {t.shareThese}
-            </button>
-          </div>
-        )}
-      </section>
+        </section>
+      )}
       <StepSheet
         open={unsharing !== null}
         title={g.privateTitle(unsharingName)}

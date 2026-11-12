@@ -5398,3 +5398,175 @@ Decided 12 Nov 2026.
 - The end-to-end run on the building computer after these changes is recorded in PLAN.md's entry for the step.
 
 Why: each follows from the owner's answers where they didn't say exactly.
+
+## From the owner's instructions for step 3g
+
+D454 is the owner's instruction in the instructions for step 3g, shared plans: living together, on 12 Nov 2026. D455 to D466 were decided while building it, the same day. Points marked "decided in step 3g" weren't in the owner's words.
+
+### D454. Leaving waits for the owner's choice
+
+The owner's instruction, 12 Nov 2026.
+
+- Before building leaving, the options are shown to the owner with a plain example (Tom and Jess): what happens to each person's private accounts, the shared accounts and the history, with a recommendation, as a question in the report. Leaving is built only once the owner has answered.
+- So step 3g builds everything else in it ("Changed by", Activity with undo, debts and goals shared or one person's, what each person has put into a shared goal, changing a role and making a shared account private again), and leaving, with its own security tests ("after leaving, the person who left gets nothing more from the plan, and the one who stays keeps nothing of the leaver's private records") and its screens, comes after the answer. The options are in `PLAN.md`, "Waiting for the owner".
+
+Why: the owner's instruction.
+
+## Made during step 3g
+
+### D455. The history: every record a change saves, before and after
+
+Decided 12 Nov 2026 in step 3g. Builds D50, D87 and ARCHITECTURE.md 3.5; replaces D331's "It keeps no before-copies or summary yet".
+
+- Every record a change saves is kept as it was before the change (nothing, when the change made it) and after it, with who could read each copy at that moment: shared, or private to one person. The database keeps them itself, as each record is saved, for every change through `save_edit` and through its own steps (sharing an account, claiming pay, making something private). The phone sends nothing extra, so nothing can be left out or made up.
+- They're in the database's own part (`app.edit_records`), which the Data API never shows. Only the database's own steps read them, each for the person asking.
+- A plan's first copy, and a plan brought into another (D426), save the whole plan at once and change nothing anyone made: they keep no history, so Activity doesn't list every record of a plan as "added".
+- Like the changes themselves, they go with the plan when it's removed. Changes older than 12 months aren't shown (D50); clearing them out of the database waits for a scheduled job (PLAN.md item 61).
+
+Test: `supabase/tests/database/26-living-together.test.sql` ("The history keeps each record an edit saves", "with how it was before", "and how it was after").
+
+Why: Activity needs what each change did (brief 4.12), and undo for older changes needs the "before" copies (D87), on any of the person's phones.
+
+### D456. Activity: who changed what, and when
+
+Decided 12 Nov 2026 in step 3g. Builds brief 4.12 and 4.14.
+
+- Under More, after Share with my partner: **Activity**, "Every change, and undo for your own". Share with my partner links to it too.
+- It starts with "Every change to your plan in the last 12 months, newest first. You can undo your own." or, in a shared plan, "Every change you and Tom made in the last 12 months, newest first. You can undo your own changes, but not Tom's."
+- Changes are in cards by day ("Today", "Yesterday", "Tue 10 Nov"), newest first, 50 at a time with **Show older changes**. Each is one sentence with who made it and what it did, and "At 2:05pm" under it: "Tom changed Rent on Sun 1 Nov to £560.00.", "You marked Pay on Fri 27 Nov as arrived.", "Jess added Car MOT, −£54.85 on Fri 13 Nov.", "You updated the Joint balance to £1,234.56, and ticked 3 payments.", "Tom spent £12.50 on Food.", "Jess shared Current account.", "Jess changed what you can do to Can view only.", "You undid a change to Rent." Every kind of change has its words (`lib/activity-words.ts`); anything else says which records it changed ("Tom changed Rent and Gym.") or "Tom made a change." Someone with no name yet is "Your partner" (D377).
+- A change undone says **Undone** beside its time.
+- The words are put together on the phone from what the server gives it (D458), so they can name nothing private, and none of them is in a log.
+- Activity is the account's history, so it needs signing in and a signal: "You're offline. Connect to the internet to see Activity." Signed out: "Activity shows the changes saved in your account. Sign in first, so your plan is kept there." The example plan has none.
+- A change from the other phone appears as soon as the plan comes down, with the screen left open.
+
+Test: `apps/web/test/unit/living-together.test.ts` (Activity's words), `apps/web/e2e/together.spec.ts` test 1. Screenshots: `docs/screens/3g/activity-tom-360-light.png` and `activity-jess-360-light.png`.
+
+Why: the owner's instruction: "who changed what and when, in plain words".
+
+### D457. Undo for your own changes only
+
+Decided 12 Nov 2026 in step 3g. Builds D87 and D186 ("Older changes will be in Activity").
+
+- Each of the person's own changes has **Undo this change** while nothing it changed has been changed again since, by anyone. Their partner's never do.
+- Undo is the server's own step (`undo_change`): it puts every record the change saved back as it was before, as a new change of the person's, through `save_edit`, so every privacy rule and role applies as to any change (D51: "Can view only" can't undo a shared change). Undoing an undo puts the change back (D87).
+- The server checks whose change it is: anyone else's, private or shared, is refused exactly as a change that isn't there ("not-found"), so nobody can even learn a change exists. A change someone has changed since is refused ("changed-since"), so a later change is never lost: "This can't be undone, because something it changed has been changed again since." (D186's words).
+- Not undone from Activity: a plan's first copy, joining with a plan, sharing an account, claiming pay, making something private or shared, and changing a role. Each has its own way back.
+- It needs a signal and nothing waiting to be sent, as sharing an account does (D413): "Some changes on this phone haven't been sent to your account yet. Try again once they have." The undo bar still undoes the last change on the phone, with or without a signal (D186).
+
+Test: `26-living-together.test.sql` ("Nobody can undo someone else's change", 13 checks, and "Undoing one's own change", 13), `apps/web/e2e/together.spec.ts` tests 1 and 4.
+
+Why: brief 4.14's "with undo for your own changes", and the owner's security test "nobody can undo someone else's change".
+
+### D458. Nothing private in a partner's Activity
+
+Decided 12 Nov 2026 in step 3g. Builds D16, D291, D299, D414.
+
+- Each person sees their own changes, private ones included, and only the other person's shared changes, as before (D296, D331).
+- Of each change, they get only the copies of records they could read when it was made **and** can still read now. So a change Jess made to an account before she shared it never shows on Tom's phone, even once the account is shared; sharing it shows only how each record is now, never how it was while private; and once an account, debt or goal is made private again, nothing of it stays in Tom's Activity, even changes from while it was shared. A change with nothing left that Tom may see isn't shown at all.
+- One exception, so nothing is taken away unseen (brief 4.14's safety): "Jess made a shared account private, so you no longer see it." It names nothing: not the account, nor anything in it.
+- A partner's own records stay theirs to see: a payment Tom added to Jess's account and took out again before she made it private stays in his Activity as his.
+
+Test: `26-living-together.test.sql` ("Activity never shows a partner anything private", 16 checks), `apps/web/e2e/together.spec.ts` tests 1 and 4. Each rule was broken on purpose to see the checks fail: a copy shown whoever could read it then (1 failed), whoever can read it now (3 failed).
+
+Why: the owner's rule: "Activity never shows a partner anything private, including from before an account was shared".
+
+### D459. "Changed by Tom, 2 hours ago"
+
+Decided 12 Nov 2026 in step 3g. Builds brief 4.14 and D420.
+
+- In a shared plan, a payment's row says "Changed by Tom, 2 hours ago" under its date when the other person changed it last, in the last 7 days. The edit sheet always says who changed it last: "Changed by Tom, just now", "Changed by you, yesterday", "Added by Jess, Tue 3 Nov". A plan with one person in it shows nothing.
+- "Last" is the newest change to the payment's series, its one-off change or its tick, by the server's record of who made each change and when. A series that "this and all later ones" only gave a new end hasn't changed its earlier payments, so they don't say so.
+- Sharing an account saves everything on it again, but changes no payment: it shows as "Shared by Jess" in the sheet and nothing on the rows. Making something private or shared, and joining, show nothing.
+- When: "just now", "5 minutes ago", "2 hours ago", "yesterday", or the date, by the phone's clock corrected against the server's.
+- The rows show only the other person's recent changes so the plan stays calm (DESIGN.md) and their change stands out; the sheet says it whenever someone asks.
+
+Test: `living-together.test.ts`, `apps/web/e2e/together.spec.ts` test 1. Screenshots: `docs/screens/3g/changed-by-on-home-360-light.png`, `changed-by-in-the-sheet-360-light.png`.
+
+Why: brief 4.14 ("Each payment shows who added or last changed it") and 8.7 test 1.
+
+### D460. Within 5 seconds
+
+Decided 12 Nov 2026 in step 3g.
+
+- Nothing new was needed: a change is sent as soon as it's made, `save_edit` nudges the other phones over the live connection (step 3c), and each looks at once.
+- Tested end to end: Tom changes Rent on his phone, and Jess's phone, left open on Home, shows the new amount with "Changed by Tom, just now" within 5 seconds of his tap, at both widths, in light and dark.
+
+Test: `apps/web/e2e/together.spec.ts` test 1.
+
+Why: brief 8.7 test 1.
+
+### D461. Changing a partner's role
+
+Decided 12 Nov 2026 in step 3g. Builds brief 4.14, D51, D292.
+
+- On Share with my partner, the plan's owner has **Change what Tom can do** under Tom's name. A sheet: "Tom's phone follows the change straight away. Either of you can still keep your own pay up to date.", "What can Tom do?" with **Can edit** and **Can view only** (with the invite's own lines under each), and **Save**. Then "Tom can view only now." or "Tom can edit now."
+- Only the owner (D412, D434), never their own role, and only "Can edit" or "Can view only". Through the server's own step, `change_role`.
+- It takes effect straight away on the server: every privacy rule reads the role on every request (`app.my_edit_plans`), so the next change Tom's phone sends is refused, however long ago he made it, with "You can look at this plan but not change it." (D369).
+- Tom's phone hears at once (a nudge) and shows under "Who's in this plan": "You can see everything shared, but change nothing. Only Jess can change that." or "You can see and change everything shared."
+- It's in Activity for both: "Jess changed what you can do to Can view only."
+
+Test: `26-living-together.test.sql` ("Changing a role takes effect straight away on the server", 11 checks), `apps/web/e2e/together.spec.ts` test 3. Screenshot: `docs/screens/3g/change-what-tom-can-do-360-light.png`.
+
+Why: brief 4.14 ("Either can be changed later") and 8.7 test 3, which step 3f left for now (D425).
+
+### D462. Making a shared account private again
+
+Decided 12 Nov 2026 in step 3g. Replaces D413's "A shared account can't be made private again".
+
+- On Choose shared accounts, the shared ones are in a card of their own, "Shared accounts", "Tom sees these, and everything in them." Each the person shared has **Make Joint private again**; one the other person shared says "Only Jess can make this private again, as they shared it." A sheet asks first: "Make Joint private?", "Tom will no longer see Joint or anything in it, and its changes leave Tom's Activity. You can share it again later.", **Yes, make it private** and **No, keep it shared**. Then "Joint is private now. Only you see it."
+- **Who:** only the person who shared it (who added it), whatever their role: it was theirs to share and is theirs to take back. Nobody can take a joint account away from the other person this way.
+- **Not while the other person has things of their own in it:** payments or budgets they added, their pay, or money kept as theirs ("From Tom"): "Tom has payments of their own in Joint: Gym. While they're there, it stays shared. Tom can remove them or move them to an account of their own." Those are Tom's to see, so it stays shared. A goal of Tom's own kept in it isn't named: "Tom has things of their own in Joint, so it stays shared for now."
+- **Also refused, in plain words:** a shared savings goal kept in it ("Make the goal private first"); money moving between it and another shared account; money from your own account kept as "From Jess" in it (as D413).
+- **What happens:** the account and everything on it become private to its person in one step of the server's own (`make_private`), or nothing does. Ticks, one-off changes and spends Tom made on her payments go with them. Records removed before stay as they were. Links kept apart (D291) go back on the payments, exactly as the phone keeps them.
+- Tom's phone removes the account within seconds, and his Activity keeps only "Jess made a shared account private, so you no longer see it." (D458).
+
+Test: `26-living-together.test.sql` ("Making a shared account private again", 11 checks; breaking "only the person who shared it" fails 2), `apps/web/e2e/together.spec.ts` test 4. Screenshot: `docs/screens/3g/make-private-360-light.png`.
+
+Why: the owner's instruction, and brief 4.14's safety: nobody is cut off from their own things.
+
+### D463. Each debt and goal: shared, or one person's
+
+Decided 12 Nov 2026 in step 3g. Builds D65, brief 4.14.
+
+- In a shared plan, the Debts list says under each debt "Shared with Tom" or "Only you see this". Its page has **Who sees it**, with **Share this debt with Tom**, or **Make it private** for one the person shared, or "Shared by Jess. Only Jess can make it private." Each goal on Savings goals says the same, with **Share this goal with Tom**.
+- A new debt is the person's own until they share it (D65). A new goal kept in a shared account is shared, as before; one kept in a private account is private and says "It's kept in Current account, which only you see, so it stays private."
+- Sharing asks first: "Share Car loan with Tom?", "Tom will see Car loan, what's left on it and when it's paid off. You can make it private again later." (for a goal: "…what's saved and when it's reached, and can put money into it."), **Yes, share it**, **No, keep it private**. Making it private: "Tom will no longer see Car loan or what's left on it. Payments to it from shared accounts still show, without the debt."
+- Both are the server's own steps (`share_record`, `make_private`), on what the account has now. Sharing needs "Can edit", as it makes something shared. Making private is for whoever shared it, and refused while the other person puts money towards it ("Tom puts money towards Car loan, so it stays shared."). Links on shared payments move into or out of the person's private links (D291), exactly as the phone keeps them.
+
+Test: `26-living-together.test.sql` ("Sharing a debt or a goal, and making it private again", 19 checks), `apps/web/e2e/together.spec.ts` test 2. Screenshot: `docs/screens/3g/shared-debt-360-light.png`.
+
+Why: the owner's instruction (D65).
+
+### D464. "From Jess" can go towards a shared goal
+
+Decided 12 Nov 2026 in step 3g. Changes D16's "the shared half carries nothing else" and D415's "A savings goal stays on her half only when it's kept in her own account".
+
+- Money from Jess's own account into a shared goal kept in a shared account is two halves (D16). The goal is on the shared half, "From Jess", so it counts towards the goal and shows as hers. The shared half still carries nothing else: no note, debt, job or money set aside, and never a goal of hers alone ("link-to-private").
+- The engine's "Add a payment" takes the goal on the other half, and checks it's open and kept in that account. The database lets the shared half name a shared goal.
+
+Test: `packages/engine/test/unit/add-private-transfer.test.ts` (2 new), `26-living-together.test.sql` (3 checks), `apps/web/e2e/together.spec.ts` test 2.
+
+Why: without it, nothing anyone put in from their own account could count towards a shared goal, which D114 and brief 4.14 ask for.
+
+### D465. What each person has put into a shared goal
+
+Decided 12 Nov 2026 in step 3g. Builds D114 ("worked out from whose account each linked transfer came from").
+
+- A shared goal shows **What each of you has put in**, "Saved so far, by where the money came from.", with a line for each: what was there when the goal was made ("Already saved when it was made"); each person's own money, "You" or their name (money kept as theirs, "From Jess", or pay that's theirs); money moved from each shared account ("From Joint"); "Other money in"; and "Taken out", below zero. They add up to what's saved so far.
+- Only payments ticked as paid count, as for "Saved so far" (D114).
+
+Test: `living-together.test.ts`, `apps/web/e2e/together.spec.ts` test 2. Screenshot: `docs/screens/3g/shared-goal-360-light.png`.
+
+Why: brief 4.14 ("A shared savings goal shows what each person has put in").
+
+### D466. How step 3g is tested, and smaller choices
+
+Decided 12 Nov 2026 in step 3g.
+
+- `supabase/tests/database/26-living-together.test.sql`, 88 checks, on step 3f's `tests.make_jess_alone()` with Tom joining through an invite: the history, Activity's privacy before and after sharing and after making private, nobody undoing someone else's change by any way the Data API offers, one's own undo and redo, roles taking effect at once, making private and sharing. Each new rule was broken on purpose to see the checks fail (D458, D462); undoing someone else's change is refused twice over (the undo step and the mark), and breaking either alone is caught. `00-every-table.test.sql` lists the new steps. 927 database checks pass.
+- `apps/web/e2e/together.spec.ts`, four tests with two people on two phones, at 320px and 360px in light and dark, with axe, against the local Supabase: 16 runs, all passing.
+- `apps/web/test/unit/living-together.test.ts`: "Changed by", Activity's words, and what each person put in.
+- Smaller choices: each record brought down says what kind of change saved it last and who added it (`plan_changes`), for "Changed by" and for who may make an account private; each person's role is kept on the phone with their name; the role sheet starts from the role as it opens, and the list shows the new role at once; Choose shared accounts says "You can make a shared account private again later." where it said it couldn't.
+- Screenshots are in `docs/screens/3g`. The leaving screens come with leaving (D454).
+
+Why: the owner's list of what the tests must prove.

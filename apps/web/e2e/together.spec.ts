@@ -220,10 +220,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noAxeProblems(tom.page);
       await noSidewaysScroll(tom.page);
       if (shoots(info, colorScheme)) {
-        await tom.page.screenshot({
-          path: `${SCREENS}/activity-tom-360-light.png`,
-          fullPage: true,
-        });
+        await tom.page.screenshot({ path: `${SCREENS}/activity-tom-360-light.png` });
       }
       // With text at 200%, Activity still fits at this width.
       const big = await tom.page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
@@ -241,7 +238,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(entries(page).filter({ hasText: 'Dentist' }).first()).toBeVisible();
       await noAxeProblems(page);
       if (shoots(info, colorScheme)) {
-        await page.screenshot({ path: `${SCREENS}/activity-jess-360-light.png`, fullPage: true });
+        await page.screenshot({ path: `${SCREENS}/activity-jess-360-light.png` });
       }
 
       // Tom undoes his own change; it's undone on Jess's phone too.
@@ -318,7 +315,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
         tom.page.getByTestId('who-sees').getByRole('button', { name: g.makeItPrivate }),
       ).toHaveCount(0);
 
-      // A goal kept in the shared account, £100 saved already, shared with Tom.
+      // A goal kept in the shared account, £100 saved already, shared with Tom,
+      // with £30 planned from Jess's own account: "From Jess" goes towards it (D464).
+      await addAccount(page, 'Jess savings', '400');
       await page.goto('/app/goals/');
       await page.getByRole('button', { name: 'Add a savings goal' }).click();
       const goalSheet = page.getByRole('dialog', { name: 'Add a savings goal' });
@@ -326,11 +325,23 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await goalSheet.getByLabel('Target').fill('1200');
       await radio(goalSheet.getByRole('group', { name: 'Kept in' }), 'Current account').check();
       await goalSheet.getByLabel('Already saved towards it').fill('100');
+      await goalSheet.getByLabel('Move into it').fill('30');
+      await goalSheet.getByLabel('Next payment').fill('2026-11-02');
+      await radio(goalSheet, 'Once').check();
+      await radio(goalSheet.getByRole('group', { name: 'From' }), 'Jess savings').check();
       await goalSheet.getByRole('button', { name: 'Add goal' }).click();
       await expect(goalSheet).toBeHidden();
+      await expect(undoBar(page)).toContainText('Holiday added.');
       const jessGoal = page.locator('[data-goal="Holiday"]');
       await expect(jessGoal.getByTestId('who-sees')).toContainText(g.sharedWith('Tom'));
       await allSentOn(page);
+      // Saved in the account as two halves, the shared one going towards the goal.
+      expect(
+        sql(`select count(*) from public.series s join public.goals g on g.id = s.goal_id
+          where g.name = 'Holiday' and s.name = 'From Jess' and s.private_to is null
+            and s.locked_to is not null and s.created_at > now() - interval '10 minutes'`),
+      ).toBe('1');
+      await expect(page.getByText(strings.clash.refusedTitle)).toHaveCount(0);
 
       // Tom puts £50 into it from his own account, today, and marks it as arrived.
       await addAccount(tom.page, "Tom's account", '300');
@@ -378,7 +389,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noSidewaysScroll(page);
       if (shoots(info, colorScheme)) {
         await page.locator('[data-goal="Holiday"]').scrollIntoViewIfNeeded();
-        await page.screenshot({ path: `${SCREENS}/shared-goal-360-light.png`, fullPage: true });
+        await page.screenshot({ path: `${SCREENS}/shared-goal-360-light.png` });
       }
       // Nothing of Tom's own account reaches Jess's phone.
       await page.goto('/app/accounts/');
