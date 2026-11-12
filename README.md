@@ -538,9 +538,9 @@ Jess's plan, on device A:
 
 1. Open https://prepenny.co.uk/app/, tap **More**, then **Sign out**, then **Sign out** again. Your own plan is safe in your account.
 2. Tap **Make my plan**. Keep **Current account**, type `500`, tap **Next**, then **Skip this step** on each screen, then **Go to my plan**.
-3. On Home, tap **Add a payment**: name `Dentist`, amount `65`, a day next week, **Once**, then **Add payment**. Tap **Undo** on the bar at the bottom. (This is a change made while the account is yours alone.)
-4. Tap **Add a payment** again: name `Rent`, amount `550`, the 1st of next month, **Every month, or every few months**, then **Add payment**.
-5. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+jess3@gmail.com`.
+3. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+jess3@gmail.com`.
+4. On Home, tap **Add a payment**: name `Dentist`, amount `65`, a day next week, **Once**, then **Add payment**. Tap **Undo** on the bar at the bottom. (These are changes made while the account is yours alone.)
+5. Tap **Add a payment** again: name `Rent`, amount `550`, the 1st of next month, **Every month, or every few months**, then **Add payment**.
 6. Tap **More**, then **Share with my partner**, then **Choose shared accounts**. Tick **Current account**, tap **Share these accounts**, then **Yes, share**. Go back.
 7. Under **Invite your partner**, type `Jess`, keep **Can edit** and **A link I send myself**, tap **Make the invite link**, then **Copy the link**, and send it to yourself so you can open it on device B.
 
