@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. D446 to D452 are the owner's answers to its questions and instructions about the public repository, and D453 was decided while building them, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -5100,6 +5100,8 @@ Why: the owner's instruction.
 
 ### D430. Home's big figure: "About £X now"
 
+The line under the figure says "Bank: £267.54 today" or "Bank: £500.00 on Sun 8 Nov" since D450.
+
 In Sam's example, the line under the figure is replaced by D440: "Example plan, as on Sun 25 Oct 2026", and the bank's figure without "today". A person's own plan keeps these words.
 
 The owner's fix D, 10 Nov 2026. Replaces brief 4.9's "Balance and when it was checked" as Home's big figure, keeping both in the line under it. Adds to D168.
@@ -5255,6 +5257,8 @@ Why: the owner's decision.
 
 ### D442. "+ Add an account" under the four buttons, and Home on a 320 by 568 phone
 
+Since D450 the bank's line is always one line, so the whole lowest point card shows a day after the check too; Sam's example is D451.
+
 The owner's decision 3, 12 Nov 2026. Replaces D431's place.
 
 - "+ Add an account" moves from under the account card to under Home's four buttons. It still opens the Add an account sheet on Home.
@@ -5281,6 +5285,8 @@ Why: the owner's decision.
 
 ### D444. How the polish step is tested, and what couldn't run here
 
+The sign-in tests run on GitHub once the pull request is ready (D446).
+
 Decided 12 Nov 2026 in the polish step.
 
 - `apps/web/e2e/polish.spec.ts`: tests 1 to 3 at 320px and 360px, in light and dark, with axe, and the fit test on a 320 by 568 phone (and 360 by 640 in the 360px run), in light and dark.
@@ -5299,3 +5305,96 @@ Decided 12 Nov 2026 in the polish step.
 - DESIGN.md's balance card and actions describe D430, D440 and D442 now.
 
 Why: each follows from the owner's decisions where they didn't say exactly.
+
+## From the owner's answers to the polish step
+
+D446 to D452 are the owner's answers to the polish step's five questions, their follow-up choice and their instructions about the public repository, on 12 Nov 2026. Points marked "decided in the polish step" weren't in the owner's words. D453 was decided while building them, the same day.
+
+### D446. The pull request is marked ready, and GitHub runs the sign-in tests
+
+The owner's answer to question 1, 12 Nov 2026. Adds to D444.
+
+The polish step's pull request was marked ready without running the sign-in tests on the building computer, where Supabase's command line couldn't be downloaded. GitHub runs them, with every other check.
+
+Why: the owner's answer. The repository is public now (D452), so GitHub's checks cost nothing, and D300's limit on pushes after ready matters less.
+
+### D447. Sam's example keeps the bank's figure
+
+The owner's answer to question 2, 12 Nov 2026. Confirms D440's second point.
+
+When money has moved since the check, Sam's example shows the bank's figure as well as "About £237.54 now". Decided in the polish step: in D450's shorter words, "Bank: £267.54", like every other plan, then "Example plan, as on Sun 25 Oct 2026".
+
+Why: the owner's answer. The same words as everywhere else, so the example shows what people will see on their own plan.
+
+### D448. Coming up and Accounts in the example say "as on", never "today"
+
+The owner's answer to question 3, 12 Nov 2026. Adds to D440.
+
+- In Sam's example, an account's line on Coming up, in Switch account and on Accounts says "£267.54, as on Sun 25 Oct 2026" instead of "£267.54, checked today", so the example never says "today" about a balance.
+- Decided in the polish step: the day is the day the balance was checked, with its year. In the example that's always Sun 25 Oct 2026 for people, because Update balance always uses today (D205) and the example's today is fixed (D133). A person's own plan, and a test plan in the example's place (D440), keep "checked today" and "checked Sun 8 Nov". Built once, in `lib/checked-line.ts`.
+- Two older end-to-end checks of the example's words change with it, words only: `coming-up.spec.ts` ("£267.54, as on Sun 25 Oct 2026", and "£500.00, as on Sun 25 Oct 2026" for Savings) and `answers-3f-2.spec.ts` test C ("£75.00, as on Sun 25 Oct 2026" for the account added from Home).
+
+Test: `apps/web/e2e/polish.spec.ts` test 1. Screenshot: `docs/screens/polish/accounts-example-320-light.png`.
+
+Why: the owner's answer.
+
+### D449. The example's lowest point on a 320 by 568 phone: what was asked
+
+The owner's answer to question 4, 12 Nov 2026. Replaced by D451.
+
+The owner asked for the "This is an example plan" banner to be made smaller, so the example's lowest point also shows without scrolling on a 320 by 568 phone, with a test. Measured in the polish step: the lowest point card needed 148px more room, and the banner, with the gap under it, took 129px. So no banner at the top, however small, could do it: even with no banner, the example's account card has one line more than a person's own ("Example plan, as on Sun 25 Oct 2026"), and the lowest point's last line was 19px under the navigation. The owner was asked again, with three choices, and chose D451.
+
+Why: a record of the question, so D451's reason is clear.
+
+### D450. The bank's line always fits on one line at 320px
+
+The owner's answer to question 5, 12 Nov 2026. Replaces D430's "Your bank showed …" words, and D442's "a day later" case.
+
+- Under "About £X now", the line says "Bank: £267.54 today", or "Bank: £500.00 on Sun 8 Nov" when the check was on an earlier day. In Sam's example: "Bank: £267.54", then "Example plan, as on Sun 25 Oct 2026" (D440, D447).
+- It fits on one line at 320px, even with a date, so on a 320 by 568 phone the whole lowest point card of a person's own plan shows on any day, not only on the day of the check.
+- The final wording on Home, case by case (a plan checked at £500.00 on Sun 8 Nov with a £20.00 phone bill on Tue 10 Nov, and Sam's example):
+  - checked today, nothing since: "£500.00" and "Checked today, Sun 8 Nov" (unchanged);
+  - checked on an earlier day, nothing since: "£500.00" and "Checked Sun 8 Nov" (unchanged);
+  - money moved since a check today: "About £480.00 now" and "Bank: £500.00 today";
+  - money moved since a check on an earlier day: "About £480.00 now" and "Bank: £500.00 on Sun 8 Nov";
+  - Sam's example: "About £237.54 now", "Bank: £267.54" and "Example plan, as on Sun 25 Oct 2026"; or, with nothing moved, "£237.54" and "Example plan, as on Sun 25 Oct 2026".
+- Older end-to-end checks of the line change with it, words only: `home.spec.ts`, `actions.spec.ts` test 2 and `answers-3f-2.spec.ts` test D.
+
+Test: `apps/web/e2e/polish.spec.ts` test 3, now checking a day after the check too: the line on one line, and the whole lowest point card above the navigation.
+
+Why: the owner's answer.
+
+### D451. In the example, the banner sits under the lowest point on Home, and is slimmer everywhere
+
+The owner's choice, 12 Nov 2026, from three offered after D449. Replaces D449.
+
+- On Home in Sam's example, the banner, "This is an example plan. Nothing here is yours." with "Make my plan", moves from the top to just under the lowest point card, with the same words and button. The account card's "Example plan, as on Sun 25 Oct 2026" marks the example at the top.
+- On every other screen of the example it stays at the top, made slimmer: the words and the button side by side wherever they fit, with 8px above and below instead of 12px. About 77px tall at 320px (it was 117px) and 62px at 360px (it was 98px). With very large text, or the longer "Go back to my plan", the button goes under the words, as before.
+- On a 320 by 568 phone, the example's Home shows the whole account card and the lowest point's label, Tight, £4.53 and "Sun 1 Nov, after Rent"; only its last small line, "Under £20 from Mon 26 Oct.", sits under the navigation, about 5px. The owner chose this knowing it.
+- Decided in the polish step: built in `components/ExampleNote.tsx`, used by every screen's top notes except Home, and by Home under the lowest point.
+
+Test: `apps/web/e2e/polish.spec.ts` tests 4 (in light and dark): Home at 320 by 568, with "Make my plan" still leaving the example from under the lowest point; and the banner at the top of Coming up, Debts and More at 320px and 360px, side by side, slimmer, with nothing cut off at 200% text. Screenshots: `docs/screens/polish/home-example-320x568-light.png` and `example-banner-320-light.png`.
+
+Why: the owner's choice.
+
+### D452. The repository is public
+
+The owner's instruction, 12 Nov 2026.
+
+- The repository can be read by anyone. README.md's test steps used the owner's real Gmail "+" addresses; they now say `yourname+jess2@gmail.com`, `yourname+sam@gmail.com` and so on, with a note to put one's own name in their place.
+- CLAUDE.md has a new rule: never put real email addresses, names, keys, account IDs or anything personal into files, commit messages, pull requests or screenshots, and keep using made-up examples.
+- Checked in the polish step: every file for email addresses, keys, tokens, Supabase project references and Cloudflare account IDs, and all 92 screenshots by eye. The files hold only made-up addresses (example.com, example.test), placeholders such as `https://abcdefghijklmnopqrst.supabase.co`, and PrePenny's own hello@prepenny.co.uk. The screenshots show only made-up test addresses, hello@prepenny.co.uk, and codes and keys from local test runs, which work nowhere else.
+- Not changed: the owner's name and email address are on 31 of the repository's earlier commits, as their author, which is how GitHub records a merge made on its website. Removing them would mean rewriting the repository's history, which the owner didn't ask for. GitHub's "Keep my email addresses private" setting stops it for new ones.
+
+Why: the owner's instruction.
+
+## Made while building the owner's answers to the polish step
+
+### D453. Smaller choices
+
+Decided 12 Nov 2026.
+
+- The banner's words break into even lines (`text-wrap: balance`).
+- The end-to-end run on the building computer after these changes is recorded in PLAN.md's entry for the step.
+
+Why: each follows from the owner's answers where they didn't say exactly.
