@@ -108,7 +108,9 @@ select set_eq(
     'look_at_my_invite', 'join_with_my_plan',
     -- Step 3g: Activity, undo, roles, and who sees what, with what they call.
     'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record',
-    'privacy_step', 'undo_writes', 'mark_undone', 'server_kind', 'others_in', 'check_made_at'],
+    'privacy_step', 'undo_writes', 'mark_undone', 'server_kind', 'others_in', 'check_made_at',
+    -- Leaving (D468) and a payment's history (D469).
+    'leave_plan', 'leaving_now', 'payment_history'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -125,7 +127,8 @@ select set_eq(
     -- Step 3f-2 (D426): joining with a plan of one's own.
     'look_at_my_invite', 'join_with_my_plan',
     -- Step 3g: Activity, undo, roles, and who sees what.
-    'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record'],
+    'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record',
+    'leave_plan', 'payment_history'],
   'The Data API''s part holds only the steps the phone calls'
 );
 

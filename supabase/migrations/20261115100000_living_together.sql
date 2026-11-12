@@ -46,6 +46,11 @@ create table app.edit_records (
   after jsonb not null,
   after_private uuid,
   after_version integer not null,
+  -- For a one-off change or a tick: its payment's series (or pay-later
+  -- budget) as it was at that moment, so "from £550.00 to £560.00" can be
+  -- worked out later, whatever has changed since (D469). The same privacy as
+  -- the change itself, which takes it from the series.
+  context jsonb,
   primary key (edit_id, record_table, record_id)
 );
 
@@ -75,12 +80,13 @@ declare
   plan uuid;
   private_now uuid;
   private_then uuid;
+  payment jsonb;
 begin
   if edit is null then
     return null;
   end if;
   select e.kind into what from public.edits e where e.id = edit;
-  if what is null or what in ('first-copy', 'join-with-plan') then
+  if what is null or what in ('first-copy', 'join-with-plan', 'leave') then
     return null;
   end if;
   if tg_table_name = 'plans' then
@@ -92,12 +98,19 @@ begin
       private_then := old.private_to;
     end if;
   end if;
+  if tg_table_name in ('payment_changes', 'ticks') then
+    if new.series_id is not null then
+      select app.history_copy(to_jsonb(x)) into payment from public.series x where x.id = new.series_id;
+    elsif new.budget_id is not null then
+      select app.history_copy(to_jsonb(x)) into payment from public.budgets x where x.id = new.budget_id;
+    end if;
+  end if;
   insert into app.edit_records as r (edit_id, plan_id, record_table, record_id,
-    before, before_private, before_version, after, after_private, after_version)
+    before, before_private, before_version, after, after_private, after_version, context)
   values (edit, plan, tg_table_name, new.id,
     case when tg_op = 'UPDATE' then app.history_copy(to_jsonb(old)) end, private_then,
     case when tg_op = 'UPDATE' then old.version end,
-    app.history_copy(to_jsonb(new)), private_now, new.version)
+    app.history_copy(to_jsonb(new)), private_now, new.version, payment)
   -- Saved twice in one edit (a server's own step can): the first "before"
   -- and the last "after".
   on conflict (edit_id, record_table, record_id) do update
@@ -159,6 +172,14 @@ $$;
 -- ---------------------------------------------------------------------------
 -- 2 and 3. Activity, and undo for one's own older changes (D456, D457).
 
+-- Each person who is or was in the plan, by the name they gave, so a change
+-- made by someone who has left still says who made it (D468).
+create function app.names_in(plan uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_object_agg(p.id, coalesce(p.nickname, '')), '{}'::jsonb)
+  from public.people p where p.id in (select m.person_id from public.plan_members m where m.plan_id = plan)
+$$;
+
 -- Kinds of change that can't be undone from Activity: the plan saved in the
 -- account for the first time or brought into another, and the server's own
 -- steps about who sees what or who can do what, which each have their own
@@ -167,7 +188,7 @@ $$;
 create function app.undoable(kind text) returns boolean
 language sql immutable set search_path = '' as $$
   select kind not in ('first-copy', 'join-with-plan', 'share-accounts', 'claim-pay', 'make-private',
-    'share-record', 'change-role')
+    'share-record', 'change-role', 'leave')
 $$;
 
 -- Whether one of the person's own changes is undone now: undone, and that
@@ -210,8 +231,9 @@ end;
 $$;
 
 -- "Activity" (brief 4.12, 4.14): the plan's changes the person may see,
--- newest first, up to 12 months back (D50), 50 at a time; `older_than` is
--- the time of the last one already shown, for "Show older changes".
+-- newest first, for as long as the plan exists (D469, replacing D50's 12
+-- months), 50 at a time; `older_than` is the time of the last one already
+-- shown, for "Show older changes".
 --
 -- Each change says who made it, when, what kind it was, whether it's been
 -- undone and whether the person can undo it now, and the records it saved:
@@ -241,19 +263,19 @@ begin
     where e.plan_id = plan
       and (e.private_to is null or e.private_to = me)
       and e.kind not in ('first-copy', 'join-with-plan')
-      and e.made_at::timestamptz > now() - interval '12 months'
       and (older_than is null or e.made_at::timestamptz < older_than::timestamptz)
     order by e.made_at::timestamptz desc, e.saved_at desc
   loop
     select coalesce(jsonb_agg(jsonb_build_object('table', r.record_table, 'id', r.record_id,
         'before', case when r.before_private is null or r.before_private = me then r.before end,
-        'after', case when r.after_private is null or r.after_private = me then r.after end) order by r.n), '[]'::jsonb)
+        'after', case when r.after_private is null or r.after_private = me then r.after end,
+        'context', case when r.after_private is null or r.after_private = me then r.context end) order by r.n), '[]'::jsonb)
       into copies
       from app.edit_records r
       where r.edit_id = one.id
         and (r.after_private is null or r.after_private = me or r.before_private is null or r.before_private = me)
         and app.readable_now(plan, r.record_table, r.record_id);
-    if jsonb_array_length(copies) = 0 and one.kind not in ('change-role', 'make-private', 'share-record') then
+    if jsonb_array_length(copies) = 0 and one.kind not in ('change-role', 'make-private', 'share-record', 'leave') then
       continue;
     end if;
     if shown = 50 then
@@ -274,10 +296,11 @@ begin
       'undone', undoer.id is not null and undoer.undone_by is null,
       'undoes', case when one.kind = 'undo' then one.summary ->> 'undoes' end,
       'can_undo', one.person_id = me and app.undo_problem(plan, one.id) is null,
-      'summary', case when one.kind in ('change-role', 'make-private', 'share-record') then one.summary end,
+      'summary', case when one.kind in ('change-role', 'make-private', 'share-record', 'leave') then one.summary end,
       'records', copies);
   end loop;
-  return jsonb_build_object('edits', found_edits, 'more', more, 'now', app.server_time());
+  return jsonb_build_object('edits', found_edits, 'more', more, 'people', app.names_in(plan),
+    'now', app.server_time());
 end;
 $$;
 
@@ -884,13 +907,19 @@ declare
   sharing boolean := tg_op = 'UPDATE' and new.account_id = any (app.sharing_now());
   claiming boolean := tg_op = 'UPDATE' and app.claiming_now() = new.family_id
     and new.paid_to = auth.uid() and old.paid_to is distinct from auth.uid();
+  -- Leaving (D468): money kept as the leaver's ("From Tom") and their pay in
+  -- a shared account become the other person's to change.
+  leaving boolean := tg_op = 'UPDATE' and app.leaving_now() is not null and app.leaving_now() = auth.uid()
+    and new.private_to is null
+    and (old.locked_to = auth.uid() or old.paid_to = auth.uid())
+    and new.locked_to is null and new.paid_to is distinct from auth.uid();
 begin
   if tg_op = 'UPDATE' and (new.account_id <> old.account_id
     or new.to_account_id is distinct from old.to_account_id
     or new.family_id <> old.family_id
     or new.split_from is distinct from old.split_from
-    or new.locked_to is distinct from old.locked_to
-    or (new.paid_to is distinct from old.paid_to and not claiming)) then
+    or (new.locked_to is distinct from old.locked_to and not leaving)
+    or (new.paid_to is distinct from old.paid_to and not claiming and not leaving)) then
     perform app.refuse('fixed-field');
   end if;
   account := app.account_privacy(new.account_id, new.plan_id);
@@ -944,7 +973,7 @@ begin
       perform app.refuse('not-found', '42501');
     end if;
   end if;
-  if not sharing and not claiming then
+  if not sharing and not claiming and not leaving then
     problem := app.family_problem(new.plan_id, new.family_id, new.id, new.account_id,
       new.private_to, new.locked_to, new.paid_to, new.split_from);
     if problem is not null then
@@ -989,7 +1018,7 @@ $$;
 create function app.server_kind(kind text) returns boolean
 language sql immutable set search_path = '' as $$
   select kind in ('join-with-plan', 'share-accounts', 'claim-pay', 'make-private', 'share-record',
-    'change-role')
+    'change-role', 'leave')
 $$;
 
 -- Whether anyone else is in the plan now.
@@ -1237,6 +1266,500 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 9. Leaving a shared plan (brief 4.14, 8.7 test 5, D53, D468 to D472).
+--
+-- The owner's choice (D468): the person leaving takes everything private to
+-- them into a new plan of their own; every shared account stays in the
+-- shared plan with the other person, as it is; they choose whether to take a
+-- copy of the shared records as they are at that moment, which never
+-- updates; the other person's Activity keeps the shared changes with the
+-- leaver's name, and the leaver's private history goes with them. Nobody
+-- has to agree. From that moment the leaver gets nothing more from the plan,
+-- and nothing private of theirs stays in it.
+
+-- The person leaving, in this transaction only. Set only by public.leave_plan.
+create function app.leaving_now() returns uuid
+language sql stable set search_path = '' as $$
+  select nullif(current_setting('prepenny.leaving', true), '')::uuid
+$$;
+
+-- The plan's own row, as step 3c made it, with one more change of the
+-- server's own: when its owner leaves, the person who stays becomes the
+-- owner (D53).
+create or replace function app.before_plan() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'INSERT' then
+    new.owner := coalesce(auth.uid(), new.owner);
+    new.created_at := now();
+    new.created_by := auth.uid();
+    new.version := 1;
+    new.seq := 1;
+  else
+    if new.id <> old.id or (new.owner <> old.owner
+      and not (app.leaving_now() is not null and app.leaving_now() = old.owner
+        and exists (select 1 from public.plan_members m
+          where m.plan_id = new.id and m.person_id = new.owner and m.left_at is null))) then
+      perform app.refuse('fixed-field');
+    end if;
+    -- Only the owner renames the plan (ARCHITECTURE.md 3.6).
+    if new.name is distinct from old.name
+      and not exists (select 1 from app.my_owned_plans() p where p = new.id)
+      and auth.uid() is not null then
+      perform app.refuse('owner-only', '42501');
+    end if;
+    new.created_at := old.created_at;
+    new.created_by := old.created_by;
+    new.version := old.version + 1;
+    new.seq := app.next_seq(new.id, null);
+    if app.current_edit() is not null then
+      new.edit_id := app.edit_for(null);
+    end if;
+  end if;
+  new.changed_at := now();
+  new.changed_by := auth.uid();
+  return new;
+end;
+$$;
+
+-- Overtime or a missed shift, as step 3f's check, with leaving: the
+-- leaver's overtime on shared pay stays, as an amount, the other person's to
+-- change (D468).
+create or replace function app.check_pay_adjustment() returns trigger
+language plpgsql set search_path = '' as $$
+declare
+  parent record;
+begin
+  if tg_op = 'UPDATE' and new.family_id <> old.family_id then
+    perform app.refuse('fixed-field');
+  end if;
+  select true as seen, s.private_to as private, coalesce(s.paid_to, s.private_to) as paid into parent
+    from public.series s where s.family_id = new.family_id and s.plan_id = new.plan_id
+    order by s.deleted limit 1;
+  if not coalesce(parent.seen, false) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  if app.from_a_person() and parent.paid is distinct from auth.uid()
+    and app.leaving_now() is distinct from auth.uid() then
+    perform app.refuse('not-your-pay');
+  end if;
+  new.private_to := parent.private;
+  new.locked_to := case when parent.private is null then parent.paid end;
+  return new;
+end;
+$$;
+
+-- One record for the leaver's new plan: one of their own, moved, or a copy
+-- of a shared one. Every id it names goes through `ids` (a copy's new id, or
+-- the same id for one of their own); anything else it named stays behind, so
+-- the link goes. `folds` are their own links from shared payments (D291),
+-- by the shared record's id, which go back on the copies. Gives null to
+-- leave a record out.
+create function app.leave_row(t text, one jsonb, me uuid, target uuid, ids jsonb, folds jsonb, copy boolean)
+returns jsonb
+language plpgsql stable set search_path = '' as $$
+declare
+  key text := one ->> 'id';
+  job jsonb := folds -> 'jobs' -> key;
+begin
+  one := one || jsonb_build_object('plan_id', target);
+  if copy then
+    one := one || jsonb_build_object('id', ids ->> key);
+  end if;
+  case t
+    when 'accounts', 'debts', 'pay_profiles' then
+      one := one || jsonb_build_object('private_to', me, 'belongs_to', me);
+    when 'goals' then
+      one := one || jsonb_build_object('private_to', me, 'belongs_to', me,
+        'account_id', ids ->> (one ->> 'account_id'));
+      if one ->> 'account_id' is null then return null; end if;
+    when 'budgets', 'balance_updates' then
+      one := one || jsonb_build_object('account_id', ids ->> (one ->> 'account_id'));
+      if one ->> 'account_id' is null then return null; end if;
+    when 'series' then
+      one := one || jsonb_build_object(
+        'account_id', ids ->> (one ->> 'account_id'),
+        'to_account_id', ids ->> (one ->> 'to_account_id'),
+        'set_aside_account_id', ids ->> (one ->> 'set_aside_account_id'),
+        'family_id', ids ->> (one ->> 'family_id'),
+        'split_from', ids ->> (one ->> 'split_from'),
+        'budget_id', ids ->> (one ->> 'budget_id'),
+        'debt_id', coalesce(ids ->> (one ->> 'debt_id'), ids ->> (folds -> 'family_debt' ->> (one ->> 'family_id'))),
+        'goal_id', coalesce(ids ->> (one ->> 'goal_id'), ids ->> (folds -> 'family_goal' ->> (one ->> 'family_id'))),
+        'pay_profile_id', coalesce(ids ->> (one ->> 'pay_profile_id'), ids ->> (job ->> 'pay_profile_id')),
+        'cycle_pay_weeks', coalesce(nullif(one -> 'cycle_pay_weeks', 'null'::jsonb), job -> 'cycle_pay_weeks'),
+        'paid_to', case when one ->> 'paid_to' = me::text then me end,
+        'locked_to', null, 'mirrored_by', null);
+      if one ->> 'pay_profile_id' is null then
+        one := one || jsonb_build_object('cycle_pay_weeks', null);
+      end if;
+      if one ->> 'account_id' is null or one ->> 'family_id' is null
+        or (one ->> 'to_account_id' is null and (one ->> 'direction') = 'transfer')
+        or (one ->> 'set_aside_account_id' is null and one ->> 'set_aside_percent' is not null) then
+        return null;
+      end if;
+    when 'payment_changes', 'ticks' then
+      one := one || jsonb_build_object('series_id', ids ->> (one ->> 'series_id'),
+        'budget_id', ids ->> (one ->> 'budget_id'), 'locked_to', null);
+      if coalesce(one ->> 'series_id', one ->> 'budget_id') is null then return null; end if;
+      if t = 'ticks' then
+        one := one || jsonb_build_object(
+          'in_balance_update', ids ->> (one ->> 'in_balance_update'),
+          'in_debt_update', coalesce(ids ->> (one ->> 'in_debt_update'), ids ->> (folds -> 'tick_debt' ->> key)),
+          'id', app.derived_id(target, 'ticks', coalesce(one ->> 'series_id', one ->> 'budget_id'),
+            one ->> 'original_date', case when (one ->> 'set_aside')::boolean then 'set-aside' else '' end));
+      else
+        one := one || jsonb_build_object('id', app.derived_id(target, 'payment_changes',
+          coalesce(one ->> 'series_id', one ->> 'budget_id'), one ->> 'original_date', ''));
+      end if;
+    when 'spends' then
+      one := one || jsonb_build_object('budget_id', ids ->> (one ->> 'budget_id'));
+      if one ->> 'budget_id' is null then return null; end if;
+    when 'pay_weeks' then
+      one := one || jsonb_build_object('pay_profile_id', ids ->> (one ->> 'pay_profile_id'));
+      if one ->> 'pay_profile_id' is null then return null; end if;
+    when 'pay_adjustments' then
+      one := one || jsonb_build_object('family_id', ids ->> (one ->> 'family_id'), 'locked_to', null);
+      if one ->> 'family_id' is null then return null; end if;
+    when 'pay_adjustment_details' then
+      one := one || jsonb_build_object('private_to', me, 'adjustment_id', ids ->> (one ->> 'adjustment_id'));
+      if one ->> 'adjustment_id' is null then return null; end if;
+      one := one || jsonb_build_object('id', app.derived_id(target, 'pay-adjustment-details', one ->> 'adjustment_id'));
+    when 'settings' then
+      one := one || jsonb_build_object('private_to', me, 'id', app.derived_id(target, 'settings', me::text),
+        'main_pay_family_id', ids ->> (one ->> 'main_pay_family_id'));
+    else
+      return null;
+  end case;
+  return one;
+end;
+$$;
+
+-- The tables a leaver's records are saved in, parents before what names them.
+create function app.leave_tables() returns text[]
+language sql immutable set search_path = '' as $$
+  select array['accounts', 'debts', 'pay_profiles', 'pay_weeks', 'goals', 'budgets', 'balance_updates',
+    'series', 'payment_changes', 'ticks', 'spends', 'pay_adjustments', 'pay_adjustment_details', 'settings']
+$$;
+
+-- Saves the leaver's records in their new plan: `mine` with their own ids,
+-- `theirs` (copies of shared records) with ids worked out from the new plan,
+-- each table's copies then their own, through every check as any record is.
+-- Gives back the families saved, for the family rules.
+create function app.leave_insert(target uuid, me uuid, mine jsonb, theirs jsonb, folds jsonb)
+returns uuid[]
+language plpgsql volatile set search_path = '' as $$
+declare
+  t text;
+  one jsonb;
+  row_value jsonb;
+  ids jsonb := '{}'::jsonb;
+  families uuid[] := '{}'::uuid[];
+begin
+  for t in select unnest(app.leave_tables()) loop
+    for one in select value from jsonb_array_elements(coalesce(theirs -> t, '[]'::jsonb)) loop
+      ids := ids || jsonb_build_object(one ->> 'id', app.derived_id(target, 'copy', t, one ->> 'id'));
+    end loop;
+    for one in select value from jsonb_array_elements(coalesce(mine -> t, '[]'::jsonb)) loop
+      ids := ids || jsonb_build_object(one ->> 'id', one ->> 'id');
+    end loop;
+  end loop;
+  for t in select unnest(app.leave_tables()) loop
+    for one in select value from jsonb_array_elements(coalesce(theirs -> t, '[]'::jsonb)) loop
+      row_value := app.leave_row(t, one, me, target, ids, folds, true);
+      continue when row_value is null;
+      execute format('insert into public.%I select * from jsonb_populate_record(null::public.%I, $1)', t, t)
+        using row_value;
+      if t = 'series' then families := families || (row_value ->> 'family_id')::uuid; end if;
+    end loop;
+    for one in select value from jsonb_array_elements(coalesce(mine -> t, '[]'::jsonb)) loop
+      row_value := app.leave_row(t, one, me, target, ids, folds, false);
+      continue when row_value is null;
+      execute format('insert into public.%I select * from jsonb_populate_record(null::public.%I, $1)', t, t)
+        using row_value;
+      if t = 'series' then families := families || (row_value ->> 'family_id')::uuid; end if;
+    end loop;
+  end loop;
+  return array(select distinct f from unnest(families) f);
+end;
+$$;
+
+-- "Leave this plan" (D468): any current member, whatever their role, while
+-- someone else is in it ("alone" otherwise: a plan of one's own isn't left).
+-- `new_plan` is the id of the leaver's new plan, made on their phone, as a
+-- plan's id always is. `keep_copy`: whether it also gets every shared record
+-- as it is now, which never updates. A goal of their own that saves into a
+-- shared account always brings a copy of that account (D472). Sent twice,
+-- it changes nothing the second time. One step: all of it, or nothing. Only
+-- the copy can fail on its own (a shared record the checks no longer take),
+-- and then they leave with their own things only ("copied": false).
+-- Refusals: "not-found" (42501), "alone", "bad-edit", "bad-record",
+-- "family-broken".
+create function public.leave_plan(plan uuid, keep_copy boolean, new_plan uuid, edit uuid, made_at text)
+returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+#variable_conflict use_variable
+declare
+  me uuid := auth.uid();
+  old_plan public.plans;
+  other uuid;
+  new_edit uuid;
+  t text;
+  got jsonb;
+  mine jsonb := '{}'::jsonb;
+  everything jsonb := '{}'::jsonb;
+  least jsonb := '{}'::jsonb;
+  folds jsonb;
+  family_debt jsonb := '{}'::jsonb;
+  family_goal jsonb := '{}'::jsonb;
+  jobs jsonb := '{}'::jsonb;
+  tick_debt jsonb := '{}'::jsonb;
+  link jsonb;
+  gone text[] := '{}'::text[];
+  families uuid[];
+  copied boolean := false;
+begin
+  if plan is null or new_plan is null or edit is null or keep_copy is null or not app.session_ok() then
+    perform app.refuse('not-found', '42501');
+  end if;
+  perform app.check_made_at(made_at);
+  -- One at a time for this person, as making or joining a plan is (D352).
+  perform 1 from public.people p where p.id = me for update;
+  -- Sent again after it worked: nothing changes.
+  if exists (select 1 from public.plans p where p.id = new_plan and p.owner = me)
+    and exists (select 1 from public.plan_members m
+      where m.plan_id = plan and m.person_id = me and m.left_at is not null) then
+    return jsonb_build_object('saved', 'already', 'plan', new_plan,
+      'copied', (select (e.summary ->> 'copied')::boolean from public.edits e
+        where e.id = app.derived_id(new_plan, 'leave', edit::text)),
+      'now', app.server_time());
+  end if;
+  if not exists (select 1 from app.my_plans() p where p = plan)
+    or exists (select 1 from public.plans p where p.id = new_plan) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  -- Every save to the plan waits until this is done.
+  select * into old_plan from public.plans p where p.id = plan for update;
+  select m.person_id into other from public.plan_members m
+    where m.plan_id = plan and m.left_at is null and m.person_id <> me order by m.joined_at limit 1;
+  if other is null then
+    perform app.refuse('alone');
+  end if;
+
+  -- 1. What goes with them: everything private to them, live and removed.
+  -- For a copy, every shared record as it is now: live ones, and every row
+  -- of a payment family that still has a live one. Either way, a shared
+  -- account one of their own goals saves into, with its balances.
+  for t in select unnest(app.leave_tables()) loop
+    execute format(
+      'select coalesce(jsonb_agg(to_jsonb(r) order by %s), ''[]''::jsonb) from public.%I r
+        where r.plan_id = $1 and r.private_to = $2',
+      case when t = 'series' then 'r.family_id, r.id <> r.family_id, coalesce(r.first_number, 0), r.id'
+        else 'r.list_order, r.id' end, t) into got using plan, me;
+    mine := mine || jsonb_build_object(t, got);
+    if t not in ('pay_profiles', 'pay_weeks', 'pay_adjustment_details', 'settings') then
+      if keep_copy then
+        execute format(
+          'select coalesce(jsonb_agg(to_jsonb(r) order by %s), ''[]''::jsonb) from public.%I r
+            where r.plan_id = $1 and r.private_to is null and %s',
+          case when t = 'series' then 'r.family_id, r.id <> r.family_id, coalesce(r.first_number, 0), r.id'
+            else 'r.list_order, r.id' end, t,
+          case when t = 'series' then 'r.family_id in (select s.family_id from public.series s
+              where s.plan_id = $1 and s.private_to is null and not s.deleted)'
+            else 'not r.deleted' end) into got using plan;
+        everything := everything || jsonb_build_object(t, got);
+      end if;
+      if t in ('accounts', 'balance_updates') then
+        execute format(
+          'select coalesce(jsonb_agg(to_jsonb(r) order by r.list_order, r.id), ''[]''::jsonb) from public.%I r
+            where r.plan_id = $1 and r.private_to is null and not r.deleted
+              and %s in (select g.account_id from public.goals g where g.plan_id = $1 and g.private_to = $2)',
+          t, case when t = 'accounts' then 'r.id' else 'r.account_id' end) into got using plan, me;
+        least := least || jsonb_build_object(t, got);
+      end if;
+    end if;
+    select gone || coalesce(array_agg(t || ':' || (x ->> 'id')), '{}'::text[]) into gone
+      from jsonb_array_elements(mine -> t) x;
+  end loop;
+  -- Their own links from shared payments to their own debts, goals and job
+  -- (D291), by the shared record, to go back on the copies, which are theirs.
+  for link in select to_jsonb(l) from public.private_links l
+      where l.plan_id = plan and l.private_to = me and not l.deleted loop
+    if link ->> 'family_id' is not null and link ->> 'debt_id' is not null then
+      family_debt := family_debt || jsonb_build_object(link ->> 'family_id', link -> 'debt_id');
+    elsif link ->> 'family_id' is not null and link ->> 'goal_id' is not null then
+      family_goal := family_goal || jsonb_build_object(link ->> 'family_id', link -> 'goal_id');
+    elsif link ->> 'series_id' is not null then
+      jobs := jobs || jsonb_build_object(link ->> 'series_id', link);
+    elsif link ->> 'tick_id' is not null then
+      tick_debt := tick_debt || jsonb_build_object(link ->> 'tick_id', link -> 'in_debt_update');
+    end if;
+  end loop;
+  folds := jsonb_build_object('family_debt', family_debt, 'family_goal', family_goal,
+    'jobs', jobs, 'tick_debt', tick_debt);
+
+  -- 2. The shared plan, in an edit of its own, which the other person sees
+  -- in Activity ("Tom left the plan"). Money kept as theirs ("From Tom") and
+  -- their pay in shared accounts become the other person's to change, as
+  -- they are (D468).
+  if app.begin_edit(plan, edit, made_at, 'leave') = 'already' then
+    perform app.refuse('not-found', '42501');
+  end if;
+  perform set_config('prepenny.edit', edit::text, true);
+  perform set_config('prepenny.leaving', me::text, true);
+  begin
+    update public.series s set locked_to = null
+      where s.plan_id = plan and s.private_to is null and s.locked_to = me;
+    update public.series s set paid_to = null
+      where s.plan_id = plan and s.private_to is null and s.paid_to = me;
+    update public.payment_changes c set deleted = c.deleted
+      where c.plan_id = plan and c.private_to is null and c.locked_to = me;
+    update public.ticks k set deleted = k.deleted
+      where k.plan_id = plan and k.private_to is null and k.locked_to = me;
+    update public.pay_adjustments a set deleted = a.deleted
+      where a.plan_id = plan and a.private_to is null and a.locked_to = me;
+  exception
+    when sqlstate 'P0001' or insufficient_privilege then
+      raise;
+    when others then
+      perform app.refuse('bad-record');
+  end;
+  perform set_config('prepenny.edit', '', true);
+  update public.edits e set private_to = null, summary = jsonb_build_object('person', me) where e.id = edit;
+
+  -- Nothing private of theirs stays: every record private to them goes from
+  -- the shared plan (it's in `mine`, for the new one), with their notices,
+  -- and every copy of theirs in the history of changes that stay, and every
+  -- copy at all of a record that goes. Their own changes go with them.
+  for t in select unnest(array['private_links', 'pay_adjustment_details', 'settings', 'pay_adjustments', 'spends',
+      'ticks', 'payment_changes', 'series', 'balance_updates', 'budgets', 'goals', 'pay_weeks',
+      'pay_profiles', 'debts', 'accounts']) loop
+    execute format('delete from public.%I where plan_id = $1 and private_to = $2', t) using plan, me;
+  end loop;
+  delete from public.notices n where n.plan_id = plan and n.for_person = me;
+  delete from app.edit_records r
+    where r.plan_id = plan
+      and (r.after_private = me or (r.record_table || ':' || r.record_id) = any (gone))
+      and not exists (select 1 from public.edits e where e.id = r.edit_id and e.private_to = me);
+  update app.edit_records r set before = null
+    where r.plan_id = plan and r.before_private = me
+      and not exists (select 1 from public.edits e where e.id = r.edit_id and e.private_to = me);
+
+  -- They're no longer in it. The person who stays becomes the owner, when
+  -- the owner leaves (D53), and any invite still open is cancelled.
+  update public.plan_members m set left_at = now() where m.plan_id = plan and m.person_id = me;
+  if old_plan.owner = me then
+    update public.plan_members m set role = 'owner' where m.plan_id = plan and m.person_id = other;
+    update public.plans p set owner = other where p.id = plan;
+    update public.invites i set cancelled_at = now()
+      where i.plan_id = plan and i.cancelled_at is null and i.accepted_at is null and i.refused_at is null;
+  end if;
+
+  -- 3. Their own plan, with the same bank holidays, and what goes with them.
+  perform set_config('prepenny.starting', new_plan::text, true);
+  insert into public.plans (id, nation) values (new_plan, old_plan.nation);
+  perform set_config('prepenny.starting', '', true);
+  new_edit := app.derived_id(new_plan, 'leave', edit::text);
+  perform app.begin_edit(new_plan, new_edit, made_at, 'leave');
+  perform set_config('prepenny.edit', new_edit::text, true);
+  if keep_copy then
+    begin
+      families := app.leave_insert(new_plan, me, mine, everything, folds);
+      if app.family_rules_problem(new_plan, families) is not null then
+        raise exception 'family-broken';
+      end if;
+      copied := true;
+    exception when others then
+      -- The copy couldn't be made: they leave all the same, with their own.
+      copied := false;
+    end;
+  end if;
+  if not copied then
+    begin
+      families := app.leave_insert(new_plan, me, mine, least, folds);
+    exception
+      when sqlstate 'P0001' or insufficient_privilege then
+        raise;
+      when others then
+        perform app.refuse('bad-record');
+    end;
+    if app.family_rules_problem(new_plan, families) is not null then
+      perform app.refuse('family-broken');
+    end if;
+  end if;
+  perform set_config('prepenny.edit', '', true);
+  perform set_config('prepenny.leaving', '', true);
+  update public.edits e set summary = jsonb_build_object('copied', copied) where e.id = new_edit;
+  -- Their own history comes with them (D468).
+  update public.edits e set plan_id = new_plan where e.plan_id = plan and e.private_to = me;
+  update app.edit_records r set plan_id = new_plan
+    where r.plan_id = plan and r.edit_id in (select e.id from public.edits e where e.plan_id = new_plan);
+
+  perform app.send_nudge('plan:' || plan);
+  perform app.send_nudge('plan:' || plan || ':' || me);
+  perform app.send_nudge('plan:' || new_plan || ':' || me);
+  return jsonb_build_object('saved', 'new', 'plan', new_plan, 'copied', copied, 'now', app.server_time());
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 10. A payment's history, for its sheet (D469): every change to it, kept
+-- for as long as the plan exists, with the same rule as Activity: only
+-- copies the person could read then and can still read now. The changes to
+-- its series' family (added, changed for this and all later ones, renamed),
+-- and to its own one-off change and tick, newest first, 100 at most.
+create function public.payment_history(plan uuid, family uuid, original_date date) returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  me uuid := auth.uid();
+  found_edits jsonb := '[]'::jsonb;
+  one public.edits;
+  copies jsonb;
+  in_family text[];
+begin
+  if plan is null or family is null or original_date is null or not app.session_ok()
+    or not exists (select 1 from app.my_plans() p where p = plan) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  -- Only a payment the person can read now.
+  if not exists (select 1 from public.series s where s.plan_id = plan and s.family_id = family
+      and (s.private_to is null or s.private_to = me)) then
+    perform app.refuse('not-found', '42501');
+  end if;
+  select array_agg(s.id::text) into in_family from public.series s where s.plan_id = plan and s.family_id = family;
+  for one in
+    select e.* from public.edits e
+    where e.plan_id = plan and (e.private_to is null or e.private_to = me)
+      and e.kind not in ('first-copy', 'join-with-plan')
+      and exists (select 1 from app.edit_records r where r.edit_id = e.id
+        and ((r.record_table = 'series' and coalesce(r.after ->> 'family_id', r.before ->> 'family_id') = family::text)
+          or (r.record_table in ('payment_changes', 'ticks')
+            and coalesce(r.after ->> 'original_date', r.before ->> 'original_date') = original_date::text
+            and coalesce(r.after ->> 'series_id', r.before ->> 'series_id') = any (in_family))))
+    order by e.made_at::timestamptz desc, e.saved_at desc
+    limit 100
+  loop
+    select coalesce(jsonb_agg(jsonb_build_object('table', r.record_table, 'id', r.record_id,
+        'before', case when r.before_private is null or r.before_private = me then r.before end,
+        'after', case when r.after_private is null or r.after_private = me then r.after end,
+        'context', case when r.after_private is null or r.after_private = me then r.context end) order by r.n), '[]'::jsonb)
+      into copies
+      from app.edit_records r
+      where r.edit_id = one.id
+        and (r.after_private is null or r.after_private = me or r.before_private is null or r.before_private = me)
+        and app.readable_now(plan, r.record_table, r.record_id)
+        and ((r.record_table = 'series' and coalesce(r.after ->> 'family_id', r.before ->> 'family_id') = family::text)
+          or (r.record_table in ('payment_changes', 'ticks')
+            and coalesce(r.after ->> 'original_date', r.before ->> 'original_date') = original_date::text));
+    continue when jsonb_array_length(copies) = 0;
+    found_edits := found_edits || jsonb_build_object('id', one.id, 'by', one.person_id, 'made_at', one.made_at,
+      'kind', one.kind, 'mine', one.person_id = me, 'undone', app.is_undone(one), 'records', copies);
+  end loop;
+  return jsonb_build_object('edits', found_edits, 'people', app.names_in(plan), 'now', app.server_time());
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Who can use which function, as at the end of every migration that adds to
 -- `app` (00-every-table.test.sql): everything taken back, then only what the
 -- rules and these steps call given to signed-in people.
@@ -1244,7 +1767,8 @@ $$;
 revoke execute on all functions in schema app from public, anon, authenticated;
 revoke execute on function public.plan_activity(uuid, text), public.undo_change(uuid, uuid, uuid, text),
   public.change_role(uuid, uuid, text), public.make_private(uuid, text, uuid, uuid, text),
-  public.share_record(uuid, text, uuid, uuid, text)
+  public.share_record(uuid, text, uuid, uuid, text), public.leave_plan(uuid, boolean, uuid, uuid, text),
+  public.payment_history(uuid, uuid, date)
   from public, anon, authenticated;
 grant execute on function
   app.session_id(), app.session_ok(), app.my_plans(), app.my_edit_plans(),
@@ -1257,9 +1781,10 @@ grant execute on function
   app.server_time(), app.tell_clashes(uuid, uuid, jsonb),
   app.sharing_now(), app.claiming_now(), app.privacy_step(uuid, uuid, uuid, uuid),
   app.undo_writes(uuid, uuid), app.mark_undone(uuid, uuid, uuid),
-  app.server_kind(text), app.others_in(uuid), app.check_made_at(text)
+  app.server_kind(text), app.others_in(uuid), app.check_made_at(text), app.leaving_now()
   to authenticated;
 grant execute on function public.plan_activity(uuid, text), public.undo_change(uuid, uuid, uuid, text),
   public.change_role(uuid, uuid, text), public.make_private(uuid, text, uuid, uuid, text),
-  public.share_record(uuid, text, uuid, uuid, text)
+  public.share_record(uuid, text, uuid, uuid, text), public.leave_plan(uuid, boolean, uuid, uuid, text),
+  public.payment_history(uuid, uuid, date)
   to authenticated;
