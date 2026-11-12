@@ -31,6 +31,20 @@ export function formatDay(date: string, today: string): string {
   return words.join(KEEP_TOGETHER);
 }
 
+/**
+ * "Sun 25 Oct 2026", always with the year, for a date that stays the same
+ * whatever today is, such as the day Sam's example is shown as on (D440).
+ */
+export function formatDayAndYear(date: string): string {
+  const parts = partsOf(date);
+  return [
+    strings.dates.weekdays[parts.weekday - 1],
+    parts.day,
+    monthName(parts.month),
+    parts.year,
+  ].join(KEEP_TOGETHER);
+}
+
 /** The date tile on a payment row: the day number over the month (DESIGN.md). */
 export function dateTile(date: string): { readonly day: string; readonly month: string } {
   const parts = partsOf(date);

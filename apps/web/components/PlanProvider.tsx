@@ -184,6 +184,16 @@ function theExample(): { readonly records: PlanRecords; readonly version: string
     : { records: plan, version: fingerprint(plan) };
 }
 
+/**
+ * True when the plan showing is Sam's example, as people see it: "Example
+ * plan, as on Sun 25 Oct 2026" on Home (D440). A test plan in the example's
+ * place (D201) stands for a person's own plan there, so the tests of Home's
+ * own words (D430) keep working on it.
+ */
+export function isSamsExample(plan: StoredPlan): boolean {
+  return plan.isExample && testSetting()?.plan === undefined;
+}
+
 /** Today for a plan, or the end-to-end tests' own today when they set one (D201). */
 function todayOf(plan: StoredPlan): string {
   return testSetting()?.today ?? todayFor(plan);

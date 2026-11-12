@@ -143,10 +143,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await useSetting(page, { today: '2026-10-30' });
       await openHome(page);
       // Money has moved since Sun 25 Oct, so Home shows about what's there
-      // now, the figure Update balance expects (D430, D46).
+      // now, the figure Update balance expects (D430, D46). The example says
+      // the day it's shown as on, here the test's own today (D440).
       await expect(page.getByTestId('now')).toHaveText('About £604.53 now');
       await expect(page.getByTestId('bank-showed')).toHaveText(
         'Your bank showed £267.54 on Sun\u00a025\u00a0Oct',
+      );
+      await expect(page.getByTestId('checked')).toHaveText(
+        'Example plan, as on Fri\u00a030\u00a0Oct\u00a02026',
       );
       const sheet = await openAction(page, 'Update balance');
       await sheet.getByLabel('Type what your bank shows now').fill('600');
@@ -187,7 +191,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet).toBeHidden();
 
       await expect(page.getByTestId('balance')).toHaveText('£600.00');
-      await expect(page.getByText('Checked today, Fri\u00a030\u00a0Oct')).toBeVisible();
+      await expect(page.getByTestId('checked')).toHaveText(
+        'Example plan, as on Fri\u00a030\u00a0Oct\u00a02026',
+      );
       await expect(page.getByTestId('lowest-point')).toContainText('£0.00');
       // On payday, the pay that came in today, never "Coming in £0.00" (D206).
       const cover = page.getByTestId('this-pay');

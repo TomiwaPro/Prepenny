@@ -2,12 +2,14 @@
 
 // Home (brief 4.9, the Home sketch in ARCHITECTURE.md 4.6): what it's for in
 // one plain sentence (D213), about what's in the account now, with what the
-// bank showed and when (D430), "+ Add an account" (D431), Left to spend, the lowest point ahead, what this pay
-// has to cover, the next three due and the four actions. Every figure comes
-// from the engine, worked out in the background; every word from the strings file.
+// bank showed and when (D430), or in Sam's example the day it's shown as on
+// (D440), Left to spend, the lowest point ahead, what this pay has to cover,
+// the next three due, the four actions and "+ Add an account" under them
+// (D431, D442). Every figure comes from the engine, worked out in the
+// background; every word from the strings file.
 
 import { type ReactNode, useState } from 'react';
-import { formatDay } from '../lib/dates.ts';
+import { formatDay, formatDayAndYear } from '../lib/dates.ts';
 import type { HomeView } from '../lib/home.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { RowView } from '../lib/rows.ts';
@@ -20,7 +22,7 @@ import { FigureCard } from './FigureCard.tsx';
 import styles from './HomeScreen.module.css';
 import { HomeSkeleton } from './HomeSkeleton.tsx';
 import { PaymentList } from './PaymentList.tsx';
-import { usePlan } from './PlanProvider.tsx';
+import { isSamsExample, usePlan } from './PlanProvider.tsx';
 import { RowItem } from './RowItem.tsx';
 import { TotalsCard } from './TotalsCard.tsx';
 import { useEditSheet } from './useEditSheet.ts';
@@ -53,14 +55,37 @@ function leftToSpend(home: HomeView) {
   };
 }
 
+/**
+ * The line under the balance: when it was checked (D430), or in Sam's
+ * example the day it's shown as on, whatever the real date (D133, D440).
+ */
+function checkedWords(home: HomeView, example: boolean) {
+  const { checkedOn } = home.account;
+  const day = (date: string) => formatDay(date, home.today);
+  const asOn = example ? t.exampleAsOn(formatDayAndYear(home.today)) : undefined;
+  const checkedToday = checkedOn === home.today;
+  return {
+    checked: asOn ?? (checkedToday ? t.checkedToday(day(checkedOn)) : t.checked(day(checkedOn))),
+    // "Your bank showed £267.54 today", or in the example "Your bank
+    // showed £267.54" with the day it's shown as on in the line under it.
+    ...(asOn !== undefined && checkedToday
+      ? { asOn }
+      : {
+          when: checkedToday ? t.bankShowedToday : t.bankShowedOn(day(checkedOn)),
+          ...(asOn === undefined ? {} : { asOn }),
+        }),
+  };
+}
+
 function Figures({
   home,
+  example,
   onOpen,
-  onAddAccount,
 }: {
   readonly home: HomeView;
+  /** Sam's example, which says the day it's shown as on (D440). */
+  readonly example: boolean;
   readonly onOpen: (row: RowView) => void;
-  readonly onAddAccount: () => void;
 }) {
   const day = (date: string) => formatDay(date, home.today);
   const warning = formatMoney(home.account.warningLevel, { wholePounds: true });
@@ -72,37 +97,18 @@ function Figures({
     context = t.underWarningFrom(warning, day(lowest.underWarningFrom));
   }
   const raised = leftToSpend(home);
+  const { checked, ...line } = checkedWords(home, example);
   return (
     <>
       <BalanceCard
         account={home.account.name}
         balance={formatMoney(home.account.balance)}
-        checked={
-          home.account.checkedOn === home.today
-            ? t.checkedToday(day(home.account.checkedOn))
-            : t.checked(day(home.account.checkedOn))
-        }
+        checked={checked}
         {...(home.account.movedSinceCheck
-          ? {
-              now: {
-                amount: formatMoney(home.account.now),
-                when:
-                  home.account.checkedOn === home.today
-                    ? t.bankShowedToday
-                    : t.bankShowedOn(day(home.account.checkedOn)),
-              },
-            }
+          ? { now: { amount: formatMoney(home.account.now), ...line } }
           : {})}
         {...(raised === undefined ? {} : { raised })}
       />
-      <button
-        type="button"
-        className={styles.addAccount}
-        aria-haspopup="dialog"
-        onClick={onAddAccount}
-      >
-        {t.addAccount}
-      </button>
       <FigureCard
         testId="lowest-point"
         label={t.lowestPointAhead}
@@ -162,11 +168,7 @@ export function HomeScreen() {
       </header>
       <div className={styles.figures} aria-busy={state.status === 'loading'}>
         {state.status === 'ready' ? (
-          <Figures
-            home={state.home}
-            onOpen={sheet.open}
-            onAddAccount={() => setAddingAccount(true)}
-          />
+          <Figures home={state.home} example={isSamsExample(state.plan)} onOpen={sheet.open} />
         ) : state.status === 'failed' ? (
           <p className={styles.failed} role="alert">
             {strings.errors.plan}
@@ -177,7 +179,18 @@ export function HomeScreen() {
       </div>
       <Actions />
       {state.status === 'ready' ? (
-        <EditSheet row={sheet.editing} today={state.home.today} onClose={sheet.close} />
+        <>
+          {/* Under the four buttons, so the account and the lowest point show first (D442). */}
+          <button
+            type="button"
+            className={styles.addAccount}
+            aria-haspopup="dialog"
+            onClick={() => setAddingAccount(true)}
+          >
+            {t.addAccount}
+          </button>
+          <EditSheet row={sheet.editing} today={state.home.today} onClose={sheet.close} />
+        </>
       ) : null}
       <AccountSheet
         open={addingAccount}

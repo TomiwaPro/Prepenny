@@ -3,7 +3,8 @@
 //
 // Since step 3f-2 (D430), when money has moved since the bank was checked,
 // the big figure is about what's there now, "About £237.54 now", and the line
-// under it says what the bank showed and when.
+// under it says what the bank showed and when. Sam's example says the day
+// it's shown as on instead: "Example plan, as on Sun 25 Oct 2026" (D440).
 
 import { type ReactNode, useId } from 'react';
 import { figureStyle } from '../lib/figure.ts';
@@ -20,8 +21,9 @@ export interface BalanceCardProps {
   /** What the bank showed at the last check: "£267.54". */
   readonly balance: string;
   /**
-   * When nothing has moved since the check: "Checked today, Sun 25 Oct",
-   * under the bank's figure.
+   * When nothing has moved since the check: "Checked today, Sun 8 Nov",
+   * under the bank's figure, or in Sam's example "Example plan, as on Sun 25
+   * Oct 2026" (D440).
    */
   readonly checked: string;
   /**
@@ -30,8 +32,10 @@ export interface BalanceCardProps {
    */
   readonly now?: {
     readonly amount: string;
-    /** "today", or "on Sun 8 Nov". */
-    readonly when: string;
+    /** "today", or "on Sun 8 Nov"; none in Sam's example, whose next line says the day (D440). */
+    readonly when?: string;
+    /** Sam's example only: "Example plan, as on Sun 25 Oct 2026", under the bank's figure (D440). */
+    readonly asOn?: string;
   };
   /** The raised block: "Left to spend until Fri 30 Oct", £30.00 and its lines. */
   readonly raised?: {
@@ -58,7 +62,9 @@ export function BalanceCard({ account, balance, checked, now, raised }: BalanceC
             >
               {balance}
             </p>
-            <p className={styles.checked}>{checked}</p>
+            <p className={styles.checked} data-testid="checked">
+              {checked}
+            </p>
           </>
         ) : (
           <>
@@ -75,9 +81,14 @@ export function BalanceCard({ account, balance, checked, now, raised }: BalanceC
               {t.bankShowed}{' '}
               <span className="num" data-testid="balance">
                 {balance}
-              </span>{' '}
-              {now.when}
+              </span>
+              {now.when === undefined ? null : ` ${now.when}`}
             </p>
+            {now.asOn === undefined ? null : (
+              <p className={styles.checked} data-testid="checked">
+                {now.asOn}
+              </p>
+            )}
           </>
         )}
       </div>

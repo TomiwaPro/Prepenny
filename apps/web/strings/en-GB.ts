@@ -475,6 +475,11 @@ export const strings = {
     checkedToday: (date: string) => `Checked today, ${date}`,
     checked: (date: string) => `Checked ${date}`,
     /**
+     * Sam's example, in place of "Checked today, Sun 25 Oct", whatever the
+     * real date (D133, D440): "Example plan, as on Sun 25 Oct 2026".
+     */
+    exampleAsOn: (date: string) => `Example plan, as on ${date}`,
+    /**
      * The big figure when money has moved since the bank was checked (D430):
      * "About £237.54 now", with these two words smaller around the figure.
      */
@@ -484,7 +489,7 @@ export const strings = {
     bankShowed: 'Your bank showed',
     bankShowedToday: 'today',
     bankShowedOn: (date: string) => `on ${date}`,
-    /** Under the account card: opens the same form as More, Accounts (D431). */
+    /** Under the four buttons: opens the same form as More, Accounts (D431, D442). */
     addAccount: '+ Add an account',
     leftToSpendUntil: (date: string) => `Left to spend until ${date}`,
     leftToSpendTo: (date: string) => `Left to spend to ${date}`,
