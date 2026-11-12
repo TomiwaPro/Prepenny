@@ -5,7 +5,7 @@
 // bank showed and when (D430), or in Sam's example the day it's shown as on
 // (D440), Left to spend, the lowest point ahead, what this pay has to cover,
 // the next three due, the four actions and "+ Add an account" under them
-// (D431, D442). Every figure comes from the engine, worked out in the
+// (D431, D442). In the example, its banner is under the lowest point (D451). Every figure comes from the engine, worked out in the
 // background; every word from the strings file.
 
 import { type ReactNode, useState } from 'react';
@@ -18,6 +18,7 @@ import { AccountSheet } from './AccountSheet.tsx';
 import { Actions } from './Actions.tsx';
 import { BalanceCard } from './BalanceCard.tsx';
 import { EditSheet } from './EditSheet.tsx';
+import { ExampleNote } from './ExampleNote.tsx';
 import { FigureCard } from './FigureCard.tsx';
 import styles from './HomeScreen.module.css';
 import { HomeSkeleton } from './HomeSkeleton.tsx';
@@ -119,6 +120,8 @@ function Figures({
         }
         context={context}
       />
+      {/* In the example, the banner is here, so the account and the lowest point show first (D451). */}
+      <ExampleNote />
       {cover === null ? null : (
         <TotalsCard
           testId="this-pay"

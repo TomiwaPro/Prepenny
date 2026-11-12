@@ -10,7 +10,12 @@
 // 3. "+ Add an account" is under Home's four buttons, and on a 320 by 568
 //    phone Home shows the account card, "About £X now" included, and the
 //    lowest point ahead without scrolling, on a plan of one's own (D431,
-//    D442). Sam's example has its banner above, so it isn't one of them.
+//    D442), with the bank's line always on one line (D450).
+// 4. Sam's example on a 320 by 568 phone: its banner moves under the lowest
+//    point on Home, and is slimmer at the top of every other screen (D451).
+//    The account card and the lowest point's label, status, figure and date
+//    show; its card has one more line than a person's own, so the lowest
+//    point's last small line can sit under the navigation.
 
 import { test as fresh, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
@@ -360,7 +365,12 @@ async function expectOneLine(line: Locator) {
  * bottom navigation; and so does the lowest point ahead: the whole card, or
  * its label, status, figure and date.
  */
-async function expectInView(page: Page, lowestShows: 'whole card' | 'up to its date') {
+async function expectInView(
+  page: Page,
+  lowestShows: 'whole card' | 'up to its date',
+  figure = '£9.71',
+  date = `${day('Mon 2 Nov')}, after Rent`,
+) {
   await page.evaluate(() => window.scrollTo(0, 0));
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
   const nav = await boxOf(page.getByRole('navigation', { name: 'Main' }));
@@ -376,12 +386,86 @@ async function expectInView(page: Page, lowestShows: 'whole card' | 'up to its d
   for (const part of [
     lowest.getByText('Lowest point ahead', { exact: true }),
     lowest.getByText('Tight', { exact: true }),
-    lowest.getByText('£9.71', { exact: true }),
-    lowest.getByText(`${day('Mon 2 Nov')}, after Rent`, { exact: true }),
+    lowest.getByText(figure, { exact: true }),
+    lowest.getByText(date, { exact: true }),
   ]) {
     expect((await boxOf(part)).bottom).toBeLessThanOrEqual(nav.y);
   }
   if (lowestShows === 'whole card') expect(low.bottom).toBeLessThanOrEqual(nav.y);
+}
+
+// Sam's example: its banner under the lowest point on Home, slimmer at the
+// top of every other screen (D451).
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(`Sam's example on a 320 by 568 phone, ${colorScheme}`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+    });
+
+    test("4. Home shows the account card and the lowest point, with the example's banner under it", async ({
+      page,
+    }, info) => {
+      await page.setViewportSize({ width: 320, height: 568 });
+      await openHome(page);
+      await expect(page.getByTestId('now')).toHaveText('About £237.54 now');
+      await expect(page.getByTestId('checked')).toHaveText(
+        `Example plan, as on ${day('Sun 25 Oct 2026')}`,
+      );
+      // The account card whole, and the lowest point's label, Tight, £4.53
+      // and its date; only its last small line can be under the navigation.
+      await expectInView(page, 'up to its date', '£4.53', `${day('Sun 1 Nov')}, after Rent`);
+      // The banner is under the lowest point, not at the top.
+      const banner = page.getByTestId('example-banner');
+      await expect(banner).toHaveCount(1);
+      await expect(banner.locator('p')).toHaveText(
+        'This is an example plan. Nothing here is yours.',
+      );
+      const lowest = await boxOf(page.getByTestId('lowest-point'));
+      expect((await boxOf(banner)).y).toBeGreaterThan(lowest.bottom);
+      await noSidewaysScroll(page);
+      await noAxeProblems(page);
+      if (shoots(info, colorScheme)) {
+        await page.screenshot({ path: `${SCREENS}/home-example-320x568-light.png` });
+      }
+      // "Make my plan" still leaves the example from there.
+      await banner.getByRole('button', { name: 'Make my plan' }).click();
+      await expect(page).toHaveURL(/\/setup\/$/);
+    });
+
+    test('4. every other screen has the banner at the top, slimmer', async ({ page }, info) => {
+      for (const width of [320, 360]) {
+        await page.setViewportSize({ width, height: 640 });
+        for (const path of ['/app/coming-up/', '/app/debts/', '/app/more/']) {
+          await page.goto(path);
+          const banner = page.getByTestId('example-banner');
+          await expect(banner).toBeVisible();
+          const place = await boxOf(banner);
+          const heading = await boxOf(page.getByRole('heading', { level: 1 }));
+          expect(place.bottom, path).toBeLessThan(heading.y);
+          // Words and button side by side: about 77px at 320px and 62px at
+          // 360px, where it took 117px and 98px.
+          expect(place.height, `${path} at ${width}px`).toBeLessThanOrEqual(
+            width === 320 ? 80 : 64,
+          );
+          const words = await boxOf(banner.locator('p'));
+          const button = await boxOf(banner.getByRole('button', { name: 'Make my plan' }));
+          expect(button.x).toBeGreaterThan(words.right);
+          expect(button.height).toBeGreaterThanOrEqual(44);
+          await noSidewaysScroll(page);
+        }
+        if (shoots(info, colorScheme) && width === 320) {
+          await page.goto('/app/coming-up/');
+          await page.getByTestId('example-banner').screenshot({
+            path: `${SCREENS}/example-banner-320-light.png`,
+          });
+        }
+      }
+      // With text at 200%, the button goes under the words, and nothing is cut off.
+      await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(page)).toEqual([]);
+      await noAxeProblems(page);
+    });
+  });
 }
 
 // A plan of one's own starts on a phone with nothing on it, as setup's tests do.

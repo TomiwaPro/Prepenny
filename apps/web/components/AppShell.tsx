@@ -1,6 +1,7 @@
 'use client';
 
-// Every screen of the app: the example plan banner, the offline note and,
+// Every screen of the app: the example plan banner (on Home, under the
+// lowest point instead, D451), the offline note and,
 // while someone is getting back in with the backup email, its notice at the
 // top (step 3e hardening), and "Finish joining" for someone let into a plan
 // whose own plan is still to come (step 3f-2), the screen in a centred column, the undo bar after a change, and
@@ -14,31 +15,22 @@ import { AppLock } from './AppLock.tsx';
 import styles from './AppShell.module.css';
 import { BottomNav } from './BottomNav.tsx';
 import { ClashSheet } from './ClashSheet.tsx';
+import { ExampleNote, useOnHome } from './ExampleNote.tsx';
 import { FinishJoining } from './FinishJoining.tsx';
 import { GetBackInNotice } from './GetBackInNotice.tsx';
 import { JoinRequestSheet } from './JoinRequest.tsx';
 import { KeepInStep } from './KeepInStep.tsx';
-import { ExampleBanner, OfflineNote } from './Notes.tsx';
-import { PlanProvider, usePlan, usePlanActions } from './PlanProvider.tsx';
+import { OfflineNote } from './Notes.tsx';
+import { PlanProvider, usePlanActions } from './PlanProvider.tsx';
 import { UndoBar } from './UndoBar.tsx';
 import { UpdateNote, useUpdated } from './UpdateNote.tsx';
 
 function Notes() {
-  const state = usePlan();
-  const { ownPlan, showPlan } = usePlanActions();
-  const router = useRouter();
+  // On Home the example banner sits under the lowest point instead (D451).
+  const onHome = useOnHome();
   return (
     <div className={styles.notes}>
-      {state.plan?.isExample === true ? (
-        <ExampleBanner
-          ownPlan={ownPlan}
-          onLeave={async () => {
-            await showPlan('own');
-            // A plan still being set up carries on in setup (step 2e).
-            if (ownPlan !== 'ready') router.push('/setup/');
-          }}
-        />
-      ) : null}
+      {onHome ? null : <ExampleNote />}
       <OfflineNote />
       <GetBackInNotice />
       <FinishJoining />
