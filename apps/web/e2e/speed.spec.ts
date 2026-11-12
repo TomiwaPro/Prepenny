@@ -8,6 +8,7 @@
 import { writeFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 import { test } from './fixtures.ts';
+import { helperInCharge } from './offline-helper.ts';
 
 const SLOWER = 4;
 const RUNS = 5;
@@ -56,12 +57,7 @@ test('Home shows its real figures quickly on a phone 4 times slower, and never a
 
   // The first visit: nothing on the phone yet but the example plan.
   const first = await timeHome(page, () => page.goto('/app/'));
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
+  await helperInCharge(page);
 
   // Opening it again, as from the home screen: its files come from the phone.
   const again: number[] = [];

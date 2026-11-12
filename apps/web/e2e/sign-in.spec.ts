@@ -17,6 +17,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
+import { helperInCharge } from './offline-helper.ts';
 import { box, noAxeProblems, ownRecords, storedPlans } from './setup.ts';
 import {
   askForCode,
@@ -271,19 +272,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await typeCode(page, (await signInEmail(address)).code);
       await expectSignedInOnMore(page, address);
       // The offline helper has every file of the app on the phone, as in e2e/offline.spec.ts.
-      await page.evaluate(async () => {
-        const registration = await navigator.serviceWorker.ready;
-        if (registration.active?.state !== 'activated') {
-          await new Promise<void>((resolve) =>
-            registration.active?.addEventListener('statechange', () => resolve()),
-          );
-        }
-      });
-      await expect
-        .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), {
-          timeout: 60_000,
-        })
-        .toBe(true);
+      await helperInCharge(page);
 
       await context.setOffline(true);
       await page.getByTestId('account').getByRole('button', { name: 'Sign out' }).click();

@@ -19,6 +19,7 @@ import { strings } from '../strings/en-GB.ts';
 import { named } from './coming-up.ts';
 import { settingScript } from './fixtures.ts';
 import { addPayment, openHome, undoBar, updateBalance } from './journeys.ts';
+import { helperInCharge } from './offline-helper.ts';
 import { noAxeProblems } from './setup.ts';
 import { makeAPlan, newEmail } from './sign-in-helpers.ts';
 import {
@@ -39,11 +40,7 @@ test.use({ userAgent: DEVICES.androidChrome });
 
 /** Every file of the app on the phone, so it keeps working with no signal. */
 async function readyForNoSignal(page: Page) {
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), {
-      timeout: 30_000,
-    })
-    .toBe(true);
+  await helperInCharge(page);
 }
 
 /** Moves this phone's clock, as a phone set to the wrong time. */

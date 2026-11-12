@@ -41,6 +41,7 @@ import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { strings } from '../strings/en-GB.ts';
 import { settingScript } from './fixtures.ts';
 import { openHome, updateBalance } from './journeys.ts';
+import { helperInCharge } from './offline-helper.ts';
 import { SAM_TODAY, setUpSam } from './people.ts';
 import {
   addGoalOnPlan,
@@ -369,11 +370,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await makeAPlan(page);
       await signUpFromMore(page, address);
       // Every file of the app on the phone, so it works with no signal (e2e/offline.spec.ts).
-      await expect
-        .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), {
-          timeout: 60_000,
-        })
-        .toBe(true);
+      await helperInCharge(page);
 
       await context.setOffline(true);
       await updateBalance(page, {
