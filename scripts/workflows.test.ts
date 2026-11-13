@@ -51,3 +51,18 @@ for (const name of workflows) {
     assert.ok(low > 54329 || high < 54320, `${name}'s range leaves 54320 to 54329 out`);
   });
 }
+
+// Every workflow that starts the local Supabase in the background waits for
+// it before its first end-to-end test, so no test shares the machine with
+// Supabase being downloaded and started (step 3i, D506).
+for (const name of workflows) {
+  test(`${name} waits for the local Supabase before any end-to-end test`, () => {
+    const text = readFileSync(join(folder, name), 'utf8');
+    const started = text.indexOf("nohup bash -c 'supabase start");
+    const firstTest = text.indexOf('playwright test');
+    if (started < 0 || firstTest < 0) return;
+    const waited = text.indexOf('until [ -f "$RUNNER_TEMP/supabase-start.exit" ]');
+    assert.ok(waited > started, `${name} waits for the local Supabase it started`);
+    assert.ok(waited < firstTest, `${name} waits for it before \`playwright test\``);
+  });
+}

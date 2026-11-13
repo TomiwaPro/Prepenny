@@ -6071,3 +6071,16 @@ Decided 13 Nov 2026 in step 3i, found with D504.
 Test: the delete tests, every copy twice, three at a time: 26 passed.
 
 Why: a test that fails because of what else is running at the same time hides real failures (D498).
+
+### D506. On GitHub, no test runs while the local Supabase is starting
+
+Decided 13 Nov 2026 in step 3i, from its pull request's checks after D504. Changes D300's overlap for the end-to-end parts; the database check's overlap with lint and the unit tests stays.
+
+- Part 1 failed on GitHub: "I did overtime" (actions test 5, 320px, light) opened Home and its balance wasn't there within 5 seconds. It was the fifth test, 25 seconds into the tests, and took 5.9 seconds, where the tests around it took 2 to 4. The same third of the tests passed here, 222 in 222, and that test 48 times in 48.
+- At that moment the machine was still downloading and starting the local Supabase in the background (D300): the log shows its downloads refused for a while ("Rate exceeded") and tried again. GitHub's recording of the test can't be fetched from the building computer, so what exactly held Home up isn't known. Adding and taking away networks as Docker does, every 0.3 seconds, didn't break the test here.
+- What is known: three tests that failed once on GitHub, and never here, ran in those first minutes beside the starting Supabase: the browser's "network changed" note and the Pay sheet's layout (D344, PLAN.md item 35), and this one. Before step 3i each got a second try; since D498, none does, so this overlap now fails a run.
+- Now each part waits until the local Supabase has started before any test. It still starts first and overlaps with installing and building the app, so the cost is the rest of its start, about a minute a part. The tests that don't use it still run if it couldn't start.
+
+Test: `scripts/workflows.test.ts`: every workflow that starts the local Supabase in the background waits for it before its first `playwright test`. It fails on the workflow as it was.
+
+Why: a test that fails because of what else the machine is doing hides real failures, and can stop the live app updating after a merge (D297, D498).

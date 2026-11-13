@@ -48,8 +48,8 @@ jobs:
       - name: Start a local Supabase for the sign-in tests, in the background
         # The database, sign-in, its web address (kong), the test inbox
         # (mailpit), and from step 3c the Data API (postgrest) and the live
-        # nudges (realtime). Started first, so it's ready by the time the
-        # other tests finish. Since step 3e, in every part: the sign-in tests
+        # nudges (realtime). Started first, while the app is installed and
+        # built, and waited for before any test (D506). Since step 3e, in every part: the sign-in tests
         # are shared between the three, as the others are, so no part runs
         # past its time (D389). Since step 3e hardening, with Supabase's
         # function runner too (edge-runtime), for the get-back-in function.
@@ -109,18 +109,22 @@ jobs:
       # library the test browser needs ("already the newest version"), and
       # Ubuntu's download hung for 10 minutes on 6 Nov 2026 and stopped two
       # parts (D323). If a library ever goes missing, the browser says so.
-      - name: End-to-end tests at 320px and 360px
-        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3 --workers=1
-
       - name: Wait for the local Supabase
-        # Still run when an earlier test failed, so every failure shows at
-        # once, but not when the app couldn't be built.
+        # Before any test, so no test shares the machine with Supabase being
+        # downloaded and started: three tests that failed once on GitHub, and
+        # never on the building computer, ran in those first minutes beside
+        # it (D344, D506). Not when the app couldn't be built.
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         timeout-minutes: 10
         run: |
           until [ -f "$RUNNER_TEMP/supabase-start.exit" ]; do sleep 2; done
           cat "$RUNNER_TEMP/supabase-start.log"
           exit "$(cat "$RUNNER_TEMP/supabase-start.exit")"
+
+      - name: End-to-end tests at 320px and 360px
+        # These never contact Supabase, so they still run if it couldn't start.
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3 --workers=1
 
       - name: Sign-in and plan-on-the-server tests at 320px and 360px, against the local Supabase
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
