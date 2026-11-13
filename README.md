@@ -25,7 +25,7 @@ GitHub checks every change, once for each commit, on its pull request and again 
 GitHub runs two sets of checks:
 
 - **Lint, type checks, tests and the database** checks the code, runs every engine and app test, and builds a fresh copy of the database on GitHub's machine to test who can see and change what (see "The database" below). About 2 minutes, on every push.
-- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Each part also takes a third of the tests that sign up, sign in and sign out, send plans up and bring them down on second phones, make changes with no signal and on two phones at once, and from step 3e sign out other devices, use two-step sign-in, change email addresses, get back in with a backup email (with its 24-hour wait and its stop link, from step 3e hardening) and update an old version, against a copy of Supabase on GitHub's machine, with its function runner, which catches the emails instead of sending them. Each part runs one test at a time (D343, D389).
+- **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Each part also takes a third of the tests that sign up, sign in and sign out, send plans up and bring them down on second phones, make changes with no signal and on two phones at once, and from step 3e sign out other devices, use two-step sign-in, change email addresses, get back in with a backup email (with its 24-hour wait and its stop link, from step 3e hardening) and update an old version, against a copy of Supabase on GitHub's machine, with its function runner, which catches the emails instead of sending them. From step 3i, they also run brief 8.7's tests 1 to 6 on two phones, a security test that tries every request a partner could make for someone's private records, and the six people's journeys signed in on two phones. Each part runs one test at a time (D343, D389), with up to 60 minutes (D499), and a test that fails isn't tried a second time: it fails, and its report is kept (D498).
 
 GitHub's minutes cost money once the free ones are used, so the end-to-end tests wait until a pull request is ready. Claude Code opens each step's pull request as a **draft**, which gets the first set on every push, and marks it **Ready for review** when the step is done, which starts the end-to-end tests and the preview link. Every push after that runs both, and so does `main`, always, before anything goes live. A newer push stops the older checks on a pull request, never on `main`.
 
@@ -687,6 +687,19 @@ Using the two test accounts of part J, or two new "+" addresses shared as part J
 #### If a backup of the database is ever put back
 
 Only if Supabase's backups are used to put the database back as it was on an earlier day (with the paid plan). Accounts deleted since that day would come back with it, so delete them again straight after: on supabase.com, open the **prepenny** project, then **SQL Editor**, then **New query**, paste `select app.delete_again_after_restore();` and tap **Run**. It says how many it deleted again. It works for 30 days after each deletion, longer than the paid plan keeps its backups.
+
+### L. Step 3i: Phase 3 checks
+
+**What you need to set up: nothing.** Checked one by one, in this step's own changes:
+
+- **Supabase.** One database change, sent by the **Database** workflow with the key it already has, after its check of all eleven permissions (D406). No new sign-in setting, web address, email template, function, permission or extension. The security test switches GraphQL on in the test database only; whether to switch it off on the live project is a question in `PLAN.md` (D495).
+- **Resend.** Nothing new: no new email. The Database workflow now gives the live database the same key a safer way (D494).
+- **GitHub.** No new secret or variable. The end-to-end tests take about 28 minutes more on a ready pull request and on `main`, shared between the three parts, and each part may run for 60 minutes instead of 45 (D499).
+- **Cloudflare.** Nothing new.
+- **Google.** Nothing new.
+- **No new package.**
+
+To try all of Phase 3 on the live app in about 15 minutes, alone, with a phone and a private window, follow `docs/TRY-PHASE-3.md`. It ends with deleting the test accounts.
 
 ## Bank holidays
 

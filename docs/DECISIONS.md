@@ -2,7 +2,7 @@
 
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
-D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. D446 to D452 are the owner's answers to its questions and instructions about the public repository, and D453 was decided while building them, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. D446 to D452 are the owner's answers to its questions and instructions about the public repository, and D453 was decided while building them, the same day. D454 to D486 come from steps 3g and 3h, on 12 Nov 2026; each section says which are the owner's. D487 to D500 come from step 3i, Phase 3 checks, on 12 and 13 Nov 2026: D488 to D494 from its outside review. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -5842,3 +5842,174 @@ The owner, 12 Nov 2026, as README.md part K asked (D481).
 The owner turned off **Write audit logs to the database** in Supabase (Authentication, Audit Logs). Supabase keeps the log in its own log storage, 1 day on the free plan and 7 on the paid plan (D479), and deleting an account no longer has a growing table to read. Rows written before stay until someone they name deletes their account, which removes theirs.
 
 Why: the owner's action.
+
+## Made during step 3i
+
+D487 to D500 were decided on 12 and 13 Nov 2026 in step 3i, Phase 3 checks. D488 to D494 come from its outside review. Points for the owner are in `PLAN.md`, "Waiting for the owner".
+
+### D487. A form shows only once it works
+
+Decided 12 Nov 2026 in step 3i, from the trace of `your-plan.spec.ts` test 9 (PLAN.md item 65).
+
+- Every page is built ahead of time, so a phone shows its words before the code behind them has started. A form shown in that moment looked ready but wasn't: on a slow phone, someone who typed their address and tapped "Send me a code" straight away had the browser send the form itself, which loaded the page again, empty, with what they'd typed gone. The test's trace showed exactly that: the sign-in page loaded a second time as "/sign-in/?".
+- Three pages showed a form in that moment: sign-in, "Get back in with your backup email" and App lock. Each now shows its heading and first line straight away, and its form once its code has started (`lib/started.ts`). On a phone that's ready, nothing looks different.
+
+Test: `apps/web/e2e/started.spec.ts` holds each page's code back, as a slow phone does: no form shows until it arrives, then the form does. Without the fix it fails on all three pages.
+
+Why: nothing a person types should be lost, and a test that loses a race with the page is showing a race a person could lose too.
+
+## From the outside review of step 3i
+
+D488 to D494 come from an outside review of everything Phase 3 added: the database rules, `save_edit`, sharing, leaving, getting back in, deleting, import and the GitHub workflows. The reviewer had no part in the code, and tried each problem on the local database. It found no way for one person to read another person's private records, over the Data API, GraphQL or live updates. It found seven problems, all fixed, each with a test that fails without its fix: `supabase/tests/database/31-phase-3-review.test.sql` (16 checks), `32-phase-3-review-joining.test.sql` (13), `apps/web/test/unit/when-it-reached.test.ts` and `scripts/workflows.test.ts`. The database changes are in `supabase/migrations/20261117100000_phase_3_checks.sql`.
+
+### D488. Nothing a partner types can stop someone deleting their account
+
+Decided 12 Nov 2026 in step 3i. Changes D482's `app.without_person`.
+
+- Deleting an account in a shared plan takes the person's id off every record they made or changed (D482). It did this by finding their id in the text of the whole record. So Tom could type text that looks like Jess's id into a payment's name or note, even with "Can view only" on his own pay, and Jess could then never delete her account: the deletion broke, and she was told "not-deleted". Renaming it back didn't help, as the history keeps a copy.
+- Now the id comes off only where it's a whole value, and never out of the words people type (names and notes). What Tom typed stays exactly as he typed it.
+
+Test: `31-phase-3-review.test.sql` part 1: Tom plants three kinds of text, and Jess still deletes her account; the same for someone who can only view.
+
+Why: someone's right to delete their account can't depend on what someone else typed.
+
+### D489. Joining with a plan brings its history
+
+Decided 12 Nov 2026 in step 3i. Builds D426 and D469.
+
+- Someone bringing their plan into another (D426) kept their list of changes, but not the copies of what each change did, which went with the old plan. So their Activity and every payment's History lost everything from before they joined, against D469's "kept for as long as the plan exists".
+- Now the copies come too, private to the person, as everything they brought is. A tick's, a one-off change's, an overtime's details' and the settings' ids are worked out from the plan they're in (D413), so their copies take the ids they have in the new plan, and History still finds them.
+- Changes from before joining can't be undone from Activity afterwards: joining saved every record again. They're kept and shown, as before.
+
+Test: `32-phase-3-review-joining.test.sql` part 1.
+
+Why: D469.
+
+### D490. A plan brought in names nobody who was never in it
+
+Decided 12 Nov 2026 in step 3i. Adds to D426 and D482.
+
+- When Alex brings in a plan Tom had been in and left, Tom's changes in it came too, still naming Tom, in Jess's plan, where Tom never was. Tom could then never delete his account, as his deletion only looked in plans he'd been in. And Alex's Activity could have taken Jess for the one who made them.
+- Now they come as made by "Someone who has left" (D482). Deleting an account also looks in any plan that has a change of the person's. Plans brought in before this are put right by the same change.
+
+Test: `32-phase-3-review-joining.test.sql` part 2.
+
+Why: the review showed both with a case that went wrong.
+
+### D491. No copy in the history names someone whose account is gone
+
+Decided 12 Nov 2026 in step 3i. Adds to D482.
+
+- The history notes who could read each copy at the time (D455). After Jess deleted her account, copies from when she shared an account still named her there, against D482's "her id appears nowhere afterwards". Nobody was shown it.
+- Now deleting takes it off too. A copy only she could read is emptied first, so nothing private to her becomes anyone else's to see.
+
+Test: `32-phase-3-review-joining.test.sql` part 3: after Jess shares an account and deletes hers, no copy in the history names her.
+
+Why: D482.
+
+### D492. Activity, History and "Changed by" go by when a change reached the account
+
+Decided 12 Nov 2026 in step 3i. Changes D456, D459 and D474's times; D365 and D366 stay as they are.
+
+- A phone says when it made each change. That decides which of two changes to the same payment is newer when they clash (D365), and the server never takes a time later than its own (D366). But a phone could say a change was made as far back as it liked: Tom could change Rent and say he did it in 2001, so Jess's row wouldn't say "Changed by Tom" and the change would sit at the very bottom of her Activity.
+- Now Activity, a payment's History and "Changed by" show and sort each change by when it reached the account, by the server's own clock, which no phone can set. The time the phone gave is used only for clashes.
+- A change made with no signal shows the time it was sent, not the time it was made. For a change made offline and sent hours later, that's a few hours out; it's what can be trusted "in case of arguments" (D469).
+
+Test: `31-phase-3-review.test.sql` part 2, `apps/web/test/unit/when-it-reached.test.ts`.
+
+Why: the lasting record has to be one nobody can rearrange.
+
+### D493. A name is checked wherever it's saved
+
+Decided 12 Nov 2026 in step 3i. Adds to D420.
+
+- The name a partner sees was checked (1 to 30 characters) when someone asks to join or invites, but could also be set straight through the Data API, past the checks: the review saved one 100,009 characters long, with a character that turns words round.
+- Now the database checks every name it saves, however it arrives, and the check also refuses the invisible characters that change which way words run or hide letters, so "Changed by Tom" always says what it seems to. Nothing on the phone wrote names that way, so that way in is closed.
+
+Test: `31-phase-3-review.test.sql` part 3.
+
+Why: a name is shown on the other person's phone, so it must be what it looks like.
+
+### D494. The email key goes to the live database as a parameter
+
+Decided 12 Nov 2026 in step 3i.
+
+- The Database workflow gave the live database Resend's key by writing it into the text of a query. If that query ever failed, the key could be written into Supabase's database logs. The preview database's step already passed it as a parameter (D408); now the live one does too.
+- Nothing to do for the owner: the same secret, sent a safer way.
+
+Test: `scripts/workflows.test.ts`: no workflow writes any of its secrets into the text of a query. It fails on the workflow as it was.
+
+Why: a key should only ever be where it's used.
+
+## Made during step 3i, continued
+
+### D495. The security test: every request Tom could make
+
+Decided 12 Nov 2026 in step 3i. Builds brief 8.7 test 2 and ARCHITECTURE.md 7 ("brief 8.7 test 2 tries every request Tom could make").
+
+- `apps/web/e2e/security.spec.ts`. Jess and Tom on two phones, as in brief 8.7. Jess has a private account with a payment ticked in an Update balance, a debt, a savings goal, and private history. Their real ids are read from the database.
+- Four people try every way in: Tom ("Can edit"), Alex (signed in, in no plan), someone not signed in, and Tom again once Jess has made him "Can view only". With each of Jess's ids: every table through the Data API (read, change, remove, add over it), and the database's own parts, which it doesn't show; every table through GraphQL (read, change, remove); every database step the person may call, with her ids and again with the shared plan; every live-update channel (hers, the plan's, and channels named after her records' ids, private and public, listening and sending) while she changes things on her phone; the get-back-in function with her address; and Supabase's administrator routes.
+- Each must give nothing of Jess's private records and change nothing of them, nor of her account. Alex and someone signed out get nothing of the plan at all, and "Can view only" changes nothing shared. Each kind of request is first seen to work on something the person may see, such as shared Rent, so nothing can pass by trying nothing.
+- GraphQL isn't switched on in the local database; the test switches it on, as it can be on Supabase's own projects, so every table is tried through it too. PrePenny never uses GraphQL (a question for the owner in PLAN.md).
+- Two things the test allows, on purpose: a live nudge carries its own message id, which Supabase adds to every message and which names nothing; and a wrong code typed at the get-back-in function counts towards locking that address for a day (D392).
+- It takes about 8 minutes, so it runs once, at 360px: it's about the server, not the screen.
+
+Breaking a rule on purpose, the test fails at once and names what leaked: payments readable by every member fails it at "Tom: GET series", listing Jess's ids and payment names; letting anyone hear any plan's channel fails it at Jess's own channel.
+
+Why: brief 8.7 test 2, and the owner's list for step 3i.
+
+### D496. Brief 8.7 tests 1 to 6, on two phones
+
+Decided 12 Nov 2026 in step 3i.
+
+- `apps/web/e2e/brief-8-7.spec.ts`: one test for each of brief 8.7's first six, in the brief's own words, with Jess and Tom on two phones, at 320px and 360px in light and dark, with axe: 24 runs.
+- Test 2 checks every screen of Tom's that lists accounts or payments, his Activity, everything kept on his phone, and what the server gives him; the full proof is D495's test.
+- Test 3 sends one change from Tom's phone and one straight to the server, past his screens: both refused.
+- Test 4: Tom saves Rent, then Jess, within a second: Jess's, the newest, is on both phones and the server, and Tom is told by name.
+- Test 5: Tom leaves with a copy; Jess's Home and Coming up are word for word the same, and her payments unchanged; then her change to Rent never reaches his copy.
+- Test 6: "Sign out everywhere" is "Sign out of all other devices" since D394: the server refuses the laptop's next request at once, and the laptop removes the plan within a minute.
+- Brief 8.7 tests 7 to 9 are about subscriptions, in Phase 5.
+
+Why: the owner's list for step 3i.
+
+### D497. The six people's journeys, signed in, on two phones
+
+Decided 12 Nov 2026 in step 3i. Builds brief Part 10 and D268.
+
+- `apps/web/e2e/journeys-signed-in.spec.ts`. Each of the six people sets up through the screens exactly as in `people.spec.ts` and signs up. A second phone signs in and brings the plan down; Jess shares their three accounts and Tom joins on his own phone. The first phone loses its signal and adds a payment, which waits, then reaches the other phone once the signal is back; a payment added on the other phone reaches the first. Every day's balance a year ahead, on each phone, is checked against the person's fixture after each step.
+- Each person runs twice, at 320px in light and at 360px in dark: both widths and both colours are covered, in half the minutes of all four. The full journeys of step 2h still run all four.
+- It found a question for the owner. Each person's main pay is their own (D289), and budget periods follow it (D29). Tom has no main pay, so on his phone the joint account's £300 food month runs from the 1st, while on Jess's it runs from her payday: from 28 to 31 Oct the joint account shows £300 more on Tom's phone. Tom's phone is checked against the rule as built (it matches every day of the year exactly), and the choice is in PLAN.md.
+
+Why: the owner's list for step 3i.
+
+### D498. Tests that needed a second try: the causes, and no second tries
+
+Decided 13 Nov 2026 in step 3i. Builds the owner's instruction: find the root cause, and don't skip, loosen or retry.
+
+- **Item 47, the offline test.** Measured: the offline helper downloads all 227 of the app's files before it takes charge, about 2 seconds with one test running and 6 to 8.5 with three. The test gave it 5 seconds, Playwright's own limit for a repeated look, and failed 4 runs in 4 three at a time. Every test now waits for the helper's own "ready" and "took charge" signals (`e2e/offline-helper.ts`): 30 runs in 30 three at a time, and item 37's test still fails without its fix.
+- **Item 65, your-plan test 9.** Two causes. Its trace showed the form race of D487, fixed in the app. And it did two tests' work, four phones and two setups, in one test's 30 seconds: 31 to 35 seconds three at a time, measured. Its second half is test 9b now, every check kept: 24 runs in 24 three at a time.
+- **Item 35, the layout check at 200% text.** Holding the font back shows it exactly: until Figtree's files arrive the browser uses a stand-in font, wider on Linux, and at 320px with 200% text the Pay sheet and the tab bar measured wider than the screen. The check now measures once the page's font has loaded; `e2e/layout-check.spec.ts` delays the font 3 seconds and fails without it.
+- **Item 41, database checks after the end-to-end tests.** Four checks counted every shared record in the whole database. They count only their own test plan now.
+- **Two-step test 3 and recovery test 4** (step 3g's "ran past its time limit", item 71): two-step test 3 spent 58 of its 66 seconds waiting for the laptop to find out it was signed out. Once two-step sign-in is on, the laptop's older sign-in gets nothing, live nudges included, so only its once-a-minute look tells it (D21, D381). Its 90 seconds left 32 for the rest, not enough three at a time. Recovery test 4 waits the minute on purpose. Both have the minute added to their overall limit; their "within a minute" checks are exactly as they were. The other "within a minute" tests hear a nudge and finish in seconds, measured.
+- **The pay calculator's test 3** failed once in step 3h's full run, with no record kept of which check. It passed 156 runs in 156 here, every test in its file at both widths, four at a time, and nothing in its code waits on a race. It's left as it is; if it fails again, its trace is kept (below).
+- **No second tries on GitHub.** Playwright gave every failing test a second try there, which hid the ones above. Now it gives none: a test that would need one fails, with its trace and report kept, so its cause is found.
+- Item 56 ("Continue with Google" can't run on the building computer) is about that computer's network, not the test, and runs on GitHub as before.
+
+Why: the owner's instruction.
+
+### D499. Each end-to-end part on GitHub has 60 minutes
+
+Decided 13 Nov 2026 in step 3i. Changes D389's 45 minutes.
+
+Step 3i's tests add about 28 minutes across GitHub's three end-to-end parts, which took 21 to 34 minutes each against 45 allowed: about 8 for the security test, about 14 for brief 8.7's 24 runs and about 6 for the journeys. Each part now has 60 minutes. A ready pull request costs about 28 more minutes than before; GitHub bills the minutes used, not the limit.
+
+Why: otherwise the longest part could run out of time on a slow day.
+
+### D500. What step 3i leaves, and why
+
+Decided 13 Nov 2026 in step 3i.
+
+- **From the outside review, nothing is left unfixed.** Two things it noted are as decided before: someone with "Can view only" can claim shared pay as theirs with "This is my pay" (D418, D433), and someone the owner adds to the repository can open a pull request that reaches its secrets (D410). Both were the owner's choices.
+- **Moved to later phases** (PLAN.md): items 20 and 31's remaining parts, the security policy listing each of Next.js's small page scripts (Phase 4, with item 10) and error reports sending only the kind of error (Phase 5, when error reports and monitoring are added), and checking Cloudflare adds no scripts of its own to the live site (Phase 5, with the launch checks); items 38 and 63, clearer words when a payment someone was changing was removed (Phase 4); item 52, "From Jess" when Jess later shares her own account (Phase 4); and item 57, keeping a phone's own plan when signing in to an account in someone else's plan (Phase 4). Each is refused or explained plainly today, and loses nothing without asking; each is an improvement, not a gap in Phase 3's promises.
+
+Why: the owner's list for step 3i: every Phase 3 item done, or moved to a named phase with the reason.
