@@ -106,6 +106,11 @@ function setState(next: SyncState) {
   for (const listener of stateListeners) listener();
 }
 
+/** The same, as it is at this moment, outside a screen: for the tests. */
+export function syncStateNow(): SyncState {
+  return state;
+}
+
 /** Whether the plan is kept in the account, and what's still to send, kept up to date. */
 export function useSync(): SyncState {
   return useSyncExternalStore(
@@ -1743,10 +1748,20 @@ async function keepInStepOnce(client: SupabaseClient, person: string): Promise<b
 let listeningTo: string | null = null;
 let soon: ReturnType<typeof setTimeout> | null = null;
 
-/** Syncs in a moment: after a change, so several in a row go together, or after a nudge. */
-export function syncSoon(): void {
+/**
+ * Syncs in a moment: after a change, so several in a row go together, or
+ * after a nudge. Done once More's count of changes waiting includes the one
+ * just queued, so a change waits for it before it shows anywhere, and More
+ * never says the plan is saved in the account a moment too soon (D510).
+ */
+export function syncSoon(): Promise<void> {
+  if (soon !== null) clearTimeout(soon);
+  soon = setTimeout(() => {
+    soon = null;
+    void syncNow();
+  }, 300);
   // A change has just joined the queue: More says so straight away (step 3d).
-  void withDb(async (db) => {
+  return withDb(async (db) => {
     const own = await ownPlanOnPhone(db);
     if (own !== undefined && (await db.links.get(own.id)) !== undefined) {
       await publish(db, own.id, state.cantSend);
@@ -1754,11 +1769,6 @@ export function syncSoon(): void {
   }).catch(() => {
     // No database: nothing is queued anyway.
   });
-  if (soon !== null) clearTimeout(soon);
-  soon = setTimeout(() => {
-    soon = null;
-    void syncNow();
-  }, 300);
 }
 
 function startListening(client: SupabaseClient, link: PlanLink) {
@@ -1772,7 +1782,7 @@ function startListening(client: SupabaseClient, link: PlanLink) {
           .channel(topic, { config: { private: true } })
           .on('broadcast', { event: 'changed' }, () => {
             void lookForGetBackIn();
-            syncSoon();
+            void syncSoon();
           })
           .subscribe();
       }

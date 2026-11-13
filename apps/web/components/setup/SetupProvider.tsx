@@ -220,7 +220,8 @@ export function SetupProvider({ children }: { readonly children: ReactNode }) {
         } finally {
           db.close();
         }
-        syncSoon();
+        // Counted as waiting to be sent before it shows (D510).
+        await syncSoon();
       } catch {
         canSave.current = false;
         setNotSaved(true);
