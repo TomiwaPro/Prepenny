@@ -35,7 +35,7 @@ select is((select changed_by from public.series where id = tests.id('rent')), te
 select is((select version from public.series where id = tests.id('rent')), 2,
   'The version goes up by 1 on every save, whatever a phone sends');
 select ok((select seq from public.series where id = tests.id('rent'))
-    > (select max(seq) from public.accounts),
+    > (select max(seq) from public.accounts where plan_id = tests.id('plan')),
   'The save gets the plan''s next change number');
 select is((select created_by from public.series where id = tests.id('rent')), tests.id('jess'),
   'Who made it stays as it was');
