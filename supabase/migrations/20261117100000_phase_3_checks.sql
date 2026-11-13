@@ -14,6 +14,8 @@
 -- 6. A name could be set straight through the Data API, past its checks (D493).
 -- 7. Two phones making the same new record at the same moment: the newer
 --    change was refused, not settled as a clash (D501).
+-- 8. Bringing the plan down could read a notice before the change it's
+--    about (D502).
 
 -- ---------------------------------------------------------------------------
 -- 1. Taking a person off a record, a copy, a summary or a notice: wherever
@@ -423,9 +425,13 @@ begin
 end;
 $$;
 
+-- It also reads one moment now (D502): marked stable, every read in it sees
+-- the database as it was when it started. Each read saw the latest before,
+-- so a notice about a change could arrive before the change itself, and the
+-- phone's words about it named the wrong amount.
 create or replace function public.plan_changes(plan uuid, shared_after bigint, mine_after bigint)
 returns jsonb
-language plpgsql security invoker set search_path = '' as $$
+language plpgsql stable security invoker set search_path = '' as $$
 declare
   t text;
   found_rows jsonb;

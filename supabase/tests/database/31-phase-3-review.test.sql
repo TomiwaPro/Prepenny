@@ -7,11 +7,12 @@
 -- 2. A change can't be made to look older than it is: Activity, History and
 --    "Changed by" go by when it reached the account (D492).
 -- 3. A name is checked wherever it's saved (D493).
+-- 4. Bringing the plan down reads one moment (D502).
 
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(17);
 
 select tests.make_jess_and_tom('editor');
 
@@ -144,6 +145,14 @@ select is(pg_temp.refusal($$ update public.people set nickname = repeat('A', 31)
 select is(pg_temp.refusal($$ select app.nickname('Tom' || chr(8203)) $$),
   'needs-name', 'and one with a letter you can''t see, when he asks to join');
 select is((select nickname from public.people where id = tests.id('tom')), 'Tom', 'His name is as it was');
+
+-- ---------------------------------------------------------------------------
+-- 4. Bringing the plan down reads one moment (D502): every read in it sees
+-- the database as it was when it started, so a notice about a change never
+-- arrives before the change itself.
+
+select is((select provolatile from pg_proc where oid = 'public.plan_changes(uuid, bigint, bigint)'::regprocedure),
+  's', 'plan_changes reads one moment: the records and the notices about them together');
 
 select * from finish();
 rollback;
