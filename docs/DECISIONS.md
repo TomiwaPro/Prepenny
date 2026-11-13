@@ -5952,7 +5952,7 @@ Decided 12 Nov 2026 in step 3i. Builds brief 8.7 test 2 and ARCHITECTURE.md 7 ("
 - Each must give nothing of Jess's private records and change nothing of them, nor of her account. Alex and someone signed out get nothing of the plan at all, and "Can view only" changes nothing shared. Each kind of request is first seen to work on something the person may see, such as shared Rent, so nothing can pass by trying nothing.
 - GraphQL isn't switched on in the local database; the test switches it on, as it can be on Supabase's own projects, so every table is tried through it too. PrePenny never uses GraphQL (a question for the owner in PLAN.md).
 - Two things the test allows, on purpose: a live nudge carries its own message id, which Supabase adds to every message and which names nothing; and a wrong code typed at the get-back-in function counts towards locking that address for a day (D392).
-- It takes about 8 minutes, so it runs once, at 360px: it's about the server, not the screen.
+- It runs once, at 360px: it's about the server, not the screen. In one test, the four people took 7.7 minutes on their own and ran out of 15 minutes three at a time, so each person has a test of their own, with its own set-up.
 
 Breaking a rule on purpose, the test fails at once and names what leaked: payments readable by every member fails it at "Tom: GET series", listing Jess's ids and payment names; letting anyone hear any plan's channel fails it at Jess's own channel.
 
