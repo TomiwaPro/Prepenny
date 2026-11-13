@@ -336,3 +336,121 @@ test('stays readable with text at 200%, and every tap target is big enough', asy
   await expect(page.getByTestId('practice-short')).toBeVisible();
   expect(await layoutProblems(page)).toEqual([]);
 });
+
+/**
+ * Keeps the phone's own database busy for `ms` milliseconds, as a slow or
+ * busy phone can, so PrePenny's next save there waits until then. A reload
+ * straight after a practice change must still find the list as the screen
+ * last showed it (D264), however long the phone takes to save it (D510).
+ */
+async function holdPhoneStorage(page: Page, ms: number) {
+  await page.evaluate(
+    (hold) =>
+      new Promise<void>((started, failed) => {
+        const request = indexedDB.open('prepenny');
+        request.onerror = () => failed(request.error);
+        request.onsuccess = () => {
+          const db = request.result;
+          const store = db.transaction('device', 'readwrite').objectStore('device');
+          const until = performance.now() + hold;
+          const again = () => {
+            if (performance.now() < until) store.count().onsuccess = again;
+          };
+          again();
+          // Closes once the held transaction ends.
+          db.close();
+          started();
+        };
+      }),
+    ms,
+  );
+}
+
+test('a practice change, taking one back and throwing them away are kept on the phone before the screen says so, even on a slow phone (D510)', async ({
+  page,
+}) => {
+  await openWhatIfFromComingUp(page);
+  // Made: a reload straight after still has it.
+  await holdPhoneStorage(page, 2000);
+  await lowerFridayPay(page);
+  await page.reload();
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  await expect(page.getByTestId('practice-list')).toContainText('Pay changed for just this one.');
+  // A second one, taken back: a reload straight after has only the first.
+  const row = await practiceRow(page, '2026-10-30', 'Spending money');
+  await row.click();
+  const spending = page.getByRole('dialog', { name: 'Spending money' });
+  await spending.getByRole('button', { name: 'Skip this one' }).click();
+  await expect(spending).toBeHidden();
+  await expect(page.getByTestId('practice-list').getByRole('listitem')).toHaveCount(2);
+  await holdPhoneStorage(page, 2000);
+  await page.getByRole('button', { name: 'Take back the last change' }).click();
+  await expect(page.getByTestId('what-if-note')).toHaveText(
+    'The last practice change is taken back.',
+  );
+  await page.reload();
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  await expect(page.getByTestId('practice-list').getByRole('listitem')).toHaveCount(1);
+  // Thrown away: a reload straight after has none.
+  await page.getByRole('button', { name: 'Throw them away' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Throw them away' });
+  await expect(sheet).toContainText('Throw away 1 practice change?');
+  await holdPhoneStorage(page, 2000);
+  await sheet.getByRole('button', { name: 'Throw them away' }).click();
+  await expect(sheet).toBeHidden();
+  await page.reload();
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  await expect(page.getByTestId('practice-list')).toHaveCount(0);
+});
+
+test('Keep removes the practice changes from the phone before saying they are in the plan, so they can never be kept a second time (D510)', async ({
+  page,
+}) => {
+  // Notes, in order, when the phone removes something it keeps for this
+  // device, and when the undo bar first says the changes are in the plan.
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    Reflect.set(window, '__seen', seen);
+    const remove = IDBObjectStore.prototype.delete;
+    IDBObjectStore.prototype.delete = function (
+      this: IDBObjectStore,
+      key: IDBValidKey | IDBKeyRange,
+    ) {
+      if (this.name === 'device') seen.push(`removed ${String(key)}`);
+      return remove.call(this, key);
+    };
+    new MutationObserver(() => {
+      const kept = '[data-testid="undo-bar"][data-words*="now in your plan"]';
+      if (!seen.includes('said kept') && document.querySelector(kept) !== null) {
+        seen.push('said kept');
+      }
+    }).observe(document, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-words'],
+    });
+  });
+  await openWhatIfFromComingUp(page);
+  await lowerFridayPay(page);
+  // Only what Keep does is noted.
+  await page.evaluate(() => {
+    (Reflect.get(window, '__seen') as string[]).length = 0;
+  });
+  await page.getByRole('button', { name: 'Keep these changes' }).click();
+  await expect(undoBar(page)).toContainText('Your practice change is now in your plan.');
+  const seen = await page.evaluate(() => Reflect.get(window, '__seen') as string[]);
+  const removed = seen.findIndex((one) => one.startsWith('removed what-if|'));
+  expect(removed).toBeGreaterThanOrEqual(0);
+  expect(removed).toBeLessThan(seen.indexOf('said kept'));
+  // So a reload straight after has nothing left to keep, and the real plan has it once.
+  await page.reload();
+  await expect(page.getByTestId('side-by-side')).toBeVisible();
+  await expect(page.getByTestId('practice-list')).toHaveCount(0);
+  await expect(accountSides(page, 'Current account').getByTestId('real')).toContainText(
+    `${MINUS}£95.47`,
+  );
+  await expect(accountSides(page, 'Current account').getByTestId('practice')).toContainText(
+    `${MINUS}£95.47`,
+  );
+});
