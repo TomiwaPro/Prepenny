@@ -655,7 +655,17 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }, info) => {
       test.slow();
       const y = strings.yourData;
-      const tom = await jessAndTom(page, browser, info, colorScheme, 'Tomasz');
+      // Each copy of this test has its own name for Tom, as it looks for the
+      // name in the whole database at the end, where another copy's Tom may
+      // still be while both run at once (D505).
+      const names: Record<string, string> = {
+        'sign-in-360 light': 'Tomasz',
+        'sign-in-360 dark': 'Tomislav',
+        'sign-in-320 light': 'Tomaso',
+        'sign-in-320 dark': 'Tomos',
+      };
+      const tomName = names[`${info.project.name} ${colorScheme}`] ?? 'Tomasz';
+      const tom = await jessAndTom(page, browser, info, colorScheme, tomName);
       const tomId = await personOn(tom.page);
       const tomAddress = sql(`select email from auth.users where id = ${quoted(tomId)}`);
       await allSentOn(page);
@@ -670,7 +680,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await edit.getByRole('button', { name: 'Save' }).click();
       await expect(undoBar(tom.page)).toContainText('Rent changed for just this one.');
       await expect(rentDue(page).getByTestId('changed-by')).toHaveText(
-        g.changedBy('Tomasz', g.justNow),
+        g.changedBy(tomName, g.justNow),
         { timeout: 20_000 },
       );
 
@@ -741,16 +751,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
           path: '../../docs/screens/3h/activity-after-delete-360-light.png',
         });
       }
-      expect(await page.locator('body').textContent()).not.toContain('Tomasz');
+      expect(await page.locator('body').textContent()).not.toContain(tomName);
       await openShare(page);
-      expect(await page.locator('body').textContent()).not.toContain('Tomasz');
+      expect(await page.locator('body').textContent()).not.toContain(tomName);
 
       // Nothing names Tom any more: not in the database, nor on Jess's phone.
       expect(namedAnywhere(tomId)).toBe('');
       expect(namedAnywhere(tomAddress)).toBe('');
-      expect(namedAnywhere('Tomasz')).toBe('');
+      expect(namedAnywhere(tomName)).toBe('');
       const kept = await everythingOnThePhone(page);
-      expect(kept).not.toContain('Tomasz');
+      expect(kept).not.toContain(tomName);
       expect(kept).not.toContain(tomId);
       expect(kept).not.toContain(tomAddress);
       await tom.context.close();

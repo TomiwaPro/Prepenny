@@ -29,6 +29,7 @@ Where PrePenny stands at the end of Phase 3, accounts and sync (13 Nov 2026), in
 - The six people's journeys again, signed in, on two phones, with a change made with no signal, every day's balance a year ahead checked on both phones.
 - An outside review of everything Phase 3 added found seven problems, none of them showing anyone's private records to anyone else. All are fixed, each with a test.
 - The full end-to-end run found two more, both when two people change the same payment at the very same moment: the newer change could be lost, and the message about it could name the wrong amount. Both are fixed, with a test that makes that moment happen every time.
+- A later run found one more, from Phase 3's deleting step: deleting an account could end with "Your sign-in has ended" instead of "Your account and all your data have been deleted", when the phone happened to look at its account at that moment. The account was deleted all the same; now the words are right every time, with a test that makes that moment happen.
 
 ## What's left
 
