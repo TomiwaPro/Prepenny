@@ -12,6 +12,8 @@
 -- 5. Activity, History and "Changed by" went by the time a phone said it made
 --    a change, which a phone can set as far back as it likes (D492).
 -- 6. A name could be set straight through the Data API, past its checks (D493).
+-- 7. Two phones making the same new record at the same moment: the newer
+--    change was refused, not settled as a clash (D501).
 
 -- ---------------------------------------------------------------------------
 -- 1. Taking a person off a record, a copy, a summary or a notice: wherever
@@ -501,6 +503,240 @@ create trigger checked_nickname before insert or update of nickname on public.pe
   for each row execute function app.check_nickname();
 
 revoke update on public.people from authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 7. Two phones making the same new record at the same moment (D501), found
+-- by brief 8.7 test 4 in step 3i: the second save is a clash, settled by
+-- the newest change, never a refusal. save_edit as step 3g made it, with
+-- that one change.
+
+create or replace function public.save_edit(plan uuid, edit uuid, made_at text, kind text, writes jsonb,
+  overrides uuid[] default null)
+returns jsonb
+language plpgsql security invoker set search_path = '' as $$
+declare
+  write jsonb;
+  t text;
+  record_id uuid;
+  base integer;
+  new_row jsonb;
+  column_list text;
+  saved_version integer;
+  saved_seq bigint;
+  saved_private uuid;
+  saved_deleted boolean;
+  seen integer;
+  old_edit uuid;
+  results jsonb := '[]'::jsonb;
+  changed jsonb := '[]'::jsonb;
+  lost jsonb := '[]'::jsonb;
+  families uuid[] := '{}'::uuid[];
+  shared boolean := false;
+  mine boolean := false;
+  problem text;
+begin
+  if plan is null or edit is null or writes is null or jsonb_typeof(writes) <> 'array'
+    or jsonb_array_length(writes) > 1000
+    or kind is null or kind !~ '^[a-z][a-z-]{0,39}$'
+    or made_at is null
+    or made_at !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$'
+    or coalesce(cardinality(overrides), 0) > 1000 then
+    perform app.refuse('bad-edit');
+  end if;
+  -- Kinds only the server's own steps make (step 3g): a change sent as one of
+  -- them would keep no history, or hide from Activity and "Changed by". A
+  -- plan's first copy only while nobody else is in the plan (D467).
+  if app.server_kind(kind) or (kind = 'first-copy' and app.others_in(plan)) then
+    perform app.refuse('bad-edit');
+  end if;
+
+  -- Only someone in the plan, while their sign-in lasts (D21).
+  if app.begin_edit(plan, edit, made_at, kind) = 'already' then
+    -- Sent before and saved: nothing changes, and nobody is told twice. The
+    -- phone gets each record's version as it is now, as far as it can read it.
+    for write in select * from jsonb_array_elements(writes) loop
+      t := write ->> 'table';
+      saved_version := null;
+      if t = 'plans' then
+        select p.version, p.seq, null::uuid, false into saved_version, saved_seq, saved_private, saved_deleted
+          from public.plans p where p.id = plan;
+      elsif t = any (app.record_tables()) then
+        execute format('select version, seq, private_to, deleted from public.%I where id = $1 and plan_id = $2', t)
+          into saved_version, saved_seq, saved_private, saved_deleted using (write ->> 'id')::uuid, plan;
+      else
+        perform app.refuse('bad-edit');
+      end if;
+      if saved_version is not null then
+        results := results || jsonb_build_object('table', t, 'id', write ->> 'id', 'version', saved_version,
+          'seq', saved_seq, 'private_to', saved_private, 'deleted', saved_deleted);
+      end if;
+    end loop;
+    return jsonb_build_object('saved', 'already', 'rows', results, 'now', app.server_time());
+  end if;
+
+  -- From here, every record saved names this edit (app.fill_sync_fields).
+  perform set_config('prepenny.edit', edit::text, true);
+
+  begin
+    for write in select * from jsonb_array_elements(writes) loop
+      t := write ->> 'table';
+      record_id := (write ->> 'id')::uuid;
+      base := (write ->> 'version')::integer;
+      new_row := write -> 'row';
+      if new_row = 'null'::jsonb then
+        new_row := null;
+      end if;
+      if record_id is null or (new_row is not null and jsonb_typeof(new_row) <> 'object')
+        or (new_row is null and base is null) then
+        perform app.refuse('bad-edit');
+      end if;
+      saved_version := null;
+
+      -- The edit that saved this record last, when this one may replace it
+      -- after a clash (step 3d). Read as the person, under the privacy rules.
+      old_edit := null;
+      if base is not null and coalesce(cardinality(overrides), 0) > 0 then
+        if t = 'plans' then
+          select p.edit_id into old_edit from public.plans p where p.id = plan and p.version = base;
+        elsif t = any (app.record_tables()) then
+          execute format('select edit_id from public.%I where id = $1 and plan_id = $2 and version = $3', t)
+            into old_edit using record_id, plan, base;
+        end if;
+      end if;
+
+      if t = 'plans' then
+        -- Only the plan's bank holidays change through an edit (D155, D289).
+        if record_id <> plan or base is null or new_row is null then
+          perform app.refuse('bad-edit');
+        end if;
+        update public.plans p set nation = new_row ->> 'nation'
+          where p.id = plan and p.version = base
+          returning p.version, p.seq, null::uuid, false into saved_version, saved_seq, saved_private, saved_deleted;
+      elsif t = any (app.record_tables()) then
+        if new_row is null then
+          execute format('update public.%I set deleted = true where id = $1 and plan_id = $2 and version = $3
+              returning version, seq, private_to, deleted', t)
+            into saved_version, saved_seq, saved_private, saved_deleted using record_id, plan, base;
+        else
+          -- The columns sent, of those a phone may send. The phone sends every
+          -- one, null where empty; one left out keeps its default or its value.
+          select string_agg(format('%I', c), ', ') into column_list
+            from unnest(app.sent_columns(t)) c where new_row ? c;
+          if column_list is null then
+            perform app.refuse('bad-edit');
+          end if;
+          if base is null then
+            -- Made already, by this person's other phone or someone else in
+            -- the plan: changed since (a clash).
+            execute format('select count(*) from public.%I where id = $1 and plan_id = $2', t)
+              into seen using record_id, plan;
+            if seen = 0 then
+              -- Another save may be making the same record at this moment,
+              -- as when two phones change the same payment within a second:
+              -- this waits for it, and if it was saved, saves nothing here,
+              -- so it's a clash below, as when the other save came first
+              -- (D501). It was refused before, which lost the newer change.
+              execute format('insert into public.%1$I (id, plan_id, %2$s)
+                  select $1, $2, %2$s from jsonb_populate_record(null::public.%1$I, $3)
+                  on conflict do nothing
+                  returning version, seq, private_to, deleted', t, column_list)
+                into saved_version, saved_seq, saved_private, saved_deleted using record_id, plan, new_row;
+            end if;
+          else
+            execute format('update public.%1$I set (%2$s, deleted) =
+                  (select %2$s, false from jsonb_populate_record(null::public.%1$I, $2))
+                where id = $1 and plan_id = $3 and version = $4
+                returning version, seq, private_to, deleted', t, column_list)
+              into saved_version, saved_seq, saved_private, saved_deleted using record_id, new_row, plan, base;
+          end if;
+        end if;
+      else
+        perform app.refuse('bad-edit');
+      end if;
+
+      if saved_version is null then
+        -- Nothing was saved. Either it isn't at the version the phone saw
+        -- (changed since), or the person may read it but not change it ("Can
+        -- view only", or locked to someone else), or they can't see it at
+        -- all, which is refused as not found (D290).
+        if t = 'plans' then
+          select p.version into seen from public.plans p where p.id = plan;
+        else
+          execute format('select version from public.%I where id = $1 and plan_id = $2', t)
+            into seen using record_id, plan;
+        end if;
+        if seen is null then
+          perform app.refuse('not-found', '42501');
+        end if;
+        if base is not null and seen = base then
+          perform app.refuse('not-allowed', '42501');
+        end if;
+        changed := changed || jsonb_build_object('table', t, 'id', record_id);
+        continue;
+      end if;
+
+      -- A record a newer change has replaced, from an edit the phone named.
+      if old_edit is not null and old_edit <> edit and old_edit = any (overrides) then
+        lost := lost || jsonb_build_object('edit', old_edit, 'table', t, 'id', record_id);
+      end if;
+
+      if t = 'series' then
+        families := families || (select s.family_id from public.series s where s.id = record_id);
+      end if;
+      if saved_private is null then
+        shared := true;
+      else
+        mine := true;
+      end if;
+      results := results || jsonb_build_object('table', t, 'id', record_id, 'version', saved_version,
+        'seq', saved_seq, 'private_to', saved_private, 'deleted', saved_deleted);
+    end loop;
+
+    -- The people whose changes this one replaced are told (step 3d), while
+    -- the mark still says which edit is being saved.
+    if jsonb_array_length(lost) > 0 then
+      perform app.tell_clashes(plan, edit, lost);
+    end if;
+  exception
+    -- PrePenny's own refusals and the privacy rules' own say no more than a code.
+    when sqlstate 'P0001' or insufficient_privilege then
+      raise;
+    -- Anything else, such as a box the database checks, would say what the
+    -- record holds, and that could be an amount or a name. So only a code
+    -- goes back, and into the database's logs (CLAUDE.md).
+    when unique_violation then
+      perform app.refuse('not-found', '42501');
+    when others then
+      perform app.refuse('bad-record');
+  end;
+
+  -- Every record is written: from here nothing more is, so the mark goes. A
+  -- person can't follow save_edit with a write of their own in the same
+  -- request, as one GraphQL request with two steps could (D345).
+  perform set_config('prepenny.edit', '', true);
+
+  -- Anything changed since the phone saw it refuses the whole edit, cleanly:
+  -- nothing of it is saved, notices included, and the phone hears which
+  -- records, then looks at what's new and works out the clash (step 3d).
+  if jsonb_array_length(changed) > 0 then
+    raise exception using errcode = 'P0001', message = 'changed-since', detail = changed::text;
+  end if;
+
+  problem := app.family_rules_problem(plan, families);
+  if problem is not null then
+    perform app.refuse(problem);
+  end if;
+
+  if shared then
+    perform app.nudge(plan, true);
+  end if;
+  if mine then
+    perform app.nudge(plan, false);
+  end if;
+  return jsonb_build_object('saved', 'new', 'rows', results, 'now', app.server_time());
+end;
+$$;
+
 
 -- ---------------------------------------------------------------------------
 -- Who can use which function, as at the end of every migration that adds to

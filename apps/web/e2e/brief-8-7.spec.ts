@@ -305,6 +305,71 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await tom.context.close();
     });
 
+    // Test 4 at the very same moment (D501): found by test 4 itself, once in
+    // four runs three at a time. When the two saves met inside the server,
+    // the later was refused, and Jess's newer change was lost. Here Tom's
+    // save is held inside the server for 5 seconds, after it has added the
+    // change and before it's done, and Jess saves meanwhile, every time.
+    test('4, at the very same moment: both saves meet inside the server, and the newest still wins', async ({
+      page,
+      browser,
+    }, info) => {
+      // Once, at 360px in light: it holds every save of that amount, so two copies at once would hold each other's.
+      test.skip(
+        info.project.name !== 'sign-in-360' || colorScheme !== 'light',
+        'About the server: once, at 360px in light.',
+      );
+      test.setTimeout(300_000);
+      const tom = await jessAndTom(page, browser, info, colorScheme);
+      const plan = await planOf(page);
+      sql(`create or replace function tests.held_inside() returns trigger language plpgsql as $$
+          begin perform pg_sleep(5); return new; end $$;
+        drop trigger if exists zz_held_inside on public.payment_changes;
+        create trigger zz_held_inside after insert on public.payment_changes for each row
+          when (new.amount = 57100) execute function tests.held_inside();`);
+      try {
+        const tomsSheet = await rentSheetWith(tom.page, '571');
+        const jessSheet = await rentSheetWith(page, '581');
+        await tomsSheet.getByRole('button', { name: 'Save' }).click();
+        await expect
+          .poll(() =>
+            sql(
+              `select count(*) from pg_stat_activity where wait_event = 'PgSleep' and query like '%save_edit%'`,
+            ),
+          )
+          .toBe('1');
+        await jessSheet.getByRole('button', { name: 'Save' }).click();
+        expect(
+          sql(
+            `select count(*) from pg_stat_activity where wait_event = 'PgSleep' and query like '%save_edit%'`,
+          ),
+          "Jess saved while Tom's save was still inside the server",
+        ).toBe('1');
+
+        await expect
+          .poll(
+            () =>
+              sql(`select amount from public.payment_changes where plan_id = ${quoted(plan)}
+                and original_date = '2026-11-01' and not deleted`),
+            { timeout: 20_000 },
+          )
+          .toBe('58100');
+        await expect(rentDue(page)).toContainText('−£581.00', { timeout: 20_000 });
+        await expect(rentDue(tom.page)).toContainText('−£581.00', { timeout: 20_000 });
+        const told = tom.page.getByRole('dialog', { name: c.title });
+        await expect(told).toBeVisible({ timeout: 20_000 });
+        await expect(told.getByTestId('clash-message')).toHaveText(
+          "Jess changed Rent on Sun 1 Nov to £581 after you changed it to £571. Jess's change is kept.",
+        );
+        await expect(page.getByRole('dialog', { name: c.title })).toHaveCount(0);
+        await expect(page.getByRole('dialog', { name: c.refusedTitle })).toHaveCount(0);
+      } finally {
+        sql(`drop trigger if exists zz_held_inside on public.payment_changes;
+          drop function if exists tests.held_inside();`);
+      }
+      await tom.context.close();
+    });
+
     test("5. Tom leaves and keeps a copy. Jess's plan is unchanged, and Tom's copy no longer updates", async ({
       page,
       browser,
