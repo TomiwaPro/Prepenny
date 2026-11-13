@@ -6048,3 +6048,26 @@ Decided 13 Nov 2026 in step 3i, from its pull request's checks once it was marke
 Test: `scripts/workflows.test.ts`: every workflow that starts the local Supabase sets that range first, leaving 54320 to 54329 out. It fails on the workflow as it was.
 
 Why: a check that fails because of what else the machine happens to be doing can stop the live app updating after a merge (D297).
+
+### D504. Deleting an account on a phone says "deleted", and only that, whenever the phone looks
+
+Decided 13 Nov 2026 in step 3i, found by shared-plan test 6 (D482) in a local run three at a time, once. A fault from step 3h, not from step 3i's changes.
+
+- Tom deleted his account, and his phone said "Your sign-in has ended, so your plan was removed from this phone" instead of "Your account and all your data have been deleted". The account was deleted; only the words were wrong.
+- The cause, from the test's recording: while the delete screen waited for the server's answer, the phone's own look at the account (every minute, and when the signal comes back) was told "deleted" and cleared the phone itself, as it does when the account is deleted on another phone. So two clear-ups ran at once, each signing the phone out. The first to finish lowered the phone's "signing out on purpose" mark while the other's sign-out was still under way, and that one then looked like a sign-in that had ended by itself. Three different pages were asked for, one after another; the last won.
+- Now, while a phone asks for its own account to be deleted, nothing else on it acts on the account being deleted or the sign-in having ended: the delete screen clears the phone and says so, once. Refused, all goes on as before. Once a phone is clearing itself on purpose (signing out, or deleting), an ended sign-in is part of that and changes nothing. And the mark counts the sign-outs under way, so two at once can't clear each other's.
+
+Test: `apps/web/e2e/your-data.spec.ts`, "4b": the account is deleted on the server and the answer held back until the phone has looked at its account twice and been told "deleted", every time. Without the fix the phone says "This account has been deleted" (the words for another phone) and stops looking; with it, "Your account and all your data have been deleted", and nothing is left on the phone. Once, at 360px in light, as it's about timing.
+
+Why: the person is told exactly what happened (brief 4.14), and only once.
+
+### D505. Each copy of shared-plan test 6 gives Tom its own name
+
+Decided 13 Nov 2026 in step 3i, found with D504.
+
+- Shared-plan test 6 runs four times, at both widths in light and dark, and ends by looking for Tom's name in every table of the database. Every copy called Tom "Tomasz", so when two copies ran at once, one found the other's Tom, still signed up. It failed once in a run of the delete tests three at a time.
+- Now each copy has its own name, none inside another: Tomasz (360px light, the copy that takes the screenshots, so they don't change), Tomislav, Tomaso and Tomos. What's checked is unchanged. The other whole-database searches already look for an id or an address made for that run.
+
+Test: the delete tests, every copy twice, three at a time: 26 passed.
+
+Why: a test that fails because of what else is running at the same time hides real failures (D498).
