@@ -179,6 +179,7 @@ Found in step 3i:
 72. **The pay calculator's test 3** (any time): failed once in step 3h's full run, with no record of which check; 156 runs in 156 here (D498). GitHub now gives no second tries and keeps the trace, so if it fails again, the trace says where.
 73. **Changes from before joining with a plan** (accepted, D489): they're kept and shown in Activity and History, but can't be undone from Activity afterwards, as joining saved every record again.
 74. **The six journeys signed in** (D497) run each person at 320px in light and 360px in dark, to save GitHub minutes; step 2h's journeys still run all four.
+75. **The local database couldn't start on GitHub** once, as its port was taken (D503). Done in step 3i: GitHub's machines hand out spare ports from 60000 up only, so the local Supabase's ports are never taken.
 
 ## Ideas for the owner to decide on later
 

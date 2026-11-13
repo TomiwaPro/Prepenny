@@ -48,6 +48,14 @@ jobs:
       - name: Set up the Supabase command line (2.122.0, ARCHITECTURE.md 1.2)
         run: npm install --global supabase@2.122.0
 
+      - name: Keep the local Supabase's ports for it alone
+        # Linux gives outgoing connections, and servers that ask for any free
+        # port, a number from 32768 to 60999, which includes the local
+        # Supabase's 54320 to 54329. On step 3i's pull request one was taken
+        # just as the database started in the background, and it couldn't
+        # ("address already in use", D503). From 60000 up only, it never can be.
+        run: sudo sysctl -w net.ipv4.ip_local_port_range="60000 65000"
+
       - name: Start a local database with every migration and the test helpers, in the background
         # The database tests and step 3b's sign-in rules need only the
         # database and sign-in. Nothing here reaches the real project; the

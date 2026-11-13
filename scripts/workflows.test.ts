@@ -36,3 +36,18 @@ for (const name of workflows) {
     }
   });
 }
+
+// Every workflow that starts the local Supabase first keeps its ports, 54320
+// to 54329, out of the range the machine hands out to other connections, so
+// none can be taken just as it starts (step 3i, D503).
+for (const name of workflows) {
+  test(`${name} keeps the local Supabase's ports clear before starting it`, () => {
+    const text = readFileSync(join(folder, name), 'utf8');
+    const starts = text.indexOf('supabase start');
+    if (starts < 0) return;
+    const range = /ip_local_port_range="(\d+) (\d+)"/.exec(text.slice(0, starts));
+    assert.ok(range !== null, `${name} sets the range before \`supabase start\``);
+    const [low, high] = [Number(range[1]), Number(range[2])];
+    assert.ok(low > 54329 || high < 54320, `${name}'s range leaves 54320 to 54329 out`);
+  });
+}
