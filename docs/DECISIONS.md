@@ -6096,3 +6096,20 @@ Decided 13 Nov 2026, when the owner picked up the two things left from Phase 3: 
 - Claude Code made the owner a private phone page with the script, a setup clock that says when 5 minutes have passed, a clock for each of the five tasks with the "Thanks, let's move on" reminder at 2 minutes, the notes table's questions as buttons, and "Copy the notes for all three", which gives the guide's notes table for each person, ready to paste into Claude Code. Its notes are kept with the page, and only the owner can open them; it isn't part of the app or this repository. The owner has its link. The guide still works without it.
 
 Why: a guide that sends the owner to a step that's already built, or to longer browser settings, makes the test take longer than it needs to. One page with the clock and the notes is easier to use on a phone while watching someone than the clock app and a copied table at once.
+
+## From the Phase 4 plan's checks
+
+### D510. Three tests that failed now and then: What if keeps its list before showing it, and a change is counted as waiting before it shows
+
+Decided 13 Nov 2026, from the checks of the Phase 4 plan's pull request, which changes no app code. The owner chose to fix all three before Phase 4 starts.
+
+- **What if** (D264). The practice changes were shown on screen first and kept on the phone a moment later. Closed or reloaded in that moment, PrePenny lost a practice change just made, or brought back ones just taken back or thrown away. After "Keep these changes" it could bring back changes already in the real plan, and keeping them again would have made them twice. Now each new list is kept on the phone before the screen shows it: a practice change, taking one back, throwing them away. Keep removes them from the phone first, then makes them in the real plan, and puts them back on the phone if that's refused: closed part-way, PrePenny loses a practice change at worst, never makes one twice. The words saying what happened take focus once any sheet has closed and given focus back (WCAG 2.4.3).
+- **Changes waiting to be sent** (D371). After a change, the phone counted it as waiting a moment after the change showed, so for that moment More could say "Your plan is saved in your account." with the change not sent. The clock test (D378) opened More in that moment and asked the server too early, on `main`. Now a change is counted as waiting before it shows anywhere.
+- **Kofi's setup.** Screen 3 stayed after Next once on GitHub, in dark mode at 360px, and once in 130 runs on the building computer: alone, beside other tests, three at a time and with recordings on. Its cause isn't known, so nothing is guessed at. If it fails again, its message in GitHub's log lists the whole screen, whether Next was busy and what had focus. GitHub's log can be read from the building computer, and its recordings can't (D506).
+
+Tests:
+
+- `apps/web/e2e/what-if.spec.ts`, two new tests. The first keeps the phone's storage busy for 2 seconds, as a slow phone can, then reloads straight after a practice change, a take-back and throwing them away. The second checks that Keep removes the practice changes from the phone before the undo bar says they're in the plan, and that a reload then has none, with the real plan showing the change once. Both failed 3 runs in 3 without the fix.
+- `apps/web/test/unit/sync-count.test.ts` fails without the fix: once `syncSoon` is done, the count includes the change just queued.
+
+Why: a test that fails now and then hides real failures and can stop the live app updating after a merge (D297, D498, D506), and two of the three were small faults in the app itself.
