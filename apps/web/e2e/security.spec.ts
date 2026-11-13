@@ -306,7 +306,8 @@ for (const person of PEOPLE) {
       info.project.name !== 'sign-in-360',
       'About the server, not the screen: run once, at 360px.',
     );
-    test.setTimeout(600_000);
+    // Each took 3 to 9.4 minutes three at a time on the building computer.
+    test.setTimeout(900_000);
 
     // ---------------------------------------------------------------------
     // Jess and Tom, as in brief 8.7, and Jess's private records.
