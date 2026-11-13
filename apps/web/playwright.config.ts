@@ -39,7 +39,9 @@ export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
   forbidOnly: process.env.CI !== undefined,
-  retries: process.env.CI === undefined ? 0 : 1,
+  // No second tries, on GitHub either (step 3i, D498): a test that needs one
+  // fails, with its trace kept, so its cause is found rather than hidden.
+  retries: 0,
   reporter: process.env.CI === undefined ? 'list' : [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: `http://127.0.0.1:${port}`,

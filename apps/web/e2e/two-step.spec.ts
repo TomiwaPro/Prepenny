@@ -85,7 +85,12 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
       browser,
     }, info) => {
-      test.slow();
+      // A slow test's 90 seconds, and the minute its laptop may take to find
+      // out it was signed out (PLAN.md item 71): once two-step sign-in is on,
+      // the laptop's older sign-in gets nothing, live nudges included, so only
+      // its once-a-minute look tells it. It took 58 of the test's 66 seconds
+      // on its own; three at a time, the rest took more than the 32 left.
+      test.setTimeout(90_000 + 60_000);
       const address = newEmail('sam');
       const used = new Set<string>();
       await makeAPlan(page);
