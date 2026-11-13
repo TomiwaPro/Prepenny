@@ -28,6 +28,7 @@ Where PrePenny stands at the end of Phase 3, accounts and sync (13 Nov 2026), in
 - A security test that tried every request a partner, a stranger with an account, and someone signed out could make for Jess's private records, through every table, every database step, GraphQL, every live-update channel and the get-back-in function, with her real ids: none gave anything or changed anything.
 - The six people's journeys again, signed in, on two phones, with a change made with no signal, every day's balance a year ahead checked on both phones.
 - An outside review of everything Phase 3 added found seven problems, none of them showing anyone's private records to anyone else. All are fixed, each with a test.
+- The full end-to-end run found two more, both when two people change the same payment at the very same moment: the newer change could be lost, and the message about it could name the wrong amount. Both are fixed, with a test that makes that moment happen every time.
 
 ## What's left
 
