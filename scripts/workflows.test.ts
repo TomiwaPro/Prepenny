@@ -27,13 +27,11 @@ for (const name of workflows) {
   test(`${name} writes no secret into a query's text`, () => {
     const text = readFileSync(join(folder, name), 'utf8');
     for (const secret of secretsIn(text)) {
-      const inQuery = text
-        .split('\n')
-        .filter((line) => {
-          // The text of a query: `--arg query "..."`, `query="..."` or `{query: ...}`.
-          const start = line.search(/--arg query |\bquery=|\bquery: /);
-          return start >= 0 && line.slice(start).includes(`$${secret}`);
-        });
+      const inQuery = text.split('\n').filter((line) => {
+        // The text of a query: `--arg query "..."`, `query="..."` or `{query: ...}`.
+        const start = line.search(/--arg query |\bquery=|\bquery: /);
+        return start >= 0 && line.slice(start).includes(`$${secret}`);
+      });
       assert.deepEqual(inQuery, [], `${secret} is written into a query in ${name}`);
     }
   });
