@@ -16,7 +16,7 @@ Setup is 6 screens in 3 parts (D356). The top of each screen says which part it'
 - **Their own phone,** in their usual browser (Chrome on Android, Safari on iPhone). Not a private window: some private windows can't save anything.
 - **The link:** https://prepenny.co.uk (the live app), or the preview link of the update you're testing.
 - **Their numbers:** they can use their real balance and bills, rough figures, or made-up ones. Tell them so. Never write their amounts or payment names in your notes: write what they did, not what they typed.
-- **You need:** a stopwatch (your phone's clock app), this page, and a copy of the notes table below.
+- **You need:** a stopwatch (your phone's clock app), this page, and a copy of the notes table below. Or the notes page Claude Code made you (D507): it has this script, the clocks and the notes table in one place, and copies all three people's notes for Claude Code.
 
 ## What to say
 
@@ -78,7 +78,10 @@ Ask these three questions, and write down their answers word for word:
 2. "Was there anything you expected to see that wasn't there?"
 3. "Would you use this? Why, or why not?"
 
-Thank them. If they used real numbers and want them gone, they can clear PrePenny from their phone: in Chrome on Android, tap the three dots, then **Settings**, **Site settings**, **All sites**, find the PrePenny address and tap **Delete** (or **Clear & reset**); on an iPhone, open **Settings**, **Safari**, **Advanced**, **Website Data**, find the PrePenny address and swipe to delete. If they didn't sign in, nothing they typed was sent anywhere: PrePenny keeps it on their phone only. If they did sign in, their plan is also saved in their account, and "Delete my account and all my data" comes later in Phase 3 (step 3h): until then, ask Claude Code to remove it.
+Thank them. If they used real numbers and want them gone, they can remove them in PrePenny itself:
+
+- **If they didn't sign in** (most people): nothing they typed was sent anywhere, as PrePenny keeps it on their phone only. Tap **More**, then **Delete my account and all my data**, then **Remove everything from this phone**, then **Yes, remove everything**.
+- **If they signed in**: their plan is also saved in their account. Tap **More**, then **Delete my account and all my data**, then **Send me a code**, type the code from the email, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. An email says it's done.
 
 ## Notes table
 

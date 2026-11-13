@@ -6084,3 +6084,15 @@ Decided 13 Nov 2026 in step 3i, from its pull request's checks after D504. Chang
 Test: `scripts/workflows.test.ts`: every workflow that starts the local Supabase in the background waits for it before its first `playwright test`. It fails on the workflow as it was.
 
 Why: a test that fails because of what else the machine is doing hides real failures, and can stop the live app updating after a merge (D297, D498).
+
+## Made after Phase 3, getting ready to test with people
+
+### D507. Testing with people: removing someone's numbers uses PrePenny itself, and a notes page holds the clock and the notes
+
+Decided 13 Nov 2026, when the owner picked up the two things left from Phase 3: trying it alone (`docs/TRY-PHASE-3.md`) and testing with three people (`docs/TESTING-WITH-PEOPLE.md`).
+
+- `docs/TESTING-WITH-PEOPLE.md` said "Delete my account and all my data" came later in step 3h, and to ask Claude Code to remove a signed-in tester's account. Step 3h is done, so it now gives the app's own steps: More, then Delete my account and all my data, which offers Remove everything from this phone for someone not signed in, and deletes the account, with a code, for someone signed in. The browser's site settings steps are gone: they were longer and differ between phones.
+- Every button and message the two guides name was checked against the app's words (`apps/web/strings/en-GB.ts`). The rest matched.
+- Claude Code made the owner a private phone page with the script, a setup clock that says when 5 minutes have passed, a clock for each of the five tasks with the "Thanks, let's move on" reminder at 2 minutes, the notes table's questions as buttons, and "Copy the notes for all three", which gives the guide's notes table for each person, ready to paste into Claude Code. Its notes are kept with the page, and only the owner can open them; it isn't part of the app or this repository. The owner has its link. The guide still works without it.
+
+Why: a guide that sends the owner to a step that's already built, or to longer browser settings, makes the test take longer than it needs to. One page with the clock and the notes is easier to use on a phone while watching someone than the clock app and a copied table at once.
