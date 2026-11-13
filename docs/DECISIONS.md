@@ -6025,14 +6025,15 @@ Test: `apps/web/e2e/brief-8-7.spec.ts`, "4, at the very same moment": Tom's save
 
 Why: brief 8.7 test 4: "The newest change wins and the other person is told". Never lose a change silently (brief 4.14).
 
-### D502. Bringing the plan down reads one moment
+### D502. Bringing the plan down reads the notices first
 
 Decided 13 Nov 2026 in step 3i, found by D501's test once D501 was fixed. Adds to D339 and D367.
 
-- `plan_changes` reads every kind of record, then the person's notices. Each read saw the newest the database had at that instant, so when Jess's change was saved at the very moment Tom's phone was asking, Tom's phone could get the notice "your change was replaced" before the change that replaced it. It then wrote "Jess changed Rent on Sun 1 Nov to £571 after you changed it to £571.": Jess's amount was missing, and his own stood in for it.
-- Now `plan_changes` is marked stable: every read in it sees the database as it was when it started, so records and the notices about them always come together. It only reads, so nothing else changes.
+- `plan_changes` reads every kind of record, then the person's notices. Each read sees the newest the database has at that instant, so when Jess's change was saved at the very moment Tom's phone was asking, Tom's phone could get the notice "your change was replaced" without the change that replaced it. It then wrote "Jess changed Rent on Sun 1 Nov to £571 after you changed it to £571.": Jess's amount was missing, and his own stood in for it.
+- Now it reads the notices first. Every notice it gives was saved before the records were read, so the change it's about is always among them; a notice saved meanwhile comes next time, with its change.
+- First built by marking `plan_changes` as reading one moment ("stable"). The database's own check refused that on GitHub, rightly, as it gives the server's clock time, which changes from moment to moment, and it was a check the building computer hadn't run. Reading the notices first needs no such mark.
 
-Test: `supabase/tests/database/31-phase-3-review.test.sql` part 4, and `apps/web/e2e/brief-8-7.spec.ts`, "4, at the very same moment", which checks Tom's words name Jess's £581.
+Test: `supabase/tests/database/31-phase-3-review.test.sql` part 4 (the notices are read before the records), and `apps/web/e2e/brief-8-7.spec.ts`, "4, at the very same moment", which checks Tom's words name Jess's £581.
 
 Why: a person is told exactly what happened (brief 4.14), with the right amounts.
 

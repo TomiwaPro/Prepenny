@@ -7,7 +7,7 @@
 -- 2. A change can't be made to look older than it is: Activity, History and
 --    "Changed by" go by when it reached the account (D492).
 -- 3. A name is checked wherever it's saved (D493).
--- 4. Bringing the plan down reads one moment (D502).
+-- 4. Bringing the plan down reads the notices before the records (D502).
 
 begin;
 create extension if not exists pgtap with schema extensions;
@@ -147,12 +147,15 @@ select is(pg_temp.refusal($$ select app.nickname('Tom' || chr(8203)) $$),
 select is((select nickname from public.people where id = tests.id('tom')), 'Tom', 'His name is as it was');
 
 -- ---------------------------------------------------------------------------
--- 4. Bringing the plan down reads one moment (D502): every read in it sees
--- the database as it was when it started, so a notice about a change never
--- arrives before the change itself.
+-- 4. Bringing the plan down reads the notices before the records (D502), so
+-- every notice it gives was saved before the records were read, and the
+-- change it's about is among them. Two saves at once can't happen inside one
+-- test; e2e/brief-8-7.spec.ts makes that moment happen, and checks the words.
 
-select is((select provolatile from pg_proc where oid = 'public.plan_changes(uuid, bigint, bigint)'::regprocedure),
-  's', 'plan_changes reads one moment: the records and the notices about them together');
+select ok((select position('from public.notices' in p.prosrc) < position('app.record_tables()' in p.prosrc)
+      and position('from public.notices' in p.prosrc) > 0
+    from pg_proc p where p.oid = 'public.plan_changes(uuid, bigint, bigint)'::regprocedure),
+  'plan_changes reads the notices before the records they''re about');
 
 select * from finish();
 rollback;

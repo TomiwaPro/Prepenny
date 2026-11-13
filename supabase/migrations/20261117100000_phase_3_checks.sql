@@ -25,7 +25,7 @@
 -- whole record.
 
 create or replace function app.without_person(value jsonb, person uuid) returns jsonb
-language plpgsql immutable set search_path = '' as $$
+language plpgsql stable set search_path = '' as $$
 declare
   id text := person::text;
 begin
@@ -425,22 +425,31 @@ begin
 end;
 $$;
 
--- It also reads one moment now (D502): marked stable, every read in it sees
--- the database as it was when it started. Each read saw the latest before,
--- so a notice about a change could arrive before the change itself, and the
--- phone's words about it named the wrong amount.
+-- It also reads the notices first now (D502). Each read sees the newest
+-- the database has at that moment, and the notices were read last: a
+-- notice saved just after the records were read came without the change it
+-- was about, and the phone's words about it named the wrong amount. Read
+-- first, every notice it gives was saved before the records were read, so
+-- its change is among them.
 create or replace function public.plan_changes(plan uuid, shared_after bigint, mine_after bigint)
 returns jsonb
-language plpgsql stable security invoker set search_path = '' as $$
+language plpgsql security invoker set search_path = '' as $$
 declare
   t text;
   found_rows jsonb;
   all_rows jsonb := '[]'::jsonb;
   the_plan jsonb;
+  found_notices jsonb;
 begin
   if plan is null or not exists (select 1 from app.my_plans() p where p = plan) then
     perform app.refuse('not-found', '42501');
   end if;
+  select coalesce(jsonb_agg(jsonb_build_object('id', n.id, 'edit', n.edit_id, 'data', n.data)
+      order by n.created_at), '[]'::jsonb)
+    into found_notices
+    from public.notices n
+    where n.plan_id = plan and n.for_person = auth.uid() and n.kind = 'clash' and n.read_at is null
+      and n.created_at > now() - interval '30 days';
   select jsonb_build_object('id', p.id, 'nation', p.nation, 'owner', p.owner, 'version', p.version,
       'seq', p.seq, 'changed_at', p.changed_at, 'edit_id', p.edit_id,
       'edit_made_at', e.made_at, 'edit_saved_at', app.utc_exact(e.saved_at),
@@ -466,11 +475,7 @@ begin
         'nickname', coalesce(p.nickname, ''))), '[]'::jsonb)
       from public.plan_members m left join public.people p on p.id = m.person_id
       where m.plan_id = plan and m.left_at is null),
-    'notices', (select coalesce(jsonb_agg(jsonb_build_object('id', n.id, 'edit', n.edit_id, 'data', n.data)
-        order by n.created_at), '[]'::jsonb)
-      from public.notices n
-      where n.plan_id = plan and n.for_person = auth.uid() and n.kind = 'clash' and n.read_at is null
-        and n.created_at > now() - interval '30 days'),
+    'notices', found_notices,
     'now', app.server_time());
 end;
 $$;
