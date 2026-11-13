@@ -13,6 +13,7 @@
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
 import { noSidewaysScroll, openHome, updateBalance } from './journeys.ts';
+import { helperInCharge } from './offline-helper.ts';
 import { noAxeProblems } from './setup.ts';
 import { makeAPlan, newEmail } from './sign-in-helpers.ts';
 import {
@@ -152,11 +153,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(sessionsOf(person)).toBe(3);
 
       // The iPhone loses its signal, and a change waits on it.
-      await expect
-        .poll(() => iphone.page.evaluate(() => navigator.serviceWorker.controller !== null), {
-          timeout: 30_000,
-        })
-        .toBe(true);
+      await helperInCharge(iphone.page);
       await iphone.context.setOffline(true);
       await updateBalance(iphone.page, {
         account: null,

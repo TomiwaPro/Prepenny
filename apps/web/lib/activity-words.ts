@@ -49,6 +49,12 @@ export interface ActivityEdit {
   readonly id: string;
   readonly by: string;
   readonly madeAt: string;
+  /**
+   * When it reached the account, by the server's own clock (D492): what
+   * Activity and History show and go by. A phone can say it made a change
+   * at any earlier time, so the time it says is kept only for clashes.
+   */
+  readonly savedAt?: string;
   readonly kind: string;
   readonly mine: boolean;
   readonly undone: boolean;
@@ -518,6 +524,11 @@ export function activityWords(edit: ActivityEdit, context: ActivityContext): str
   return t.sentence(whoStarts(edit.by, context), whatItDid(edit, context));
 }
 
+/** When a change is shown as made: when it reached the account (D492), or what the phone said for an older server. */
+export function shownAt(edit: Pick<ActivityEdit, 'madeAt' | 'savedAt'>): string {
+  return edit.savedAt ?? edit.madeAt;
+}
+
 /** Reads plan_activity's answer, keeping only what's well formed. */
 export function activityEditsFrom(value: unknown): ActivityEdit[] {
   if (value === null || typeof value !== 'object') return [];
@@ -530,6 +541,7 @@ export function activityEditsFrom(value: unknown): ActivityEdit[] {
     // A change by someone whose account has been deleted names nobody (D482).
     const by = one.by === null ? SOMEONE_WHO_LEFT : text(one.by);
     const madeAt = text(one.made_at);
+    const savedAt = text(one.saved_at);
     const kind = text(one.kind);
     if (id === null || by === null || madeAt === null || kind === null) return [];
     const records = Array.isArray(one.records) ? one.records : [];
@@ -538,6 +550,7 @@ export function activityEditsFrom(value: unknown): ActivityEdit[] {
         id,
         by,
         madeAt,
+        ...(savedAt === null ? {} : { savedAt }),
         kind,
         mine: one.mine === true,
         undone: one.undone === true,

@@ -408,7 +408,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
       browser,
     }, info) => {
-      test.slow();
+      // A slow test's 90 seconds, and the minute it waits on purpose, with
+      // live updates cut off (PLAN.md item 71): 66 seconds on its own.
+      test.setTimeout(90_000 + A_MINUTE);
       const main = newEmail('sam');
       const backup = newEmail('backup');
       // No live updates on this phone, as when its connection has dropped:

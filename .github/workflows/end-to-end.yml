@@ -22,8 +22,10 @@ jobs:
     name: Build and end-to-end tests (part ${{ matrix.part }} of 3)
     runs-on: ubuntu-latest
     # Each part took 21 to 34 minutes on step 3e's pull request, once the
-    # sign-in tests were shared between them; this leaves room for a slow day (D389).
-    timeout-minutes: 45
+    # sign-in tests were shared between them (D389). Step 3i adds about 28
+    # minutes across the three (the security test alone is about 8), so each
+    # has 60 minutes, which leaves room for a slow day (D499).
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -35,11 +37,19 @@ jobs:
       - name: Set up the Supabase command line (2.122.0, ARCHITECTURE.md 1.2)
         run: npm install --global supabase@2.122.0
 
+      - name: Keep the local Supabase's ports for it alone
+        # Linux gives outgoing connections, and servers that ask for any free
+        # port, a number from 32768 to 60999, which includes the local
+        # Supabase's 54320 to 54329. On step 3i's pull request one was taken
+        # just as the database started in the background, and it couldn't
+        # ("address already in use", D503). From 60000 up only, it never can be.
+        run: sudo sysctl -w net.ipv4.ip_local_port_range="60000 65000"
+
       - name: Start a local Supabase for the sign-in tests, in the background
         # The database, sign-in, its web address (kong), the test inbox
         # (mailpit), and from step 3c the Data API (postgrest) and the live
-        # nudges (realtime). Started first, so it's ready by the time the
-        # other tests finish. Since step 3e, in every part: the sign-in tests
+        # nudges (realtime). Started first, while the app is installed and
+        # built, and waited for before any test (D506). Since step 3e, in every part: the sign-in tests
         # are shared between the three, as the others are, so no part runs
         # past its time (D389). Since step 3e hardening, with Supabase's
         # function runner too (edge-runtime), for the get-back-in function.
@@ -99,18 +109,22 @@ jobs:
       # library the test browser needs ("already the newest version"), and
       # Ubuntu's download hung for 10 minutes on 6 Nov 2026 and stopped two
       # parts (D323). If a library ever goes missing, the browser says so.
-      - name: End-to-end tests at 320px and 360px
-        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3 --workers=1
-
       - name: Wait for the local Supabase
-        # Still run when an earlier test failed, so every failure shows at
-        # once, but not when the app couldn't be built.
+        # Before any test, so no test shares the machine with Supabase being
+        # downloaded and started: three tests that failed once on GitHub, and
+        # never on the building computer, ran in those first minutes beside
+        # it (D344, D506). Not when the app couldn't be built.
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         timeout-minutes: 10
         run: |
           until [ -f "$RUNNER_TEMP/supabase-start.exit" ]; do sleep 2; done
           cat "$RUNNER_TEMP/supabase-start.log"
           exit "$(cat "$RUNNER_TEMP/supabase-start.exit")"
+
+      - name: End-to-end tests at 320px and 360px
+        # These never contact Supabase, so they still run if it couldn't start.
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @prepenny/web exec playwright test --project=phone-320 --project=phone-360 --shard=${{ matrix.part }}/3 --workers=1
 
       - name: Sign-in and plan-on-the-server tests at 320px and 360px, against the local Supabase
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

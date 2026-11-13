@@ -22,6 +22,7 @@ import {
   activityEditsFrom,
   activityPeopleFrom,
   activityWords,
+  shownAt,
 } from '../lib/activity-words.ts';
 import { formatDay, formatTime } from '../lib/dates.ts';
 import { planActivity, undoChange } from '../lib/sharing.ts';
@@ -225,7 +226,7 @@ export function ActivityScreen() {
     const last = found.edits.at(-1);
     if (last === undefined) return;
     setOlder(true);
-    const answer = await planActivity(planId, last.madeAt);
+    const answer = await planActivity(planId, shownAt(last));
     setOlder(false);
     if (!answer.ok) {
       setProblem(answer.problem.kind === 'offline' ? t.offline : t.couldNotLoad);
@@ -240,7 +241,7 @@ export function ActivityScreen() {
 
   const days: { day: string; edits: ActivityEdit[] }[] = [];
   for (const edit of found.edits) {
-    const day = localToday(new Date(edit.madeAt));
+    const day = localToday(new Date(shownAt(edit)));
     const last = days.at(-1);
     if (last?.day === day) last.edits.push(edit);
     else days.push({ day, edits: [edit] });
@@ -282,7 +283,7 @@ export function ActivityScreen() {
                       {words}
                     </p>
                     <p className={styles.when}>
-                      {t.at(formatTime(edit.madeAt))}
+                      {t.at(formatTime(shownAt(edit)))}
                       {edit.undone ? <span className={styles.undone}>{t.undone}</span> : null}
                     </p>
                     {edit.mine && edit.canUndo && !edit.undone ? (

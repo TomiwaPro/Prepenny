@@ -6,22 +6,13 @@
 import { type BrowserContext, expect, type Page } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
 import { test } from './fixtures.ts';
+import { helperInCharge } from './offline-helper.ts';
 
 /** Opens Home and waits until the offline helper keeps every file on the phone. */
 async function openOnce(page: Page) {
   await page.goto('/app/');
   await expect(page.getByTestId('balance')).toHaveText('£267.54');
-  await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
-    if (registration.active?.state !== 'activated') {
-      await new Promise<void>((resolve) =>
-        registration.active?.addEventListener('statechange', () => resolve()),
-      );
-    }
-  });
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
+  await helperInCharge(page);
 }
 
 async function noSignal(context: BrowserContext) {
@@ -109,6 +100,8 @@ test('with no signal, a change is saved on the phone and is still there next tim
 // the helper until it was loaded again. Here the timing is made exact: the
 // helper's files are held while the page starts loading, then the helper
 // takes charge, then the page arrives. Without the fix it is never taken over.
+// PLAN.md item 47: it waits for the helper's own signals, not a fixed time,
+// as taking charge takes 2 to 8.5 seconds depending on how busy the computer is.
 test('a page that loads while the offline helper is taking charge is taken over too', async ({
   context,
 }) => {
@@ -142,16 +135,12 @@ test('a page that loads while the offline helper is taking charge is taken over 
   await expect.poll(() => pageAsked).toBe(true);
   // The files arrive and the helper takes charge of the first page...
   releaseHelper();
-  await expect
-    .poll(() => first.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
+  await helperInCharge(first);
   // ...and only then does the sign-in page arrive. It's taken over all the same.
   releasePage();
   await loading;
   await expect(page.getByRole('heading', { level: 1, name: 'Sign up' })).toBeVisible();
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
+  await helperInCharge(page);
   // So it opens with no signal straight away.
   await context.setOffline(true);
   await page.goto('/app/');

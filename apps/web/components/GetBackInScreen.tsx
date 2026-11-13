@@ -24,6 +24,7 @@ import { CODE_LASTS_MS, sendCode } from '../lib/account.ts';
 import { momentWords } from '../lib/device-words.ts';
 import { getInWithCode, sendGetInCode } from '../lib/security.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
+import { useStarted } from '../lib/started.ts';
 import { strings } from '../strings/en-GB.ts';
 import { CodeBox, sixDigits } from './CodeBox.tsx';
 import { describedBy, Field } from './Fields.tsx';
@@ -85,6 +86,8 @@ export function GetBackInScreen() {
   const router = useRouter();
   const id = useId();
   const [step, setStep] = useState<'email' | 'code' | 'waiting'>('email');
+  // Its forms only once its code has started (lib/started.ts).
+  const started = useStarted();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentAt, setSentAt] = useState<number | null>(null);
@@ -242,7 +245,7 @@ export function GetBackInScreen() {
           <section className={styles.card}>
             <p>{strings.signIn.off}</p>
           </section>
-        ) : step === 'email' ? (
+        ) : !started ? null : step === 'email' ? (
           <>
             <form className={styles.card} onSubmit={ask} noValidate>
               <Field id={`${id}-email`} label={t.emailLabel} error={emailError} hint={t.emailHint}>

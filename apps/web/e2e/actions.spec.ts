@@ -23,6 +23,7 @@ import {
   AXE_TAGS as tags,
 } from './coming-up.ts';
 import { expect, settingScript, test } from './fixtures.ts';
+import { helperInCharge } from './offline-helper.ts';
 
 /** Sam's example with Travel at £25 a week from Friday, all at the start, and £4.00 spent on Sat 24 Oct before the update. */
 const travel: Budget = {
@@ -579,7 +580,7 @@ test('when a new version arrives, a note says so, and tapping it loads it (D202)
   page,
 }) => {
   await openHome(page);
-  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  await helperInCharge(page);
   await page.reload();
   await expect(page.getByTestId('balance')).toBeVisible();
   await expect(page.getByTestId('update-note')).toHaveCount(0);

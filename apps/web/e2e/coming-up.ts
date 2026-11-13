@@ -93,6 +93,12 @@ export async function chooseView(page: Page, choices: readonly string[]) {
  * there's nothing wrong.
  */
 export async function layoutProblems(page: Page): Promise<string[]> {
+  // Measured in PrePenny's own font (PLAN.md item 35): until Figtree's files
+  // arrive, the browser draws with a stand-in, and the one on GitHub's and
+  // the building computer's Linux is wider, so at 200% text a 320px screen
+  // measured the Pay sheet and the tab bar wider than itself. A busy machine
+  // could measure before the files had arrived.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   return page.evaluate(() => {
     const width = document.documentElement.clientWidth;
     const found: string[] = [];

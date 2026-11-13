@@ -114,7 +114,9 @@ select set_eq(
     -- Leaving (D468) and a payment's history (D469).
     'leave_plan', 'leaving_now', 'payment_history',
     -- Step 3h: download my data, import a backup and delete my account.
-    'my_account_data', 'replace_plan', 'delete_my_account'],
+    'my_account_data', 'replace_plan', 'delete_my_account',
+    -- Step 3i: when a change reached the account, for plan_changes (D492).
+    'utc_exact'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 

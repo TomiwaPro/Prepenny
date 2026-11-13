@@ -320,6 +320,67 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await second.context.close();
     });
 
+    test('4b. the phone looks at its account at the very moment it is deleted: it says "deleted", and nothing else (D504)', async ({
+      page,
+    }, info) => {
+      // Once, at 360px in light: it's about timing, not about the screen.
+      test.skip(
+        info.project.name !== 'sign-in-360' || colorScheme !== 'light',
+        'About timing: once, at 360px in light.',
+      );
+      test.slow();
+      const address = newEmail('sam');
+      await makeAPlan(page);
+      await signUpFromMore(page, address);
+      await openYourData(page, t.delete, t.deleteHeading);
+      codeAskedLongAgo(address);
+      await page.getByRole('button', { name: t.sendCode }).click();
+      await expect(page.getByTestId('delete-said')).toHaveText(t.codeSent(address));
+      const { code } = await signInEmail(address, 2);
+      const check = page.getByTestId('delete-check');
+      await box(check, t.emailCodeLabel).fill(code);
+      await box(check, t.confirmLabel).fill('delete');
+
+      // Every time the server tells the phone its account is deleted.
+      let toldDeleted = 0;
+      page.on('response', async (response) => {
+        if (!response.url().includes('/rest/v1/rpc/hello')) return;
+        const text = await response.text().catch(() => '');
+        if (/"sign_in"\s*:\s*"deleted"/.test(text)) toldDeleted += 1;
+      });
+      // The account is deleted on the server, and the answer held back.
+      let deletedOnServer = () => {};
+      const deleted = new Promise<void>((resolve) => {
+        deletedOnServer = resolve;
+      });
+      let release = () => {};
+      const released = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await page.route('**/rest/v1/rpc/delete_my_account', async (route) => {
+        const answer = await route.fetch();
+        deletedOnServer();
+        await released;
+        await route.fulfill({ response: answer });
+      });
+      await check.getByRole('button', { name: t.deleteButton }).click();
+      await deleted;
+      // Meanwhile the phone looks at its account twice, as when the signal
+      // comes back. Each look asks twice, once for "Stop it" and once before
+      // keeping the plan in step, and the second look's step can only ask once
+      // the first's is done: by the fourth "deleted", the phone has acted on one.
+      for (const told of [2, 4]) {
+        await page.evaluate(() => window.dispatchEvent(new Event('online')));
+        await expect.poll(() => toldDeleted, { timeout: 20_000 }).toBeGreaterThanOrEqual(told);
+      }
+      release();
+
+      await expect(page.getByText(t.deleted)).toBeVisible();
+      await expect(page.getByText(t.deletedElsewhere)).toHaveCount(0);
+      await expect(page.getByText(strings.account.signInEnded)).toHaveCount(0);
+      expect(await page.evaluate(() => localStorage.length)).toBe(0);
+    });
+
     test("5. with two-step sign-in on, deleting needs the authenticator app's code", async ({
       page,
     }) => {

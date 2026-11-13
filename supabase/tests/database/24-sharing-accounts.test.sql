@@ -85,9 +85,9 @@ select is(pg_temp.refusal($$ select public.share_accounts(tests.id('plan'), arra
     gen_random_uuid(), '2026-11-07T10:00:00Z') $$), 'share-together ["' || tests.id('jess-isa') || '"]',
   'Sharing her savings alone is refused, naming the ISA money moves to: share both, or neither');
 select tests.as_test();
-select is((select count(*) from public.accounts where private_to is null), 0::bigint,
+select is((select count(*) from public.accounts where private_to is null and plan_id = tests.id('plan')), 0::bigint,
   'and either way nothing was shared');
-select is((select count(*) from public.edits where kind = 'share-accounts'), 0::bigint,
+select is((select count(*) from public.edits where kind = 'share-accounts' and plan_id = tests.id('plan')), 0::bigint,
   'or saved');
 
 -- ---------------------------------------------------------------------------
@@ -111,7 +111,7 @@ select is((select count(distinct t) from pg_temp.on_current_account()), 7::bigin
 select is((select locked_to from public.pay_adjustments where id = tests.id('jess-overtime')), tests.id('jess'),
   'Her overtime is shared as an amount, locked to her (D303)');
 select set_eq($$ select id, family_id, debt_id, goal_id, tick_id, in_debt_update, series_id, pay_profile_id,
-      cycle_pay_weeks, private_to from public.private_links $$,
+      cycle_pay_weeks, private_to from public.private_links where plan_id = tests.id('plan') $$,
   $$ values
     (app.derived_id(tests.id('plan'), 'family-debt', tests.id('jess-card-payment')::text), tests.id('jess-card-payment'),
       tests.id('jess-card'), null::uuid, null::uuid, null::uuid, null::uuid, null::uuid, null::uuid[], tests.id('jess')),
@@ -129,13 +129,15 @@ select is((select private_to from public.edits where id = tests.id('share-edit')
 select is((select array_agg(private_to) from public.series where id = tests.id('jess-rent-later')),
   array[tests.id('jess')], 'What she removed before sharing stays private (D414)');
 select is_empty($$ select id from (
-    select id, private_to from public.debts union all select id, private_to from public.goals
-    union all select id, private_to from public.pay_profiles union all select id, private_to from public.pay_weeks
-    union all select id, private_to from public.pay_adjustment_details
-    union all select id, private_to from public.private_links union all select id, private_to from public.settings
-    union all select id, private_to from public.accounts where id <> tests.id('jess-current')
-    union all select id, private_to from public.series where account_id <> tests.id('jess-current')) r
-    where private_to is distinct from tests.id('jess') $$,
+    select id, private_to, plan_id from public.debts union all select id, private_to, plan_id from public.goals
+    union all select id, private_to, plan_id from public.pay_profiles
+    union all select id, private_to, plan_id from public.pay_weeks
+    union all select id, private_to, plan_id from public.pay_adjustment_details
+    union all select id, private_to, plan_id from public.private_links
+    union all select id, private_to, plan_id from public.settings
+    union all select id, private_to, plan_id from public.accounts where id <> tests.id('jess-current')
+    union all select id, private_to, plan_id from public.series where account_id <> tests.id('jess-current')) r
+    where private_to is distinct from tests.id('jess') and plan_id = tests.id('plan') $$,
   'Her card, goal, job, usual week, overtime details, links, settings and other accounts stay private');
 
 -- What Tom gets now.

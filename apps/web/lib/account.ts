@@ -150,7 +150,7 @@ function supabase(): Promise<SupabaseClient> {
     made.auth.onAuthStateChange((event, session) => {
       // Supabase couldn't renew a sign-in that has ended, as after "Sign out
       // everywhere" or 90 days without opening PrePenny (PLAN.md item 29).
-      if (event === 'SIGNED_OUT' && !signingOutOnPurpose) {
+      if (event === 'SIGNED_OUT' && signingOutOnPurpose === 0) {
         void signInEnded();
         return;
       }
@@ -228,18 +228,54 @@ export async function checkSignIn(): Promise<void> {
   }
 }
 
-/** True while PrePenny itself is signing this phone out, so it isn't taken for a sign-in that ended. */
-let signingOutOnPurpose = false;
+/**
+ * How many sign-outs PrePenny itself has under way, so none is taken for a
+ * sign-in that ended. A count, not yes or no: with two at once, as when the
+ * delete screen and the sync both clear the phone, the first to finish can't
+ * make the other look like a sign-in that ended (D504).
+ */
+let signingOutOnPurpose = 0;
+
+/** Ends this phone's sign-in on purpose, for PrePenny's own reasons. It goes on the phone whatever Supabase says. */
+function signOutOnPurpose(): Promise<void> {
+  signingOutOnPurpose += 1;
+  return supabase()
+    .then((made) => made.auth.signOut({ scope: 'local' }))
+    .then(
+      () => undefined,
+      () => undefined,
+    )
+    .finally(() => {
+      signingOutOnPurpose -= 1;
+    });
+}
 
 /** Ends this phone's sign-in on purpose, for PrePenny's own reasons. */
 async function signOutHere(): Promise<void> {
-  signingOutOnPurpose = true;
+  await signOutOnPurpose();
+}
+
+/**
+ * True while this phone asks for its own account to be deleted, and kept
+ * once it's deleted, as the page is loaded afresh after (D504).
+ */
+let deletingHere = false;
+
+/**
+ * "Delete my account" on this phone: while it's asked, nothing else here
+ * acts on the account being deleted or the sign-in having ended, as the
+ * phone's own look at the account would if it looked just then. The delete
+ * screen clears the phone itself, and says so once (D504). `work` gives true
+ * once the account is deleted; refused, all goes on as before.
+ */
+export async function whileDeletingHere(work: () => Promise<boolean>): Promise<boolean> {
+  deletingHere = true;
+  let deleted = false;
   try {
-    await (await supabase()).auth.signOut({ scope: 'local' });
-  } catch {
-    // The sign-in on the phone goes all the same.
+    deleted = await work();
+    return deleted;
   } finally {
-    signingOutOnPurpose = false;
+    if (!deleted) deletingHere = false;
   }
 }
 
@@ -250,6 +286,9 @@ async function signOutHere(): Promise<void> {
  * whoever signs in next is asked first (D306). Then the welcome says so.
  */
 async function signInEnded(): Promise<void> {
+  // Signing out or deleting on purpose already: the ended sign-in is part of
+  // that, and it says so itself (D504).
+  if (forgetting || deletingHere) return;
   setAccount({ status: 'signed-out' });
   if (!(await planSafelyKept())) return;
   await forgetEverything();
@@ -264,6 +303,7 @@ async function signInEnded(): Promise<void> {
  * lost (D348).
  */
 export async function signInEndedOnServer(): Promise<void> {
+  if (forgetting || deletingHere) return;
   await signOutHere();
   await signInEnded();
 }
@@ -511,11 +551,8 @@ export async function signOutAndForget(): Promise<void> {
   if (signInConfig() !== null && hasStoredSignIn() && !offline()) {
     // Supabase is given a few seconds at most: with a weak signal the phone
     // forgets the sign-in all the same, straight after (D314).
-    signingOutOnPurpose = true;
     await Promise.race([
-      supabase()
-        .then((made) => made.auth.signOut({ scope: 'local' }))
-        .catch(() => undefined),
+      signOutOnPurpose(),
       new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
     ]);
   }
@@ -598,23 +635,18 @@ export async function signInAgainWithCode(email: string, code: string): Promise<
  */
 export async function accountDeletedHere(): Promise<void> {
   forgetting = true;
-  signingOutOnPurpose = true;
-  try {
-    await Promise.race([
-      supabase()
-        .then((made) => made.auth.signOut({ scope: 'local' }))
-        .catch(() => undefined),
-      new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
-    ]);
-  } finally {
-    signingOutOnPurpose = false;
-  }
+  await Promise.race([
+    signOutOnPurpose(),
+    new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
+  ]);
   await forgetEverything();
   setAccount({ status: 'signed-out' });
 }
 
 /** The server says this phone's account was deleted, on another phone: everything here goes too. */
 export async function accountDeletedOnServer(): Promise<void> {
+  // Deleted on this phone, or already being cleared: that says so itself (D504).
+  if (forgetting || deletingHere) return;
   await accountDeletedHere();
   window.location.replace('/?account-deleted-elsewhere');
 }

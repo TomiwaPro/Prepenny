@@ -4,6 +4,7 @@
 
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures.ts';
+import { helperInCharge } from './offline-helper.ts';
 
 async function openHome(page: Page) {
   await page.goto('/app/');
@@ -113,18 +114,8 @@ test('says so when the phone is offline', async ({ page, context }) => {
 
 test('opens with no signal once it has been opened before', async ({ page, context }) => {
   await openHome(page);
-  await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
-    // Wait until every file is kept on the phone.
-    if (registration.active?.state !== 'activated') {
-      await new Promise<void>((resolve) =>
-        registration.active?.addEventListener('statechange', () => resolve()),
-      );
-    }
-  });
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
+  // Wait until every file is kept on the phone.
+  await helperInCharge(page);
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByTestId('balance')).toHaveText('£267.54');

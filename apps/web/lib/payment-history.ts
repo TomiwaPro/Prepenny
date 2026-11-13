@@ -21,6 +21,7 @@ import {
   type ActivityRecord,
   paymentAmountOf,
   paymentFactsOf,
+  shownAt,
   whoStarts,
 } from './activity-words.ts';
 import { formatDay, formatTime } from './dates.ts';
@@ -162,11 +163,11 @@ export function historyLines(
   return edits.flatMap((edit) => {
     const what = whatItDidToIt(edit, payment, context);
     if (what === null) return [];
-    const day = formatDay(localToday(new Date(edit.madeAt)), context.today);
+    const day = formatDay(localToday(new Date(shownAt(edit))), context.today);
     return [
       {
         id: edit.id,
-        words: h.line(whoStarts(edit.by, context), what, day, formatTime(edit.madeAt)),
+        words: h.line(whoStarts(edit.by, context), what, day, formatTime(shownAt(edit))),
         undone: edit.undone,
       },
     ];

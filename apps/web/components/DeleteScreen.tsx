@@ -23,6 +23,7 @@ import {
   sendCodeAgain,
   signInAgainWithCode,
   useAccount,
+  whileDeletingHere,
 } from '../lib/account.ts';
 import { deleteMyAccount, passSecondStep, twoStep } from '../lib/security.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -186,7 +187,17 @@ function DeleteAccount({ email }: { readonly email: string }) {
     }
     setBusy(true);
     setSaid(t.deleting);
-    const signedIn = await signInAgainWithCode(email, emailCode ?? '');
+    // While it's asked, the phone's own look at the account leaves the
+    // clearing up to this screen, so it says "deleted" and nothing else (D504).
+    const deleted = await whileDeletingHere(() => checkAndDelete(emailCode ?? '', app));
+    if (!deleted) return;
+    await accountDeletedHere();
+    window.location.replace('/?account-deleted');
+  }
+
+  /** Signs in afresh with the code, and the app's code with two-step on, then deletes: true once it's deleted. */
+  async function checkAndDelete(emailCode: string, app: string | null): Promise<boolean> {
+    const signedIn = await signInAgainWithCode(email, emailCode);
     if (!signedIn.ok) {
       setBusy(false);
       setSaid('');
@@ -196,7 +207,7 @@ function DeleteAccount({ email }: { readonly email: string }) {
       } else {
         setProblem(signInWords(signedIn.problem));
       }
-      return;
+      return false;
     }
     if (twoStepOn) {
       const passed = await passSecondStep(app ?? '');
@@ -209,7 +220,7 @@ function DeleteAccount({ email }: { readonly email: string }) {
         } else {
           setProblem(securityWords(passed.problem));
         }
-        return;
+        return false;
       }
     }
     const done = await deleteMyAccount(typed);
@@ -221,20 +232,19 @@ function DeleteAccount({ email }: { readonly email: string }) {
           setSent(false);
           setCode('');
           setProblem(t.signInAgain);
-          return;
+          return false;
         case 'second-step-needed':
           setErrors({ app: s.appCodeWrong });
-          return;
+          return false;
         case 'confirm':
           setErrors({ confirm: t.confirmMissing });
-          return;
+          return false;
         default:
           setProblem(securityWords(done.problem));
-          return;
+          return false;
       }
     }
-    await accountDeletedHere();
-    window.location.replace('/?account-deleted');
+    return true;
   }
 
   return (
