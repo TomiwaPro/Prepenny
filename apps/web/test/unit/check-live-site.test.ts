@@ -128,7 +128,7 @@ describe('the live site, checked after an update', () => {
     ]);
   });
 
-  it('says when a page is simply the version before, so it can be asked for again', async () => {
+  it('says when a page is still the version before, so it can be asked for again', async () => {
     cloudflare = { beacon: false, nel: false, older: true, policy: null };
     const result = await checkOnce(site, out);
     expect(result.findings.map((one) => one.kind)).toEqual(['older', 'older', 'older']);

@@ -13,7 +13,7 @@
 // (README.md part N).
 //
 // Just after an update, Cloudflare can still send the version before it for
-// a few seconds, so a page that's simply the older version is fetched again,
+// a few seconds, so a page that's still the older version is fetched again,
 // for up to 2 minutes, before the check fails.
 //
 // Usage: node scripts/check-live-site.ts [https://prepenny.co.uk]
@@ -97,7 +97,7 @@ export interface Served {
 /** What's wrong with one page, if anything. */
 export interface Finding {
   readonly path: string;
-  /** "older" when it's simply not the new version yet, so worth asking again. */
+  /** "older" when it's not the new version yet, so worth asking again. */
   readonly kind: 'cloudflare' | 'policy' | 'older' | 'status';
   readonly words: string;
 }
