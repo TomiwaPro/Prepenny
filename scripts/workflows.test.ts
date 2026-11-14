@@ -116,3 +116,19 @@ for (const name of ['deploy.yml', 'database.yml']) {
     assert.match(text, /github\.event\.workflow_run\.conclusion == 'success'/);
   });
 }
+
+// Step 4b (D528): Dependabot's list is sent from main only, and only its
+// one job may write, never the whole workflow.
+test("building-blocks.yml sends main's list only, with write permission for its one job", () => {
+  const text = readFileSync(join(folder, 'building-blocks.yml'), 'utf8');
+  assert.match(text, /^on:\n {2}push:\n {4}branches: \[main\]\n {2}workflow_dispatch:\n/m);
+  assert.match(text, /^permissions:\n {2}contents: read\n/m);
+  assert.match(text, /if: github\.ref == 'refs\/heads\/main'/);
+  assert.equal([...text.matchAll(/contents: write/g)].length, 1);
+  assert.match(text, /\n {4}permissions:\n(?: {6}#.*\n)* {6}contents: write\n/);
+  assert.match(
+    text,
+    /run: node scripts\/building-blocks-list\.ts > "\$RUNNER_TEMP\/building-blocks\.json"/,
+  );
+  assert.match(text, /dependency-graph\/snapshots/);
+});

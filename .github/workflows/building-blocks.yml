@@ -1,0 +1,55 @@
+name: Dependabot's list
+
+# Tells GitHub every building block PrePenny uses, after every change to
+# main, so Dependabot alerts cover PrePenny's packages (step 4b, D528).
+# GitHub can't read them from pnpm-lock.yaml itself: pnpm 12 writes it as two
+# documents when a project pins its pnpm version, and GitHub's documentation
+# says the dependency graph doesn't see the packages in that form. GitHub's
+# dependency submission API is its own way round that: "Submitted
+# dependencies will receive Dependabot alerts". About 20 seconds a change.
+#
+# The list is made from pnpm-lock.yaml only (scripts/building-blocks-list.ts):
+# names and versions of public packages, nothing else.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: building-blocks
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    name: Send GitHub the list of building blocks
+    # Only main's own list: never a pull request's, which isn't PrePenny yet.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # GitHub's dependency submission API needs it; this job only sends the list.
+      contents: write
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
+      - name: Make the list from pnpm-lock.yaml
+        run: node scripts/building-blocks-list.ts > "$RUNNER_TEMP/building-blocks.json"
+
+      - name: Send it to GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/dependency-graph/snapshots" \
+            -H "Accept: application/vnd.github+json" \
+            --input "$RUNNER_TEMP/building-blocks.json"
