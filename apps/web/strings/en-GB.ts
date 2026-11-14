@@ -2162,6 +2162,8 @@ export const strings = {
     /** Budgets on the accounts being shared that follow this person's paydays (D512, D514). */
     budgetsOnYourPaydays: (partner: string, names: string) =>
       `${partner} will also see ${names} leave on your paydays.`,
+    /** Shared budgets that follow this person's paydays, said before an invite (D514). */
+    inviteYourPaydays: (names: string) => `Whoever joins will see ${names} leave on your paydays.`,
     sharing: 'Sharing.',
     sharedDone: (names: string) => `Shared: ${names}.`,
     shareTogether: (names: string) =>
