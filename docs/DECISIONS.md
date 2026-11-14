@@ -6172,3 +6172,19 @@ Agreed 14 Nov 2026, the owner's answer to Phase 4's question 3, as recommended. 
 - The budget says which, with a note such as "Follows Tom's payday". The exact words come with step 4a.
 
 Why: the owner's answer. The shared account and its budget stay with the person who stays (D468), so it follows their pay.
+
+## The owner's instructions for step 4a
+
+### D514. Step 4a: how it's built and tried
+
+Agreed 14 Nov 2026, the owner's instructions for step 4a. Adds to D508, D509, D512 and D513, which the owner confirmed as written.
+
+- The Phase 4 plan is approved as written (D511). The answers to Phase 4's questions 2 and 3 are D512 and D513, and they're off the list waiting for the owner.
+- A partner's phone gets the paydays a shared budget follows, the dates only: never the amounts, the job details or which account the pay goes into. The person adding such a budget is told plainly before it's shared, for example "Tom will see this money leave on your paydays."
+- When the person who added a shared budget leaves, it follows the payday of the person who stays, or the 1st of the month if they have none, with a plain note saying so.
+- GraphQL is switched off on the live database, and every run of the Database workflow checks it stays off. GitHub's Supabase key has "Data API Config: Read" only. If switching it off needs a permission the key doesn't have, the pull request says so under "What you need to set up", checked against Supabase's own list, before it's merged.
+- The security tests prove that a partner never receives anything about the other's pay but its dates, that both phones show the same balance for every shared account, every day, a year ahead, and that GraphQL gives nothing once it's off. Nothing about money, and no email address, goes into a log or an error.
+- The end-to-end tests run at 320px and 360px, in light and dark, with axe, against a local Supabase, with two people on two phones: a shared budget added by each partner, the balances matching on both phones, the "your paydays" message, and the person who added it leaving. Database tests cover everything new.
+- There's no preview database (D411), so the owner tries the step on the live app after merging, alone, with Gmail "+" addresses and an incognito window, following exact steps in the pull request that end with deleting the test accounts.
+
+Why: the owner's instructions.
