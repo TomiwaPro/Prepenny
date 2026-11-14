@@ -6099,17 +6099,19 @@ Why: a guide that sends the owner to a step that's already built, or to longer b
 
 ## From the Phase 4 plan's checks
 
-### D510. Three tests that failed now and then: What if keeps its list before showing it, and a change is counted as waiting before it shows
+### D510. Tests that failed now and then: What if keeps its list before showing it, a change is counted as waiting before it shows, and a plan brought down is always rebuilt
 
-Decided 13 Nov 2026, from the checks of the Phase 4 plan's pull request, which changes no app code. The owner chose to fix all three before Phase 4 starts.
+Decided 13 and 14 Nov 2026, from the checks of the Phase 4 plan's pull request, which changes no app code. The owner chose to fix all three failures before Phase 4 starts; the fixes' own checks found a fourth.
 
 - **What if** (D264). The practice changes were shown on screen first and kept on the phone a moment later. Closed or reloaded in that moment, PrePenny lost a practice change just made, or brought back ones just taken back or thrown away. After "Keep these changes" it could bring back changes already in the real plan, and keeping them again would have made them twice. Now each new list is kept on the phone before the screen shows it: a practice change, taking one back, throwing them away. Keep removes them from the phone first, then makes them in the real plan, and puts them back on the phone if that's refused: closed part-way, PrePenny loses a practice change at worst, never makes one twice. The words saying what happened take focus once any sheet has closed and given focus back (WCAG 2.4.3).
 - **Changes waiting to be sent** (D371). After a change, the phone counted it as waiting a moment after the change showed, so for that moment More could say "Your plan is saved in your account." with the change not sent. The clock test (D378) opened More in that moment and asked the server too early, on `main`. Now a change is counted as waiting before it shows anywhere.
+- **Bringing changes down** (step 3c). A phone kept the records it brought down from the account, noted them as seen, then rebuilt the plan it shows from them, in three separate saves. Closed or reloaded before the rebuild, it showed the plan without them, and as it had noted them as seen it never asked for them again: it stayed behind until some other change arrived. The shared-goal test met it once on GitHub and once on the building computer, when Jess's page reloaded 86 milliseconds after her phone brought Tom's £50.00 down. Now the records and "seen" are kept in one save with "rebuild due", which only the rebuilt plan's own save takes off, so the next look at the account rebuilds, though nothing new arrives. The same for a whole plan brought down from the account.
 - **Kofi's setup.** Screen 3 stayed after Next once on GitHub, in dark mode at 360px, and once in 130 runs on the building computer: alone, beside other tests, three at a time and with recordings on. Its cause isn't known, so nothing is guessed at. If it fails again, its message in GitHub's log lists the whole screen, whether Next was busy and what had focus. GitHub's log can be read from the building computer, and its recordings can't (D506).
 
 Tests:
 
 - `apps/web/e2e/what-if.spec.ts`, two new tests. The first keeps the phone's storage busy for 2 seconds, as a slow phone can, then reloads straight after a practice change, a take-back and throwing them away. The second checks that Keep removes the practice changes from the phone before the undo bar says they're in the plan, and that a reload then has none, with the real plan showing the change once. Both failed 3 runs in 3 without the fix.
 - `apps/web/test/unit/sync-count.test.ts` fails without the fix: once `syncSoon` is done, the count includes the change just queued.
+- `apps/web/e2e/your-plan.spec.ts` test 16: a second phone's rebuild is cut off, as closing PrePenny would, just after it brought a change down; opened again, it shows the change. It failed 3 runs in 3 without the fix, stuck on the old balance, and passes 6 in 6 with it at both widths.
 
 Why: a test that fails now and then hides real failures and can stop the live app updating after a merge (D297, D498, D506), and two of the three were small faults in the app itself.

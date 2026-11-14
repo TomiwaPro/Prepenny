@@ -184,11 +184,12 @@ Found in step 3i:
 77. **Shared-plan test 6 found another copy's Tom** (D505). Done in step 3i: each copy gives Tom its own name, so two copies running at once can't find each other's.
 78. **A test failed on GitHub while the local Supabase was starting** (D506). Done in step 3i: "I did overtime" found Home without its balance 25 seconds into part 1, beside Supabase's start; it passed here every time. GitHub's recording can't be fetched from here, so the exact hold-up isn't known. Now no test starts until the local Supabase has, about a minute more a part. If a test ever fails on GitHub alone again, its report (kept 7 days) has the recording.
 
-Found by the Phase 4 plan's checks (13 Nov 2026, D510):
+Found by the Phase 4 plan's checks (13 and 14 Nov 2026, D510):
 
 79. **What if lost or brought back practice changes when closed straight after a change.** Done: each new list of practice changes is kept on the phone before the screen shows it, and Keep removes them from the phone before making them in the real plan, so a practice change can never be kept twice. Two new tests fail without the fix every time.
 80. **More could say "saved in your account" a moment too soon** after a change, before counting it as waiting, so the clock test (D378) asked the server too early on `main`. Done: a change is counted as waiting before it shows anywhere. A new unit test fails without the fix.
 81. **Kofi's setup stayed on screen 3 after Next, twice** (any time): once on GitHub, in dark mode at 360px, and once in 130 runs on the building computer. Its cause isn't known yet. If it happens again, the test's failure in GitHub's log lists the whole screen, whether Next was busy and what had focus: read it there, as GitHub's recordings can't be fetched from the building computer (D506).
+82. **A phone closed while bringing changes down could stay behind** until another change arrived: it had noted the changes as seen before rebuilding its plan from them. Found by the shared-goal test in these fixes' own checks. Done: a rebuild is noted as due in the same save as the changes, and done at the next look if it was cut off. A new two-phone test fails without the fix every time.
 
 ## Ideas for the owner to decide on later
 
