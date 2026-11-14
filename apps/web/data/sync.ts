@@ -1802,7 +1802,13 @@ function startListening(client: SupabaseClient, link: PlanLink) {
             void lookForGetBackIn();
             void syncSoon();
           })
-          .subscribe();
+          // Once it's listening, it looks once more (D515): a change saved
+          // while it was starting to listen sent its nudge before this phone
+          // could hear it, and would otherwise wait for the minute's look.
+          // And again whenever it starts listening anew, after a lost signal.
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') void syncSoon();
+          });
       }
     } catch {
       // No live nudges: the phone still looks every minute and when it comes back on screen.
