@@ -205,6 +205,51 @@ export function changeBudget(context: Context, budgetId: string, raw: BudgetEdit
 }
 
 /**
+ * Whether a budget's weeks or months follow paydays at all, as the database
+ * tells it (D523): not a pay-later bill, which follows its bill day, and not
+ * one that ended over two months ago (D522).
+ */
+function canFollow(budget: Budget, today: Day): boolean {
+  return (
+    budget.leaves !== 'pay-later' &&
+    (budget.endsOn === undefined || parseDate(budget.endsOn) >= addDays(today, -62))
+  );
+}
+
+/**
+ * Whose paydays each budget an edit saves follows (D508, D523), as the
+ * database decides it, so the phone shows what every other phone will. It
+ * stays as it was, unless the edit makes the budget follow paydays: when it
+ * didn't before (a pay-later bill no longer, put back once removed, or no
+ * longer long ended) or now runs by the week instead of the month, or the
+ * other way. Then it follows the paydays of the person making the edit,
+ * never anyone else's, whatever kind of edit it is, an undo included. Unset
+ * is the person making the edit.
+ */
+export function keepWhoseBudgetsFollow(context: Context): void {
+  const stored = new Map((context.input.budgets ?? []).map((budget) => [budget.id, budget]));
+  for (const write of context.draft.result().writes) {
+    if (write.kind !== 'budget' || write.value === null) continue;
+    const next = write.value;
+    const before = stored.get(write.id);
+    const follows =
+      canFollow(next, context.today) &&
+      (before === undefined || !canFollow(before, context.today) || next.every !== before.every)
+        ? undefined
+        : before === undefined
+          ? next.followsPayOf
+          : before.followsPayOf;
+    if (follows !== next.followsPayOf) {
+      context.draft.set({
+        kind: 'budget',
+        id: write.id,
+        value: clean<Budget>({ ...next, followsPayOf: follows }),
+      });
+    }
+  }
+}
+
+/**
  * Ends a budget (D107, D152): its last period is the one with `endsOn` in
  * it, today or later. Refused for a pay-later budget when a bill after its
  * new last bill has a tick or a change.

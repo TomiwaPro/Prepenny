@@ -355,3 +355,64 @@ describe("Other people's paydays are checked, and hold dates only (D512)", () =>
     expect(plan.budgets[0]?.followsPaydays).toBe(true);
   });
 });
+
+describe("A change that makes a budget follow paydays makes it follow the changer's (D523)", () => {
+  it("Tom taking Jess's budget off the pay-later card makes it follow his own pay", () => {
+    const jess = jessView();
+    const tom = tomView(jess);
+    const card = { ...(tom.budgets?.[0] as Budget), leaves: 'pay-later' as const, billDay: 29 };
+    const writes = editPlan(
+      { ...tom, budgets: [card] },
+      { kind: 'change-budget', budgetId: card.id, edits: { leaves: 'at-start' } },
+    ).writes;
+    const saved = writes.find((write) => write.kind === 'budget')?.value as Budget;
+    expect(saved.leaves).toBe('at-start');
+    expect(saved.followsPayOf).toBeUndefined();
+    // A change that doesn't make it follow paydays keeps whose it is.
+    const amount = editPlan(tom, {
+      kind: 'change-budget',
+      budgetId: 'food',
+      edits: { amount: 31000 },
+    }).writes.find((write) => write.kind === 'budget')?.value as Budget;
+    expect(amount.followsPayOf).toBe('jess');
+  });
+
+  it("Tom undoing his change to a pay-later bill makes it follow his paydays, not Jess's", () => {
+    const tom = tomView(jessView());
+    const food = (records: PlanInput) => records.budgets?.find((one) => one.id === 'food');
+    // Tom makes Jess's food month a pay-later bill: it follows no paydays,
+    // and still says whose it was, as the database keeps it.
+    const card = edited(tom, {
+      kind: 'change-budget',
+      budgetId: 'food',
+      edits: { leaves: 'pay-later', billDay: 29 },
+    });
+    expect(food(card.after)).toMatchObject({ leaves: 'pay-later', followsPayOf: 'jess' });
+    // Taking it back makes it follow paydays again: his, as the database
+    // makes it on the server, never hers.
+    const back = edited(card.after, { kind: 'undo', edit: card.edit });
+    expect(food(back.after)?.leaves).toBe('at-start');
+    expect(food(back.after)?.followsPayOf).toBeUndefined();
+    // Its months are those of Food following Tom's own pay, not Jess's.
+    const his = workOutPlan(tomView(jessView(), false)).budgets[0]?.current;
+    expect(workOutPlan(back.after).budgets[0]?.current).toEqual(his);
+    expect(his?.start).not.toBe(workOutPlan(tom).budgets[0]?.current?.start);
+    // And taking that back keeps it his: a pay-later bill follows no paydays,
+    // so whose it is stays as it was, as on the server.
+    const again = edited(back.after, { kind: 'undo', edit: back.edit });
+    expect(food(again.after)).toMatchObject({ leaves: 'pay-later', billDay: 29 });
+    expect(food(again.after)?.followsPayOf).toBeUndefined();
+  });
+
+  it("Jess's own undo of the same keeps it following hers", () => {
+    const jess = jessView();
+    const food = (records: PlanInput) => records.budgets?.find((one) => one.id === 'food');
+    const card = edited(jess, {
+      kind: 'change-budget',
+      budgetId: 'food',
+      edits: { leaves: 'pay-later', billDay: 29 },
+    });
+    const back = edited(card.after, { kind: 'undo', edit: card.edit });
+    expect(food(back.after)).toEqual(food(jess));
+  });
+});
