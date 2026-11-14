@@ -146,10 +146,22 @@ export function recordsForBackup(records: PlanRecords): PlanRecords {
     const { belongsTo: _belongsTo, ...rest } = one;
     return rest as T;
   };
+  // A partner's paydays, and whose paydays a shared budget follows, are the
+  // shared plan's (D508, D512): an imported plan is the importer's own, so
+  // its budgets follow their own pay.
+  const { otherPaydays: _otherPaydays, ...rest } = records;
   return {
-    ...records,
+    ...rest,
     ...(records.debts === undefined ? {} : { debts: records.debts.map(withoutPerson) }),
     ...(records.goals === undefined ? {} : { goals: records.goals.map(withoutPerson) }),
+    ...(records.budgets === undefined
+      ? {}
+      : {
+          budgets: records.budgets.map((one) => {
+            const { followsPayOf: _follows, ...budget } = one;
+            return budget;
+          }),
+        }),
   };
 }
 

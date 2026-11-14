@@ -468,6 +468,7 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
     const { records, setup } = await syncRecordsInBackground(
       rows,
       unsent.map((one) => one.writes),
+      link.personId,
     );
     const done = await db.transaction(
       'rw',

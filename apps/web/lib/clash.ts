@@ -286,7 +286,7 @@ export function settleChange(ask: SettleAsk): Settled {
   const { plan, rows, change } = ask;
   const ours = new Set(ask.ours);
   const mirror = mirrorMap(rows);
-  const server = recordsFromRows(rows).records;
+  const server = recordsFromRows(rows, plan.personId).records;
   const send = (writes: readonly RecordWrite[], overrides: readonly string[]): Settled => ({
     kind: 'send',
     writes: writesForEdit(rows, writes, plan, change.setup).writes,
