@@ -356,3 +356,15 @@ describe('Whose paydays, in words (D512 to D514)', () => {
     expect(followsMyPaydays(jess, TODAY, 'week', 'at-start')).toBe(false);
   });
 });
+
+describe("The phone keeps a partner's paydays with the plan (D512)", () => {
+  it('saved and loaded again, they come back exactly, and the plan is the same', async () => {
+    const { recordsOf, rowsOf } = await import('../../data/db.ts');
+    const tom = recordsFromRows(readableBy(serverRows(), TOM), TOM).records;
+    const stored = rowsOf(PLAN, tom);
+    expect(stored.filter((one) => one.kind === 'paydays').map((one) => one.key)).toEqual([JESS]);
+    const back = recordsOf(stored);
+    expect(back.otherPaydays).toEqual(tom.otherPaydays);
+    expect(jointDays(back)).toEqual(jointDays(tom));
+  });
+});
