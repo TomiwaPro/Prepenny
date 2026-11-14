@@ -238,6 +238,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
  * at that moment. Read in one go, Tom gets neither, then both; read kind by
  * kind, as before, he got the paydays without the budget, counted past it,
  * and never asked for it again.
+ *
+ * Only this test's own request is held (D524): the phones keep looking at
+ * the account meanwhile, as phones do, and on GitHub one of their looks was
+ * once taken for it, so Jess's change was saved before Tom's request began.
  */
 test('3. A change saved while the other phone is bringing the plan down comes whole', async ({
   page,
@@ -270,7 +274,9 @@ test('3. A change saved while the other phone is bringing the plan down comes wh
         .access_token,
   );
   const version = sql('select app.database_version()');
-  const bringDown = async (after: number) => {
+  // This copy's own mark, so copies running side by side never meet.
+  const tag = `hold_${crypto.randomUUID().slice(0, 8)}`;
+  const bringDown = async (after: number, held = false) => {
     const response = await fetch(`${LOCAL_SUPABASE.url}/rest/v1/rpc/plan_changes`, {
       method: 'POST',
       headers: {
@@ -278,6 +284,8 @@ test('3. A change saved while the other phone is bringing the plan down comes wh
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         'x-prepenny-version': version,
+        // Marks the one request the server holds part-way, for this test.
+        ...(held ? { 'x-prepenny-test-hold': tag } : {}),
       },
       body: JSON.stringify({ plan, shared_after: after, mine_after: 0 }),
     });
@@ -288,23 +296,32 @@ test('3. A change saved while the other phone is bringing the plan down comes wh
   };
   const seen = Math.max(0, ...(await bringDown(0)).rows.map((one) => one.row.seq));
 
-  // Reading this plan's budgets takes 2 seconds, for this test only.
-  sql(`create or replace function tests.hold_budgets(plan uuid) returns boolean
+  // Reading this plan's budgets takes 2 seconds, for this test's own marked
+  // request only, never for the phones' own looks. While it waits, the
+  // request names itself with this copy's mark, so the test knows it's held.
+  sql(`create or replace function tests.${tag}(plan uuid) returns boolean
     language plpgsql volatile as $$ begin
-      if plan = ${quoted(plan)} then perform pg_sleep(2); end if;
+      if plan = ${quoted(plan)} and coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json
+          ->> 'x-prepenny-test-hold' = ${quoted(tag)} then
+        perform set_config('application_name', ${quoted(tag)}, true);
+        perform pg_sleep(2);
+      end if;
       return true;
     end $$;
-    grant execute on function tests.hold_budgets(uuid) to authenticated;
-    create policy hold_for_a_test on public.budgets as restrictive for select to authenticated
-      using (tests.hold_budgets(plan_id));`);
+    grant execute on function tests.${tag}(uuid) to authenticated;
+    create policy ${tag} on public.budgets as restrictive for select to authenticated
+      using (tests.${tag}(plan_id));`);
   try {
-    const answer = bringDown(seen);
+    // Jess's phone looks at the account meanwhile, as phones do when opened,
+    // on a nudge and every minute: its look is never the one held.
+    await page.reload();
+    const answer = bringDown(seen, true);
     // Until the server is held part-way through Tom's request.
     await expect
       .poll(
         () =>
           sql(`select count(*) from pg_stat_activity
-            where wait_event = 'PgSleep' and query like '%plan_changes%'`),
+            where wait_event = 'PgSleep' and application_name = ${quoted(tag)}`),
         { timeout: 10_000, intervals: [50] },
       )
       .not.toBe('0');
@@ -324,8 +341,8 @@ test('3. A change saved while the other phone is bringing the plan down comes wh
     const next = await bringDown(Math.max(seen, ...first.rows.map((one) => one.row.seq)));
     expect(has(next.rows)).toEqual({ food: true, paydays: true });
   } finally {
-    sql(`drop policy if exists hold_for_a_test on public.budgets;
-      drop function if exists tests.hold_budgets(uuid);`);
+    sql(`drop policy if exists ${tag} on public.budgets;
+      drop function if exists tests.${tag}(uuid);`);
   }
   await tom.context.close();
 });
