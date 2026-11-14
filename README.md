@@ -703,6 +703,61 @@ Only if Supabase's backups are used to put the database back as it was on an ear
 
 To try all of Phase 3 on the live app in about 15 minutes, alone, with a phone and a private window, follow `docs/TRY-PHASE-3.md`. It ends with deleting the test accounts.
 
+### M. Step 4a: shared budgets and GraphQL
+
+**What you need to set up: nothing.** Checked one by one, in this step's own changes:
+
+- **Supabase.** One database change, sent by the **Database** workflow with the key it already has, after its check of all eleven permissions (D406). Switching GraphQL off is part of that change: `drop extension if exists pg_graphql`, as Supabase's own guide to pg_graphql gives it. The new check on every run, "Check GraphQL is still off", uses Supabase's database query route, which Supabase's own description of its API says needs `database_read` and `database_write`: that's **Database: Read-write** on the token page, which the key already has (step 5 of "The database"). **Data API Config** stays **Read**: GraphQL isn't switched off through the Data API's settings, which would need Read-write. No new sign-in setting, web address, email template, function or permission (D519).
+- **GitHub.** No new secret or variable. The Database workflow has one more step. The end-to-end tests add about 4 minutes, shared between the three parts, inside their 60 minutes.
+- **Resend, Cloudflare and Google.** Nothing new.
+- **No new package.**
+
+This computer couldn't open supabase.com today, so Supabase's guide and the description of its API were read from Supabase's own repository on GitHub, where its documentation lives.
+
+To check it worked, after merging: **Actions**, then **Database**, then the newest run: a green tick, and its step **Check GraphQL is still off** says "GraphQL is off." Then **Deploy**: a green tick.
+
+#### Trying it on the live app, alone, with two devices
+
+You need your phone (device A, playing Jess) and a computer or a second browser with a **private or incognito window** (device B, playing Tom). Use two new Gmail "+" addresses made from your own: if your address is `yourname@gmail.com`, Gmail delivers mail for `yourname+jess4@gmail.com` and `yourname+tom4@gmail.com` to your own inbox, but PrePenny treats them as two new people. Put your own name where these steps say `yourname`. Your own plan isn't touched.
+
+Jess's plan, on device A:
+
+1. Open https://prepenny.co.uk/app/, tap **More**, then **Sign out**, then **Sign out** again. Your own plan is safe in your account.
+2. Tap **Make my plan**. Name the account `Jess current account`, with `410`. Tap **Add another account**: `Joint account`, choose **Joint account**, `1050`. Tap **Next**.
+3. On "How you're paid": name `Jess pay`, **Monthly, on a date**, next payday the 28th of this month (of next month if it's past), `2100`, into **Jess current account**, and **No** to extra hours. Tap **Next**, then **Skip this step** on each of the next three screens, then **Go to my plan**.
+4. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+jess4@gmail.com`.
+5. Tap **More**, then **Share with my partner**, then **Choose shared accounts**. Tick **Joint account** only, tap **Share these accounts**, then **Yes, share**. Go back.
+6. Under **Invite your partner**, type `Jess`, keep **Can edit** and **A link I send myself**, tap **Make the invite link**, then **Copy the link**, and send it to yourself so you can open it on device B.
+
+Tom's plan, on device B, in a private or incognito window:
+
+7. Open https://prepenny.co.uk/app/ and tap **Make my plan**. Name the account `Tom current account`, with `520`, and tap **Next**. On "How you're paid": `Tom pay`, **Monthly, on a date**, next payday the 15th of next month, `2350`, and **No** to extra hours. Tap **Next**, **Skip this step** three times, then **Go to my plan**.
+8. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+tom4@gmail.com`.
+9. Open the invite link. It says your plan comes with you. Type `Tom` and tap **Ask to join**.
+10. On device A, within a few seconds, "Tom wants to join your plan": tap **Allow**, then **Got it**. On device B, Home opens.
+
+Each adds a budget, and is told first:
+
+11. On device A, tap **More**, then **Budgets**, then **Add a budget**: name `Food`, amount `300`, **Month**, from **Joint account**. Above **Add budget** it says "Tom will see this money leave on your paydays." Choose **Jess current account** instead: the sentence goes. Choose **Joint account** again and tap **Add budget**.
+12. On device B, the same with `Meals out`, `60`, **Month**, from **Joint account**: "Jess will see this money leave on your paydays." Tap **Add budget**.
+13. Within a minute, on device A, **Budgets** says under Food "Tom sees this leave on your paydays." and under Meals out "Leaves on Tom's paydays." On device B, under Food "Leaves on Jess's paydays." and under Meals out "Jess sees this leave on your paydays." Food's "This month, to …" is the same day on both devices, and so is Meals out's.
+
+The same joint account on both phones:
+
+14. On both devices, tap **Coming up**, then **Switch account**, then **Joint account**. Food's −£300.00 is on Jess's next payday on both, Meals out's −£60.00 on Tom's, and every "Left after this" is the same. Nothing of Jess's pay shows on device B: no Jess current account and no Jess pay.
+
+Jess leaves:
+
+15. On device A, tap **More**, then **Share with my partner**, then **Leave this plan**. Choose **No, just my own things**, tap **Leave this plan**, then **Yes, leave**.
+16. On device B, within a minute, **Budgets** says under Food "The person who added this has left the plan, so it now leaves on your paydays.", and its "This month, to …" is now the same day as Meals out's.
+17. On device B, tap **More**, then **Share with my partner**. Under **Invite your partner**: "Whoever joins will see Food and Meals out leave on your paydays."
+
+#### Removing the two test accounts afterwards
+
+18. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete`, and tap **Delete my account and all my data**.
+19. On device A, the same with the code sent to `yourname+jess4@gmail.com`.
+20. Close the private window. On device A, sign in again with your own address: your own plan comes back.
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow**. It only saves a new commit if the list has changed.

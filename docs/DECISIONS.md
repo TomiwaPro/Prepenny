@@ -6188,3 +6188,89 @@ Agreed 14 Nov 2026, the owner's instructions for step 4a. Adds to D508, D509, D5
 - There's no preview database (D411), so the owner tries the step on the live app after merging, alone, with Gmail "+" addresses and an incognito window, following exact steps in the pull request that end with deleting the test accounts.
 
 Why: the owner's instructions.
+
+## Made during step 4a
+
+### D515. A phone looks again as soon as it's listening for nudges
+
+Decided 14 Nov 2026 in step 4a, found by its two-phone test. A fault from step 3c (D339), not from step 4a's changes.
+
+- When PrePenny opens on a signed-in phone, it looks at the account once, then starts listening for the live nudges. A change the other phone saved in between sent its nudge before this phone could hear it, so it showed here only at the next once-a-minute look. In step 4a's test, Jess's page loaded again just as Tom's meals out budget went, and her phone showed the joint account £60.00 different for up to a minute: four runs in eight missed a 30-second window.
+- Now, as soon as the phone is listening, it looks once more, and again whenever it starts listening anew, as after a lost signal. A change saved before that look is brought down by it; one saved after sends a nudge the phone hears.
+
+Test: `apps/web/e2e/shared-budgets.spec.ts`, whose two phones must agree within 30 seconds, well inside the minute: eight runs in eight with the fix.
+
+Why: a change on one phone should reach the other within seconds (brief 4.14), and a check that waits on a minute's chance hides real failures (D498).
+
+### D516. How a partner's phone gets the paydays a shared budget follows
+
+Decided 14 Nov 2026 in step 4a. Builds D508, D512 and D514.
+
+- **The database works them out, and nobody else writes them.** A new table, `paydays`, holds one row for each series of a person's main pay (D14, D49), while that person is in the plan, has a main pay, and a shared budget there follows their paydays. Each row has when the pay starts, how often it comes, when it ends, its weekend and bank holiday rule, the payment number it starts at after a split, and the paydays moved (from and to) and removed. It has no column for an amount, a name, a note, an account, a job or a link, and its id is worked out from the plan and the pay's own id, which it never shows. A schedule written with anything else in it gives the dates only.
+- **Kept up to date by itself.** Whenever a budget, a person's settings, their membership, their main pay's series or its one-off changes are saved, by anyone or any server step (sharing, leaving, joining, undo, deleting an account), the database works out that person's paydays again, saves only what changed, with a new change number, and nudges the plan's phones, so a partner's phone hears at once even when the change was to private pay.
+- **Only while needed, as D29 says.** A weekly budget follows the weekday of pay that comes every week or every few weeks; a monthly one, pay that comes every month. A pay-later card follows its bill, and irregular pay gives Monday weeks (D14), so neither needs paydays. When nothing needs them any more, each row is left with nothing in it, not even whose it was, so phones take it off and nothing names a person who has gone (D482).
+- **Who reads them:** everyone in the plan, with "Can view only" too, while their sign-in session exists. Nobody outside the plan, and nobody signed out. No phone can add, change or remove them, through the Data API or `save_edit`.
+- **The phone** reads them with the plan's other shared records, keeps them with the plan in its own storage, one for each person, and gives them to the engine with the budgets that name that person (`followsPayOf`, `otherPaydays`). The engine works out that person's paydays exactly as their own phone does. The phone never sends them back, and a backup leaves them out, with whose paydays each budget follows: an imported plan is the importer's own (D477).
+- **One rare case.** The database looks at every part of a person's main pay, and the engine at the part in force today, as D108 says. Someone whose pay changed from weekly to monthly, say, with a monthly shared budget, gives a partner's phone their paydays before that budget starts following them. Nothing is shown that the budget won't need on the day the pay changes.
+
+Tests: `supabase/tests/database/33-shared-budget-paydays.test.sql` (63 checks, eight rules each broken on purpose to see them fail); `packages/engine/test/unit/shared-budget-paydays.test.ts`; `apps/web/test/unit/shared-budget-paydays.test.ts`; `apps/web/e2e/security.spec.ts`, "step 4a".
+
+Why: the owner's answer (D512): the dates only, and both phones the same. Working them out in the database, rather than on the phone of the person they're about, means they're right whoever changed what, and no phone can send more than dates.
+
+### D517. Whose paydays a budget follows, and when they leave
+
+Decided 14 Nov 2026 in step 4a. Builds D508 and D513.
+
+- Each budget has `follows_pay_of`, filled in by the database: the person who saved it first. No phone can change it. Every budget saved before step 4a was given the person who added it, or for one on a private account that account's person, or, when the person who added it has left, the plan's owner, who stayed; and a new change number, so every phone brings it down again, with nothing else about it changed.
+- When the person who added a shared budget leaves the plan, or deletes their account, which leaves first (D482), the leaving step makes it follow the person who stays, in the same change as "Tom left the plan.", and marks it `passed_on`, which no phone can change either. The person who stays sees it on the Budgets screen (D518). With no main pay, its months start on the 1st and its weeks on Monday (D29).
+- A budget in a copy someone takes when they leave, or brings when they join, follows that person, as it's theirs.
+
+Tests: `33-shared-budget-paydays.test.sql`; `apps/web/e2e/shared-budgets.spec.ts`.
+
+Why: the owner's answers (D508, D513). The shared account and its budget stay with the person who stays (D468).
+
+### D518. What people are told about whose paydays a budget follows
+
+Decided 14 Nov 2026 in step 4a. Builds D512, D513 and D514. Every sentence is in `apps/web/strings/en-GB.ts`.
+
+- **Before a budget is added to a shared account**, when it would leave on the person's own paydays, the sheet says above "Add budget": "Tom will see this money leave on your paydays." (with no partner yet: "Your partner will see…"). Not for a pay-later card, or a weekly budget when the pay is monthly, which don't follow paydays, and not for a private account. The same rule as the database's (D516), worked out by the engine.
+- **Before an account is shared**, when budgets on it leave on the person's paydays, the sheet that asks first names them: "Tom will also see Food leave on your paydays."
+- **Before an invite**, when shared budgets leave on the person's paydays, as for someone who stays after their partner left: "Whoever joins will see Food leave on your paydays."
+- **On the Budgets screen**, for a shared budget that follows paydays: on Tom's phone, "Leaves on Jess's paydays."; on Jess's, "Tom sees this leave on your paydays."
+- **Once the person who added it has left**, on the phone of the person who stays: "The person who added this has left the plan, so it now leaves on your paydays.", or "…so each month of it now starts on the 1st." or "…so each week of it now starts on Monday." It names nobody, as the person who left may have deleted their account (D482).
+
+Tests: `apps/web/e2e/shared-budgets.spec.ts`, at 320px and 360px in light and dark, with axe. Screenshots: `docs/screens/4a`.
+
+Why: the owner's instruction: the person adding such a budget is told plainly first (D514), and the note when it's passed on says so plainly (D513).
+
+### D519. GraphQL is switched off, and the Database workflow keeps it off
+
+Decided 14 Nov 2026 in step 4a. Builds D509.
+
+- **How:** as Supabase's own guide to pg_graphql gives it, `drop extension if exists pg_graphql;`, read on 14 Nov 2026 from Supabase's documentation in its own repository (`apps/docs/content/guides/database/extensions/pg_graphql.mdx`), as supabase.com itself couldn't be opened from the building computer. The database's own `app.keep_graphql_off()` does it, and says `switched-off` or `off`; only the database's own roles can run it. Step 4a's database change runs it once, through the Database workflow, as every database change goes.
+- **Kept off:** every run of the Database workflow, after the database changes, runs `app.keep_graphql_off()` through Supabase's database query route. If GraphQL was on again, it's switched off, and the run says "GraphQL was on". If the check itself fails, the run fails, and README.md says how to switch it off by hand. The preview database's job does the same, once it's switched on (D411).
+- **The key needs nothing new.** Supabase's own description of its API (`api_v1_openapi.json`, read on 14 Nov 2026) says the database query route needs `database_read` and `database_write`, which is "Database: Read-write" on the token page, one of the eleven the key already has (D406). Switching it off through the Data API's settings, by taking `graphql_public` off its list, would need "Data API Config: Read-write", which the key doesn't have, so it isn't done that way. `graphql_public` stays on the list: with pg_graphql gone, Supabase's own placeholder answers only "pg_graphql extension is not enabled."
+- **Tests:** the security test (D495) still switches GraphQL on in the test database and tries every table through it, then switches it off with `app.keep_graphql_off()` and checks every table, read and changed, gives nothing of the plan at all, shared Rent included, for each of the four people, only "pg_graphql extension is not enabled.". The security tests take turns at this (`e2e/graphql-turn.ts`), so one switching it off never meets another trying it on. `33-shared-budget-paydays.test.sql` checks the function, and `scripts/workflows.test.ts` that both workflows run it after the database changes.
+
+Why: the owner's answer (D509) and instruction (D514).
+
+### D520. Step 4a's checks of the six people, the security test and the new tests
+
+Decided 14 Nov 2026 in step 4a.
+
+- **The six people signed in** (D497): Tom's phone, with no main pay, is now checked against exactly the balances Jess's phone shows, every account, every day for a year, where step 3i checked it against the rule as built then.
+- **The security test** has a test of its own for step 4a: Jess's pay, £2,147.63 into her own account, with a payday moved and another's amount and note changed, and her food month on the joint account. Every table through the Data API and GraphQL, bringing the plan down, her pay's history and everything kept on Tom's phone give the dates of her paydays and nothing else: no amount, name, note, account or id. Giving her pay's own id as a payday's id fails it at once, naming the id.
+- **Two phones** (`e2e/shared-budgets.spec.ts`), at 320px and 360px in light and dark, with axe: each partner adds a budget to the joint account and is told first; both phones agree every day for a year; sharing an account with a budget on it says so first; and when Jess leaves, her food month follows Tom's paydays, or the 1st with no main pay of his own, and his phone says so.
+
+Why: the owner's list for step 4a (D514).
+
+### D521. Bringing the plan down reads every record at one moment
+
+Decided 14 Nov 2026 in step 4a, found by its two-phone test once in about 30 runs three at a time. A fault from step 3c, which step 4a made likelier.
+
+- `plan_changes` read each kind of record in a query of its own, and each query sees the newest the database has at its own moment. A change saved between two of them came half: the records of kinds read later, without those read earlier. The phone then counted past the change numbers of what it hadn't got, and never asked for them again. Here, Jess's food month (a budget) and the paydays saved with it (read last) came as the paydays alone, and Tom's phone showed the joint account without the food month for good. It could happen before step 4a too, to any change saving two kinds of record, such as a new account and its first balance, though the moment was shorter.
+- Now one query reads every kind of record and the paydays, so a change comes whole or not yet, and the next look brings it. The notices are still read first, before it (D502).
+
+Test: `apps/web/e2e/shared-budgets.spec.ts` test 3 holds the server for 2 seconds while it reads Tom's budgets, and saves Jess's food month in that moment, every time. Read in one go, Tom gets neither the budget nor the paydays, then both; with the old reading he got the paydays alone, and the test fails.
+
+Why: a change on one phone must reach the other whole (brief 4.14), and never be lost without anyone being told.
