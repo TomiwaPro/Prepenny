@@ -402,6 +402,36 @@ jobs:
             echo "::warning title=Data API settings::public isn't on the preview's Data API list, so the preview can't save plans. On supabase.com, prepenny-preview: Project Settings, Data API, Exposed schemas: add public."
           fi
 
+      - name: Check GraphQL is still off on the preview project
+        # As the Database workflow does on the real project (D509).
+        # Step 4a: PrePenny never uses GraphQL, a second way into the
+        # database, so it's switched off (supabase/migrations,
+        # 20261118100000_shared_budgets_and_graphql.sql). On every run, the
+        # database's own app.keep_graphql_off() looks, and if GraphQL has been
+        # switched on again, from Supabase's own pages for example, switches it
+        # off, and the run says so. It needs "Database: Read-write", one of the
+        # eleven permissions the key check above has already found.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.PREVIEW_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.PREVIEW_SUPABASE_PROJECT_REF }}
+        run: |
+          status=$(jq -n '{query: "select app.keep_graphql_off() as graphql"}' | curl --silent --show-error \
+            --output "$RUNNER_TEMP/graphql.json" --write-out '%{http_code}' --request POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=GraphQL check::Supabase answered $status: $(jq -r '.message // .msg // "no message"' "$RUNNER_TEMP/graphql.json"). Follow 'If the GraphQL check fails' in README.md, 'The database'."
+            exit 1
+          fi
+          case "$(jq -r '.[0].graphql // empty' "$RUNNER_TEMP/graphql.json")" in
+            off) echo "GraphQL is off on the preview project." ;;
+            switched-off) echo "::warning title=GraphQL was on::GraphQL had been switched on again on the preview project, so it has been switched off. PrePenny never uses it (D509)." ;;
+            *)
+              echo "::error title=GraphQL check::Supabase didn't say whether GraphQL is off on the preview project. Follow 'If the GraphQL check fails' in README.md, 'The database'."
+              exit 1 ;;
+          esac
+
       - name: Set the preview's sign-in settings
         # The real project's settings (supabase/sign-in-settings.json), but
         # the sign-in email's link opens this preview, only previews may be
