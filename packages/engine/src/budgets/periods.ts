@@ -117,6 +117,8 @@ export function statementPeriods(billDay: number, statementDay: number | null): 
 export interface BudgetPay {
   /** Weekly budgets start on this weekday. */
   readonly weekStarts: Weekday;
+  /** True when `weekStarts` is the main payday's weekday, not Monday by default. */
+  readonly weeksFromPay: boolean;
   /** Monthly budgets run payday to payday with these paydays, or by calendar month when null. */
   readonly monthlyPaydays: MainPaydays | null;
 }
@@ -136,7 +138,7 @@ export function budgetPay(
   prepared: readonly PreparedSeries[],
   today: Day,
 ): BudgetPay {
-  const plain: BudgetPay = { weekStarts: MONDAY, monthlyPaydays: null };
+  const plain: BudgetPay = { weekStarts: MONDAY, weeksFromPay: false, monthlyPaydays: null };
   if (main === null || main.kind === 'irregular' || familyId === null) return plain;
   const family = prepared
     .filter((one) => one.series.familyId === familyId)
@@ -145,11 +147,19 @@ export function budgetPay(
   const now = started.at(-1) ?? family[0];
   if (now === undefined) return plain;
   const schedule = now.series.schedule;
-  if (schedule.kind === 'weekly') return { weekStarts: weekday(now.start), monthlyPaydays: null };
+  if (schedule.kind === 'weekly') {
+    return { weekStarts: weekday(now.start), weeksFromPay: true, monthlyPaydays: null };
+  }
   if (schedule.kind === 'monthly' && schedule.every === 1) {
-    return { weekStarts: MONDAY, monthlyPaydays: main };
+    return { weekStarts: MONDAY, weeksFromPay: false, monthlyPaydays: main };
   }
   return plain;
+}
+
+/** Whether a budget's periods line up with the paydays of the pay it follows (D29, D108). */
+export function followsPaydays(budget: CheckedBudget, pay: BudgetPay): boolean {
+  if (budget.billDay !== null) return false;
+  return budget.budget.every === 'week' ? pay.weeksFromPay : pay.monthlyPaydays !== null;
 }
 
 /** The periods a budget follows (D29, D61). */

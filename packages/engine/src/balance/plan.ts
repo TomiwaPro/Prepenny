@@ -11,7 +11,8 @@ import {
   checkBudgets,
   checkSpends,
 } from '../budgets/check.ts';
-import { budgetPay } from '../budgets/periods.ts';
+import { budgetPayOf, checkOtherPaydays, type PreparedPaydays } from '../budgets/paydays.ts';
+import { type BudgetPay, budgetPay } from '../budgets/periods.ts';
 import type { BudgetBill } from '../budgets/types.ts';
 import { NATIONS } from '../dates/bank-holiday-rules.ts';
 import {
@@ -344,6 +345,7 @@ export type RecordsToCheck = Pick<
   | 'payProfiles'
   | 'payWeeks'
   | 'payAdjustments'
+  | 'otherPaydays'
   | 'holidays'
 > & {
   /** The plan's debts. When they're given, every series' link to a debt is checked too (D98). */
@@ -380,6 +382,8 @@ export interface CheckedRecords {
   readonly goals: ReadonlyMap<string, CheckedGoal>;
   /** Pay profiles, pay weeks and pay adjustments, with each payday's adjustments added up (D123). */
   readonly pay: CheckedPay;
+  /** Other people's paydays, by person, for the budgets that follow them (D508, D512). */
+  readonly paydays: ReadonlyMap<string, PreparedPaydays>;
 }
 
 /**
@@ -415,6 +419,7 @@ export function checkRecords(input: RecordsToCheck, today: Day, emptyPlan = fals
   }
   const pay = checkPay(input, input.series);
   if (input.settings !== undefined) checkPlanSettings(input.settings);
+  const paydays = checkOtherPaydays(input.otherPaydays, input.holidays);
   return {
     accounts,
     starts,
@@ -429,6 +434,7 @@ export function checkRecords(input: RecordsToCheck, today: Day, emptyPlan = fals
     spends,
     goals,
     pay,
+    paydays,
   };
 }
 
@@ -932,7 +938,7 @@ function leftToSpendOf(
  */
 function workOutAccounts(
   checked: CheckedRecords,
-  pay: ReturnType<typeof budgetPay>,
+  payOf: (budget: CheckedBudget) => BudgetPay,
   holidays: BankHolidayLookup,
   today: Day,
   to: Day,
@@ -940,7 +946,7 @@ function workOutAccounts(
   // Budgets (D2, D29 to D32): their periods follow the main pay.
   const worked = new Map<string, WorkedBudget>();
   for (const [id, budget] of checked.budgets) {
-    worked.set(id, workOutBudget(budget, checked.spends.get(id) ?? [], pay, today, to));
+    worked.set(id, workOutBudget(budget, checked.spends.get(id) ?? [], payOf(budget), today, to));
   }
   const bills = new Map([...worked].filter(([, one]) => one.checked.billDay !== null));
   const movements = [
@@ -983,7 +989,10 @@ export function workOutPlan(input: PlanInput): Plan {
   const { prepared, changes, ticks } = checked;
   const main = mainPaydaysOf(input.mainPayFamilyId, prepared, changes, input.holidays);
   const pay = budgetPay(main, input.mainPayFamilyId, prepared, today);
-  const { worked, works } = workOutAccounts(checked, pay, input.holidays, today, to);
+  // A budget follows the main pay of the person who added it (D508): the
+  // viewer's own, or another person's, from their paydays (D512).
+  const payOf = budgetPayOf(checked.paydays, pay, input.holidays, today);
+  const { worked, works } = workOutAccounts(checked, payOf, input.holidays, today, to);
 
   // A pay-later bill as the budget shows it (D32, D111).
   const preparedById = new Map(prepared.map((one) => [one.series.id, one]));
@@ -1014,7 +1023,7 @@ export function workOutPlan(input: PlanInput): Plan {
   const window = leftToSpendWindow(main, nextMainPayday, today);
   const forLeftToSpend =
     window !== null && window.last > to
-      ? workOutAccounts(checked, pay, input.holidays, today, window.last).works
+      ? workOutAccounts(checked, payOf, input.holidays, today, window.last).works
       : works;
   const accountPlans: AccountPlan[] = [...works.values()].map((work) => {
     const { lowestPoint, firstUnderWarning } = lowestAndFirstUnder(work, today);

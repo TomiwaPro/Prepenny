@@ -3,7 +3,7 @@
 // engine never saves or changes anything itself.
 
 import type { Account, AccountKind, BalanceUpdate, PlanSettings, Tick } from '../balance/types.ts';
-import type { Budget, BudgetLeaves, Spend } from '../budgets/types.ts';
+import type { Budget, BudgetLeaves, OtherPaydays, Spend } from '../budgets/types.ts';
 import type { Nation } from '../dates/bank-holiday-rules.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Debt, DebtKind, MinimumRule } from '../debts/types.ts';
@@ -48,6 +48,12 @@ export interface PlanRecords {
   readonly payAdjustments?: readonly PayAdjustment[];
   /** The nation and the main pay (D155), once they've been chosen with a command. */
   readonly settings?: PlanSettings;
+  /**
+   * In a shared plan, the paydays of other people whose main pay a budget
+   * follows (D508), the dates only (D512). They come from the server; no
+   * edit changes them.
+   */
+  readonly otherPaydays?: readonly OtherPaydays[];
 }
 
 /** What an edit needs: the stored records, the plan's settings and today. */

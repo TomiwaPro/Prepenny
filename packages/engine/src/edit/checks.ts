@@ -6,6 +6,7 @@
 import { checkRecords } from '../balance/plan.ts';
 import type { Account } from '../balance/types.ts';
 import type { CheckedBudget } from '../budgets/check.ts';
+import { budgetPayOf } from '../budgets/paydays.ts';
 import { type BudgetCalendar, budgetPay, calendarOf } from '../budgets/periods.ts';
 import type { Budget } from '../budgets/types.ts';
 import type { Day } from '../dates/day.ts';
@@ -103,10 +104,13 @@ export function checkNow(context: Context): void {
 
 /** The periods a budget follows, from the main pay as it is (D29, D108). */
 export function budgetCalendar(context: Context, budget: CheckedBudget): BudgetCalendar {
-  const { prepared, changes } = context.checked;
+  const { prepared, changes, paydays } = context.checked;
   const familyId = context.input.mainPayFamilyId;
   const main = mainPaydaysOf(familyId, prepared, changes, context.input.holidays);
-  return calendarOf(budget, budgetPay(main, familyId, prepared, context.today));
+  const own = budgetPay(main, familyId, prepared, context.today);
+  // Or the paydays of the person who added it, when that's someone else (D508).
+  const payOf = budgetPayOf(paydays, own, context.input.holidays, context.today);
+  return calendarOf(budget, payOf(budget));
 }
 
 /** The last day of a budget's last period, or null when it never ends (D107). */
