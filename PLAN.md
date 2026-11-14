@@ -261,6 +261,8 @@ Phase 4's questions, each before the step named. The step numbers are in "Phase 
 21. **Design points that change DESIGN.md** (step 4o, item 22). Recommended: yes to all four. Add page headings (22px) and setup headings (20px) to DESIGN.md's type sizes, as they are now; put every gap on the 4px scale; put "%" inside its box, as "£" is; and give "Kind of hours" PrePenny's own arrow instead of the browser's.
 22. **A mid-range Android phone for the speed check** (step 4p). Do you have one, or can you borrow one for 15 minutes? Mid-range means about £150 to £250 new, such as a Samsung Galaxy A-series or a Motorola Moto G. Recommended: yours or a borrowed one: open the speed page, tap "Start", and send back the numbers it shows. If none is to hand, a service that lends real phones over the internet charges a monthly fee, checked before paying. Chrome's slowed-down phone (D271), used now, isn't a real phone.
 
+25. **What the building-block check stops** (step 4b, D527). Built from your words, "stop a change that brings in a serious one": a pull request or update that brings in a package version with a high or critical known problem fails, and nothing of it goes live. A serious problem found later in a package already in PrePenny is a yellow warning on every run and a Dependabot alert, and doesn't hold back other changes, an urgent money fix say, as holding them back wouldn't take the package off the live site. Recommended: keep it so. The other way: any serious problem, even one already there, stops every change until the package is updated.
+
 ## Launch checklist (started)
 
 Filled in during Phase 5 from brief Part 7. Items already agreed:
