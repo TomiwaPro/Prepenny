@@ -708,7 +708,7 @@ To try all of Phase 3 on the live app in about 15 minutes, alone, with a phone a
 **What you need to set up: nothing.** Checked one by one, in this step's own changes:
 
 - **Supabase.** One database change, sent by the **Database** workflow with the key it already has, after its check of all eleven permissions (D406). Switching GraphQL off is part of that change: `drop extension if exists pg_graphql`, as Supabase's own guide to pg_graphql gives it. The new check on every run, "Check GraphQL is still off", uses Supabase's database query route, which Supabase's own description of its API says needs `database_read` and `database_write`: that's **Database: Read-write** on the token page, which the key already has (step 5 of "The database"). **Data API Config** stays **Read**: GraphQL isn't switched off through the Data API's settings, which would need Read-write. No new sign-in setting, web address, email template, function or permission (D519).
-- **GitHub.** No new secret or variable. The Database workflow has one more step. The end-to-end tests add about 4 minutes, shared between the three parts, inside their 60 minutes.
+- **GitHub.** No new secret or variable. The Database workflow has one more step. The end-to-end tests add about 6 minutes, shared between the three parts, inside their 60 minutes.
 - **Resend, Cloudflare and Google.** Nothing new.
 - **No new package.**
 
