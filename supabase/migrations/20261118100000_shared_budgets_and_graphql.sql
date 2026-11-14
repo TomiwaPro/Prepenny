@@ -543,17 +543,23 @@ end;
 $$;
 -- ---------------------------------------------------------------------------
 -- 4. What's new since a phone last looked, as step 3i made it, with the
--- paydays a shared budget follows (part 2).
+-- paydays a shared budget follows (part 2), and every record read at one
+-- moment (D521). It read each kind of record in a query of its own, and each
+-- query sees the newest the database has at its own moment. A change saved
+-- between two of them, such as Jess's food month and the paydays saved with
+-- it, came half: the paydays, read later, without the budget, read earlier.
+-- The phone then counted past the budget's change number and never asked
+-- for it again. Now one query reads them all, so a change comes whole or
+-- not yet. The notices are still read first (D502).
 
 create or replace function public.plan_changes(plan uuid, shared_after bigint, mine_after bigint)
 returns jsonb
 language plpgsql security invoker set search_path = '' as $$
 declare
-  t text;
-  found_rows jsonb;
-  all_rows jsonb := '[]'::jsonb;
+  all_rows jsonb;
   the_plan jsonb;
   found_notices jsonb;
+  every_table text;
 begin
   if plan is null or not exists (select 1 from app.my_plans() p where p = plan) then
     perform app.refuse('not-found', '42501');
@@ -571,28 +577,29 @@ begin
     into the_plan from public.plans p
     left join public.edits e on e.id = p.edit_id and e.plan_id = p.id
     where p.id = plan;
-  for t in select unnest(app.record_tables()) loop
-    execute format($q$
-      select coalesce(jsonb_agg(jsonb_build_object('table', %L,
+  -- Every kind of record, in the same order as before, then the paydays
+  -- (shared, so they count with the shared records), in one query.
+  select string_agg(format($q$
+      select %s as kind_order, r.seq, jsonb_build_object('table', %L,
           'row', to_jsonb(r) - 'plan_id' - 'created_at',
           'edit_made_at', e.made_at, 'edit_saved_at', app.utc_exact(e.saved_at),
-          'edit_by', e.person_id, 'edit_kind', e.kind) order by r.seq), '[]'::jsonb)
+          'edit_by', e.person_id, 'edit_kind', e.kind) as one
       from public.%I r
       left join public.edits e on e.id = r.edit_id and e.plan_id = r.plan_id
       where r.plan_id = $1
-        and ((r.private_to is null and r.seq > $2) or (r.private_to = auth.uid() and r.seq > $3))
-    $q$, t, t) into found_rows using plan, coalesce(shared_after, 0), coalesce(mine_after, 0);
-    all_rows := all_rows || found_rows;
-  end loop;
-  -- Step 4a (D512): the paydays a shared budget follows, the dates only.
-  -- They're shared, so they count with the shared records. A removed one
-  -- comes once, with nothing in it, so the phone takes it off.
-  select coalesce(jsonb_agg(jsonb_build_object('table', 'paydays',
-      'row', to_jsonb(r) - 'plan_id') order by r.seq), '[]'::jsonb)
-    into found_rows
-    from public.paydays r
-    where r.plan_id = plan and r.seq > coalesce(shared_after, 0);
-  all_rows := all_rows || found_rows;
+        and ((r.private_to is null and r.seq > $2) or (r.private_to = auth.uid() and r.seq > $3))$q$,
+      t.n, t.name, t.name), ' union all ' order by t.n)
+    into every_table
+    from unnest(app.record_tables()) with ordinality as t(name, n);
+  execute format($q$
+      select coalesce(jsonb_agg(x.one order by x.kind_order, x.seq), '[]'::jsonb) from (
+        %s
+        union all
+        select 1000, r.seq, jsonb_build_object('table', 'paydays', 'row', to_jsonb(r) - 'plan_id')
+        from public.paydays r
+        where r.plan_id = $1 and r.seq > $2
+      ) x$q$, every_table)
+    into all_rows using plan, coalesce(shared_after, 0), coalesce(mine_after, 0);
   return jsonb_build_object('plan', the_plan, 'rows', all_rows,
     'members', (select coalesce(jsonb_agg(jsonb_build_object('person', m.person_id, 'role', m.role,
         'nickname', coalesce(p.nickname, ''))), '[]'::jsonb)
@@ -602,6 +609,7 @@ begin
     'now', app.server_time());
 end;
 $$;
+
 -- ---------------------------------------------------------------------------
 -- 5. GraphQL off (D509). PrePenny never uses it, so it's one door fewer into
 -- the database. Supabase's guide to pg_graphql: "Disable the pg_graphql
