@@ -106,6 +106,11 @@ function setState(next: SyncState) {
   for (const listener of stateListeners) listener();
 }
 
+/** The same, as it is at this moment, outside a screen: for the tests. */
+export function syncStateNow(): SyncState {
+  return state;
+}
+
 /** Whether the plan is kept in the account, and what's still to send, kept up to date. */
 export function useSync(): SyncState {
   return useSyncExternalStore(
@@ -464,20 +469,30 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
       rows,
       unsent.map((one) => one.writes),
     );
-    const done = await db.transaction('rw', [db.plans, db.records, db.unsent], async () => {
-      const now = (await db.unsent.where('planId').equals(link.planId).last())?.n ?? 0;
-      if (now !== last) return false;
-      const stored = await db.plans.get(link.planId);
-      const plan: StoredPlan = {
-        ...(stored ?? { id: link.planId, isExample: false }),
-        owner: link.personId,
-        setup: unsent.at(-1)?.setup ?? setup ?? stored?.setup ?? DONE,
-        // A change made on these records was made on what's been brought down so far (step 3d).
-        seen: { shared: link.shared, mine: link.mine },
-      };
-      await savePlan(db, plan, records);
-      return true;
-    });
+    const done = await db.transaction(
+      'rw',
+      [db.plans, db.records, db.unsent, db.links],
+      async () => {
+        const now = (await db.unsent.where('planId').equals(link.planId).last())?.n ?? 0;
+        if (now !== last) return false;
+        const stored = await db.plans.get(link.planId);
+        const plan: StoredPlan = {
+          ...(stored ?? { id: link.planId, isExample: false }),
+          owner: link.personId,
+          setup: unsent.at(-1)?.setup ?? setup ?? stored?.setup ?? DONE,
+          // A change made on these records was made on what's been brought down so far (step 3d).
+          seen: { shared: link.shared, mine: link.mine },
+        };
+        await savePlan(db, plan, records);
+        // Rebuilt from every row kept so far (D510).
+        const kept = await db.links.get(link.planId);
+        if (kept?.rebuildDue === true) {
+          const { rebuildDue: _done, ...rest } = kept;
+          await db.links.put(rest);
+        }
+        return true;
+      },
+    );
     if (done) {
       for (const listener of updatedListeners) listener();
       return;
@@ -525,16 +540,21 @@ async function bringDown(
     if (row.privateTo === null) shared = Math.max(shared, row.seq);
     else mine = Math.max(mine, row.seq);
   }
-  await keepRows(db, link.planId, changed);
   const now: PlanLink = {
     ...link,
     shared,
     mine,
     ...(nicknames === undefined ? {} : { nicknames }),
     ...(roles === undefined ? {} : { roles }),
+    // A rebuild that was cut off, as by PrePenny closing, is still due (D510).
+    ...(changed.length > 0 ? { rebuildDue: true as const } : {}),
   };
-  await db.links.put(now);
-  if (changed.length > 0) await rebuild(db, now);
+  // The rows and what's been seen, in one save, with the rebuild still due.
+  await db.transaction('rw', [db.rows, db.links], async () => {
+    await keepRows(db, link.planId, changed);
+    await db.links.put(now);
+  });
+  if (now.rebuildDue === true) await rebuild(db, now);
   else if (
     JSON.stringify(roles ?? link.roles ?? {}) !== JSON.stringify(link.roles ?? {}) ||
     JSON.stringify(nicknames ?? link.nicknames ?? {}) !== JSON.stringify(link.nicknames ?? {})
@@ -1355,6 +1375,8 @@ async function bringDownInstead(
     mine,
     ...(nicknames === undefined ? {} : { nicknames }),
     ...(roles === undefined ? {} : { roles }),
+    // Kept with the rows; taken off once the plan is rebuilt from them (D510).
+    rebuildDue: true,
   };
   const arrived = all;
   const swapped = await db.transaction(
@@ -1743,10 +1765,20 @@ async function keepInStepOnce(client: SupabaseClient, person: string): Promise<b
 let listeningTo: string | null = null;
 let soon: ReturnType<typeof setTimeout> | null = null;
 
-/** Syncs in a moment: after a change, so several in a row go together, or after a nudge. */
-export function syncSoon(): void {
+/**
+ * Syncs in a moment: after a change, so several in a row go together, or
+ * after a nudge. Done once More's count of changes waiting includes the one
+ * just queued, so a change waits for it before it shows anywhere, and More
+ * never says the plan is saved in the account a moment too soon (D510).
+ */
+export function syncSoon(): Promise<void> {
+  if (soon !== null) clearTimeout(soon);
+  soon = setTimeout(() => {
+    soon = null;
+    void syncNow();
+  }, 300);
   // A change has just joined the queue: More says so straight away (step 3d).
-  void withDb(async (db) => {
+  return withDb(async (db) => {
     const own = await ownPlanOnPhone(db);
     if (own !== undefined && (await db.links.get(own.id)) !== undefined) {
       await publish(db, own.id, state.cantSend);
@@ -1754,11 +1786,6 @@ export function syncSoon(): void {
   }).catch(() => {
     // No database: nothing is queued anyway.
   });
-  if (soon !== null) clearTimeout(soon);
-  soon = setTimeout(() => {
-    soon = null;
-    void syncNow();
-  }, 300);
 }
 
 function startListening(client: SupabaseClient, link: PlanLink) {
@@ -1772,7 +1799,7 @@ function startListening(client: SupabaseClient, link: PlanLink) {
           .channel(topic, { config: { private: true } })
           .on('broadcast', { event: 'changed' }, () => {
             void lookForGetBackIn();
-            syncSoon();
+            void syncSoon();
           })
           .subscribe();
       }

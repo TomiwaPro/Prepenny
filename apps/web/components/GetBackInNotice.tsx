@@ -81,7 +81,7 @@ export function GetBackInNotice() {
           // notice goes, and the phone looks at its sign-in again now.
           setGetBackInNotice(null);
           setStopped(done.value ? 'stopped' : 'nothing');
-          if (!done.value) syncSoon();
+          if (!done.value) void syncSoon();
         }}
       >
         {busy ? t.stopping : t.stop}

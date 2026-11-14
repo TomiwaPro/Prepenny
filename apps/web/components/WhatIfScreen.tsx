@@ -14,7 +14,9 @@
 //
 // Practice changes stay on this phone until they're kept or thrown away,
 // even after PrePenny is closed (ARCHITECTURE.md 3.8, step 2h), so going to
-// another screen and back, or closing PrePenny, keeps them. "Throw them
+// another screen and back, or closing PrePenny, keeps them. Each new list
+// is kept on the phone before the screen shows it, so closing PrePenny
+// straight after a change finds the list as it was shown (D510). "Throw them
 // away" asks first: "Throw away 3 practice changes?". They're made again on
 // the real plan each time it changes, as a sync clash runs a command again
 // (D135).
@@ -384,10 +386,18 @@ export function WhatIfScreen() {
     };
   }, [planId, readFor, keepChanges]);
 
-  useEffect(() => {
-    if (planId === null || readFor !== planId) return;
-    void keepPractice(planId, changes);
-  }, [planId, readFor, changes]);
+  /**
+   * A new list of practice changes: kept on the phone first, then shown, so
+   * the screen never shows a list the phone hasn't kept (D264, D510).
+   */
+  const settle = useCallback(
+    async (next: readonly PracticeChange[]) => {
+      const planFor = readForRef.current;
+      if (planFor !== null) await keepPractice(planFor, next);
+      keepChanges(next);
+    },
+    [keepChanges],
+  );
 
   // Worked out again whenever the real plan or the list of changes is new.
   useEffect(() => {
@@ -412,7 +422,7 @@ export function WhatIfScreen() {
         if (!current) return;
         if (changes.length > 0) {
           // The real plan changed so that a practice change can't be made any more.
-          keepChanges([]);
+          void settle([]);
           setNote(t.cantMakeAgain);
           return;
         }
@@ -422,7 +432,7 @@ export function WhatIfScreen() {
     return () => {
       current = false;
     };
-  }, [loaded, readFor, changes, shown, keepChanges]);
+  }, [loaded, readFor, changes, shown, settle]);
 
   /** A practice change from a sheet: worked out on top of the ones before it, never saved. */
   const practiceChange = useCallback(
@@ -446,6 +456,8 @@ export function WhatIfScreen() {
         } catch (error) {
           return { ok: false, code: codeOf(error) };
         }
+        // Kept on the phone first, then shown with its figures (D510).
+        await keepPractice(now.plan.id, next);
         version.current += 1;
         const made = version.current;
         keepChanges(next);
@@ -489,10 +501,16 @@ export function WhatIfScreen() {
     [real, practiceLoaded, practiceChange],
   );
 
+  // Focus moves to the words, because the buttons that were tapped go (WCAG 2.4.3).
+  // It moves once the screen has its words, after any sheet has closed and given
+  // focus back: React runs the sheet's effect before this screen's (D510).
+  const [sayCount, setSayCount] = useState(0);
+  useEffect(() => {
+    if (sayCount > 0) noteRef.current?.focus();
+  }, [sayCount]);
   const say = (words: string) => {
     setNote(words);
-    // Focus moves to the words, because the buttons that were tapped go (WCAG 2.4.3).
-    setTimeout(() => noteRef.current?.focus(), 0);
+    setSayCount((count) => count + 1);
   };
 
   // The practice changes on screen are this plan's: read from the phone for it (step 2h).
@@ -502,23 +520,33 @@ export function WhatIfScreen() {
     if (busy || changes.length === 0 || !ready) return;
     // Changes that cancel each other out leave nothing to keep, and no Undo to offer.
     if (shown !== null && shown.changes === changes && !shown.view.changed) {
-      keepChanges([]);
+      setBusy(true);
+      await settle([]);
+      setBusy(false);
       say(t.nothingToKeep);
       return;
     }
     setBusy(true);
     setProblem(null);
-    const message = t.kept(changes.length);
-    const outcome = await real.makeChanges(commandsOf(changes), {
+    const kept = changes;
+    const message = t.kept(kept.length);
+    // Off the phone before they go into the real plan, so a practice change
+    // can never be kept twice: closed part-way, PrePenny loses it at worst (D510).
+    const planFor = readForRef.current;
+    if (planFor !== null) await keepPractice(planFor, []);
+    const outcome = await real.makeChanges(commandsOf(kept), {
       full: message,
       short: strings.undo.short.kept,
     });
-    setBusy(false);
     if (!outcome.ok) {
+      // Not kept, so they go back on the phone as they were.
+      if (planFor !== null) await keepPractice(planFor, kept);
+      setBusy(false);
       setProblem(refusalMessage(outcome.code));
       return;
     }
     keepChanges([]);
+    setBusy(false);
     setNote(null);
     focusUndoBar(message);
   };
@@ -578,10 +606,12 @@ export function WhatIfScreen() {
               type="button"
               className={formStyles.quiet}
               aria-disabled={busy}
-              onClick={() => {
+              onClick={async () => {
                 // While Keep is saving, the list stays as it was sent.
                 if (busy) return;
-                keepChanges(changes.slice(0, -1));
+                setBusy(true);
+                await settle(changesRef.current.slice(0, -1));
+                setBusy(false);
                 say(t.takenBack);
               }}
             >
@@ -687,7 +717,12 @@ export function WhatIfScreen() {
         intro={t.throwAwayCheck(changes.length)}
         confirm={t.throwAway}
         keep={t.keepPractising}
-        onConfirm={async () => ({ ok: true, version: version.current })}
+        onConfirm={async () => {
+          // Off the phone before the sheet closes (D510).
+          const planFor = readForRef.current;
+          if (planFor !== null) await keepPractice(planFor, []);
+          return { ok: true, version: version.current };
+        }}
         onClose={(changed) => {
           setThrowing(false);
           if (!changed) return;

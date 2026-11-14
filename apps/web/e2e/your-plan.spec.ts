@@ -44,6 +44,7 @@ import { settingScript } from './fixtures.ts';
 import { openHome, updateBalance } from './journeys.ts';
 import { helperInCharge } from './offline-helper.ts';
 import { SAM_TODAY, setUpSam } from './people.ts';
+import { cutOffNextRebuild, seenOnPhone } from './phone-storage.ts';
 import {
   addGoalOnPlan,
   asOldItems,
@@ -986,4 +987,36 @@ test('15. progress saved in the account on each of the old 8 steps opens the mat
     expect(rows()).toBe(seriesBefore);
     await phone.context.close();
   }
+});
+
+test('16. a phone closed part-way through bringing a change down shows the change once opened again (D510)', async ({
+  page,
+  browser,
+}, info) => {
+  test.slow();
+  const address = newEmail('dee');
+  await makeAPlan(page);
+  await signUpFromMore(page, address);
+  const second = await secondPhone(browser, info, 'light');
+  await signIn(second.page, address);
+  await expect(second.page.getByTestId('balance')).toContainText('£267.54');
+  // The second phone's next rebuild of its plan, from what it brings down,
+  // is cut off, as when PrePenny is closed at that moment.
+  await cutOffNextRebuild(second.page);
+  const seenBefore = await seenOnPhone(second.page);
+  await updateBalance(page, {
+    account: null,
+    balance: '301.25',
+    expected: '£267.54',
+    difference: "That's £33.71 more.",
+    toTick: 0,
+  });
+  // It has brought the change down and noted it as seen, then the rebuild
+  // was cut off; PrePenny is opened again.
+  await expect
+    .poll(() => seenOnPhone(second.page), { timeout: 20_000 })
+    .toBeGreaterThan(seenBefore);
+  await second.page.reload();
+  await expect(second.page.getByTestId('balance')).toContainText('£301.25', { timeout: 20_000 });
+  await second.context.close();
 });
