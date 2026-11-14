@@ -56,6 +56,8 @@ export interface BudgetCard {
   readonly startsLater: boolean;
   /** It has spends, so it can't switch to or from a pay-later bill (D161). */
   readonly hasSpends: boolean;
+  /** Its weeks or months line up with the paydays of the pay it follows (D29, D508). */
+  readonly followsPaydays: boolean;
 }
 
 export interface BudgetsView {
@@ -123,6 +125,7 @@ export function workOutBudgetsView(records: PlanRecords, today: string): Budgets
           },
           startsLater: current.start > today,
           hasSpends: spends.has(budget.id),
+          followsPaydays: one.followsPaydays,
         },
       ];
     }),

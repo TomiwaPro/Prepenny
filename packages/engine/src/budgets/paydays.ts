@@ -137,3 +137,35 @@ export function budgetPayOf(
     return pay;
   };
 }
+
+/** What the viewer's own main pay gives a budget's periods (D29, D108). */
+export interface OwnPaydaysFollowed {
+  /** A weekly budget would start on the payday's weekday. */
+  readonly week: boolean;
+  /** A monthly budget would run from payday to payday. */
+  readonly month: boolean;
+}
+
+/**
+ * Whether a weekly or monthly budget would follow the paydays of the
+ * viewer's own main pay (D29, D108), so a partner's phone would get those
+ * paydays once it's shared (D512). The app says so before such a budget is
+ * shared (D514). A pay-later card follows its bill instead.
+ */
+export function ownPaydaysFollowed(input: {
+  readonly series: readonly Series[];
+  readonly changes?: readonly PaymentChange[];
+  readonly mainPayFamilyId: string | null;
+  readonly holidays: BankHolidayLookup;
+  readonly today: string;
+}): OwnPaydaysFollowed {
+  const familyId = input.mainPayFamilyId;
+  if (familyId === null) return { week: false, month: false };
+  const family = input.series.filter((one) => one.familyId === familyId);
+  const ids = new Set(family.map((one) => one.id));
+  const prepared = markFamilies(family.map((one) => prepareSeries(one, input.holidays)));
+  const changes = indexChanges((input.changes ?? []).filter((one) => ids.has(one.seriesId)));
+  const main = mainPaydaysOf(familyId, prepared, changes, input.holidays);
+  const pay = budgetPay(main, familyId, prepared, parseDate(input.today, 'today'));
+  return { week: pay.weeksFromPay, month: pay.monthlyPaydays !== null };
+}

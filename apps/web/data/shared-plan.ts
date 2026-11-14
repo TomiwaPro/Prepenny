@@ -47,6 +47,11 @@ export interface SharedPlan {
   readonly marks: ReadonlyMap<string, ChangeMark>;
   /** Each series' version on the server, for telling a series a change made from one that only ended it. */
   readonly seriesVersion: ReadonlyMap<string, number>;
+  /**
+   * Shared budgets passed on to the person who stays when the person who
+   * added them left (D513), by id: the Budgets screen says so.
+   */
+  readonly passedOn: ReadonlySet<string>;
 }
 
 function markOf(row: {
@@ -76,6 +81,7 @@ async function read(planId: string): Promise<SharedPlan | null> {
     const addedBy = new Map<string, string>();
     const marks = new Map<string, ChangeMark>();
     const seriesVersion = new Map<string, number>();
+    const passedOn = new Set<string>();
     for (const row of rows) {
       if (row.createdBy !== undefined) addedBy.set(`${row.table}|${row.id}`, row.createdBy);
       const mark = markOf(row);
@@ -95,6 +101,7 @@ async function read(planId: string): Promise<SharedPlan | null> {
       if (row.table === 'accounts' && row.privateTo === null) sharedAccounts.add(row.id);
       if (row.table === 'debts' && row.privateTo === null) sharedDebts.add(row.id);
       if (row.table === 'goals' && row.privateTo === null) sharedGoals.add(row.id);
+      if (row.table === 'budgets' && row.values.passed_on === true) passedOn.add(row.id);
       if (row.table !== 'series') continue;
       if (mark !== null) marks.set(`series|${row.id}`, mark);
       seriesVersion.set(row.id, row.version);
@@ -126,6 +133,7 @@ async function read(planId: string): Promise<SharedPlan | null> {
       addedBy,
       marks,
       seriesVersion,
+      passedOn,
     };
   } catch {
     return null;

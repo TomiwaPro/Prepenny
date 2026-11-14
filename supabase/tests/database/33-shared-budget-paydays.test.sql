@@ -10,7 +10,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(60);
+select plan(63);
 
 select tests.make_jess_and_tom();
 
@@ -293,6 +293,13 @@ select is((select follows_pay_of from public.budgets where id = tests.id('joint-
   'The joint account''s food month now follows Tom''s paydays');
 select is((select edit_id from public.budgets where id = tests.id('joint-food')), tests.id('jess-leaves'),
   'as part of her leaving, which Tom''s Activity shows');
+select ok((select passed_on from public.budgets where id = tests.id('joint-food')),
+  'marked as passed on to him, so his phone says so');
+select ok(not (select passed_on from public.budgets where id = tests.id('tom-travel')),
+  'and his own travel budget isn''t');
+select pg_temp.change('tom', $$ update public.budgets set passed_on = false where id = tests.id('joint-food') $$);
+select ok((select passed_on from public.budgets where id = tests.id('joint-food')),
+  'Tom''s phone can''t take the mark off');
 select is_empty($$ select id from public.paydays where person = tests.id('jess') $$,
   'Her paydays are gone from the plan, with nothing left in them');
 select is((select count(*) from public.paydays where not deleted and person = tests.id('tom')), 1::bigint,

@@ -13,6 +13,7 @@ import {
   type Budget,
   editPlan,
   type OtherPaydays,
+  ownPaydaysFollowed,
   type PaydaySchedule,
   type Plan,
   type PlanInput,
@@ -352,5 +353,30 @@ describe("Other people's paydays are checked, and hold dates only (D512)", () =>
     const plan = workOutPlan(jess);
     expect(plan.budgets[0]?.current).toMatchObject({ start: '2026-10-28', end: '2026-11-26' });
     expect(plan.budgets[0]?.followsPaydays).toBe(true);
+  });
+});
+
+describe('Whether a new budget would follow your own paydays (D514)', () => {
+  const jess = jessAndTomPlan();
+  const of = (input: Partial<PlanInput>) =>
+    ownPaydaysFollowed({ ...jess, today: '2026-10-25', ...input } as PlanInput);
+
+  it('monthly pay: a monthly budget does, a weekly one runs from Monday', () => {
+    expect(of({})).toEqual({ week: false, month: true });
+  });
+
+  it('weekly pay: a weekly budget does, a monthly one runs from the 1st', () => {
+    const weekly = jess.series.map((one) =>
+      one.id === 'jess-pay' ? { ...one, schedule: { kind: 'weekly' as const, every: 2 } } : one,
+    );
+    expect(of({ series: weekly })).toEqual({ week: true, month: false });
+  });
+
+  it('no main pay, or irregular pay: neither does', () => {
+    expect(of({ mainPayFamilyId: null })).toEqual({ week: false, month: false });
+    const irregular = jess.series.map((one) =>
+      one.id === 'jess-pay' ? { ...one, schedule: { kind: 'irregular' as const } } : one,
+    );
+    expect(of({ series: irregular })).toEqual({ week: false, month: false });
   });
 });

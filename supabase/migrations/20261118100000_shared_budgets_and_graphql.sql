@@ -24,9 +24,14 @@
 -- when that person leaves (D513), or is forgotten (D482).
 
 alter table public.budgets add column follows_pay_of uuid references public.people (id);
+-- Set when the person who added it left, and it was passed on to the person
+-- who stays (D513): their phone says so on the budget.
+alter table public.budgets add column passed_on boolean not null default false;
 
 comment on column public.budgets.follows_pay_of is
   'Whose main pay its weeks and months follow (D508): the person who added it, or the person who stays once they leave (D513).';
+comment on column public.budgets.passed_on is
+  'Passed on to the person who stays when the person who added it left (D513).';
 
 create function app.budget_follows() returns trigger
 language plpgsql security definer set search_path = '' as $$
@@ -36,9 +41,11 @@ begin
     -- importing all add records as the person.
     if auth.uid() is not null then
       new.follows_pay_of := auth.uid();
+      new.passed_on := false;
     end if;
   elsif auth.uid() is not null and app.leaving_now() is null and app.forgetting() is null then
     new.follows_pay_of := old.follows_pay_of;
+    new.passed_on := old.passed_on;
   end if;
   return new;
 end;
@@ -61,6 +68,9 @@ update public.budgets b
         where m.plan_id = b.plan_id and m.person_id = b.created_by and m.left_at is null) then b.created_by
       else (select p.owner from public.plans p where p.id = b.plan_id)
     end,
+    passed_on = b.private_to is null and not (b.created_by is not null and exists (select 1
+      from public.plan_members m
+      where m.plan_id = b.plan_id and m.person_id = b.created_by and m.left_at is null)),
     seq = app.next_seq(b.plan_id, b.private_to);
 alter table public.budgets enable trigger user;
 
@@ -446,7 +456,7 @@ begin
     -- Step 4a (D513): a shared budget they added follows the payday of the
     -- person who stays from now on, or the 1st of the month if they have
     -- no main pay, on every phone.
-    update public.budgets b set follows_pay_of = other
+    update public.budgets b set follows_pay_of = other, passed_on = true
       where b.plan_id = plan and b.private_to is null and b.follows_pay_of = me;
   exception
     when sqlstate 'P0001' or insufficient_privilege then

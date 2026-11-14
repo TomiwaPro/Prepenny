@@ -1533,6 +1533,17 @@ export const strings = {
     bill: (date: string, amount: string) => `Bill on ${date}: ${amount}.`,
     billEstimate: (date: string, amount: string) => `Bill on ${date}: ${amount}, an estimate.`,
     change: (name: string) => `Change ${name}`,
+    /** A shared budget someone else added follows their paydays, on this phone too (D508). */
+    onTheirPaydays: (name: string) => `Leaves on ${name}'s paydays.`,
+    /** A shared budget of this person's: their partner sees it leave on their paydays (D512). */
+    partnerSeesYourPaydays: (partner: string) => `${partner} sees this leave on your paydays.`,
+    /** The person who added it left, so it was passed on to this person (D513). */
+    passedOnPaydays:
+      'The person who added this has left the plan, so it now leaves on your paydays.',
+    passedOnMonths:
+      'The person who added this has left the plan, so each month of it now starts on the 1st.',
+    passedOnWeeks:
+      'The person who added this has left the plan, so each week of it now starts on Monday.',
   },
 
   /** Add, change or end a budget (brief 4.5, D152, D161). */
@@ -1561,6 +1572,8 @@ export const strings = {
     changed: (name: string) => `${name} changed.`,
     endHeading: 'End this budget',
     endIntro: 'It stops after the week or month with this day in it.',
+    /** Said before a budget that follows this person's paydays is shared (D512, D514). */
+    partnerWillSee: (partner: string) => `${partner} will see this money leave on your paydays.`,
     endOn: 'Its last week or month has this day in it',
     endError: 'Pick today or a later date.',
     end: 'End this budget',
@@ -2146,6 +2159,9 @@ export const strings = {
     partnerFallback: 'Your partner',
     confirmYes: 'Yes, share',
     confirmNo: 'No, go back',
+    /** Budgets on the accounts being shared that follow this person's paydays (D512, D514). */
+    budgetsOnYourPaydays: (partner: string, names: string) =>
+      `${partner} will also see ${names} leave on your paydays.`,
     sharing: 'Sharing.',
     sharedDone: (names: string) => `Shared: ${names}.`,
     shareTogether: (names: string) =>

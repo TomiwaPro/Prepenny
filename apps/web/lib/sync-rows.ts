@@ -26,13 +26,13 @@ import {
   type Debt,
   type Goal,
   hasShiftDetails,
+  type OtherPaydays,
   type PayAdjustment,
+  type PaydaySchedule,
   type PaymentChange,
   type PayProfile,
   type PayWeek,
   type PlanRecords,
-  type OtherPaydays,
-  type PaydaySchedule,
   type PlanSettings,
   paymentNumberOf,
   type RecordWrite,
@@ -622,7 +622,12 @@ export function writesFor(
     });
   }
   for (const [key, server] of mirror) {
-    if (server.deleted || server.table === 'plans' || server.table === 'paydays' || wanted.has(key)) {
+    if (
+      server.deleted ||
+      server.table === 'plans' ||
+      server.table === 'paydays' ||
+      wanted.has(key)
+    ) {
       continue;
     }
     writes.push({
