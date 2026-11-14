@@ -147,11 +147,17 @@ function BudgetForm({
   // sees: they're told before it's saved (D514).
   const shared = useShared();
   const accountId = stored?.accountId ?? form.accountId;
+  // Off a pay-later card, someone else's budget follows this person's
+  // paydays from now on, not its own person's (D523).
+  const followsMe =
+    stored === null ||
+    stored.followsPayOf === undefined ||
+    (stored.leaves === 'pay-later' && form.leaves !== 'pay-later');
   const yourPaydays =
     shared !== null &&
     loaded !== null &&
     shared.sharedAccounts.has(accountId) &&
-    stored?.followsPayOf === undefined &&
+    followsMe &&
     followsMyPaydays(loaded.records, every, form.leaves)
       ? t.partnerWillSee(partnerOf(shared)?.name ?? strings.share.partnerFallback)
       : null;

@@ -95,6 +95,27 @@ export interface MirrorRow {
   readonly values: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * Whether a row brought down is new to this phone (step 3d): at a new
+ * version; when who made or last changed it is different, as when someone's
+ * account was deleted and their name taken off it, with nothing else changed
+ * (D482); or, for a budget, when whose paydays it follows is different
+ * (D508, D523). The server alone decides that, even on this phone's own
+ * change, which it keeps at the version the phone sent, so the phone takes
+ * the server's word for it, and both phones show the same.
+ */
+export function newToThisPhone(before: MirrorRow | undefined, row: MirrorRow): boolean {
+  if (before === undefined) return true;
+  return (
+    before.version !== row.version ||
+    before.editBy !== row.editBy ||
+    before.createdBy !== row.createdBy ||
+    (row.table === 'budgets' &&
+      ((before.values.follows_pay_of ?? null) !== (row.values.follows_pay_of ?? null) ||
+        (before.values.passed_on === true) !== (row.values.passed_on === true)))
+  );
+}
+
 /** One record written in an edit, as save_edit takes it. */
 export interface DbWrite {
   readonly table: Table;
