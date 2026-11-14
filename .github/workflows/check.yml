@@ -65,6 +65,7 @@ jobs:
             > "$RUNNER_TEMP/supabase-start.log" 2>&1; echo $? > "$RUNNER_TEMP/supabase-start.exit"' > /dev/null 2>&1 &
 
       - name: Install
+        id: install
         run: pnpm install --frozen-lockfile
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
@@ -90,6 +91,17 @@ jobs:
 
       - name: Check the database's own functions for mistakes
         run: supabase db lint --level warning --fail-on warning
+
+      - name: Check every building block for known security problems
+        # Step 4b (D527): every package in pnpm-lock.yaml, against GitHub's
+        # own list of known problems, through npm. A serious one (high or
+        # critical) fails this check, so a pull request can't be merged with
+        # a green tick, and on main the live app and the database aren't
+        # updated (deploy.yml and database.yml wait for this workflow). Less
+        # serious ones are warnings. Last, and even when a check above failed,
+        # so its answer is always there; it takes a few seconds.
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: node scripts/check-building-blocks.ts
 
   end-to-end:
     # Drafts skip these. On main and on a pull request that's ready, they run

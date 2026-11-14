@@ -87,3 +87,32 @@ for (const [name, job] of [
     assert.match(step, /exit 1/);
   });
 }
+
+// Step 4b (D527): every building block is checked for known security
+// problems on every pull request and on main, and the live app and the
+// database are updated only once that check has passed.
+test('check.yml checks every building block on pull requests and on main, even when another check failed', () => {
+  const text = readFileSync(join(folder, 'check.yml'), 'utf8');
+  assert.match(text, /^on:\n {2}push:\n {4}branches: \[main\]\n {2}pull_request:\n/m);
+  const step = text.slice(
+    text.indexOf('- name: Check every building block for known security problems'),
+  );
+  assert.ok(step.length < text.length, 'the step is in check.yml');
+  const until = step.indexOf('\n      - name:', 1);
+  const body = until === -1 ? step : step.slice(0, until);
+  assert.match(body, /run: node scripts\/check-building-blocks\.ts\n/);
+  assert.match(body, /if: \$\{\{ !cancelled\(\) && steps\.install\.outcome == 'success' \}\}/);
+  assert.doesNotMatch(body, /continue-on-error/);
+  assert.match(text, /- name: Install\n {8}id: install\n/);
+});
+
+for (const name of ['deploy.yml', 'database.yml']) {
+  test(`${name} updates the live site only after the Check workflow passed on main`, () => {
+    const text = readFileSync(join(folder, name), 'utf8');
+    assert.match(
+      text,
+      /workflow_run:\n {4}workflows: \[Check\]\n {4}types: \[completed\]\n {4}branches: \[main\]/,
+    );
+    assert.match(text, /github\.event\.workflow_run\.conclusion == 'success'/);
+  });
+}
