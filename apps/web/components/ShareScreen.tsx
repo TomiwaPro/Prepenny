@@ -18,6 +18,7 @@ import { useJoinRequests } from '../data/join-requests.ts';
 import { useSharedPlan } from '../data/shared-plan.ts';
 import { syncNow, useSync } from '../data/sync.ts';
 import { useAccount } from '../lib/account.ts';
+import { budgetsOnMyPaydays } from '../lib/budget-paydays.ts';
 import { momentWords } from '../lib/device-words.ts';
 import {
   cancelInvite,
@@ -65,6 +66,14 @@ export function ShareScreen() {
   const planId = loaded !== null && !loaded.plan.isExample ? loaded.plan.id : null;
   const shared = useSharedPlan(planId, loaded?.version ?? 0);
   const live = useJoinRequests();
+  // Shared budgets that leave on this person's paydays: whoever joins sees
+  // them leave on those days, so the invite says so first (D512, D514).
+  const records = loaded?.records;
+  const yourPaydays = namesList(
+    records === undefined || shared === null
+      ? []
+      : budgetsOnMyPaydays(records, loaded?.today ?? '', (id) => shared.sharedAccounts.has(id)),
+  );
   const [info, setInfo] = useState<Loaded>({ kind: 'loading' });
   const [answers, setAnswers] = useState<Readonly<Record<string, Answered>>>({});
   const [roleFor, setRoleFor] = useState<string | null>(null);
@@ -291,7 +300,12 @@ export function ShareScreen() {
         ) : full ? (
           <p className={styles.line}>{t.full}</p>
         ) : (
-          <Invite planId={planId} sharing={sharing} onChanged={() => void load()} />
+          <Invite
+            planId={planId}
+            sharing={sharing}
+            yourPaydays={yourPaydays}
+            onChanged={() => void load()}
+          />
         )}
       </section>
 
@@ -320,10 +334,13 @@ export function ShareScreen() {
 function Invite({
   planId,
   sharing,
+  yourPaydays,
   onChanged,
 }: {
   readonly planId: string;
   readonly sharing: Sharing;
+  /** Shared budgets that leave on this person's paydays, named, or "" (D514). */
+  readonly yourPaydays: string;
   readonly onChanged: () => void;
 }) {
   const id = useId();
@@ -536,6 +553,11 @@ function Invite({
               />
             </Field>
           ) : null}
+          {yourPaydays === '' ? null : (
+            <p className={styles.second} data-testid="invite-your-paydays">
+              {t.inviteYourPaydays(yourPaydays)}
+            </p>
+          )}
           <p className={styles.second} role="status">
             {busy ? t.making : ''}
           </p>

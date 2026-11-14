@@ -22,8 +22,9 @@ export function syncWrites(ask: Omit<SyncWritesAsk, 'kind'>): readonly DbWrite[]
 export function syncRecords(
   rows: readonly MirrorRow[],
   unsent: readonly (readonly RecordWrite[])[],
+  personId?: string,
 ): FromRows {
-  const server = recordsFromRows(rows);
+  const server = recordsFromRows(rows, personId);
   let records = server.records;
   for (const writes of unsent) records = applyWrites(records, writes);
   return { records, setup: server.setup };

@@ -59,7 +59,7 @@ function answer(ask: Ask): Answers[Ask['kind']] {
     case 'sync-writes':
       return syncWrites(ask);
     case 'sync-records':
-      return syncRecords(ask.rows, ask.unsent);
+      return syncRecords(ask.rows, ask.unsent, ask.personId);
     case 'settle':
       return settleChange(ask);
     case 'clash-facts':

@@ -6,7 +6,13 @@
 // Nothing here ever writes an amount, a name or a note anywhere but this
 // database: no logs, no error reports (CLAUDE.md).
 
-import type { EditCommand, PlanRecords, PlanSettings, RecordWrite } from '@prepenny/engine';
+import type {
+  EditCommand,
+  OtherPaydays,
+  PlanRecords,
+  PlanSettings,
+  RecordWrite,
+} from '@prepenny/engine';
 import { Dexie, type EntityTable } from 'dexie';
 import type { ClashFacts } from '../lib/clash.ts';
 import type { PaymentNumbers } from '../lib/edit.ts';
@@ -56,8 +62,12 @@ export interface Seen {
 /** Which plan the app shows: the person's own, or the example (step 2e). */
 export type Showing = 'own' | 'example';
 
-/** The kinds of record, as the engine's edits name them (D87). */
-export type RecordKind = RecordWrite['kind'];
+/**
+ * The kinds of record, as the engine's edits name them (D87), and
+ * `paydays`: another person's paydays, the dates only, which come from the
+ * server and no edit changes (step 4a, D512), one for each person.
+ */
+export type RecordKind = RecordWrite['kind'] | 'paydays';
 
 /** One record of one plan. */
 export interface StoredRecord {
@@ -259,7 +269,7 @@ const listOf = {
   'pay-profile': 'payProfiles',
   'pay-week': 'payWeeks',
   'pay-adjustment': 'payAdjustments',
-} as const satisfies Record<Exclude<RecordKind, 'settings'>, keyof PlanRecords>;
+} as const satisfies Record<Exclude<RecordKind, 'settings' | 'paydays'>, keyof PlanRecords>;
 
 type ListKind = keyof typeof listOf;
 
@@ -301,6 +311,9 @@ export function rowsOf(planId: string, records: PlanRecords): StoredRecord[] {
   if (records.settings !== undefined) {
     rows.push({ planId, kind: 'settings', key: SETTINGS_KEY, seq: 0, value: records.settings });
   }
+  (records.otherPaydays ?? []).forEach((value, seq) => {
+    rows.push({ planId, kind: 'paydays', key: value.person, seq, value });
+  });
   return rows;
 }
 
@@ -309,6 +322,7 @@ export function recordsOf(rows: readonly StoredRecord[]): PlanRecords {
   const lists: Record<string, unknown[]> = {};
   for (const list of Object.values(listOf)) lists[list] = [];
   let settings: PlanSettings | undefined;
+  const otherPaydays: OtherPaydays[] = [];
   const sorted = [...rows].sort(
     (a, b) => (a.seq ?? 0) - (b.seq ?? 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
   );
@@ -317,11 +331,16 @@ export function recordsOf(rows: readonly StoredRecord[]): PlanRecords {
       settings = row.value as PlanSettings;
       continue;
     }
+    if (row.kind === 'paydays') {
+      otherPaydays.push(row.value as OtherPaydays);
+      continue;
+    }
     lists[listOf[row.kind]]?.push(row.value);
   }
   return {
     ...(lists as unknown as PlanRecords),
     ...(settings === undefined ? {} : { settings }),
+    ...(otherPaydays.length === 0 ? {} : { otherPaydays }),
   };
 }
 

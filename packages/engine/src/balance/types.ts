@@ -1,4 +1,4 @@
-import type { Budget, BudgetPlan, Spend } from '../budgets/types.ts';
+import type { Budget, BudgetPlan, OtherPaydays, Spend } from '../budgets/types.ts';
 import type { Nation } from '../dates/bank-holiday-rules.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Goal } from '../goals/types.ts';
@@ -106,6 +106,11 @@ export interface PlanInput {
   readonly payWeeks?: readonly PayWeek[];
   /** "I did overtime" and "I missed a shift": added to their payday while it's an estimate (D44). */
   readonly payAdjustments?: readonly PayAdjustment[];
+  /**
+   * In a shared plan, the paydays of other people whose main pay a budget
+   * follows (D508), the dates only (D512).
+   */
+  readonly otherPaydays?: readonly OtherPaydays[];
   /** The family of the main pay of the person viewing (D14), or null when there's none. */
   readonly mainPayFamilyId: string | null;
   /** The plan's bank holidays, usually a BankHolidayCalendar for its nation. */

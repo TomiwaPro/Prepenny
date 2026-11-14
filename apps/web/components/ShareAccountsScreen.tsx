@@ -13,11 +13,16 @@
 // Money between two of the person's accounts can't cross from shared to
 // private, so the server refuses to share one without the other, and says
 // which; this screen names them.
+//
+// A budget on an account being shared that leaves on the person's paydays
+// gives their partner's phone those paydays, the dates only (D508, D512):
+// the sheet that asks first names it (D514).
 
 import { useState } from 'react';
 import { partnerOf, nameOf as personName, useSharedPlan } from '../data/shared-plan.ts';
 import { allSent, syncNow, useSync } from '../data/sync.ts';
 import { useAccount } from '../lib/account.ts';
+import { budgetsOnMyPaydays } from '../lib/budget-paydays.ts';
 import { makePrivate, type SharingProblem, shareAccounts } from '../lib/sharing.ts';
 import { strings } from '../strings/en-GB.ts';
 import { CheckOption, Problem } from './Fields.tsx';
@@ -87,6 +92,12 @@ export function ShareAccountsScreen() {
   const named = (ids: readonly string[], name: (id: string) => string) =>
     namesList(ids.map(name).filter((one) => one !== ''));
   const partnerWords = partnerOf(shared)?.name ?? t.partnerFallback;
+  // Budgets on the accounts being shared that leave on this person's paydays (D514).
+  const onYourPaydays = namesList(
+    records === undefined
+      ? []
+      : budgetsOnMyPaydays(records, loaded?.today ?? '', (id) => chosen.includes(id)),
+  );
 
   /** Why the account can't be made private, in words. */
   function privateProblem(found: SharingProblem, account: string, by: string): string | null {
@@ -272,6 +283,11 @@ export function ShareAccountsScreen() {
         onClose={() => setAsking(false)}
       >
         <div className={formStyles.actions}>
+          {onYourPaydays === '' ? null : (
+            <p className={formStyles.lede} data-testid="share-your-paydays">
+              {t.budgetsOnYourPaydays(partner, onYourPaydays)}
+            </p>
+          )}
           <p className={formStyles.lede} role="status">
             {busy ? t.sharing : ''}
           </p>

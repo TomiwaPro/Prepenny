@@ -17,7 +17,7 @@ import { mainPaydaysOf } from '../periods/main-pay.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
 import type { Series } from '../schedule/types.ts';
 import { addAccount, changeAccount, closeAccount } from './accounts.ts';
-import { addBudget, changeBudget, endBudget } from './budget-commands.ts';
+import { addBudget, changeBudget, endBudget, keepWhoseBudgetsFollow } from './budget-commands.ts';
 import {
   type Context,
   changeOne,
@@ -728,6 +728,7 @@ export function editPlan(input: EditInput, command: EditCommand): Edit {
     draft: new Draft(input),
   };
   run(context, command);
+  keepWhoseBudgetsFollow(context);
   const edit = context.draft.result();
   // A safety net: the records after the edit must still make a plan.
   try {

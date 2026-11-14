@@ -66,3 +66,24 @@ for (const name of workflows) {
     assert.ok(waited < firstTest, `${name} waits for it before \`playwright test\``);
   });
 }
+
+// GraphQL stays off (step 4a, D509): the Database workflow, and the preview
+// database's job, look on every run, after the database changes, with the
+// database's own step, which switches it off again if it's on.
+for (const [name, job] of [
+  ['database.yml', 'Change the real database'],
+  ['deploy.yml', "Give the preview database this pull request's database changes"],
+] as const) {
+  test(`${name} checks GraphQL is still off on every run, after the database changes`, () => {
+    const text = readFileSync(join(folder, name), 'utf8');
+    const changes = text.indexOf(`- name: ${job}`);
+    const check = text.indexOf('- name: Check GraphQL is still off');
+    assert.ok(changes >= 0, `${name} changes the database`);
+    assert.ok(check > changes, `${name} checks GraphQL after the database changes`);
+    const step = text.slice(check, text.indexOf('\n      - name:', check + 1));
+    assert.match(step, /select app\.keep_graphql_off\(\)/);
+    assert.match(step, /if: steps\.supabase\.outputs\.ready == 'true'\n/);
+    assert.match(step, /switched-off\)/);
+    assert.match(step, /exit 1/);
+  });
+}

@@ -44,6 +44,8 @@ export {
   type BudgetLeaves,
   type BudgetPeriod,
   type BudgetPlan,
+  type OtherPaydays,
+  type PaydaySchedule,
   type Spend,
 } from './budgets/types.ts';
 export {

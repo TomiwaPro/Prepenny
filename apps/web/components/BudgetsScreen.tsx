@@ -5,13 +5,21 @@
 // week or month, anything that rolled over as "£25 + £7 from last week"
 // (D30), and for a pay-later card what's left on the card and its bill
 // (D61). Each can be changed or ended, and new ones added.
+//
+// In a shared plan, each shared budget says whose paydays it leaves on, when
+// it follows them: "Leaves on Jess's paydays." on Tom's phone, "Tom sees
+// this leave on your paydays." on Jess's (D508, D512); and once the person
+// who added it has left, that it's passed on to the person who stays (D513).
 
 import { useState } from 'react';
+import { nameOf, partnerOf, type SharedPlan } from '../data/shared-plan.ts';
+import { budgetPaydaysLine } from '../lib/budget-paydays.ts';
 import { formatDay } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { BudgetCard } from '../lib/money-views.ts';
 import { strings } from '../strings/en-GB.ts';
 import { BudgetSheet } from './BudgetSheet.tsx';
+import { useShared } from './ChangedBy.tsx';
 import formStyles from './Form.module.css';
 import { ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
@@ -31,6 +39,23 @@ function leavesWords(budget: BudgetCard): string {
   return t.atStart;
 }
 
+/** Whose paydays a shared budget leaves on, in words, or null (step 4a). */
+function paydaysLine(budget: BudgetCard, shared: SharedPlan | null): string | null {
+  if (shared === null) return null;
+  const follows = budget.budget.followsPayOf;
+  const partner = partnerOf(shared);
+  return budgetPaydaysLine({
+    followsName: follows === undefined ? null : nameOf(shared, follows),
+    followsSomeoneElse: follows !== undefined,
+    followsPaydays: budget.followsPaydays,
+    every: budget.every,
+    leaves: budget.leaves,
+    shared: shared.sharedAccounts.has(budget.budget.accountId),
+    partner: partner === null ? null : (partner.name ?? strings.share.partnerFallback),
+    passedOn: shared.passedOn.has(budget.id),
+  });
+}
+
 function Budget({
   budget,
   today,
@@ -40,6 +65,8 @@ function Budget({
   readonly today: string;
   readonly onChange: () => void;
 }) {
+  const shared = useShared();
+  const whosePaydays = paydaysLine(budget, shared);
   const day = (date: string) => formatDay(date, today);
   const current = budget.current;
   const base = formatMoney(current.base);
@@ -58,6 +85,11 @@ function Budget({
         {(budget.every === 'week' ? t.aWeek : t.aMonth)(base, budget.accountName)}
       </p>
       <p className={styles.second}>{leavesWords(budget)}</p>
+      {whosePaydays === null ? null : (
+        <p className={styles.second} data-testid="whose-paydays">
+          {whosePaydays}
+        </p>
+      )}
       {budget.rollOver ? <p className={styles.second}>{t.rollOverOn}</p> : null}
       <div className={styles.panel}>
         <h3 className={styles.label}>

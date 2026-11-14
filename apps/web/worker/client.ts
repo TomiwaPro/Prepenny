@@ -195,6 +195,7 @@ export function syncWritesInBackground(
 export function syncRecordsInBackground(
   rows: Extract<Ask, { kind: 'sync-records' }>['rows'],
   unsent: Extract<Ask, { kind: 'sync-records' }>['unsent'],
+  personId: string,
 ): Promise<Answers['sync-records']> {
-  return ask({ kind: 'sync-records', rows, unsent });
+  return ask({ kind: 'sync-records', rows, unsent, personId });
 }

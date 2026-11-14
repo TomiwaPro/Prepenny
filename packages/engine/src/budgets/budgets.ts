@@ -12,6 +12,7 @@ import {
   type BudgetCalendar,
   type BudgetPay,
   calendarOf,
+  followsPaydays,
   statementPeriods,
 } from './periods.ts';
 import type { BudgetBill, BudgetPeriod, BudgetPlan } from './types.ts';
@@ -48,6 +49,8 @@ export interface BudgetRow {
 /** A budget, worked out for a plan. */
 export interface WorkedBudget {
   readonly checked: CheckedBudget;
+  /** The pay its periods follow: the viewer's own, or the person's who added it (D508). */
+  readonly pay: BudgetPay;
   /** Every period from the budget's first to the last one that starts by the plan's last day. */
   readonly periods: readonly PeriodWork[];
   /** The first period that hasn't ended by today. `periods.length` when every period has. */
@@ -235,7 +238,7 @@ export function workOutBudget(
     return Math.max(amountFor(period.start), spent);
   };
 
-  return { checked, periods, currentIndex, rows, billEstimate };
+  return { checked, pay, periods, currentIndex, rows, billEstimate };
 }
 
 /**
@@ -288,5 +291,10 @@ export function budgetPlanOf(
       bill: period.bill === null ? null : billOf(period.bill),
     }),
   );
-  return { budget: worked.checked.budget, current: periods[0] ?? null, periods };
+  return {
+    budget: worked.checked.budget,
+    current: periods[0] ?? null,
+    periods,
+    followsPaydays: followsPaydays(worked.checked, worked.pay),
+  };
 }

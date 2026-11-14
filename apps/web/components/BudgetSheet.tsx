@@ -10,10 +10,17 @@
 // A new budget that starts today asks the same optional "Already spent this
 // week" (or "this month") as setup, saved the same way (D230, D246), from
 // the owner's answer to step 2f.
+//
+// In a shared account, a budget that leaves on this person's paydays gives
+// their partner's phone those paydays, the dates only, so it leaves on the
+// same days there (D508, D512). The sheet says so before it's saved:
+// "Tom will see this money leave on your paydays." (D514).
 
 import type { BudgetEvery, BudgetLeaves, EditCommand } from '@prepenny/engine';
 import { useId, useRef, useState } from 'react';
+import { partnerOf } from '../data/shared-plan.ts';
 import { amountForTyping, parseAmount } from '../lib/amount.ts';
+import { followsMyPaydays } from '../lib/budget-paydays.ts';
 import { formatDay } from '../lib/dates.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import type { BudgetCard } from '../lib/money-views.ts';
@@ -21,6 +28,7 @@ import { readDate } from '../lib/new-payment.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { alreadySpentCommand, latestBalanceAt, optionalAmount } from '../lib/setup-forms.ts';
 import { strings } from '../strings/en-GB.ts';
+import { useShared } from './ChangedBy.tsx';
 import { ChoiceList } from './ChoiceList.tsx';
 import { CheckOption, DateField, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
 import styles from './Form.module.css';
@@ -135,6 +143,24 @@ function BudgetForm({
   // Only a new budget that starts today has a week or month already under way,
   // and a pay-later card's spending never leaves the bank (D246).
   const asksSpent = budget === null && !payLater && readDate(form.startsOn) === today;
+  // Its money leaves on this person's paydays, in an account their partner
+  // sees: they're told before it's saved (D514).
+  const shared = useShared();
+  const accountId = stored?.accountId ?? form.accountId;
+  // Off a pay-later card, someone else's budget follows this person's
+  // paydays from now on, not its own person's (D523).
+  const followsMe =
+    stored === null ||
+    stored.followsPayOf === undefined ||
+    (stored.leaves === 'pay-later' && form.leaves !== 'pay-later');
+  const yourPaydays =
+    shared !== null &&
+    loaded !== null &&
+    shared.sharedAccounts.has(accountId) &&
+    followsMe &&
+    followsMyPaydays(loaded.records, every, form.leaves)
+      ? t.partnerWillSee(partnerOf(shared)?.name ?? strings.share.partnerFallback)
+      : null;
 
   async function change(
     command: EditCommand | readonly EditCommand[],
@@ -372,6 +398,11 @@ function BudgetForm({
         <CheckOption checked={form.rollOver} onChange={(rollOver) => set({ rollOver })}>
           {t.rollOver}
         </CheckOption>
+        {yourPaydays === null ? null : (
+          <p className={styles.hint} data-testid="your-paydays">
+            {yourPaydays}
+          </p>
+        )}
         <button type="submit" className={styles.main} aria-disabled={busy}>
           {budget === null ? t.save : t.saveChanges}
         </button>

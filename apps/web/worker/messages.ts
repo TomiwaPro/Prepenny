@@ -139,6 +139,8 @@ export interface SyncRecordsAsk {
   readonly kind: 'sync-records';
   readonly rows: readonly MirrorRow[];
   readonly unsent: readonly (readonly RecordWrite[])[];
+  /** The person signed in on this phone, for whose pay a shared budget follows (D508). */
+  readonly personId: string;
 }
 
 /** What to do with one waiting change, against the newest records (step 3d, lib/clash.ts). */

@@ -94,7 +94,7 @@ PrePenny's database is a Supabase project in London, on Supabase's free plan for
 Nobody changes the real database by hand. GitHub does it, the same way it puts the app online:
 
 - On every pull request, the **Lint, type checks, tests and the database** check builds a fresh copy of the database on GitHub's own machine, with made-up people (Jess, Tom and Alex), and runs every test on it. Nothing there touches the real database.
-- When a pull request is merged into `main` and every check has passed on it, the **Database** workflow (`.github/workflows/database.yml`) sends the changes to the real database in London. The made-up people and the tests never go there. Then it checks the project's **Data API** shows PrePenny's public part only, never its private checks (`app`), and says exactly what to do if it ever does (D341).
+- When a pull request is merged into `main` and every check has passed on it, the **Database** workflow (`.github/workflows/database.yml`) sends the changes to the real database in London. The made-up people and the tests never go there. Then it checks the project's **Data API** shows PrePenny's public part only, never its private checks (`app`), and says exactly what to do if it ever does (D341). And it checks GraphQL, a second way into the database that PrePenny never uses, is still switched off, and switches it off again if it isn't (step 4a, D509).
 - A pull request's preview never uses the real project. For now its signing in is off, and each step's database changes are tried on the live app after merging (D411). Once a second project, **prepenny-preview**, is set up with Supabase's paid plan, previews use it, and database changes can be tried before merging. See "The preview database" below.
 - Before changing anything, the Database workflow checks its key has every permission in step 5 below. If any are missing, it stops with one message listing all of them, and nothing is changed (D406).
 
@@ -113,7 +113,7 @@ GitHub needs permission to change your Supabase project. Supabase changes its me
 5. Make a key for GitHub. Go to https://supabase.com/dashboard/account/tokens and tap **Generate new token**. Call it `GitHub, PrePenny`. If it asks when the token should expire, choose the longest time offered. Give it these permissions on the **prepenny** project, named as Supabase's token page names them (checked on 9 Nov 2026). Each is something a run of the Database workflow does:
    - **Project Settings: Read-write**: to find the project, and, with Auth Config, to send the sign-in settings.
    - **Auth Config: Read-write**: to send the sign-in settings.
-   - **Database: Read-write**: to give the database the Resend key.
+   - **Database: Read-write**: to give the database the Resend key, and to check GraphQL is still off and switch it off again if it isn't (step 4a). Supabase's own description of its API says looking at the database needs "database_read" and changing it "database_write": both are this one.
    - **Migrations: Read-write**: for Supabase's command line, which sends the database changes.
    - **Edge Functions: Read-write**: to put the get-back-in function online.
    - **API Keys: Read** and **API Key Secrets: Read**: for Supabase's command line, to connect to the project.
@@ -139,6 +139,8 @@ Keep the token and the password only in GitHub's secrets and your password manag
 - **The Database workflow has a red cross saying it couldn't reach the database.** On the free plan, a project that hasn't been used for a week is paused, and Supabase emails you first. Open the project on supabase.com and tap **Restore project**, wait a few minutes, then open **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. Moving to Supabase's paid plan before launch stops the pausing (D19).
 - **It says a secret is wrong.** Make the token again (step 5) and replace `SUPABASE_ACCESS_TOKEN`, or reset the database password under **Project Settings**, then **Database**, and replace `SUPABASE_DB_PASSWORD`. Then run the workflow again as above.
 - **The "Lint, type checks, tests and the database" check has a red cross on a pull request.** Don't merge: ask Claude Code to fix it. The real database is unchanged.
+- **The Database workflow says "GraphQL was on".** It had been switched on again, from Supabase's own pages perhaps, and the workflow has switched it off. Nothing to do. If it says so again on the next run, tell Claude Code.
+- **If the GraphQL check fails** (a red cross on **Check GraphQL is still off**). Switch it off by hand: on supabase.com, open the **prepenny** project, then **Database** in the menu on the left, then **Extensions**. Search for `pg_graphql`, and if its switch is on, switch it off and confirm. Or open **SQL Editor**, then **New query**, paste `drop extension if exists pg_graphql;` and tap **Run**: that's what Supabase's own guide to pg_graphql gives for switching it off. Then run the workflow again: **Actions**, then **Database**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again. If it fails again, tell Claude Code what the step says.
 - **The Database workflow says "The Data API shows app".** On supabase.com, open the **prepenny** project, then **Project Settings** (the gear), then **Data API**. Under **Exposed schemas**, remove `app`, keep `public` and `graphql_public`, and tap **Save**. Then run the workflow again as above. To check by hand at any time, look at the same list: it should show `public` and `graphql_public` only.
 
 ## The preview database
@@ -700,6 +702,61 @@ Only if Supabase's backups are used to put the database back as it was on an ear
 - **No new package.**
 
 To try all of Phase 3 on the live app in about 15 minutes, alone, with a phone and a private window, follow `docs/TRY-PHASE-3.md`. It ends with deleting the test accounts.
+
+### M. Step 4a: shared budgets and GraphQL
+
+**What you need to set up: nothing.** Checked one by one, in this step's own changes:
+
+- **Supabase.** One database change, sent by the **Database** workflow with the key it already has, after its check of all eleven permissions (D406). Switching GraphQL off is part of that change: `drop extension if exists pg_graphql`, as Supabase's own guide to pg_graphql gives it. The new check on every run, "Check GraphQL is still off", uses Supabase's database query route, which Supabase's own description of its API says needs `database_read` and `database_write`: that's **Database: Read-write** on the token page, which the key already has (step 5 of "The database"). **Data API Config** stays **Read**: GraphQL isn't switched off through the Data API's settings, which would need Read-write. No new sign-in setting, web address, email template, function or permission (D519).
+- **GitHub.** No new secret or variable. The Database workflow has one more step. The end-to-end tests add about 6 minutes, shared between the three parts, inside their 60 minutes.
+- **Resend, Cloudflare and Google.** Nothing new.
+- **No new package.**
+
+This computer couldn't open supabase.com today, so Supabase's guide and the description of its API were read from Supabase's own repository on GitHub, where its documentation lives.
+
+To check it worked, after merging: **Actions**, then **Database**, then the newest run: a green tick, and its step **Check GraphQL is still off** says "GraphQL is off." Then **Deploy**: a green tick.
+
+#### Trying it on the live app, alone, with two devices
+
+You need your phone (device A, playing Jess) and a computer or a second browser with a **private or incognito window** (device B, playing Tom). Use two new Gmail "+" addresses made from your own: if your address is `yourname@gmail.com`, Gmail delivers mail for `yourname+jess4@gmail.com` and `yourname+tom4@gmail.com` to your own inbox, but PrePenny treats them as two new people. Put your own name where these steps say `yourname`. Your own plan isn't touched.
+
+Jess's plan, on device A:
+
+1. Open https://prepenny.co.uk/app/, tap **More**, then **Sign out**, then **Sign out** again. Your own plan is safe in your account.
+2. Tap **Make my plan**. Name the account `Jess current account`, with `410`. Tap **Add another account**: `Joint account`, choose **Joint account**, `1050`. Tap **Next**.
+3. On "How you're paid": name `Jess pay`, **Monthly, on a date**, next payday the 28th of this month (of next month if it's past), `2100`, into **Jess current account**, and **No** to extra hours. Tap **Next**, then **Skip this step** on each of the next three screens, then **Go to my plan**.
+4. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+jess4@gmail.com`.
+5. Tap **More**, then **Share with my partner**, then **Choose shared accounts**. Tick **Joint account** only, tap **Share these accounts**, then **Yes, share**. Go back.
+6. Under **Invite your partner**, type `Jess`, keep **Can edit** and **A link I send myself**, tap **Make the invite link**, then **Copy the link**, and send it to yourself so you can open it on device B.
+
+Tom's plan, on device B, in a private or incognito window:
+
+7. Open https://prepenny.co.uk/app/ and tap **Make my plan**. Name the account `Tom current account`, with `520`, and tap **Next**. On "How you're paid": `Tom pay`, **Monthly, on a date**, next payday the 15th of next month, `2350`, and **No** to extra hours. Tap **Next**, **Skip this step** three times, then **Go to my plan**.
+8. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+tom4@gmail.com`.
+9. Open the invite link. It says your plan comes with you. Type `Tom` and tap **Ask to join**.
+10. On device A, within a few seconds, "Tom wants to join your plan": tap **Allow**, then **Got it**. On device B, Home opens.
+
+Each adds a budget, and is told first:
+
+11. On device A, tap **More**, then **Budgets**, then **Add a budget**: name `Food`, amount `300`, **Month**, from **Joint account**. Above **Add budget** it says "Tom will see this money leave on your paydays." Choose **Jess current account** instead: the sentence goes. Choose **Joint account** again and tap **Add budget**.
+12. On device B, the same with `Meals out`, `60`, **Month**, from **Joint account**: "Jess will see this money leave on your paydays." Tap **Add budget**.
+13. Within a minute, on device A, **Budgets** says under Food "Tom sees this leave on your paydays." and under Meals out "Leaves on Tom's paydays." On device B, under Food "Leaves on Jess's paydays." and under Meals out "Jess sees this leave on your paydays." Food's "This month, to …" is the same day on both devices, and so is Meals out's.
+
+The same joint account on both phones:
+
+14. On both devices, tap **Coming up**, then **Switch account**, then **Joint account**. Food's −£300.00 is on Jess's next payday on both, Meals out's −£60.00 on Tom's, and every "Left after this" is the same. Nothing of Jess's pay shows on device B: no Jess current account and no Jess pay.
+
+Jess leaves:
+
+15. On device A, tap **More**, then **Share with my partner**, then **Leave this plan**. Choose **No, just my own things**, tap **Leave this plan**, then **Yes, leave**.
+16. On device B, within a minute, **Budgets** says under Food "The person who added this has left the plan, so it now leaves on your paydays.", and its "This month, to …" is now the same day as Meals out's.
+17. On device B, tap **More**, then **Share with my partner**. Under **Invite your partner**: "Whoever joins will see Food and Meals out leave on your paydays."
+
+#### Removing the two test accounts afterwards
+
+18. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete`, and tap **Delete my account and all my data**.
+19. On device A, the same with the code sent to `yourname+jess4@gmail.com`.
+20. Close the private window. On device A, sign in again with your own address: your own plan comes back.
 
 ## Bank holidays
 

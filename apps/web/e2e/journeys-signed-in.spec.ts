@@ -184,19 +184,13 @@ for (const person of PEOPLE) {
     const records = person.records();
     const shifts: Shift[] = [];
     const expected = () => withShifts(daysOf(records, person.today, person.to), shifts);
-    // Tom's phone works the plan out with his own main pay (D289), and he
-    // has none, so the joint account's food budget runs by calendar month
-    // there (D29), where Jess's runs from her payday: a question for the
-    // owner (PLAN.md, "Waiting for the owner"). Everyone else's second phone
-    // is the same person's, with the same main pay.
-    const withoutMainPay: PlanRecords =
-      records.settings === undefined
-        ? records
-        : { ...records, settings: { ...records.settings, mainPayFamilyId: null } };
-    const otherExpected = () =>
-      person.name === 'Jess and Tom'
-        ? withShifts(daysOf(withoutMainPay, person.today, person.to), shifts)
-        : expected();
+    // Since step 4a, a shared budget follows the paydays of the person who
+    // added it on both phones (D508, D512): Tom, with no main pay of his
+    // own, sees the joint account's food month leave on Jess's payday, as
+    // she does, so his phone shows every account exactly as hers, every day.
+    // Before, it ran by calendar month on his phone (D497). Everyone else's
+    // second phone is the same person's, with the same main pay.
+    const otherExpected = expected;
 
     // Set up on the screens, exactly as in people.spec.ts, then sign up.
     await person.setUp(page);

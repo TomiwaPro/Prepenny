@@ -25,8 +25,10 @@ import { runEdit } from '../../lib/edit.ts';
 import { workOutHome } from '../../lib/home.ts';
 import { workOutPlanView } from '../../lib/plan-view.ts';
 import {
+  type DbWrite,
   type MirrorRow,
   mirrorRowOf,
+  newToThisPhone,
   recordsFromRows,
   rowsOf,
   savedRows,
@@ -566,5 +568,72 @@ describe('step 3f: whose pay, once it has been claimed (D418)', () => {
       undefined,
     );
     expect(wanted.get('series|pay-later')?.values.paid_to).toBe(TOM);
+  });
+});
+
+describe("step 4a: whose paydays a budget follows is the server's word (D508, D523)", () => {
+  const values = {
+    list_order: 0,
+    account_id: 'joint',
+    name: 'Food',
+    amount: 30000,
+    amounts_before: null,
+    every: 'month',
+    leaves: 'at-start',
+    roll_over: false,
+    roll_over_from: null,
+    starts_on: '2026-10-25',
+    ends_on: null,
+    bill_day: null,
+    statement_day: null,
+    made_at: '2026-10-25T09:00:00Z',
+  };
+  const food = (version: number, more: Record<string, unknown>): MirrorRow => ({
+    table: 'budgets',
+    id: 'food',
+    version,
+    seq: version,
+    privateTo: null,
+    deleted: false,
+    editBy: TOM,
+    createdBy: JESS,
+    values: { ...values, follows_pay_of: JESS, passed_on: false, ...more },
+  });
+
+  it("takes it from the server, even on this phone's own change at the version it sent", () => {
+    // Tom takes back his change that made Jess's food month a pay-later
+    // bill. His phone sends the month as it was, which says nothing of whose
+    // paydays it follows: no phone can say that.
+    const card = food(2, { leaves: 'pay-later', bill_day: 29 });
+    const sent: DbWrite[] = [{ table: 'budgets', id: 'food', version: 2, row: values }];
+    const [kept] = savedRows(
+      sent,
+      [{ table: 'budgets', id: 'food', version: 3, seq: 3, private_to: null, deleted: false }],
+      [card],
+      { id: 'undo-1', madeAt: '2026-10-25T10:00:00Z', by: TOM, kind: 'undo' },
+    );
+    // So it keeps what it had: Jess's.
+    expect(kept?.values.follows_pay_of).toBe(JESS);
+    // The server made it follow Tom's paydays (D523), at the same version.
+    const fromServer = food(3, { follows_pay_of: TOM });
+    expect(newToThisPhone(kept, fromServer)).toBe(true);
+    expect(recordsFromRows([fromServer], TOM).records.budgets?.[0]?.followsPayOf).toBeUndefined();
+    // Brought down again as it is, it's nothing new.
+    expect(newToThisPhone(fromServer, fromServer)).toBe(false);
+  });
+
+  it('takes it once passed on to the person who stays (D513)', () => {
+    expect(
+      newToThisPhone(
+        food(3, { follows_pay_of: TOM }),
+        food(3, { follows_pay_of: TOM, passed_on: true }),
+      ),
+    ).toBe(true);
+  });
+
+  it('anything else at the same version is nothing new, as before', () => {
+    expect(newToThisPhone(food(3, {}), food(3, { name: 'Shopping' }))).toBe(false);
+    expect(newToThisPhone(food(3, {}), food(4, {}))).toBe(true);
+    expect(newToThisPhone(undefined, food(3, {}))).toBe(true);
   });
 });

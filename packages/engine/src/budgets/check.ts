@@ -71,6 +71,12 @@ export function checkBudget(budget: Budget, accounts: ReadonlySet<string>): Chec
       ? null
       : parseDate(budget.rollOverFrom, `Budget ${id}: when roll-over was switched on`);
   const createdAt = parseTime(budget.createdAt, `Budget ${id}: when it was made`);
+  if (
+    budget.followsPayOf !== undefined &&
+    (typeof budget.followsPayOf !== 'string' || budget.followsPayOf === '')
+  ) {
+    fail(id, 'bad-budget', 'whose paydays it follows must be a person, or left out.');
+  }
   const amountsBefore: { until: Day; amount: Pence }[] = [];
   if (budget.amountsBefore !== undefined) {
     if (!Array.isArray(budget.amountsBefore)) {

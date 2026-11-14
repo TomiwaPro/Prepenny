@@ -46,6 +46,7 @@ import {
   type DbWrite,
   type MirrorRow,
   mirrorRowOf,
+  newToThisPhone,
   savedRows,
   type Table,
 } from '../lib/sync-rows.ts';
@@ -468,6 +469,7 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
     const { records, setup } = await syncRecordsInBackground(
       rows,
       unsent.map((one) => one.writes),
+      link.personId,
     );
     const done = await db.transaction(
       'rw',
@@ -522,17 +524,7 @@ async function bringDown(
   const known = new Map(
     (await rowsOn(db, link.planId)).map((row) => [`${row.table}|${row.id}`, row]),
   );
-  // A row is new to this phone at a new version, or when who made or last
-  // changed it is different, as when someone's account was deleted and their
-  // name taken off it, with nothing else changed (D482).
-  const changed = rows.filter((row) => {
-    const before = known.get(`${row.table}|${row.id}`);
-    return (
-      before?.version !== row.version ||
-      before.editBy !== row.editBy ||
-      before.createdBy !== row.createdBy
-    );
-  });
+  const changed = rows.filter((row) => newToThisPhone(known.get(`${row.table}|${row.id}`), row));
   let shared = link.shared;
   let mine = link.mine;
   for (const row of rows) {
@@ -1801,7 +1793,13 @@ function startListening(client: SupabaseClient, link: PlanLink) {
             void lookForGetBackIn();
             void syncSoon();
           })
-          .subscribe();
+          // Once it's listening, it looks once more (D515): a change saved
+          // while it was starting to listen sent its nudge before this phone
+          // could hear it, and would otherwise wait for the minute's look.
+          // And again whenever it starts listening anew, after a lost signal.
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') void syncSoon();
+          });
       }
     } catch {
       // No live nudges: the phone still looks every minute and when it comes back on screen.

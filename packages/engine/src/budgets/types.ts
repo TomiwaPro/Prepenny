@@ -2,6 +2,7 @@
 // D32, D41, D61, D67).
 
 import type { Pence } from '../money/pence.ts';
+import type { EndRule, HolidayRule, Schedule } from '../schedule/types.ts';
 
 /** How often a budget comes round (brief 4.5). Its periods follow D29. */
 export const BUDGET_EVERY = ['week', 'month'] as const;
@@ -62,6 +63,41 @@ export interface Budget {
   readonly statementDay?: number;
   /** When the budget was made, a UTC time. On the same day, earlier ones go first (D12). */
   readonly createdAt: string;
+  /**
+   * In a shared plan, whose paydays its weeks and months follow, when that's
+   * someone else (D508): the person who added it. Their paydays come in the
+   * records' `otherPaydays`, the dates only (D512); with none there, they
+   * have no main pay, and it runs Monday to Sunday or from the 1st (D29).
+   * Left out, it follows the main pay of the person viewing, as always.
+   */
+  readonly followsPayOf?: string;
+}
+
+/**
+ * One series of another person's main pay, the dates only (D512): when it
+ * comes, never its amount, name, account or job. A series split from
+ * another keeps the payment number it starts at (ARCHITECTURE.md 2.3).
+ */
+export interface PaydaySchedule {
+  readonly id: string;
+  /** "YYYY-MM-DD", as the series' own start. */
+  readonly start: string;
+  readonly schedule: Schedule;
+  readonly end: EndRule;
+  readonly holidayRule: HolidayRule;
+  readonly firstNumber?: number;
+  /** Paydays moved to another date, by their date from the schedule. */
+  readonly moved?: readonly { readonly from: string; readonly to: string }[];
+  /** Paydays removed, by their date from the schedule: they aren't paydays (D81). */
+  readonly skipped?: readonly string[];
+}
+
+/** Another person's main pay, the dates only, for the budgets that follow it (D508, D512). */
+export interface OtherPaydays {
+  /** Whose: the id a budget's `followsPayOf` names. */
+  readonly person: string;
+  /** Every series of their main pay's family (D49). */
+  readonly series: readonly PaydaySchedule[];
 }
 
 /** "I spent" (brief 4.5): money spent from a budget. */
@@ -130,4 +166,11 @@ export interface BudgetPlan {
   readonly current: BudgetPeriod | null;
   /** Every period from the current one to the one with the plan's last day in it. */
   readonly periods: readonly BudgetPeriod[];
+  /**
+   * Its weeks or months line up with the paydays of the pay it follows
+   * (D29, D108): a weekly budget starting on the payday's weekday, or a
+   * monthly one running payday to payday. False when they run Monday to
+   * Sunday or from the 1st, and for a pay-later card, which follows its bill.
+   */
+  readonly followsPaydays: boolean;
 }

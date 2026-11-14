@@ -26,7 +26,9 @@ import {
   type Debt,
   type Goal,
   hasShiftDetails,
+  type OtherPaydays,
   type PayAdjustment,
+  type PaydaySchedule,
   type PaymentChange,
   type PayProfile,
   type PayWeek,
@@ -62,7 +64,11 @@ export const RECORD_TABLES = [
 ] as const;
 
 export type RecordTable = (typeof RECORD_TABLES)[number];
-export type Table = RecordTable | 'plans';
+/**
+ * `paydays` are the database's own (step 4a, D512): the dates of another
+ * person's pay a shared budget follows. Phones read them and never write them.
+ */
+export type Table = RecordTable | 'plans' | 'paydays';
 
 /** One row as the server last gave it to this phone: the phone's copy of the server (its "mirror"). */
 export interface MirrorRow {
@@ -87,6 +93,27 @@ export interface MirrorRow {
   readonly createdBy?: string;
   /** Its own columns: everything but the sync fields. */
   readonly values: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Whether a row brought down is new to this phone (step 3d): at a new
+ * version; when who made or last changed it is different, as when someone's
+ * account was deleted and their name taken off it, with nothing else changed
+ * (D482); or, for a budget, when whose paydays it follows is different
+ * (D508, D523). The server alone decides that, even on this phone's own
+ * change, which it keeps at the version the phone sent, so the phone takes
+ * the server's word for it, and both phones show the same.
+ */
+export function newToThisPhone(before: MirrorRow | undefined, row: MirrorRow): boolean {
+  if (before === undefined) return true;
+  return (
+    before.version !== row.version ||
+    before.editBy !== row.editBy ||
+    before.createdBy !== row.createdBy ||
+    (row.table === 'budgets' &&
+      ((before.values.follows_pay_of ?? null) !== (row.values.follows_pay_of ?? null) ||
+        (before.values.passed_on === true) !== (row.values.passed_on === true)))
+  );
 }
 
 /** One record written in an edit, as save_edit takes it. */
@@ -616,7 +643,14 @@ export function writesFor(
     });
   }
   for (const [key, server] of mirror) {
-    if (server.deleted || server.table === 'plans' || wanted.has(key)) continue;
+    if (
+      server.deleted ||
+      server.table === 'plans' ||
+      server.table === 'paydays' ||
+      wanted.has(key)
+    ) {
+      continue;
+    }
     writes.push({
       write: { table: server.table, id: server.id, version: server.version, row: null },
       // Removed last, so nothing new is ever saved naming a removed record's place.
@@ -647,7 +681,7 @@ export function writesForEdit(
   plan: SyncPlan,
   setup: SetupProgress | undefined,
 ): { readonly writes: DbWrite[]; readonly records: PlanRecords } {
-  const records = applyWrites(recordsFromRows(mirrorRows).records, edit);
+  const records = applyWrites(recordsFromRows(mirrorRows, plan.personId).records, edit);
   return { writes: writesFor(records, plan, mirrorRows, setup), records };
 }
 
@@ -671,7 +705,12 @@ const text = (value: unknown) => value as string;
 const number = (value: unknown) => value as number;
 
 /** The plan's records from the rows the server has given this phone. */
-export function recordsFromRows(rows: readonly MirrorRow[]): FromRows {
+/**
+ * The plan's records from the server's rows. `me` is the person signed in on
+ * this phone; without it, it's the person whose own settings are among the
+ * rows, as only a person's own settings ever come down (D289).
+ */
+export function recordsFromRows(rows: readonly MirrorRow[], me?: string): FromRows {
   const live = rows.filter((row) => !row.deleted);
   const byTable = new Map<Table, MirrorRow[]>();
   for (const row of live) byTable.set(row.table, [...(byTable.get(row.table) ?? []), row]);
@@ -796,6 +835,14 @@ export function recordsFromRows(rows: readonly MirrorRow[]): FromRows {
       ...(v.closed === true ? { closed: true } : {}),
     }),
   );
+  const own = of('settings')[0];
+  const person = me ?? own?.privateTo ?? null;
+  // A shared budget follows the paydays of the person who added it (D508):
+  // named only when that's someone else, whose paydays come as dates (D512).
+  const followsOf = (v: Values) => {
+    const follows = (v.follows_pay_of as string | null | undefined) ?? null;
+    return follows === null || follows === person ? {} : { followsPayOf: follows };
+  };
   const budgets = of('budgets').map(
     ({ id, values: v }): Budget => ({
       id,
@@ -812,8 +859,42 @@ export function recordsFromRows(rows: readonly MirrorRow[]): FromRows {
       ...some('billDay', v.bill_day as number | null),
       ...some('statementDay', v.statement_day as number | null),
       createdAt: text(v.made_at),
+      ...followsOf(v),
     }),
   );
+  // Other people's paydays, the dates only (D512): each person's series in
+  // the order they carry on from each other.
+  const paydaysBy = new Map<string, PaydaySchedule[]>();
+  for (const { id, values: v } of of('paydays').sort(
+    (a, b) =>
+      number(a.values.first_number ?? 0) - number(b.values.first_number ?? 0) ||
+      (a.id < b.id ? -1 : 1),
+  )) {
+    const whose = v.person as string | null;
+    if (whose === null || whose === person) continue;
+    const from = (v.moved_from as string[] | null) ?? [];
+    const to = (v.moved_to as string[] | null) ?? [];
+    const skipped = (v.skipped as string[] | null) ?? [];
+    paydaysBy.set(whose, [
+      ...(paydaysBy.get(whose) ?? []),
+      {
+        id,
+        start: text(v.start_date),
+        schedule: v.schedule as Series['schedule'],
+        end: v.end_rule as Series['end'],
+        holidayRule: v.holiday_rule as Series['holidayRule'],
+        ...some('firstNumber', v.first_number as number | null),
+        ...(from.length === 0
+          ? {}
+          : { moved: from.map((date, i) => ({ from: date, to: to[i] as string })) }),
+        ...(skipped.length === 0 ? {} : { skipped }),
+      },
+    ]);
+  }
+  const otherPaydays: OtherPaydays[] = [...paydaysBy].map(([whose, series]) => ({
+    person: whose,
+    series,
+  }));
   const series = of('series').map(({ id, values: v }): Series => {
     const link = job.get(id);
     const payProfileId =
@@ -915,7 +996,6 @@ export function recordsFromRows(rows: readonly MirrorRow[]): FromRows {
     };
   });
   const plan = live.find((row) => row.table === 'plans');
-  const own = of('settings')[0];
   const settings: PlanSettings | undefined =
     own === undefined && (plan === undefined || plan.values.nation === 'england-and-wales')
       ? undefined
@@ -939,6 +1019,7 @@ export function recordsFromRows(rows: readonly MirrorRow[]): FromRows {
       payWeeks,
       payAdjustments,
       ...(settings === undefined ? {} : { settings }),
+      ...(otherPaydays.length === 0 ? {} : { otherPaydays }),
     },
     setup: (own?.values.setup as SetupProgress | null | undefined) ?? undefined,
   };
