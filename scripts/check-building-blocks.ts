@@ -5,9 +5,10 @@
 // tick, and on main the live app isn't updated until it's fixed (D175, D297).
 //
 // "Every building block" is every package in pnpm-lock.yaml: the engine's,
-// the app's, and the tools that build and test them. pnpm asks npm's list of
-// known problems, which is GitHub's own list, the one Dependabot alerts use
-// (D527). Less serious ones (moderate or low) are listed as warnings and
+// the app's, and the tools that build and test them. pnpm asks npm's
+// registry, and each known problem it answers with is one of GitHub's own
+// advisories (it carries its GHSA number and a github.com/advisories link),
+// the list Dependabot alerts use (D527). Less serious ones (moderate or low) are listed as warnings and
 // don't fail the check. A problem accepted on purpose, by its GitHub id in
 // pnpm-workspace.yaml's `auditConfig`, is counted and said, never hidden.
 //
@@ -174,7 +175,7 @@ export function report(checked: Checked): { readonly passed: boolean; readonly l
       ? ''
       : ` ${lesser.length} less serious ${lesser.length === 1 ? 'one is' : 'ones are'} listed above as ${lesser.length === 1 ? 'a warning' : 'warnings'}, and ${lesser.length === 1 ? "doesn't" : "don't"} stop anything.`;
   lines.push(
-    `Building blocks: ${checked.count} checked against GitHub's list of known security problems, and none has a serious one.${less}${accepted}`,
+    `Building blocks: ${checked.count} checked against the list of known security problems, and none has a serious one.${less}${accepted}`,
   );
   return { passed: true, lines };
 }

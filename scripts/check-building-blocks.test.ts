@@ -133,7 +133,7 @@ group('reading npm’s answer', () => {
     );
     assert.equal(
       lines[2],
-      "Building blocks: 332 checked against GitHub's list of known security problems, and none has a serious one. 2 less serious ones are listed above as warnings, and don't stop anything.",
+      "Building blocks: 332 checked against the list of known security problems, and none has a serious one. 2 less serious ones are listed above as warnings, and don't stop anything.",
     );
   });
 
@@ -141,7 +141,7 @@ group('reading npm’s answer', () => {
     assert.deepEqual(report(readAudit(JSON.stringify(NONE))), {
       passed: true,
       lines: [
-        "Building blocks: 332 checked against GitHub's list of known security problems, and none has a serious one.",
+        'Building blocks: 332 checked against the list of known security problems, and none has a serious one.',
       ],
     });
   });

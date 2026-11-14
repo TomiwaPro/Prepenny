@@ -46,6 +46,23 @@ Jess leaves:
 16. On device B, within a minute, **Budgets** says under Food "The person who added this has left the plan, so it now leaves on your paydays.", and its "This month, to …" is now the same day as Meals out's.
 17. On device B, tap **More**, then **Share with my partner**. Under **Invite your partner**: "Whoever joins will see Food and Meals out leave on your paydays."
 
+## Step 4b: safer building blocks (5 minutes)
+
+Nothing in the app looks different. These check that GitHub and Cloudflare are set up, and that every screen still works with the stricter security policy, on your own phone, with no test accounts. README.md part N has the set-up steps.
+
+On GitHub, on your phone or a computer:
+
+1. Open https://github.com/TomiwaPro/Prepenny/actions and tap **Deploy**, then its newest run from `main`. It has a green tick. Tap **Put the app online**, then the step **Check the live pages are PrePenny's own**: it ends "each exactly as built, with its own security policy, and nothing of Cloudflare's written into them." Once Network Error Logging is off, there's no yellow warning naming "nel" either.
+2. Back on **Actions**, tap **Dependabot's list**: its newest run has a green tick.
+3. On the repository's page, tap **Insights**, then **Dependency graph**: the list includes next, react and @supabase/supabase-js, from `pnpm-lock.yaml`.
+4. Tap **Security and quality**, then under **Findings**, **Dependabot**, then **Vulnerabilities**. Either there are no alerts, or each one names a package: ask Claude Code to update it.
+
+On your phone, device A, signed in as yourself or not:
+
+5. Open https://prepenny.co.uk/app/. Home shows your plan. Tap **Coming up**, **Debts** and **More**: each opens with your figures.
+6. In **More**, under **Colours**, choose **Dark**, then tap **Home**, and reload the page: it opens dark straight away, with no flash of light colours. That's one of the small scripts the policy now lists by name. Choose **Match this phone** again.
+7. Turn on **Airplane mode**. Close PrePenny and open it again: Home shows your plan, with a note that starts "You're offline." Tap **Coming up** and **More**: each opens. Turn **Airplane mode** off.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.

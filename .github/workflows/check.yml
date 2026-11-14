@@ -93,8 +93,8 @@ jobs:
         run: supabase db lint --level warning --fail-on warning
 
       - name: Check every building block for known security problems
-        # Step 4b (D527): every package in pnpm-lock.yaml, against GitHub's
-        # own list of known problems, through npm. A serious one (high or
+        # Step 4b (D527): every package in pnpm-lock.yaml, against npm's list
+        # of known problems, each one a GitHub advisory. A serious one (high or
         # critical) fails this check, so a pull request can't be merged with
         # a green tick, and on main the live app and the database aren't
         # updated (deploy.yml and database.yml wait for this workflow). Less
