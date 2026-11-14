@@ -45,9 +45,12 @@ select is_empty(
   'Every record table and the plan''s own row refuse a person''s change outside save_edit, before any other check'
 );
 
+-- The paydays a shared budget follows (step 4a, D512) are the database's own,
+-- read by everyone in the plan and written by nobody else: their rules are
+-- checked in 33-shared-budget-paydays.test.sql.
 select set_eq(
   $$ select t from tests.every_table() t
-     where t not in ('people', 'plans', 'plan_members', 'invites', 'edits', 'notices') $$,
+     where t not in ('people', 'plans', 'plan_members', 'invites', 'edits', 'notices', 'paydays') $$,
   $$ select unnest(app.record_tables()) $$,
   'Every other table is a plan record table, with the same rules as the rest'
 );
