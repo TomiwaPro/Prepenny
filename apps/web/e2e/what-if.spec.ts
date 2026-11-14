@@ -11,6 +11,7 @@ import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
 import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, layoutProblems, MINUS, named, openPeriod, period } from './coming-up.ts';
 import { expect, settingScript, test } from './fixtures.ts';
+import { holdPhoneStorage } from './phone-storage.ts';
 
 async function useSetting(page: Page, setting: TestSetting) {
   await page.addInitScript(settingScript, [TEST_SETTING_KEY, setting] as const);
@@ -337,41 +338,12 @@ test('stays readable with text at 200%, and every tap target is big enough', asy
   expect(await layoutProblems(page)).toEqual([]);
 });
 
-/**
- * Keeps the phone's own database busy for `ms` milliseconds, as a slow or
- * busy phone can, so PrePenny's next save there waits until then. A reload
- * straight after a practice change must still find the list as the screen
- * last showed it (D264), however long the phone takes to save it (D510).
- */
-async function holdPhoneStorage(page: Page, ms: number) {
-  await page.evaluate(
-    (hold) =>
-      new Promise<void>((started, failed) => {
-        const request = indexedDB.open('prepenny');
-        request.onerror = () => failed(request.error);
-        request.onsuccess = () => {
-          const db = request.result;
-          const store = db.transaction('device', 'readwrite').objectStore('device');
-          const until = performance.now() + hold;
-          const again = () => {
-            if (performance.now() < until) store.count().onsuccess = again;
-          };
-          again();
-          // Closes once the held transaction ends.
-          db.close();
-          started();
-        };
-      }),
-    ms,
-  );
-}
-
 test('a practice change, taking one back and throwing them away are kept on the phone before the screen says so, even on a slow phone (D510)', async ({
   page,
 }) => {
   await openWhatIfFromComingUp(page);
   // Made: a reload straight after still has it.
-  await holdPhoneStorage(page, 2000);
+  await holdPhoneStorage(page, 'device', 2000);
   await lowerFridayPay(page);
   await page.reload();
   await expect(page.getByTestId('side-by-side')).toBeVisible();
@@ -383,7 +355,7 @@ test('a practice change, taking one back and throwing them away are kept on the 
   await spending.getByRole('button', { name: 'Skip this one' }).click();
   await expect(spending).toBeHidden();
   await expect(page.getByTestId('practice-list').getByRole('listitem')).toHaveCount(2);
-  await holdPhoneStorage(page, 2000);
+  await holdPhoneStorage(page, 'device', 2000);
   await page.getByRole('button', { name: 'Take back the last change' }).click();
   await expect(page.getByTestId('what-if-note')).toHaveText(
     'The last practice change is taken back.',
@@ -395,7 +367,7 @@ test('a practice change, taking one back and throwing them away are kept on the 
   await page.getByRole('button', { name: 'Throw them away' }).click();
   const sheet = page.getByRole('dialog', { name: 'Throw them away' });
   await expect(sheet).toContainText('Throw away 1 practice change?');
-  await holdPhoneStorage(page, 2000);
+  await holdPhoneStorage(page, 'device', 2000);
   await sheet.getByRole('button', { name: 'Throw them away' }).click();
   await expect(sheet).toBeHidden();
   await page.reload();

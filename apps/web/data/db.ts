@@ -204,6 +204,13 @@ export interface PlanLink {
   readonly nicknames?: Readonly<Record<string, string>>;
   /** Each person in the plan's role, "owner", "editor" or "viewer" (step 3g). */
   readonly roles?: Readonly<Record<string, string>>;
+  /**
+   * Rows brought down and kept, with the plan not yet rebuilt from them
+   * (D510). Kept in the same save as the rows, and taken off in the same save
+   * as the rebuilt plan, so PrePenny closed in between rebuilds at its next
+   * look at the account, though nothing new arrives then.
+   */
+  readonly rebuildDue?: true;
 }
 
 export type PrePennyDb = Dexie & {
