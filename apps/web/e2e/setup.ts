@@ -41,9 +41,37 @@ export const PART_OF_SCREEN: Readonly<Record<number, string>> = {
   6: 'Part 3 of 3: Your plan',
 };
 
+/**
+ * The whole screen as a screen reader has it, whether Next is busy and what
+ * has focus, for a failure's message. Kofi's setup stayed on screen 3 after
+ * Next once on GitHub and once in about 100 runs on the building computer,
+ * and GitHub's recording can't be fetched from there (D510): GitHub's log,
+ * which can, says what the screen showed if it ever happens again.
+ */
+async function screenNow(page: Page): Promise<string> {
+  const screen = await page
+    .locator('main')
+    .ariaSnapshot()
+    .catch(() => '(no screen)');
+  const nextBusy = await page
+    .getByRole('button', { name: 'Next', exact: true })
+    .getAttribute('aria-disabled', { timeout: 1000 })
+    .catch(() => '(no Next)');
+  const focused = await page.evaluate(
+    () => document.activeElement?.outerHTML.slice(0, 300) ?? '(nothing)',
+  );
+  return `${screen}\nNext aria-disabled: ${nextBusy}\nFocus: ${focused}`;
+}
+
 /** The screen showing: its number, the part at the top, its title, which has focus. */
 export async function expectStep(page: Page, screen: 1 | 2 | 3 | 4 | 5 | 6, title: string) {
-  await expect(page.locator('main[data-step]')).toHaveAttribute('data-step', String(screen));
+  try {
+    await expect(page.locator('main[data-step]')).toHaveAttribute('data-step', String(screen));
+  } catch (error) {
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}\n\nThe screen:\n${await screenNow(page)}`,
+    );
+  }
   await expect(page.getByText(PART_OF_SCREEN[screen] ?? '', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
   // The title takes focus, so a screen reader starts there.

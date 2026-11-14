@@ -453,9 +453,10 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
           kept = false;
         }
       }
+      // Counted as waiting to be sent before it shows anywhere (D510).
+      if (kept && !now.plan.isExample) await syncSoon();
       const version = now.version + 1;
       keepLoaded({ ...now, plan, records: result.records, version });
-      if (kept && !now.plan.isExample) syncSoon();
       return { ok: true, edit: result.edit, numbers: result.numbers, kept, version };
     },
     [keepLoaded],
