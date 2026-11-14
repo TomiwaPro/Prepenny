@@ -21,7 +21,8 @@
 -- ---------------------------------------------------------------------------
 -- 1. Whose paydays a budget follows (D508): the person who added it. The
 -- database fills it in, whatever a phone sends, and it never changes, except
--- when that person leaves (D513), or is forgotten (D482).
+-- when someone else changes it so that it follows paydays, when it follows
+-- theirs (D523), when that person leaves (D513), or is forgotten (D482).
 
 alter table public.budgets add column follows_pay_of uuid references public.people (id);
 -- Set when the person who added it left, and it was passed on to the person
@@ -32,6 +33,15 @@ comment on column public.budgets.follows_pay_of is
   'Whose main pay its weeks and months follow (D508): the person who added it, or the person who stays once they leave (D513).';
 comment on column public.budgets.passed_on is
   'Passed on to the person who stays when the person who added it left (D513).';
+
+-- Whether a budget can follow paydays at all, whoever's they are: live, not
+-- on a pay-later card, which follows its bill, and not ended over two months
+-- ago (D29, D522).
+create function app.budget_can_follow(b public.budgets) returns boolean
+language sql stable set search_path = '' as $$
+  select not b.deleted and b.leaves <> 'pay-later'
+    and (b.ends_on is null or b.ends_on >= (now() at time zone 'Europe/London')::date - 62)
+$$;
 
 create function app.budget_follows() returns trigger
 language plpgsql security definer set search_path = '' as $$
@@ -46,6 +56,16 @@ begin
   elsif auth.uid() is not null and app.leaving_now() is null and app.forgetting() is null then
     new.follows_pay_of := old.follows_pay_of;
     new.passed_on := old.passed_on;
+    -- The owner's answer (D523): a change that makes a budget follow paydays,
+    -- or follow them weekly instead of monthly, makes it follow the paydays
+    -- of the person making it, never anyone else's. Nothing of Jess's pay
+    -- reaches Tom unless Jess does it herself.
+    if app.budget_can_follow(new)
+      and (not app.budget_can_follow(old) or new.every is distinct from old.every)
+      and old.follows_pay_of is distinct from auth.uid() then
+      new.follows_pay_of := auth.uid();
+      new.passed_on := false;
+    end if;
   end if;
   return new;
 end;
@@ -396,7 +416,8 @@ create constraint trigger z_paydays after insert or update or delete on public.s
 create constraint trigger z_paydays after insert or update or delete on public.payment_changes
   deferrable initially deferred for each row execute function app.paydays_follow();
 
-revoke all on function app.budget_follows(), app.payday_schedule(jsonb), app.payday_end(jsonb),
+revoke all on function app.budget_follows(), app.budget_can_follow(public.budgets),
+  app.payday_schedule(jsonb), app.payday_end(jsonb),
   app.payday_continues(jsonb, date, jsonb, text, integer), app.dates_of(jsonb),
   app.refresh_paydays(uuid, uuid), app.paydays_follow() from public, anon, authenticated;
 

@@ -10,7 +10,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(77);
+select plan(82);
 
 select tests.make_jess_and_tom();
 -- The paydays are worked out when a change is saved (deferred, D522). A test
@@ -85,6 +85,34 @@ select pg_temp.change('tom', $$
 select is((select array[follows_pay_of::text, amount::text] from public.budgets where id = tests.id('joint-food')),
   array[tests.id('jess')::text, '31000'],
   'Tom can change Jess''s food month, but not whose paydays it follows');
+
+-- The owner's answer (D523): a change that makes a budget follow paydays
+-- makes it follow the paydays of the person making it, never anyone else's.
+select pg_temp.change('jess', $$
+  insert into public.budgets (id, plan_id, account_id, name, amount, every, leaves, bill_day, starts_on, made_at)
+  values (tests.id('jess-card-food'), tests.id('plan'), tests.id('joint'), 'Card food', 20000, 'month', 'pay-later',
+    29, '2026-10-25', '2026-10-25T09:00:00Z') $$);
+select is((select follows_pay_of from public.budgets where id = tests.id('jess-card-food')), tests.id('jess'),
+  'Jess''s pay-later card budget names her');
+select pg_temp.change('tom', $$
+  update public.budgets set leaves = 'at-start', bill_day = null where id = tests.id('jess-card-food') $$);
+select is((select follows_pay_of from public.budgets where id = tests.id('jess-card-food')), tests.id('tom'),
+  'Tom taking it off the card makes it follow his paydays, not hers');
+select pg_temp.change('tom', $$
+  update public.budgets set leaves = 'pay-later', bill_day = 29 where id = tests.id('jess-card-food') $$);
+select pg_temp.change('jess', $$
+  update public.budgets set leaves = 'at-start', bill_day = null where id = tests.id('jess-card-food') $$);
+select is((select follows_pay_of from public.budgets where id = tests.id('jess-card-food')), tests.id('jess'),
+  'and Jess doing it herself makes it follow hers');
+select pg_temp.change('tom', $$
+  update public.budgets set every = 'week' where id = tests.id('jess-card-food') $$);
+select is((select follows_pay_of from public.budgets where id = tests.id('jess-card-food')), tests.id('tom'),
+  'Tom making it weekly makes it follow his paydays too');
+select pg_temp.change('tom', $$
+  update public.budgets set amount = 21000 where id = tests.id('jess-card-food') $$);
+select is((select follows_pay_of from public.budgets where id = tests.id('jess-card-food')), tests.id('tom'),
+  'and a change that doesn''t make it follow paydays leaves it as it is');
+select pg_temp.change('jess', $$ update public.budgets set deleted = true where id = tests.id('jess-card-food') $$);
 
 -- ---------------------------------------------------------------------------
 -- 2. The paydays table: the dates only, read by everyone in the plan,
@@ -221,7 +249,7 @@ select tests.as_test();
 select is_empty($$ select id from public.paydays where person = tests.id('jess') $$,
   'and the rows he had are left with nothing in them, not even whose they were');
 select ok((select bool_and(deleted and num_nonnulls(person, start_date, schedule, end_rule, holiday_rule,
-      first_number, moved_from, moved_to, skipped) = 0) from public.paydays where person is null),
+      first_number, moved_from, moved_to, skipped) = 0) from public.paydays where person is null and plan_id = tests.id('plan')),
   'so his phone takes them off');
 
 select pg_temp.change('jess', $$ update public.budgets set deleted = false where id = tests.id('joint-food') $$);
@@ -298,7 +326,8 @@ select is((select count(distinct id) from public.paydays where not deleted
     and person in (tests.id('jess'), tests.id('tom'))), 2::bigint,
   'Jess and Tom with the same main pay have a row each');
 select pg_temp.change('jess', $$ update public.budgets set deleted = true where id = tests.id('joint-food') $$);
-select is((select array_agg(person) from public.paydays where not deleted), array[tests.id('tom')],
+select is((select array_agg(person) from public.paydays where not deleted and plan_id = tests.id('plan')),
+    array[tests.id('tom')],
   'and when hers stops, his stays');
 select pg_temp.change('jess', $$ update public.budgets set deleted = false where id = tests.id('joint-food') $$);
 select pg_temp.change('jess', $$
@@ -378,7 +407,7 @@ select tests.make_person('sam');
 insert into public.plan_members (plan_id, person_id, role) values (tests.id('plan'), tests.id('sam'), 'editor');
 select pg_temp.change('tom', $$
   update public.settings set main_pay_family_id = null where id = tests.id('tom-settings') $$);
-select is((select count(*) from public.paydays where not deleted), 0::bigint,
+select is((select count(*) from public.paydays where not deleted and plan_id = tests.id('plan')), 0::bigint,
   'Tom with no main pay gives no paydays, though his budgets are shared');
 select pg_temp.change('tom', $$
   update public.settings set main_pay_family_id = tests.id('tom-pay') where id = tests.id('tom-settings') $$);
@@ -388,7 +417,7 @@ select is(public.delete_my_account('delete') ->> 'deleted', 'true', 'Tom deletes
 select tests.as_test();
 select is((select follows_pay_of from public.budgets where id = tests.id('joint-food')), tests.id('sam'),
   'and the food month follows Sam, who stays');
-select is((select count(*) from public.paydays where not deleted), 0::bigint,
+select is((select count(*) from public.paydays where not deleted and plan_id = tests.id('plan')), 0::bigint,
   'Sam has no main pay, so there are no paydays');
 select is_empty($$ select id from public.paydays where person = tests.id('tom') $$,
   'and none name Tom');
