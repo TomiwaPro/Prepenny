@@ -10,9 +10,12 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(63);
+select plan(77);
 
 select tests.make_jess_and_tom();
+-- The paydays are worked out when a change is saved (deferred, D522). A test
+-- is never saved, so here they're worked out as each statement ends.
+set constraints all immediate;
 
 -- A refusal's code, as the phone gets it.
 create function pg_temp.refusal(statement text) returns text language plpgsql as $$
@@ -157,6 +160,28 @@ select tests.as_test();
 select ok(exists (select 1 from tests.nudges where topic = 'plan:' || tests.id('plan')),
   'A change to her own pay nudges the plan''s phones, so Tom''s looks at once');
 
+-- She changes only her pay's amount from February, for this and all later
+-- ones: a split with the same dates, which Tom never hears of (D522).
+create temporary table before_split as
+  select id, version, seq from public.paydays where person = tests.id('jess');
+-- As when it's saved: worked out once the whole change is made.
+set constraints all deferred;
+select pg_temp.change('jess', $$
+  update public.series set end_rule = '{"kind":"after","payments":3}' where id = tests.id('jess-pay');
+  insert into public.series (id, plan_id, account_id, name, direction, type, amount, start_date,
+    schedule, end_rule, holiday_rule, family_id, family_created_at, split_from, first_number)
+  values (tests.id('jess-pay-feb'), tests.id('plan'), tests.id('jess-current'), 'Jess pay', 'in', 'pay', 250000,
+    '2027-02-01', '{"kind":"monthly","every":1,"on":{"kind":"day","day":1}}', '{"kind":"never"}', 'keep',
+    tests.id('jess-pay'), '2026-10-25T08:31:00Z', tests.id('jess-pay'), 3) $$);
+set constraints all immediate;
+select results_eq(
+  $$ select id, version, seq from public.paydays where person = tests.id('jess') order by id $$,
+  $$ select id, version, seq from before_split order by id $$,
+  'A split that changes only her amount from February changes nothing Tom gets, not even a change number');
+select pg_temp.change('jess', $$
+  update public.series set deleted = true where id = tests.id('jess-pay-feb');
+  update public.series set end_rule = '{"kind":"never"}' where id = tests.id('jess-pay') $$);
+
 -- She changes her pay from March for this and all later ones: a split.
 select pg_temp.change('jess', $$
   update public.series set end_rule = '{"kind":"on","date":"2027-02-28"}' where id = tests.id('jess-pay');
@@ -181,7 +206,8 @@ select pg_temp.change('jess', $$
   update public.series set schedule = '{"kind":"monthly","every":1,"on":{"kind":"last-working-day","note":"Shop"},"note":"Shop job"}'
   where id = tests.id('jess-pay-march') $$);
 select tests.as_person('tom');
-select ok(pg_temp.paydays_sent() !~ 'Shop', 'Anything else written into a schedule never reaches Tom');
+select ok(pg_temp.paydays_sent() ~ 'last-working-day' and pg_temp.paydays_sent() !~ 'Shop',
+  'Anything else written into a schedule never reaches Tom, only when it comes');
 select tests.as_test();
 
 -- ---------------------------------------------------------------------------
@@ -202,6 +228,18 @@ select pg_temp.change('jess', $$ update public.budgets set deleted = false where
 select tests.as_person('tom');
 select is(jsonb_array_length(pg_temp.paydays_read()), 2, 'With it back, so are the dates');
 select tests.as_test();
+
+-- A budget that ended over two months ago, whose last month is over, needs none (D522).
+select pg_temp.change('jess', $$
+  update public.budgets set ends_on = current_date - 100 where id = tests.id('joint-food') $$);
+select is((select count(*) from public.paydays where not deleted and person = tests.id('jess')), 0::bigint,
+  'A shared budget that ended over two months ago gives Tom none of her paydays');
+select pg_temp.change('jess', $$
+  update public.budgets set ends_on = current_date - 30 where id = tests.id('joint-food') $$);
+select is((select count(*) from public.paydays where not deleted and person = tests.id('jess')), 2::bigint,
+  'One that ended a month ago may still be in its last month, so it does');
+select pg_temp.change('jess', $$
+  update public.budgets set ends_on = null where id = tests.id('joint-food') $$);
 
 -- Her budget on her own account is never enough: it's private.
 select pg_temp.change('jess', $$ update public.budgets set deleted = true where id = tests.id('joint-food') $$);
@@ -249,6 +287,24 @@ select is((select count(*) from public.paydays where not deleted and person = te
 select pg_temp.change('jess', $$
   update public.series set schedule = '{"kind":"monthly","every":1,"on":{"kind":"last-working-day"}}'
   where id = tests.id('jess-pay-march') $$);
+
+-- Both with the same main pay, such as pay into the joint account: each
+-- has paydays of their own, and one stopping leaves the other's (D522).
+select pg_temp.change('jess', $$
+  update public.settings set main_pay_family_id = tests.id('jess-cafe-pay') where id = tests.id('jess-settings') $$);
+select pg_temp.change('tom', $$
+  update public.settings set main_pay_family_id = tests.id('jess-cafe-pay') where id = tests.id('tom-settings') $$);
+select is((select count(distinct id) from public.paydays where not deleted
+    and person in (tests.id('jess'), tests.id('tom'))), 2::bigint,
+  'Jess and Tom with the same main pay have a row each');
+select pg_temp.change('jess', $$ update public.budgets set deleted = true where id = tests.id('joint-food') $$);
+select is((select array_agg(person) from public.paydays where not deleted), array[tests.id('tom')],
+  'and when hers stops, his stays');
+select pg_temp.change('jess', $$ update public.budgets set deleted = false where id = tests.id('joint-food') $$);
+select pg_temp.change('jess', $$
+  update public.settings set main_pay_family_id = tests.id('jess-pay') where id = tests.id('jess-settings') $$);
+select pg_temp.change('tom', $$
+  update public.settings set main_pay_family_id = tests.id('tom-pay') where id = tests.id('tom-settings') $$);
 
 -- ---------------------------------------------------------------------------
 -- 5. Nobody outside the plan reads them.
@@ -338,7 +394,47 @@ select is_empty($$ select id from public.paydays where person = tests.id('tom') 
   'and none name Tom');
 
 -- ---------------------------------------------------------------------------
--- 8. GraphQL off (D509).
+-- 8. Budgets from before step 4a, and when parts of a pay are given as one.
+
+-- Every budget's person is filled in once, at a new version, so phones
+-- that had it already bring it down again (D522).
+alter table public.budgets disable trigger user;
+update public.budgets set follows_pay_of = null, passed_on = false where id = tests.id('tom-travel');
+update public.budgets set follows_pay_of = null, passed_on = false where id = tests.id('jess-food');
+alter table public.budgets enable trigger user;
+create temporary table before_filling as select id, version, seq from public.budgets
+  where id in (tests.id('tom-travel'), tests.id('jess-food'));
+alter table public.budgets disable trigger user;
+select is(app.fill_in_budget_follows(), 2, 'Filling in finds the two budgets that don''t say whose paydays they follow');
+alter table public.budgets enable trigger user;
+select is((select follows_pay_of from public.budgets where id = tests.id('tom-travel')), tests.id('sam'),
+  'One added by someone who has left follows the plan''s owner, who stayed');
+select ok((select passed_on from public.budgets where id = tests.id('tom-travel')), 'marked passed on');
+select is((select follows_pay_of from public.budgets where id = tests.id('jess-food')), tests.id('jess'),
+  'One on a private account follows that account''s person');
+select ok((select bool_and(b.version = k.version + 1 and b.seq > k.seq)
+    from public.budgets b join before_filling k on k.id = b.id),
+  'Each at a new version and change number, so every phone brings it down again');
+
+select ok(app.payday_continues('{"start_date":"2026-10-30","schedule":{"kind":"weekly","every":1},
+    "holiday_rule":"keep","end_rule":{"kind":"on","date":"2027-01-07"}}',
+    '2027-01-08', '{"kind":"weekly","every":1}', 'keep', 10),
+  'Weekly pay split on one of its own paydays carries on its dates');
+select ok(not app.payday_continues('{"start_date":"2026-10-30","schedule":{"kind":"weekly","every":1},
+    "holiday_rule":"keep","end_rule":{"kind":"on","date":"2027-01-07"}}',
+    '2027-01-11', '{"kind":"weekly","every":1}', 'keep', 10),
+  'but not when it moved to another day of the week');
+select ok(not app.payday_continues('{"start_date":"2026-11-01","schedule":{"kind":"monthly","every":3,"on":{"kind":"day","day":1}},
+    "holiday_rule":"keep","end_rule":{"kind":"after","payments":2}}',
+    '2027-06-01', '{"kind":"monthly","every":3,"on":{"kind":"day","day":1}}', 'keep', 2),
+  'nor quarterly pay moved to other months');
+select ok(not app.payday_continues('{"start_date":"2026-11-01","schedule":{"kind":"monthly","every":1,"on":{"kind":"day","day":1}},
+    "holiday_rule":"keep","end_rule":{"kind":"never"}}',
+    '2027-02-01', '{"kind":"monthly","every":1,"on":{"kind":"day","day":1}}', 'keep', 3),
+  'nor a part that never ended');
+
+-- ---------------------------------------------------------------------------
+-- 9. GraphQL off (D509).
 
 select ok(not exists (select 1 from pg_extension where extname = 'pg_graphql'), 'GraphQL is off');
 create extension pg_graphql;

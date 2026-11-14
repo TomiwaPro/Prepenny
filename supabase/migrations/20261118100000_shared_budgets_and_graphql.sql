@@ -56,22 +56,38 @@ create trigger a1_follows before insert or update on public.budgets
 
 -- Every budget there is already: the person who added it, while they're in
 -- its plan, or, for one on a private account, that account's person; for
--- one whose person has left, the plan's owner, who stayed (D513). Each gets a
--- new change number, so every phone brings it down again; nothing else about
--- it changes, its version and who changed it last included, so a change
--- waiting on a phone still goes as it is.
+-- one whose person has left, the plan's owner, who stayed, marked passed on
+-- (D513). Each gets a new version and change number, so every phone brings
+-- it down again (a phone keeps a row brought down only at a new version),
+-- and nothing else about it changes, who changed it last included (D522).
+-- Only budgets that don't say yet. Run with the budgets' own checks off.
+create function app.fill_in_budget_follows() returns integer
+language plpgsql volatile set search_path = '' as $$
+declare
+  filled integer;
+begin
+  update public.budgets b
+    set follows_pay_of = case
+        when b.private_to is not null then b.private_to
+        when b.created_by is not null and exists (select 1 from public.plan_members m
+          where m.plan_id = b.plan_id and m.person_id = b.created_by and m.left_at is null) then b.created_by
+        else (select p.owner from public.plans p where p.id = b.plan_id)
+      end,
+      passed_on = b.private_to is null and not (b.created_by is not null and exists (select 1
+        from public.plan_members m
+        where m.plan_id = b.plan_id and m.person_id = b.created_by and m.left_at is null)),
+      version = b.version + 1,
+      seq = app.next_seq(b.plan_id, b.private_to)
+    where b.follows_pay_of is null;
+  get diagnostics filled = row_count;
+  return filled;
+end;
+$$;
+
+revoke all on function app.fill_in_budget_follows() from public, anon, authenticated;
+
 alter table public.budgets disable trigger user;
-update public.budgets b
-  set follows_pay_of = case
-      when b.private_to is not null then b.private_to
-      when b.created_by is not null and exists (select 1 from public.plan_members m
-        where m.plan_id = b.plan_id and m.person_id = b.created_by and m.left_at is null) then b.created_by
-      else (select p.owner from public.plans p where p.id = b.plan_id)
-    end,
-    passed_on = b.private_to is null and not (b.created_by is not null and exists (select 1
-      from public.plan_members m
-      where m.plan_id = b.plan_id and m.person_id = b.created_by and m.left_at is null)),
-    seq = app.next_seq(b.plan_id, b.private_to);
+select app.fill_in_budget_follows();
 alter table public.budgets enable trigger user;
 
 -- ---------------------------------------------------------------------------
@@ -114,6 +130,8 @@ create table public.paydays (
 );
 
 create index paydays_by_plan on public.paydays (plan_id, seq);
+-- A person's main pay is found by its family, on every change to it.
+create index series_by_family on public.series (plan_id, family_id);
 create index paydays_by_person on public.paydays (plan_id, person);
 
 comment on table public.paydays is
@@ -150,28 +168,77 @@ language sql immutable set search_path = '' as $$
     'date', end_rule -> 'date'))
 $$;
 
+-- Whether one part of a person's main pay carries on another's dates
+-- exactly, so they can be given as one (D522): the same schedule and
+-- weekend rule, the next payment numbers, and the same days of the week or
+-- months. A split that changed only an amount, a name or a note shows
+-- nothing on the partner's phone; one that changed the dates shows the dates.
+create function app.payday_continues(a jsonb, b_start date, b_schedule jsonb, b_holiday text,
+  b_first integer) returns boolean
+language sql immutable set search_path = '' as $$
+  select coalesce(
+    a -> 'schedule' = b_schedule
+    and a ->> 'holiday_rule' = b_holiday
+    and b_schedule ->> 'kind' in ('weekly', 'monthly')
+    and case a -> 'end_rule' ->> 'kind'
+      when 'on' then (a -> 'end_rule' ->> 'date')::date < b_start
+      when 'after' then (a -> 'end_rule' ->> 'payments')::integer = coalesce(b_first, 0)
+      else false end
+    and case b_schedule ->> 'kind'
+      when 'weekly' then
+        (b_start - (a ->> 'start_date')::date) % (7 * (b_schedule ->> 'every')::integer) = 0
+      else
+        ((extract(year from b_start) * 12 + extract(month from b_start))
+          - (extract(year from (a ->> 'start_date')::date) * 12
+            + extract(month from (a ->> 'start_date')::date)))::integer
+          % (b_schedule ->> 'every')::integer = 0
+      end, false)
+$$;
+
+-- A JSON list of dates as dates.
+create function app.dates_of(list jsonb) returns date[]
+language sql immutable set search_path = '' as $$
+  select coalesce(array_agg(x::date order by n), '{}'::date[])
+  from jsonb_array_elements_text(coalesce(list, '[]'::jsonb)) with ordinality as t(x, n)
+$$;
+
 -- Works out a person's paydays in a plan again, and saves only what
 -- changed, each with a new change number, then nudges the plan's phones.
 -- Wanted while they're in the plan, have a main pay, and a shared budget
 -- there follows its paydays (D508, D512): a weekly one when the pay comes
 -- every week or every few weeks, a monthly one when it comes every month
 -- (D29, D108). Not for a pay-later card, which follows its bill, nor for
--- irregular pay, whose budgets run Monday to Sunday (D14). The phone tells
--- the person adding such a budget first (D514), by the same rule.
+-- irregular pay, whose budgets run Monday to Sunday (D14), nor for a budget
+-- that ended over two months ago, whose last month is over (D522). The phone
+-- tells the person adding such a budget first (D514), by the same rule.
+-- Parts of the pay that carry on each other's dates are given as one, and
+-- each row is the person's own, as two people can have the same main pay.
 create function app.refresh_paydays(plan uuid, person uuid) returns void
 language plpgsql volatile security definer set search_path = '' as $$
 #variable_conflict use_variable
 declare
   family uuid;
   one record;
+  cur jsonb;
+  runs jsonb[] := '{}'::jsonb[];
+  part jsonb;
   row_id uuid;
   kept uuid[] := '{}'::uuid[];
   was public.paydays;
   changed boolean := false;
+  today date := (now() at time zone 'Europe/London')::date;
 begin
-  if plan is null or person is null then
+  -- Nothing to do for a plan being deleted, whose rows go one by one.
+  if plan is null or person is null or not exists (select 1 from public.plans p where p.id = plan) then
     return;
   end if;
+  -- The plan's shared change counter first, before any paydays row, as a
+  -- save of a shared record takes it first: two saves at the same moment
+  -- then wait for each other in turn, never for each other at once (D522).
+  insert into app.plan_counters (plan_id, counts_for, last_seq)
+    values (plan, app.shared_count(), 0) on conflict (plan_id, counts_for) do nothing;
+  perform 1 from app.plan_counters c
+    where c.plan_id = plan and c.counts_for = app.shared_count() for update;
   if exists (select 1 from public.plan_members m
       where m.plan_id = plan and m.person_id = person and m.left_at is null) then
     select s.main_pay_family_id into family from public.settings s
@@ -184,6 +251,7 @@ begin
       or not exists (select 1 from public.budgets b
         where b.plan_id = plan and b.private_to is null and not b.deleted
           and b.follows_pay_of = person and b.leaves <> 'pay-later'
+          and (b.ends_on is null or b.ends_on >= today - 62)
           and exists (select 1 from public.series s
             where s.plan_id = plan and s.family_id = family and not s.deleted
               and ((b.every = 'week' and s.schedule ->> 'kind' = 'weekly')
@@ -207,30 +275,56 @@ begin
           and (c.new_date is not null or c.skipped is true)
       where s.plan_id = plan and s.family_id = family and not s.deleted
       group by s.id
+      order by coalesce(s.first_number, 0), s.start_date, s.id
     loop
-      row_id := app.derived_id(plan, 'paydays', one.id::text);
-      kept := kept || row_id;
-      select * into was from public.paydays p where p.id = row_id for update;
-      if not found then
-        insert into public.paydays (id, plan_id, seq, person, start_date, schedule, end_rule,
-            holiday_rule, first_number, moved_from, moved_to, skipped)
-          values (row_id, plan, app.next_seq(plan, null), person, one.start_date, one.schedule,
-            one.end_rule, one.holiday_rule, one.first_number, one.moved_from, one.moved_to, one.skipped);
-        changed := true;
-      elsif was.deleted or (was.person, was.start_date, was.schedule, was.end_rule, was.holiday_rule,
-          was.first_number, was.moved_from, was.moved_to, was.skipped)
-        is distinct from (person, one.start_date, one.schedule, one.end_rule, one.holiday_rule,
-          one.first_number, one.moved_from, one.moved_to, one.skipped) then
-        update public.paydays p set deleted = false, person = person, start_date = one.start_date,
-            schedule = one.schedule, end_rule = one.end_rule, holiday_rule = one.holiday_rule,
-            first_number = one.first_number, moved_from = one.moved_from, moved_to = one.moved_to,
-            skipped = one.skipped, version = p.version + 1, seq = app.next_seq(plan, null),
-            changed_at = now()
-          where p.id = row_id;
-        changed := true;
+      if cur is not null
+        and app.payday_continues(cur, one.start_date, one.schedule, one.holiday_rule, one.first_number) then
+        cur := cur || jsonb_build_object('end_rule', one.end_rule,
+          'moved_from', (cur -> 'moved_from') || to_jsonb(one.moved_from),
+          'moved_to', (cur -> 'moved_to') || to_jsonb(one.moved_to),
+          'skipped', (cur -> 'skipped') || to_jsonb(one.skipped));
+      else
+        if cur is not null then
+          runs := runs || cur;
+        end if;
+        cur := jsonb_build_object('id', one.id, 'start_date', one.start_date, 'schedule', one.schedule,
+          'end_rule', one.end_rule, 'holiday_rule', one.holiday_rule, 'first_number', one.first_number,
+          'moved_from', to_jsonb(one.moved_from), 'moved_to', to_jsonb(one.moved_to),
+          'skipped', to_jsonb(one.skipped));
       end if;
     end loop;
+    if cur is not null then
+      runs := runs || cur;
+    end if;
   end if;
+  foreach part in array runs loop
+    row_id := app.derived_id(plan, 'paydays', person::text, part ->> 'id');
+    kept := kept || row_id;
+    select * into was from public.paydays p where p.id = row_id for update;
+    if not found then
+      insert into public.paydays (id, plan_id, seq, person, start_date, schedule, end_rule,
+          holiday_rule, first_number, moved_from, moved_to, skipped)
+        values (row_id, plan, app.next_seq(plan, null), person, (part ->> 'start_date')::date,
+          part -> 'schedule', part -> 'end_rule', part ->> 'holiday_rule',
+          (part ->> 'first_number')::integer, app.dates_of(part -> 'moved_from'),
+          app.dates_of(part -> 'moved_to'), app.dates_of(part -> 'skipped'));
+      changed := true;
+    elsif was.deleted or (was.person, was.start_date, was.schedule, was.end_rule, was.holiday_rule,
+        was.first_number, was.moved_from, was.moved_to, was.skipped)
+      is distinct from (person, (part ->> 'start_date')::date, part -> 'schedule', part -> 'end_rule',
+        part ->> 'holiday_rule', (part ->> 'first_number')::integer, app.dates_of(part -> 'moved_from'),
+        app.dates_of(part -> 'moved_to'), app.dates_of(part -> 'skipped')) then
+      update public.paydays p set deleted = false, person = person,
+          start_date = (part ->> 'start_date')::date, schedule = part -> 'schedule',
+          end_rule = part -> 'end_rule', holiday_rule = part ->> 'holiday_rule',
+          first_number = (part ->> 'first_number')::integer,
+          moved_from = app.dates_of(part -> 'moved_from'), moved_to = app.dates_of(part -> 'moved_to'),
+          skipped = app.dates_of(part -> 'skipped'), version = p.version + 1,
+          seq = app.next_seq(plan, null), changed_at = now()
+        where p.id = row_id;
+      changed := true;
+    end if;
+  end loop;
   -- Those no longer wanted: nothing left in them.
   update public.paydays p set deleted = true, person = null, start_date = null, schedule = null,
       end_rule = null, holiday_rule = null, first_number = null, moved_from = null, moved_to = null,
@@ -288,18 +382,22 @@ begin
 end;
 $$;
 
-create trigger z_paydays after insert or update or delete on public.budgets
-  for each row execute function app.paydays_follow();
-create trigger z_paydays after insert or update or delete on public.settings
-  for each row execute function app.paydays_follow();
-create trigger z_paydays after insert or update or delete on public.plan_members
-  for each row execute function app.paydays_follow();
-create trigger z_paydays after insert or update or delete on public.series
-  for each row execute function app.paydays_follow();
-create trigger z_paydays after insert or update or delete on public.payment_changes
-  for each row execute function app.paydays_follow();
+-- Worked out once a change is complete, when it's saved (deferred), so a
+-- change made in several steps, such as a split that changes only an amount,
+-- shows nothing of its half-way states: only the dates it ends with (D522).
+create constraint trigger z_paydays after insert or update or delete on public.budgets
+  deferrable initially deferred for each row execute function app.paydays_follow();
+create constraint trigger z_paydays after insert or update or delete on public.settings
+  deferrable initially deferred for each row execute function app.paydays_follow();
+create constraint trigger z_paydays after insert or update or delete on public.plan_members
+  deferrable initially deferred for each row execute function app.paydays_follow();
+create constraint trigger z_paydays after insert or update or delete on public.series
+  deferrable initially deferred for each row execute function app.paydays_follow();
+create constraint trigger z_paydays after insert or update or delete on public.payment_changes
+  deferrable initially deferred for each row execute function app.paydays_follow();
 
 revoke all on function app.budget_follows(), app.payday_schedule(jsonb), app.payday_end(jsonb),
+  app.payday_continues(jsonb, date, jsonb, text, integer), app.dates_of(jsonb),
   app.refresh_paydays(uuid, uuid), app.paydays_follow() from public, anon, authenticated;
 
 -- The paydays of every budget there is already.
