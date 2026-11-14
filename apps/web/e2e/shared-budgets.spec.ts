@@ -299,7 +299,15 @@ test('3. A change saved while the other phone is bringing the plan down comes wh
       using (tests.hold_budgets(plan_id));`);
   try {
     const answer = bringDown(seen);
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    // Until the server is held part-way through Tom's request.
+    await expect
+      .poll(
+        () =>
+          sql(`select count(*) from pg_stat_activity
+            where wait_event = 'PgSleep' and query like '%plan_changes%'`),
+        { timeout: 10_000, intervals: [50] },
+      )
+      .not.toBe('0');
     // Jess's food month, saved while Tom's phone is part-way through.
     sql(`insert into public.budgets (id, plan_id, account_id, name, amount, every, leaves,
         starts_on, made_at, follows_pay_of)
