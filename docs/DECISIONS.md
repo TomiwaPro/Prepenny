@@ -6288,8 +6288,34 @@ Decided 14 Nov 2026 in step 4a. An outside review of the step found eight things
 - **The Budgets screen** says "Sam sees this leave on your paydays." once someone new is in the plan, before the note that it was passed on.
 - **The tests:** a check that a schedule's other words never reach Tom now also checks its dates do; test 3 waits until the server is really held, rather than a fixed 0.7 seconds; and a database index finds a person's main pay by its family.
 
-One thing the review raised needs the owner: when Tom changes Jess's pay-later card budget into one that leaves at the start of each month, it starts following Jess's paydays, so Tom's phone gets them, and Jess isn't asked first (`PLAN.md`, "Waiting for the owner", question 23).
+One thing the review raised needs the owner: when Tom changes Jess's pay-later card budget into one that leaves at the start of each month, it starts following Jess's paydays, so Tom's phone gets them, and Jess isn't asked first (`PLAN.md`, "Waiting for the owner", question 23). The owner answered it the same day (D523).
 
 Tests: `33-shared-budget-paydays.test.sql` (77 checks, the four new rules each broken on purpose to see them fail); `apps/web/test/unit/shared-budget-paydays.test.ts`; `apps/web/e2e/shared-budgets.spec.ts`.
 
 Why: a strict outside review before every stop (CLAUDE.md), and the owner's rule: the dates only (D512).
+
+### D523. A change that makes a budget follow paydays follows the paydays of the person making it
+
+Decided 14 Nov 2026 by the owner, answering `PLAN.md` question 23, in step 4a.
+
+The owner's words: "When someone changes a budget so that it follows a payday, it follows the paydays of the person making that change, never the other person's. So nothing about Jess's pay reaches Tom unless Jess does it herself."
+
+- **Such a change** is one after which a budget's weeks or months follow paydays when they didn't before: a pay-later bill changed to leave at the start of each week or month, or spread across it; a budget brought back after it was removed, or after it ended over two months ago (D522); or a change from weekly to monthly or back. An undo counts as a change like any other. So when Tom makes Jess's food month a pay-later bill, then takes that back, it follows his paydays from then on, and Jess's phone gets his paydays as dates (D512); his Budgets screen says "Jess sees this leave on your paydays.", and hers "Leaves on Tom's paydays.".
+- **Any other change keeps whose paydays it follows**: Tom changing the amount of Jess's food month leaves it on hers.
+- **Jess's own changes** to her own budget keep it on her paydays, as before.
+- **The database decides**, for every change from every phone, so no phone can choose someone else's paydays. The engine works it out the same way after every edit, so the phone making the change shows it at once. And a phone now takes the server's word for whose paydays a budget follows, and whether it was passed on (D513), even on its own change: the server keeps that change at the version the phone sent, and a phone otherwise keeps a row it brings down only at a new version. The new two-phone test found this: without it, Tom's phone went on saying the food month followed Jess's paydays, with none of her dates any more, so his joint account didn't match hers.
+
+Tests: `33-shared-budget-paydays.test.sql` (82 checks, the rule broken on purpose to see it fail); `packages/engine/test/unit/shared-budget-paydays.test.ts`, with Tom's undo; `apps/web/test/unit/sync-rows.test.ts`, the server's word at the same version; `apps/web/e2e/shared-budgets.spec.ts` test 4, two phones at 320px and 360px in light and dark, with axe: after Tom's change and undo, the food month follows his paydays, the plan has none of Jess's, both Budgets screens say so, and the joint account is the same on both phones every day for a year. The unit and database checks each fail without their part of the fix, and test 4 failed before it.
+
+Why: the owner's answer. Nothing of one person's pay reaches the other's phone unless that person does it themselves.
+
+### D524. Why step 4a's test 3 failed on GitHub, and its fix
+
+Decided 14 Nov 2026 in step 4a. GitHub's end-to-end part 3 failed on the ready run, at `e2e/shared-budgets.spec.ts` test 3, "A change saved while the other phone is bringing the plan down comes whole", at 360px. It had passed on the building computer.
+
+- **The cause was the test, not the app.** To make the moment happen every time, the test held, for 2 seconds, every request that read the plan's budgets, and waited until one was held. On GitHub, one of the two phones made a look of its own just then, as phones do every so often, and that look was the one held. The test took it for its own, and Jess's change was saved before the test's own request had even started, so that request brought the whole change at once, correctly. The test's first check, that it brought nothing yet, then failed.
+- **D521's fix was complete**: no half change reached Tom's phone.
+- **Now the test holds only its own request.** It sends a mark of its own with it, the server holds only a request with that mark, and names the held request, so the test waits for exactly that one. Each copy of the test, running at the same time as others, has marks and names of its own.
+- **Checked:** on the building computer, the same failure happened every time by making a phone look during the hold, which the test now does on purpose; with the fix, the test passed every time, six runs in six, three at a time; and against the old way of bringing the plan down, from before D521, it still fails every time, so it still tests what it's for. It isn't skipped, loosened or retried.
+
+Why: a test that fails must point at a fault in the app, never at its own timing.
