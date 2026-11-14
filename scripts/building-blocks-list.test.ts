@@ -105,7 +105,7 @@ const RUN = {
   ref: 'refs/heads/main',
   runId: '42',
   correlator: "Dependabot's list Send GitHub the list",
-  repositoryUrl: 'https://github.com/TomiwaPro/Prepenny',
+  repositoryUrl: 'https://github.com/example/prepenny',
   scanned: '2026-11-14T21:00:00.000Z',
 };
 
@@ -149,6 +149,48 @@ describe('reading pnpm-lock.yaml', () => {
     assert.equal(scope.get('pnpm@12.16.1'), 'development');
   });
 
+  it('reads a package asked for under another name as the real package', () => {
+    const lock = readLockfile(`lockfileVersion: '9.0'
+
+importers:
+
+  .:
+    dependencies:
+      old-minimist:
+        specifier: npm:minimist@1.2.0
+        version: minimist@1.2.0
+      scoped-alias:
+        specifier: npm:@scope/thing@2.0.0
+        version: '@scope/thing@2.0.0'
+
+packages:
+
+  '@scope/thing@2.0.0':
+    resolution: {integrity: sha512-a}
+
+  minimist@1.2.0:
+    resolution: {integrity: sha512-b}
+
+  user@1.0.0:
+    resolution: {integrity: sha512-c}
+
+snapshots:
+
+  '@scope/thing@2.0.0': {}
+
+  minimist@1.2.0: {}
+
+  user@1.0.0:
+    dependencies:
+      old-minimist: minimist@1.2.0
+`);
+    assert.deepEqual(Object.fromEntries(lock.direct), {
+      'minimist@1.2.0': 'runtime',
+      '@scope/thing@2.0.0': 'runtime',
+    });
+    assert.deepEqual(lock.packages.get('user@1.0.0'), ['minimist@1.2.0']);
+  });
+
   it('names each package the standard way', () => {
     assert.equal(
       packageUrl('@supabase/supabase-js@2.118.0'),
@@ -180,7 +222,7 @@ describe('the snapshot for GitHub', () => {
     assert.deepEqual(body.detector, {
       name: 'prepenny-building-blocks',
       version: '1',
-      url: 'https://github.com/TomiwaPro/Prepenny/blob/main/scripts/building-blocks-list.ts',
+      url: 'https://github.com/example/prepenny/blob/main/scripts/building-blocks-list.ts',
     });
     assert.equal(body.scanned, RUN.scanned);
     const manifest = body.manifests['pnpm-lock.yaml'];

@@ -52,6 +52,16 @@ function withoutPeers(text: string): string {
   return bracket === -1 ? text : text.slice(0, bracket);
 }
 
+/**
+ * The package a name and its version in pnpm-lock.yaml stand for. A package
+ * asked for under another name ("old-minimist": "npm:minimist@1.2.0") has
+ * the real package as its version ("minimist@1.2.0").
+ */
+export function keyFor(name: string, version: string): string {
+  const plain = withoutPeers(version);
+  return /^@?[^@]+@/.test(plain) ? plain : `${name}@${plain}`;
+}
+
 /** "@supabase/supabase-js@2.118.0" as its name and version. */
 export function nameAndVersion(key: string): { readonly name: string; readonly version: string } {
   const at = key.lastIndexOf('@');
@@ -108,7 +118,7 @@ export function readLockfile(text: string): Lockfile {
       else if (indent === 8 && key === 'version' && importerSection !== null) {
         // A package of PrePenny's own, such as the engine, is a link, not a building block.
         if (value.startsWith('link:')) continue;
-        const found = `${importerName}@${withoutPeers(value)}`;
+        const found = keyFor(importerName, value);
         if (direct.get(found) !== 'runtime') direct.set(found, importerSection);
       }
     } else if (part === 'packages') {
@@ -129,7 +139,7 @@ export function readLockfile(text: string): Lockfile {
       } else if (indent === 4) {
         snapshotSection = key === 'dependencies' || key === 'optionalDependencies';
       } else if (indent === 6 && snapshotSection && !value.startsWith('link:')) {
-        const child = `${key}@${withoutPeers(value)}`;
+        const child = keyFor(key, value);
         const children = packages.get(snapshot) ?? [];
         if (!children.includes(child)) children.push(child);
         packages.set(snapshot, children);

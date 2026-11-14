@@ -37,9 +37,15 @@ export const NOT_FOUND_PAGES: readonly string[] = [
  */
 export function inlineScripts(html: string): string[] {
   const found: string[] = [];
-  for (const match of html.matchAll(
-    /<script\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/script\s*>/gi,
-  )) {
+  // A browser reads every line ending as "\n" before anything else, so a
+  // script's text, and its fingerprint, never has "\r" in it. A script ends
+  // at "</script" followed by a space, "/" or ">", as a browser ends it.
+  // Anything stranger (a quote in an unquoted value, a script inside a
+  // comment) reads differently here than in the browser: the page's own
+  // script is then refused, and the page fails visibly, never the other way.
+  for (const match of html
+    .replace(/\r\n?/g, '\n')
+    .matchAll(/<script\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/script(?=[\s/>])[^>]*>/gi)) {
     const attributes = match[1] ?? '';
     if (/(?:^|\s)src\s*=/i.test(attributes)) continue;
     found.push(match[2] ?? '');
@@ -143,8 +149,19 @@ export function checkLimits(headers: string): void {
   }
 }
 
-/** Whether a _headers rule's pattern matches an address: "/*" and "/_next/static/*" end in a star, others are exact. */
+/**
+ * Whether a _headers rule's pattern matches an address: "/*" and
+ * "/_next/static/*" end in a star, others are exact. Cloudflare also reads
+ * placeholders (":name"), a star elsewhere and other hosts, which PrePenny
+ * doesn't use: such a rule stops the build, rather than the offline helper's
+ * versions and the live check going quietly wrong.
+ */
 function matches(pattern: string, path: string): boolean {
+  if (!pattern.startsWith('/') || pattern.includes(':') || pattern.slice(0, -1).includes('*')) {
+    throw new Error(
+      `out/_headers has a rule for "${pattern}", which scripts/page-policies.ts can't read: only exact addresses, and addresses ending in "*".`,
+    );
+  }
   return pattern.endsWith('*') ? path.startsWith(pattern.slice(0, -1)) : path === pattern;
 }
 
@@ -159,7 +176,7 @@ export function rulesFor(headers: string, path: string): string {
   let current: string[] | null = null;
   for (const line of headers.split('\n')) {
     if (line.trim() === '' || line.trimStart().startsWith('#')) continue;
-    if (line.startsWith('/')) {
+    if (!/^\s/.test(line)) {
       current = matches(line.trim(), path) ? [line.trim()] : null;
       if (current !== null) applying.push(...current);
       continue;

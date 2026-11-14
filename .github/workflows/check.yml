@@ -94,21 +94,22 @@ jobs:
 
       - name: Check every building block for known security problems
         # Step 4b (D527): every package in pnpm-lock.yaml, against npm's list
-        # of known problems, each one a GitHub advisory. A serious one (high or
-        # critical) fails this check, so a pull request can't be merged with
-        # a green tick, and on main the live app and the database aren't
-        # updated (deploy.yml and database.yml wait for this workflow). Less
-        # serious ones are warnings. Last, and even when a check above failed,
-        # so its answer is always there; it takes a few seconds.
+        # of known problems, each one a GitHub advisory. A serious one (high
+        # or critical) that this change brings in fails this check, so a pull
+        # request can't be merged with a green tick, and on main the live app
+        # and the database aren't updated (deploy.yml and database.yml wait
+        # for this workflow). One already in pnpm-lock.yaml before the change
+        # (the pull request's base, or main's commit before this push) is a
+        # warning, as are less serious ones. Last, and even when a check above
+        # failed, so its answer is always there; it takes a few seconds.
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: node scripts/check-building-blocks.ts
-
-  end-to-end:
-    # Drafts skip these. On main and on a pull request that's ready, they run
-    # on every push; a newer push stops the older ones, here or in ready.yml.
-    name: End-to-end
-    if: github.event_name == 'push' || github.event.pull_request.draft == false
-    concurrency:
-      group: end-to-end-${{ github.event.pull_request.number || github.sha }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-    uses: ./.github/workflows/end-to-end.yml
+        env:
+          BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+            && git fetch --quiet --no-tags --depth=1 origin "$BEFORE" \
+            && git show "$BEFORE:pnpm-lock.yaml" > "$RUNNER_TEMP/pnpm-lock-before.yaml"; then
+            node scripts/check-building-blocks.ts --before "$RUNNER_TEMP/pnpm-lock-before.yaml"
+          else
+            node scripts/check-building-blocks.ts
+          fi

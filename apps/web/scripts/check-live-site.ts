@@ -42,17 +42,20 @@ export const CLOUDFLARE_ADDITIONS: readonly { readonly name: string; readonly ma
   },
   { name: "Cloudflare's Rocket Loader", mark: /rocket-loader|data-cf-settings/ },
   { name: "Cloudflare's Zaraz", mark: /\/cdn-cgi\/zaraz\// },
-  { name: 'something else of Cloudflare’s', mark: /\/cdn-cgi\// },
+  { name: "something else of Cloudflare's", mark: /\/cdn-cgi\// },
 ];
 
 /** Headers Cloudflare can add that send something from the phone, or keep something on it. */
 export const CLOUDFLARE_HEADERS: readonly { readonly name: string; readonly what: string }[] = [
   {
     name: 'nel',
-    what: 'asks phones to report failed connections to Cloudflare (Network Error Logging)',
+    what: 'asks phones to report failed connections to Cloudflare (Network Error Logging), with nothing about money in them',
   },
-  { name: 'report-to', what: 'says where phones send those reports (Network Error Logging)' },
-  { name: 'set-cookie', what: 'keeps a cookie on the phone' },
+  {
+    name: 'report-to',
+    what: 'says where phones send those reports (Network Error Logging), with nothing about money in them',
+  },
+  { name: 'set-cookie', what: 'keeps a cookie on the phone, which PrePenny never sets itself' },
   { name: 'speculation-rules', what: 'asks phones to fetch pages ahead (Speed Brain)' },
 ];
 
@@ -97,8 +100,11 @@ export interface Served {
 /** What's wrong with one page, if anything. */
 export interface Finding {
   readonly path: string;
-  /** "older" when it's not the new version yet, so worth asking again. */
-  readonly kind: 'cloudflare' | 'policy' | 'older' | 'status';
+  /**
+   * "older" when it's not the new version yet, and "unreachable" when the
+   * site didn't answer, or answered with a server error: both worth asking again.
+   */
+  readonly kind: 'cloudflare' | 'policy' | 'older' | 'status' | 'unreachable';
   readonly words: string;
 }
 
@@ -111,6 +117,17 @@ export function comparePage(
   expectedStatus = 200,
 ): Finding[] {
   const found: Finding[] = [];
+  if (served.status === 0 || served.status >= 500) {
+    found.push({
+      path,
+      kind: 'unreachable',
+      words:
+        served.status === 0
+          ? `${path} didn't answer: ${served.body}`
+          : `${path} answered with a server error, ${served.status}.`,
+    });
+    return found;
+  }
   if (served.status !== expectedStatus) {
     found.push({
       path,
@@ -158,10 +175,23 @@ export function headerNotes(headers: Headers): string[] {
   );
 }
 
-/** Fetches a page as a phone opens it. */
+/** How long one page has to answer. */
+const PAGE_TIME_LIMIT_MS = 15_000;
+
+/** Fetches a page as a phone opens it. A page that doesn't answer comes back as status 0, with why. */
 async function fetchPage(site: string, path: string): Promise<Served> {
+  try {
+    return await fetchOnce(site, path);
+  } catch (error) {
+    const why = error instanceof Error ? error.name : 'an error';
+    return { status: 0, body: `${why}.`, headers: new Headers() };
+  }
+}
+
+async function fetchOnce(site: string, path: string): Promise<Served> {
   const response = await fetch(`${site}${path}`, {
     redirect: 'manual',
+    signal: AbortSignal.timeout(PAGE_TIME_LIMIT_MS),
     headers: {
       Accept: 'text/html,application/xhtml+xml',
       'Accept-Language': 'en-GB',
@@ -192,38 +222,51 @@ export async function checkOnce(site: string, out = OUT) {
     );
     for (const note of headerNotes(served.headers)) notes.add(note);
   }
-  return { pages: pages.length, findings, notes: [...notes] };
+  return { pages: pages.length - 1, findings, notes: [...notes] };
 }
+
+/** Worth asking again: the version before, or no answer yet. */
+const askAgain = (finding: Finding) => finding.kind === 'older' || finding.kind === 'unreachable';
 
 async function main() {
   const site = (process.argv[2] ?? LIVE_SITE).replace(/\/$/, '');
   let result = await checkOnce(site);
-  for (
-    let tries = 1;
-    tries < 8 && result.findings.some((one) => one.kind === 'older');
-    tries += 1
-  ) {
-    console.log(`Some pages on ${site} are still the version before; asking again in 15 seconds.`);
+  for (let tries = 1; tries < 8 && result.findings.some(askAgain); tries += 1) {
+    console.log(
+      `Some pages on ${site} are still the version before, or didn't answer; asking again in 15 seconds.`,
+    );
     await new Promise((resolve) => setTimeout(resolve, 15_000));
     result = await checkOnce(site);
   }
   for (const note of result.notes) {
     console.log(
-      `::warning title=Cloudflare adds a header::${site} sends ${note}. It holds nothing about money. README.md part N says how to switch it off.`,
+      `::warning title=Cloudflare adds a header::${site} sends ${note}. README.md part N says how to switch it off.`,
     );
   }
   if (result.findings.length > 0) {
     for (const finding of result.findings)
       console.log(`::error title=Live page not as built::${finding.words}`);
     const cloudflare = result.findings.some((one) => one.kind === 'cloudflare');
+    const count = result.findings.length;
     console.log(
-      `::error title=Live site::The update is online, but ${result.findings.length} ${result.findings.length === 1 ? 'thing on the live site isn’t' : 'things on the live site aren’t'} as built.${cloudflare ? ' Cloudflare is adding something of its own: README.md part N says how to switch it off.' : ''}`,
+      `::error title=Live site::The update is online, but ${count} ${count === 1 ? "thing on the live site isn't" : "things on the live site aren't"} as built.${cloudflare ? ' Cloudflare is adding something of its own: README.md part N says how to switch it off.' : ''}`,
     );
     process.exit(1);
   }
   console.log(
-    `Live site: ${result.pages} pages on ${site}, each exactly as built, with its own security policy, and nothing of Cloudflare's written into them.`,
+    `Live site: ${result.pages} pages and the not-found page on ${site}, each exactly as built, with its own security policy, and nothing of Cloudflare's written into them.`,
   );
 }
 
-if (import.meta.main) await main();
+if (import.meta.main) {
+  try {
+    await main();
+  } catch (error) {
+    // Anything unexpected still says so in GitHub's log, with what it was, never a page's contents.
+    const why = error instanceof Error ? `${error.name}: ${error.message}` : 'an unknown error';
+    console.log(
+      `::error title=Live site not checked::The live pages couldn't be checked (${why.split('\n')[0]}).`,
+    );
+    process.exit(1);
+  }
+}

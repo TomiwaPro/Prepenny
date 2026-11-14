@@ -40,11 +40,23 @@ let headers: string;
 let server: Server;
 let site: string;
 /** What the stand-in for Cloudflare does: nothing, or what it did to the live site. */
-let cloudflare: { beacon: boolean; nel: boolean; older: boolean; policy: string | null } = {
-  beacon: false,
-  nel: false,
-  older: false,
-  policy: null,
+let cloudflare: {
+  beacon: boolean;
+  nel: boolean;
+  older: boolean;
+  policy: string | null;
+  status?: number;
+} = { beacon: false, nel: false, older: false, policy: null };
+
+/**
+ * Each address's policy, written out here rather than worked out by the
+ * code being tested, as Cloudflare would send it.
+ */
+const withScript = (script: string) =>
+  GENERAL.replace("script-src 'self'", `script-src 'self' ${scriptHash(script)}`);
+const POLICIES: Record<string, string> = {
+  '/': withScript('welcome()'),
+  '/app/': withScript('home()'),
 };
 
 beforeAll(async () => {
@@ -63,10 +75,12 @@ beforeAll(async () => {
     let body = FILES[file] as string;
     if (cloudflare.older) body = body.replace('PrePenny', 'PrePenny, the version before');
     if (cloudflare.beacon) body = body.replace('</body>', `${BEACON}\n</body>`);
-    response.statusCode = file === '404.html' ? 404 : 200;
+    response.statusCode = cloudflare.status ?? (file === '404.html' ? 404 : 200);
     response.setHeader('Content-Type', 'text/html');
-    const policy = cloudflare.policy ?? expectedHeader(headers, path, 'content-security-policy');
-    if (policy !== undefined) response.setHeader('Content-Security-Policy', policy);
+    response.setHeader(
+      'Content-Security-Policy',
+      cloudflare.policy ?? POLICIES[path] ?? withScript('missing()'),
+    );
     if (cloudflare.nel) {
       response.setHeader('NEL', NEL);
       response.setHeader(
@@ -89,7 +103,7 @@ describe('the live site, checked after an update', () => {
   it('passes when every page is exactly as built, with its own policy', async () => {
     cloudflare = { beacon: false, nel: false, older: false, policy: null };
     const result = await checkOnce(site, out);
-    expect(result.pages).toBe(3);
+    expect(result.pages).toBe(2);
     expect(result.findings).toEqual([]);
     expect(result.notes).toEqual([]);
   });
@@ -123,9 +137,32 @@ describe('the live site, checked after an update', () => {
     const result = await checkOnce(site, out);
     expect(result.findings).toEqual([]);
     expect(result.notes).toEqual([
-      '"nel": asks phones to report failed connections to Cloudflare (Network Error Logging)',
-      '"report-to": says where phones send those reports (Network Error Logging)',
+      '"nel": asks phones to report failed connections to Cloudflare (Network Error Logging), with nothing about money in them',
+      '"report-to": says where phones send those reports (Network Error Logging), with nothing about money in them',
     ]);
+  });
+
+  it('a server error, or no answer at all, is worth asking again', async () => {
+    cloudflare = { beacon: false, nel: false, older: false, policy: null, status: 503 };
+    const result = await checkOnce(site, out);
+    expect(result.findings.map((one) => one.kind)).toEqual([
+      'unreachable',
+      'unreachable',
+      'unreachable',
+    ]);
+    expect(result.findings[0]?.words).toBe('/ answered with a server error, 503.');
+    // An address where nothing answers.
+    const closed = createServer();
+    await new Promise<void>((resolve) => closed.listen(0, '127.0.0.1', resolve));
+    const port = (closed.address() as AddressInfo).port;
+    await new Promise((resolve) => closed.close(resolve));
+    const nobody = await checkOnce(`http://127.0.0.1:${port}`, out);
+    expect(nobody.findings.map((one) => one.kind)).toEqual([
+      'unreachable',
+      'unreachable',
+      'unreachable',
+    ]);
+    expect(nobody.findings[0]?.words).toBe("/ didn't answer: TypeError.");
   });
 
   it('says when a page is still the version before, so it can be asked for again', async () => {
@@ -171,13 +208,13 @@ describe('one page', () => {
     ).toBe("/app/: Cloudflare wrote Cloudflare's Zaraz into the page.");
     expect(
       words(built.replace('</body>', '<script src="/cdn-cgi/new-thing.js"></script></body>')),
-    ).toBe('/app/: Cloudflare wrote something else of Cloudflare’s into the page.');
+    ).toBe("/app/: Cloudflare wrote something else of Cloudflare's into the page.");
   });
 
   it('expects the status the page should have', () => {
-    const served = { status: 500, body: '', headers: new Headers() };
+    const served = { status: 403, body: '', headers: new Headers() };
     expect(comparePage('/app/', 'x', undefined, served)[0]?.words).toBe(
-      '/app/ answered 500, not 200.',
+      '/app/ answered 403, not 200.',
     );
   });
 
@@ -197,7 +234,7 @@ describe('one page', () => {
       'Speculation-Rules': '"/cdn-cgi/speculation"',
     });
     expect(headerNotes(headersWith)).toEqual([
-      '"set-cookie": keeps a cookie on the phone',
+      '"set-cookie": keeps a cookie on the phone, which PrePenny never sets itself',
       '"speculation-rules": asks phones to fetch pages ahead (Speed Brain)',
     ]);
   });

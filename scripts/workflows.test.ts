@@ -100,7 +100,15 @@ test('check.yml checks every building block on pull requests and on main, even w
   assert.ok(step.length < text.length, 'the step is in check.yml');
   const until = step.indexOf('\n      - name:', 1);
   const body = until === -1 ? step : step.slice(0, until);
-  assert.match(body, /run: node scripts\/check-building-blocks\.ts\n/);
+  assert.match(
+    body,
+    /BEFORE: \$\{\{ github\.event\.pull_request\.base\.sha \|\| github\.event\.before \}\}/,
+  );
+  assert.match(
+    body,
+    /node scripts\/check-building-blocks\.ts --before "\$RUNNER_TEMP\/pnpm-lock-before\.yaml"\n/,
+  );
+  assert.match(body, /else\n {12}node scripts\/check-building-blocks\.ts\n {10}fi\n/);
   assert.match(body, /if: \$\{\{ !cancelled\(\) && steps\.install\.outcome == 'success' \}\}/);
   assert.doesNotMatch(body, /continue-on-error/);
   assert.match(text, /- name: Install\n {8}id: install\n/);

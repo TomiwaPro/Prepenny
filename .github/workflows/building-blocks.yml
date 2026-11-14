@@ -36,6 +36,9 @@ jobs:
     steps:
       - name: Check out the code
         uses: actions/checkout@v5
+        with:
+          # The job's key may write; it isn't left on disk for the code to use.
+          persist-credentials: false
 
       - name: Set up Node (the version in .node-version)
         uses: actions/setup-node@v5

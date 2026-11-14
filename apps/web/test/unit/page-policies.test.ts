@@ -43,6 +43,16 @@ describe("a page's scripts", () => {
     ]);
   });
 
+  it('are read as a browser reads them: every line ending as "\\n", and the end tag with words after it', () => {
+    expect(inlineScripts('<script>a();\r\nb();\rc();</script>')).toEqual(['a();\nb();\nc();']);
+    expect(inlineScripts('<script>go()</script foo><script>next()</script\n>')).toEqual([
+      'go()',
+      'next()',
+    ]);
+    // "</scripts>" doesn't end a script.
+    expect(inlineScripts('<script>"</scripts>"</script>')).toEqual(['"</scripts>"']);
+  });
+
   it("are named by their SHA-256 fingerprint, as a browser's policy names them", () => {
     // The example in the W3C's Content Security Policy Level 3, "hash-source".
     expect(scriptHash("alert('Hello, world.');")).toBe(
@@ -114,6 +124,12 @@ describe('_headers with each page’s policy', () => {
     ]);
     expect(rulesFor(written, '/app/no-such-page/')).not.toContain('sha256-home');
     expect(rulesFor(written, '/_next/static/chunks/a.js')).toContain('immutable');
+  });
+
+  it("refuses a rule it can't read, rather than give the wrong rules", () => {
+    for (const pattern of ['/app/:page/', '/*/index.html', 'https://prepenny.co.uk/*']) {
+      expect(() => rulesFor(`${pattern}\n  X-A: b\n`, '/app/')).toThrow(/can't read/);
+    }
   });
 
   it('stops the build when Cloudflare would skip part of it, rather than send pages without their policy', () => {
