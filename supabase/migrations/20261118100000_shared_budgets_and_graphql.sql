@@ -143,7 +143,11 @@ $$;
 -- Works out a person's paydays in a plan again, and saves only what
 -- changed, each with a new change number, then nudges the plan's phones.
 -- Wanted while they're in the plan, have a main pay, and a shared budget
--- there follows their pay (D508, D512).
+-- there follows its paydays (D508, D512): a weekly one when the pay comes
+-- every week or every few weeks, a monthly one when it comes every month
+-- (D29, D108). Not for a pay-later card, which follows its bill, nor for
+-- irregular pay, whose budgets run Monday to Sunday (D14). The phone tells
+-- the person adding such a budget first (D514), by the same rule.
 create function app.refresh_paydays(plan uuid, person uuid) returns void
 language plpgsql volatile security definer set search_path = '' as $$
 #variable_conflict use_variable
@@ -159,11 +163,23 @@ begin
     return;
   end if;
   if exists (select 1 from public.plan_members m
-      where m.plan_id = plan and m.person_id = person and m.left_at is null)
-    and exists (select 1 from public.budgets b
-      where b.plan_id = plan and b.private_to is null and not b.deleted and b.follows_pay_of = person) then
+      where m.plan_id = plan and m.person_id = person and m.left_at is null) then
     select s.main_pay_family_id into family from public.settings s
       where s.plan_id = plan and s.private_to = person and not s.deleted;
+  end if;
+  if family is not null and (
+      exists (select 1 from public.series s
+        where s.plan_id = plan and s.family_id = family and not s.deleted
+          and s.schedule ->> 'kind' = 'irregular')
+      or not exists (select 1 from public.budgets b
+        where b.plan_id = plan and b.private_to is null and not b.deleted
+          and b.follows_pay_of = person and b.leaves <> 'pay-later'
+          and exists (select 1 from public.series s
+            where s.plan_id = plan and s.family_id = family and not s.deleted
+              and ((b.every = 'week' and s.schedule ->> 'kind' = 'weekly')
+                or (b.every = 'month' and s.schedule ->> 'kind' = 'monthly'
+                  and s.schedule ->> 'every' = '1'))))) then
+    family := null;
   end if;
   if family is not null then
     for one in

@@ -10,7 +10,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(57);
+select plan(60);
 
 select tests.make_jess_and_tom();
 
@@ -222,11 +222,33 @@ select pg_temp.change('jess', $$
 select is((select count(*) from public.paydays where not deleted and person = tests.id('jess')), 2::bigint,
   'and her main job again, its two parts');
 
--- Tom's own budget follows his pay, so Jess gets his dates the same way.
+-- Only a budget that lines up with the paydays needs them (D29): a weekly
+-- one with monthly pay runs Monday to Sunday.
+select tests.as_person('jess');
+select is((select count(*) from public.paydays where not deleted and person = tests.id('tom')), 0::bigint,
+  'Tom''s weekly travel budget gives Jess none of his paydays: his pay is monthly, so it runs from Monday');
+select tests.as_test();
+select pg_temp.change('tom', $$
+  insert into public.budgets (id, plan_id, account_id, name, amount, every, leaves, starts_on, made_at)
+  values (tests.id('tom-meals'), tests.id('plan'), tests.id('joint'), 'Meals out', 6000, 'month', 'at-start',
+    '2026-10-25', '2026-10-25T09:00:00Z') $$);
 select tests.as_person('jess');
 select is((select count(*) from public.paydays where not deleted and person = tests.id('tom')), 1::bigint,
-  'Tom''s travel budget gives Jess his paydays, the dates only');
+  'His monthly meals out does: Jess gets his paydays, the dates only');
 select tests.as_test();
+select pg_temp.change('tom', $$
+  update public.budgets set leaves = 'pay-later', bill_day = 29 where id = tests.id('tom-meals') $$);
+select is((select count(*) from public.paydays where not deleted and person = tests.id('tom')), 0::bigint,
+  'and once it''s on a pay-later card, which follows its bill, no longer');
+select pg_temp.change('tom', $$
+  update public.budgets set leaves = 'at-start', bill_day = null where id = tests.id('tom-meals') $$);
+select pg_temp.change('jess', $$
+  update public.series set schedule = '{"kind":"irregular"}' where id = tests.id('jess-pay-march') $$);
+select is((select count(*) from public.paydays where not deleted and person = tests.id('jess')), 0::bigint,
+  'Irregular pay has no paydays to give: its budgets run Monday to Sunday');
+select pg_temp.change('jess', $$
+  update public.series set schedule = '{"kind":"monthly","every":1,"on":{"kind":"last-working-day"}}'
+  where id = tests.id('jess-pay-march') $$);
 
 -- ---------------------------------------------------------------------------
 -- 5. Nobody outside the plan reads them.
