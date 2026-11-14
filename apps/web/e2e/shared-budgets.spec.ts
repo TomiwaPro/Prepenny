@@ -18,7 +18,7 @@ import { expect, type TestInfo, test } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
 import { openShare } from './jess-and-tom.ts';
-import { openHome, phoneDays } from './journeys.ts';
+import { openHome, phoneDays, undoBar } from './journeys.ts';
 import {
   allSent,
   budgetCard,
@@ -38,7 +38,7 @@ import {
   tomJoins,
   YEAR_ON,
 } from './paydays.ts';
-import { radio } from './setup.ts';
+import { box, radio } from './setup.ts';
 import { newEmail } from './sign-in-helpers.ts';
 import { everythingOnThePhone, personOn, quoted, signUpFromMore, sql } from './two-phones.ts';
 
@@ -176,6 +176,75 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // On the server: Jess's paydays have gone from the plan, with nothing left in them.
       const jess = await personOn(page);
       expect(sql(`select count(*) from public.paydays where person = ${quoted(jess)}`)).toBe('0');
+      await tom.context.close();
+    });
+
+    test("4. Tom's change that makes Jess's budget follow paydays makes it follow his, never hers (D523)", async ({
+      page,
+      browser,
+    }, info) => {
+      test.setTimeout(420_000);
+      await page.emulateMedia({ colorScheme });
+      await setUp(page, JESS);
+      await signUpFromMore(page, newEmail('jess'));
+      await share(page, 'Joint account', null);
+      const link = await inviteLink(page);
+      const tom = await newPhone(browser, info, colorScheme);
+      await setUp(tom.page, TOM);
+      await signUpFromMore(tom.page, newEmail('tom'));
+      await tomJoins(page, tom.page, link, true);
+      const food = await fillBudget(page, 'Food', '300', 'Joint account');
+      await saveBudget(food);
+      await allSent(page);
+      const jess = await personOn(page);
+      const jessPaydays = () =>
+        sql(`select count(*) from public.paydays where not deleted and person = ${quoted(jess)}`);
+      expect(jessPaydays(), "Food leaves on Jess's paydays").toBe('1');
+
+      // Tom puts it on a pay-later card, which follows its bill, not paydays.
+      await tom.page.goto('/app/budgets/');
+      await budgetCard(tom.page, 'Food')
+        .getByRole('button', { name: b.change('Food') })
+        .click({ timeout: 20_000 });
+      const sheet = tom.page.getByRole('dialog', { name: sheetWords.changeTitle });
+      await radio(sheet, spending.payLater).check();
+      await box(sheet, spending.billDay).fill('29');
+      await expect(sheet.getByTestId('your-paydays')).toHaveCount(0);
+      await screenChecks(tom.page);
+      await sheet.getByRole('button', { name: sheetWords.saveChanges }).click();
+      await expect(sheet).toBeHidden();
+      // Then takes it back: it follows paydays again, and so his, not hers.
+      await undoBar(tom.page).getByRole('button', { name: strings.undo.undo }).click();
+      // As a person would, wait for the phone to say so before leaving the page.
+      await expect(undoBar(tom.page)).toHaveText(strings.undo.undone);
+      await allSent(tom.page);
+      await expect
+        .poll(
+          () =>
+            sql(`select follows_pay_of from public.budgets where name = 'Food' and not deleted
+              and plan_id = (select plan_id from public.plan_members where person_id = ${quoted(jess)})`),
+          { timeout: 20_000 },
+        )
+        .toBe(await personOn(tom.page));
+      expect(jessPaydays(), "and nothing of Jess's pay reaches Tom").toBe('0');
+
+      await tom.page.goto('/app/budgets/');
+      await expect(budgetCard(tom.page, 'Food').getByTestId('whose-paydays')).toHaveText(
+        b.partnerSeesYourPaydays('Jess'),
+        { timeout: 30_000 },
+      );
+      await screenChecks(tom.page);
+      await page.goto('/app/budgets/');
+      await expect(budgetCard(page, 'Food').getByTestId('whose-paydays')).toHaveText(
+        b.onTheirPaydays('Tom'),
+        { timeout: 30_000 },
+      );
+      await screenChecks(page);
+      // The joint account is the same on both phones, with Food on Tom's
+      // payday, Fri 13 Nov (15 Nov is a Sunday), and nothing on Jess's.
+      const days = await sameOnBoth(page, tom.page);
+      expect(leftOn(days, '2026-11-13', '2026-11-12')).toBe(-30000);
+      expect(leftOn(days, '2026-10-28', '2026-10-27')).toBe(0);
       await tom.context.close();
     });
 
