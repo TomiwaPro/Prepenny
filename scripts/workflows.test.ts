@@ -132,3 +132,23 @@ test("building-blocks.yml sends main's list only, with write permission for its 
   );
   assert.match(text, /dependency-graph\/snapshots/);
 });
+
+// Step 4b (D530): straight after the live app goes online, its pages are
+// checked against the build just put online, and never on a preview.
+test('deploy.yml checks the live pages straight after the live app goes online', () => {
+  const text = readFileSync(join(folder, 'deploy.yml'), 'utf8');
+  const online = text.indexOf('- name: Put the live app online');
+  const check = text.indexOf("- name: Check the live pages are PrePenny's own");
+  const preview = text.indexOf('- name: Upload a preview of this pull request');
+  assert.ok(online > 0 && check > online && preview > check, 'in order: online, check, preview');
+  const step = text.slice(check, preview);
+  assert.match(
+    step,
+    /if: steps\.cloudflare\.outputs\.ready == 'true' && github\.event_name != 'pull_request'/,
+  );
+  assert.match(
+    step,
+    /working-directory: apps\/web\n {8}run: node scripts\/check-live-site\.ts https:\/\/prepenny\.co\.uk\n/,
+  );
+  assert.doesNotMatch(step, /continue-on-error/);
+});
