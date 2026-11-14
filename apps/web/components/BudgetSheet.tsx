@@ -152,7 +152,7 @@ function BudgetForm({
     loaded !== null &&
     shared.sharedAccounts.has(accountId) &&
     stored?.followsPayOf === undefined &&
-    followsMyPaydays(loaded.records, today, every, form.leaves)
+    followsMyPaydays(loaded.records, every, form.leaves)
       ? t.partnerWillSee(partnerOf(shared)?.name ?? strings.share.partnerFallback)
       : null;
 

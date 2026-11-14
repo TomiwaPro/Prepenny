@@ -13,7 +13,11 @@ import {
 } from '@prepenny/engine';
 import { describe, expect, it } from 'vitest';
 import { recordsForBackup } from '../../lib/backup.ts';
-import { budgetPaydaysLine, followsMyPaydays } from '../../lib/budget-paydays.ts';
+import {
+  budgetPaydaysLine,
+  budgetsOnMyPaydays,
+  followsMyPaydays,
+} from '../../lib/budget-paydays.ts';
 import { holidaysFor } from '../../lib/holidays.ts';
 import { type MirrorRow, recordsFromRows, writesFor, writesForEdit } from '../../lib/sync-rows.ts';
 import { strings } from '../../strings/en-GB.ts';
@@ -351,9 +355,54 @@ describe('Whose paydays, in words (D512 to D514)', () => {
       'Tom will see this money leave on your paydays.',
     );
     const jess = recordsFromRows(readableBy(serverRows(), JESS), JESS).records;
-    expect(followsMyPaydays(jess, TODAY, 'month', 'at-start')).toBe(true);
-    expect(followsMyPaydays(jess, TODAY, 'month', 'pay-later')).toBe(false);
-    expect(followsMyPaydays(jess, TODAY, 'week', 'at-start')).toBe(false);
+    expect(followsMyPaydays(jess, 'month', 'at-start')).toBe(true);
+    expect(followsMyPaydays(jess, 'month', 'pay-later')).toBe(false);
+    expect(followsMyPaydays(jess, 'week', 'at-start')).toBe(false);
+  });
+
+  it("by the database's own rule: any part of the pay, never irregular pay (D522)", () => {
+    const jess = recordsFromRows(readableBy(serverRows(), JESS), JESS).records;
+    const pay = jess.series.find((one) => one.id === 'jess-pay') as Series;
+    // Monthly now, weekly from March: a weekly budget's paydays go to Tom at once, so she's told.
+    const weeklyLater: Series = {
+      ...pay,
+      id: 'jess-pay-weekly',
+      start: '2027-03-05',
+      schedule: { kind: 'weekly', every: 1 },
+      firstNumber: 5,
+    };
+    const both = { ...jess, series: [...jess.series, weeklyLater] };
+    expect(followsMyPaydays(both, 'week', 'at-start')).toBe(true);
+    expect(followsMyPaydays(both, 'month', 'spread')).toBe(true);
+    const irregular = {
+      ...jess,
+      series: [...jess.series, { ...weeklyLater, schedule: { kind: 'irregular' as const } }],
+    };
+    expect(followsMyPaydays(irregular, 'month', 'at-start')).toBe(false);
+    const { settings: _settings, ...noSettings } = jess;
+    expect(followsMyPaydays(noSettings, 'month', 'at-start')).toBe(false);
+  });
+
+  it('names the budgets on the accounts being shared, but not one that ended over two months ago', () => {
+    const jess = recordsFromRows(readableBy(serverRows(), JESS), JESS).records;
+    const food = jess.budgets?.[0] as Budget;
+    const records = {
+      ...jess,
+      budgets: [
+        food,
+        { ...food, id: 'old', name: 'Old food', endsOn: '2026-08-01' },
+        { ...food, id: 'card', name: 'Card', leaves: 'pay-later' as const, billDay: 29 },
+        { ...food, id: 'tom', name: 'Meals out', followsPayOf: TOM },
+      ],
+    };
+    expect(budgetsOnMyPaydays(records, TODAY, (id) => id === 'joint')).toEqual(['Food']);
+    expect(budgetsOnMyPaydays(records, TODAY, () => false)).toEqual([]);
+  });
+
+  it("a partner's line comes before the note that it was passed on", () => {
+    expect(budgetPaydaysLine({ ...facts, passedOn: true, partner: 'Sam' })).toBe(
+      'Sam sees this leave on your paydays.',
+    );
   });
 });
 

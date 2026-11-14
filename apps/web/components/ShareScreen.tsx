@@ -18,7 +18,7 @@ import { useJoinRequests } from '../data/join-requests.ts';
 import { useSharedPlan } from '../data/shared-plan.ts';
 import { syncNow, useSync } from '../data/sync.ts';
 import { useAccount } from '../lib/account.ts';
-import { followsMyPaydays } from '../lib/budget-paydays.ts';
+import { budgetsOnMyPaydays } from '../lib/budget-paydays.ts';
 import { momentWords } from '../lib/device-words.ts';
 import {
   cancelInvite,
@@ -70,16 +70,9 @@ export function ShareScreen() {
   // them leave on those days, so the invite says so first (D512, D514).
   const records = loaded?.records;
   const yourPaydays = namesList(
-    (records?.budgets ?? [])
-      .filter(
-        (one) =>
-          shared !== null &&
-          records !== undefined &&
-          shared.sharedAccounts.has(one.accountId) &&
-          one.followsPayOf === undefined &&
-          followsMyPaydays(records, loaded?.today ?? '', one.every, one.leaves),
-      )
-      .map((one) => one.name),
+    records === undefined || shared === null
+      ? []
+      : budgetsOnMyPaydays(records, loaded?.today ?? '', (id) => shared.sharedAccounts.has(id)),
   );
   const [info, setInfo] = useState<Loaded>({ kind: 'loading' });
   const [answers, setAnswers] = useState<Readonly<Record<string, Answered>>>({});

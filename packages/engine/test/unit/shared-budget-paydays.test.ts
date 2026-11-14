@@ -13,7 +13,6 @@ import {
   type Budget,
   editPlan,
   type OtherPaydays,
-  ownPaydaysFollowed,
   type PaydaySchedule,
   type Plan,
   type PlanInput,
@@ -30,7 +29,8 @@ const YEAR_ON = '2027-10-25';
  * What the server gives Tom's phone of a person's main pay (D512): each
  * series of its family with only the fields that say when it comes, and
  * the paydays moved or removed. Built here from the records exactly as the
- * database builds it from its rows (supabase/migrations, `app.paydays_of`).
+ * database builds it from its rows (supabase/migrations, `app.refresh_paydays`),
+ * one row for each part of the pay that changes its dates.
  */
 function paydaysFrom(input: PlanInput, familyId: string, person: string): OtherPaydays {
   const series = input.series
@@ -353,30 +353,5 @@ describe("Other people's paydays are checked, and hold dates only (D512)", () =>
     const plan = workOutPlan(jess);
     expect(plan.budgets[0]?.current).toMatchObject({ start: '2026-10-28', end: '2026-11-26' });
     expect(plan.budgets[0]?.followsPaydays).toBe(true);
-  });
-});
-
-describe('Whether a new budget would follow your own paydays (D514)', () => {
-  const jess = jessAndTomPlan();
-  const of = (input: Partial<PlanInput>) =>
-    ownPaydaysFollowed({ ...jess, today: '2026-10-25', ...input } as PlanInput);
-
-  it('monthly pay: a monthly budget does, a weekly one runs from Monday', () => {
-    expect(of({})).toEqual({ week: false, month: true });
-  });
-
-  it('weekly pay: a weekly budget does, a monthly one runs from the 1st', () => {
-    const weekly = jess.series.map((one) =>
-      one.id === 'jess-pay' ? { ...one, schedule: { kind: 'weekly' as const, every: 2 } } : one,
-    );
-    expect(of({ series: weekly })).toEqual({ week: true, month: false });
-  });
-
-  it('no main pay, or irregular pay: neither does', () => {
-    expect(of({ mainPayFamilyId: null })).toEqual({ week: false, month: false });
-    const irregular = jess.series.map((one) =>
-      one.id === 'jess-pay' ? { ...one, schedule: { kind: 'irregular' as const } } : one,
-    );
-    expect(of({ series: irregular })).toEqual({ week: false, month: false });
   });
 });

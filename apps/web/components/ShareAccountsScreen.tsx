@@ -22,7 +22,7 @@ import { useState } from 'react';
 import { partnerOf, nameOf as personName, useSharedPlan } from '../data/shared-plan.ts';
 import { allSent, syncNow, useSync } from '../data/sync.ts';
 import { useAccount } from '../lib/account.ts';
-import { followsMyPaydays } from '../lib/budget-paydays.ts';
+import { budgetsOnMyPaydays } from '../lib/budget-paydays.ts';
 import { makePrivate, type SharingProblem, shareAccounts } from '../lib/sharing.ts';
 import { strings } from '../strings/en-GB.ts';
 import { CheckOption, Problem } from './Fields.tsx';
@@ -94,15 +94,9 @@ export function ShareAccountsScreen() {
   const partnerWords = partnerOf(shared)?.name ?? t.partnerFallback;
   // Budgets on the accounts being shared that leave on this person's paydays (D514).
   const onYourPaydays = namesList(
-    (records?.budgets ?? [])
-      .filter(
-        (one) =>
-          chosen.includes(one.accountId) &&
-          one.followsPayOf === undefined &&
-          records !== undefined &&
-          followsMyPaydays(records, loaded?.today ?? '', one.every, one.leaves),
-      )
-      .map((one) => one.name),
+    records === undefined
+      ? []
+      : budgetsOnMyPaydays(records, loaded?.today ?? '', (id) => chosen.includes(id)),
   );
 
   /** Why the account can't be made private, in words. */

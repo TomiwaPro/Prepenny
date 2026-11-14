@@ -34,7 +34,6 @@ export {
   type ShortOnDay,
   type Tick,
 } from './balance/types.ts';
-export { type OwnPaydaysFollowed, ownPaydaysFollowed } from './budgets/paydays.ts';
 export {
   BUDGET_EVERY,
   BUDGET_LEAVES,
