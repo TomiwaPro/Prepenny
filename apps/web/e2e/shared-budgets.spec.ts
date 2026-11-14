@@ -14,257 +14,43 @@
 //    no main pay. When Jess leaves, each month starts on the 1st, and his
 //    phone says so.
 
-import { type Browser, expect, type Page, type TestInfo, test } from '@playwright/test';
+import { expect, type TestInfo, test } from '@playwright/test';
+import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
 import { openShare } from './jess-and-tom.ts';
-import { type Days, noSidewaysScroll, openHome, openNewPhone, phoneDays } from './journeys.ts';
+import { openHome, phoneDays } from './journeys.ts';
 import {
-  type AccountAnswers,
-  box,
-  expectStep,
-  fillAccount,
-  lastForm,
-  next,
-  noAxeProblems,
-  radio,
-  SCREEN_TITLES,
-  skip,
-} from './setup.ts';
-import { askForCode, newEmail, signInEmail } from './sign-in-helpers.ts';
-import {
-  everythingOnThePhone,
-  personOn,
-  quoted,
-  secondPhone,
-  signUpFromMore,
-  sql,
-} from './two-phones.ts';
+  allSent,
+  budgetCard,
+  fillBudget,
+  inviteLink,
+  JESS,
+  jessLeaves,
+  leftOn,
+  newPhone,
+  sameOnBoth,
+  saveBudget,
+  screenChecks,
+  setUp,
+  share,
+  TODAY,
+  TOM,
+  tomJoins,
+  YEAR_ON,
+} from './paydays.ts';
+import { radio } from './setup.ts';
+import { newEmail } from './sign-in-helpers.ts';
+import { everythingOnThePhone, personOn, quoted, signUpFromMore, sql } from './two-phones.ts';
 
 const SCREENS = '../../docs/screens/4a';
-const TODAY = '2026-10-25';
-const YEAR_ON = '2027-10-25';
 const s = strings.share;
-const j = strings.join;
 const b = strings.budgets;
 const sheetWords = strings.budgetSheet;
 const spending = strings.setup.spending;
-const leave = strings.together.leave;
 
 /** Screenshots once, at 360px in light. */
 const shoots = (info: TestInfo, colorScheme: string) =>
   info.project.name === 'sign-in-360' && colorScheme === 'light';
-
-interface Person {
-  readonly accounts: readonly AccountAnswers[];
-  readonly pay: {
-    readonly name: string;
-    readonly payday: string;
-    readonly amount: string;
-    readonly into?: string;
-  };
-}
-
-/** Setup with an account or two and a monthly pay, skipping the rest, ending on Home. */
-async function setUp(page: Page, person: Person) {
-  await openNewPhone(page, TODAY);
-  await page.getByRole('button', { name: 'Make my plan' }).click();
-  await expectStep(page, 1, SCREEN_TITLES[0]);
-  for (const [index, account] of person.accounts.entries()) {
-    if (index > 0) await page.getByRole('button', { name: 'Add another account' }).click();
-    await fillAccount(lastForm(page, 'account'), account);
-  }
-  await next(page);
-  await expectStep(page, 2, SCREEN_TITLES[1]);
-  const pay = lastForm(page, 'income');
-  await box(pay, 'Name').fill(person.pay.name);
-  await radio(pay, 'Monthly, on a date').check();
-  await box(pay, 'Next payday').fill(person.pay.payday);
-  await box(pay, 'How much comes in, after tax').fill(person.pay.amount);
-  if (person.pay.into !== undefined) {
-    await radio(pay.getByRole('group', { name: 'Into' }), person.pay.into).check();
-  }
-  await radio(
-    page.getByRole('group', { name: 'Do you ever work extra hours or miss shifts?' }),
-    'No',
-  ).check();
-  await next(page);
-  for (const [index, title] of SCREEN_TITLES.slice(2, 5).entries()) {
-    await expectStep(page, (index + 3) as 3, title);
-    await skip(page);
-  }
-  await expectStep(page, 6, SCREEN_TITLES[5]);
-  await page.getByRole('button', { name: 'Go to my plan' }).click();
-  await expect(page.getByTestId('balance')).toBeVisible();
-}
-
-const JESS: Person = {
-  accounts: [
-    { name: 'Jess current account', balance: '410', warning: '50' },
-    { name: 'Joint account', kind: 'Joint account', balance: '1050', warning: '100' },
-  ],
-  pay: { name: 'Jess pay', payday: '2026-10-28', amount: '2100', into: 'Jess current account' },
-};
-
-const TOM: Person = {
-  accounts: [{ name: 'Tom current account', balance: '520', warning: '50' }],
-  pay: { name: 'Tom pay', payday: '2026-11-15', amount: '2350' },
-};
-
-/** Opens Add a budget and fills it in, leaving it open so its words can be checked. */
-async function fillBudget(page: Page, name: string, amount: string, from: string) {
-  await page.goto('/app/budgets/');
-  await expect(page.getByRole('heading', { level: 1, name: b.heading })).toBeVisible();
-  await page.getByRole('button', { name: b.add, exact: true }).click();
-  const sheet = page.getByRole('dialog', { name: sheetWords.addTitle });
-  await box(sheet, spending.name).fill(name);
-  await box(sheet, spending.amount).fill(amount);
-  await radio(sheet.getByRole('group', { name: spending.every }), spending.month).check();
-  await radio(sheet.getByRole('group', { name: spending.from }), from).check();
-  return sheet;
-}
-
-async function saveBudget(sheet: ReturnType<Page['getByRole']>) {
-  await sheet.getByRole('button', { name: sheetWords.save }).click();
-  await expect(sheet).toBeHidden();
-}
-
-/** Waits until nothing on this phone is waiting to be sent. */
-async function allSent(page: Page) {
-  await page.goto('/app/more/');
-  await expect(page.getByTestId('where-kept')).toHaveText(strings.account.savedInAccount, {
-    timeout: 20_000,
-  });
-}
-
-/** A budget's card on the Budgets screen. */
-const budgetCard = (page: Page, name: string) =>
-  page.getByTestId('budget').and(page.locator(`[data-budget="${name}"]`));
-
-/** Shares one of Jess's accounts, checking what the sheet that asks first says. */
-async function share(page: Page, account: string, says: string | null, screenshot?: string) {
-  await page.goto('/app/share/accounts/');
-  await expect(page.getByRole('heading', { level: 1, name: s.accountsTitle })).toBeVisible();
-  await page.getByRole('checkbox', { name: account }).check();
-  await page.getByRole('button', { name: s.shareThese }).click();
-  const sheet = page.getByRole('dialog', { name: s.confirmTitle(account) });
-  if (says === null) await expect(sheet.getByTestId('share-your-paydays')).toHaveCount(0);
-  else await expect(sheet.getByTestId('share-your-paydays')).toHaveText(says);
-  await noAxeProblems(page);
-  if (screenshot !== undefined) await page.screenshot({ path: screenshot });
-  await sheet.getByRole('button', { name: s.confirmYes }).click();
-  await expect(page.getByTestId('share-said')).toHaveText(s.sharedDone(account), {
-    timeout: 20_000,
-  });
-  return sheet;
-}
-
-/** Jess's invite link, "Can edit". */
-async function inviteLink(page: Page): Promise<string> {
-  await openShare(page);
-  const invite = page.getByTestId('invite');
-  await box(invite, s.nameLabel).fill('Jess');
-  await radio(invite, s.canEdit).check();
-  await radio(invite, s.byLink).check();
-  await invite.getByRole('button', { name: s.makeLink }).click();
-  return page.getByTestId('invite-link').getByLabel(s.linkLabel).inputValue();
-}
-
-/**
- * Tom joins Jess's plan: with a plan of his own, signed up already, which
- * comes with him (D426), or as someone new. Jess allows it.
- */
-async function tomJoins(page: Page, tom: Page, link: string, withPlan: boolean) {
-  await tom.goto(link);
-  await expect(tom.getByRole('heading', { level: 1, name: j.heading })).toBeVisible();
-  if (!withPlan) {
-    const address = newEmail('tom');
-    await tom.getByRole('link', { name: j.signIn }).click();
-    await askForCode(tom, address);
-    await box(tom, '6-digit code').fill((await signInEmail(address)).code);
-    await tom.getByRole('button', { name: 'Sign up', exact: true }).click();
-  }
-  await expect(tom.getByTestId('join-message')).toHaveText(j.invitedBy('Jess'));
-  await box(tom, j.nameLabel('Jess')).fill('Tom');
-  await tom.getByRole('button', { name: j.ask }).click();
-  const sheet = page.getByRole('dialog', { name: s.requestTitle('Tom') });
-  await expect(sheet).toBeVisible({ timeout: 20_000 });
-  await sheet.getByRole('button', { name: s.allow, exact: true }).click();
-  await sheet.getByRole('button', { name: s.gotIt }).click();
-  // The same bank holidays: his plan comes in by itself (D426).
-  await expect(tom).toHaveURL(/\/app\/$/, { timeout: 30_000 });
-  await expect(tom.getByTestId('balance')).toBeVisible();
-}
-
-/** The accounts both phones have, with every day's balance a year ahead on each. */
-async function sharedDays(one: Page, other: Page): Promise<[Days, Days]> {
-  const a = await phoneDays(one, TODAY, YEAR_ON);
-  const c = await phoneDays(other, TODAY, YEAR_ON);
-  const both = Object.keys(a).filter((name) => c[name] !== undefined);
-  const pick = (days: Days) => Object.fromEntries(both.map((name) => [name, days[name] ?? {}]));
-  return [pick(a), pick(c)];
-}
-
-/** The first few days the two phones differ on, as "Joint account 2026-10-28: 75000, not 105000". */
-function differences(one: Days, other: Days): string[] {
-  const found: string[] = [];
-  for (const [account, days] of Object.entries(one)) {
-    for (const [date, balance] of Object.entries(days)) {
-      const theirs = other[account]?.[date];
-      if (theirs !== balance) found.push(`${account} ${date}: ${balance}, not ${theirs}`);
-      if (found.length >= 4) return found;
-    }
-  }
-  return found;
-}
-
-/**
- * Both phones show every shared account the same, every day for a year,
- * within 30 seconds: well inside the minute a phone that missed a nudge
- * would wait (D515).
- */
-async function sameOnBoth(one: Page, other: Page) {
-  await expect
-    .poll(
-      async () => {
-        const [a, c] = await sharedDays(one, other);
-        return { accounts: Object.keys(a), differences: differences(a, c) };
-      },
-      { timeout: 30_000 },
-    )
-    .toEqual({ accounts: ['Joint account'], differences: [] });
-  const [days] = await sharedDays(one, other);
-  expect(Object.keys(days['Joint account'] ?? {})).toHaveLength(366);
-  return days;
-}
-
-/** The money leaving the joint account on a day, in pence, as both phones see it. */
-const leftOn = (days: Days, date: string, dayBefore: string) =>
-  (days['Joint account']?.[date] ?? 0) - (days['Joint account']?.[dayBefore] ?? 0);
-
-/** Checks a screen the way every screen is checked: axe, and nothing wider than the phone. */
-async function screenChecks(page: Page) {
-  await noAxeProblems(page);
-  await noSidewaysScroll(page);
-}
-
-async function newPhone(browser: Browser, info: TestInfo, colorScheme: 'light' | 'dark') {
-  return secondPhone(browser, info, colorScheme, TODAY);
-}
-
-/** Jess leaves the plan with her own things only. */
-async function jessLeaves(page: Page) {
-  await openShare(page);
-  await page.getByTestId('leave').getByRole('link', { name: leave.link }).click();
-  await expect(page.getByRole('heading', { level: 1, name: leave.heading })).toBeVisible();
-  await radio(page, leave.copyNo).check();
-  await page.getByRole('button', { name: leave.leave }).click();
-  await page
-    .getByRole('dialog', { name: leave.confirmTitle })
-    .getByRole('button', { name: leave.confirmYes })
-    .click();
-  await expect(page).toHaveURL(/\/app\/$/, { timeout: 30_000 });
-  await expect(page.getByTestId('left')).toBeVisible({ timeout: 30_000 });
-}
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`in ${colorScheme}`, () => {
@@ -367,6 +153,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(budgetCard(tom.page, 'Food')).toContainText(b.thisMonth('Thu 12 Nov'));
       await expect(budgetCard(tom.page, 'Meals out').getByTestId('whose-paydays')).toHaveCount(0);
       await screenChecks(tom.page);
+      // Whoever Tom invites next is told first, too.
+      await openShare(tom.page);
+      await expect(tom.page.getByTestId('invite-your-paydays')).toHaveText(
+        s.inviteYourPaydays('Food and Meals out'),
+      );
+      await screenChecks(tom.page);
+      await tom.page.goto('/app/budgets/');
+      await expect(budgetCard(tom.page, 'Food').getByTestId('whose-paydays')).toHaveText(
+        b.passedOnPaydays,
+      );
       if (shoots(info, colorScheme)) {
         await tom.page.screenshot({
           path: `${SCREENS}/passed-on-360-light.png`,
@@ -433,3 +229,95 @@ for (const colorScheme of ['light', 'dark'] as const) {
     });
   });
 }
+
+/**
+ * A change saved while the other phone is bringing the plan down comes whole,
+ * or not yet (D521). Jess's food month and the paydays saved with it are in
+ * two kinds of record. The server is held part-way through reading Tom's,
+ * after the budgets and before the paydays, and Jess's food month is saved
+ * at that moment. Read in one go, Tom gets neither, then both; read kind by
+ * kind, as before, he got the paydays without the budget, counted past it,
+ * and never asked for it again.
+ */
+test('3. A change saved while the other phone is bringing the plan down comes whole', async ({
+  page,
+  browser,
+}, info) => {
+  test.skip(
+    info.project.name !== 'sign-in-360',
+    'About the server, not the screen: run once, at 360px.',
+  );
+  test.setTimeout(300_000);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await setUp(page, JESS);
+  await signUpFromMore(page, newEmail('jess'));
+  await share(page, 'Joint account', null);
+  const tom = await newPhone(browser, info, 'light');
+  await tomJoins(page, tom.page, await inviteLink(page), false);
+  // A weekly budget, which needs none of Jess's monthly paydays.
+  const travel = await fillBudget(page, 'Travel', '25', 'Joint account');
+  await radio(travel.getByRole('group', { name: spending.every }), spending.week).check();
+  await expect(travel.getByTestId('your-paydays')).toHaveCount(0);
+  await saveBudget(travel);
+  await allSent(page);
+  const plan = sql(
+    `select plan_id from public.plan_members where person_id = ${quoted(await personOn(page))}`,
+  );
+  const jess = await personOn(page);
+  const token = await tom.page.evaluate(
+    () =>
+      (JSON.parse(localStorage.getItem('prepenny-sign-in') ?? 'null') as { access_token: string })
+        .access_token,
+  );
+  const version = sql('select app.database_version()');
+  const bringDown = async (after: number) => {
+    const response = await fetch(`${LOCAL_SUPABASE.url}/rest/v1/rpc/plan_changes`, {
+      method: 'POST',
+      headers: {
+        apikey: LOCAL_SUPABASE.key,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'x-prepenny-version': version,
+      },
+      body: JSON.stringify({ plan, shared_after: after, mine_after: 0 }),
+    });
+    expect(response.status).toBe(200);
+    return (await response.json()) as {
+      rows: { table: string; row: { seq: number; name?: string; person?: string } }[];
+    };
+  };
+  const seen = Math.max(0, ...(await bringDown(0)).rows.map((one) => one.row.seq));
+
+  // Reading this plan's budgets takes 2 seconds, for this test only.
+  sql(`create or replace function tests.hold_budgets(plan uuid) returns boolean
+    language plpgsql volatile as $$ begin
+      if plan = ${quoted(plan)} then perform pg_sleep(2); end if;
+      return true;
+    end $$;
+    grant execute on function tests.hold_budgets(uuid) to authenticated;
+    create policy hold_for_a_test on public.budgets as restrictive for select to authenticated
+      using (tests.hold_budgets(plan_id));`);
+  try {
+    const answer = bringDown(seen);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    // Jess's food month, saved while Tom's phone is part-way through.
+    sql(`insert into public.budgets (id, plan_id, account_id, name, amount, every, leaves,
+        starts_on, made_at, follows_pay_of)
+      select gen_random_uuid(), ${quoted(plan)}, a.id, 'Food', 30000, 'month', 'at-start',
+        '2026-10-25', '2026-10-25T10:00:00Z', ${quoted(jess)}
+      from public.accounts a where a.plan_id = ${quoted(plan)} and a.name = 'Joint account'`);
+    const first = await answer;
+    const has = (rows: typeof first.rows) => ({
+      food: rows.some((one) => one.table === 'budgets' && one.row.name === 'Food'),
+      paydays: rows.some((one) => one.table === 'paydays' && one.row.person === jess),
+    });
+    // Whole, or not yet: never the paydays without the budget.
+    expect(has(first.rows)).toEqual({ food: false, paydays: false });
+    const next = await bringDown(Math.max(seen, ...first.rows.map((one) => one.row.seq)));
+    expect(has(next.rows)).toEqual({ food: true, paydays: true });
+  } finally {
+    sql(`drop policy if exists hold_for_a_test on public.budgets;
+      drop function if exists tests.hold_budgets(uuid);`);
+  }
+  await tom.context.close();
+});

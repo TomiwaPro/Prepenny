@@ -18,7 +18,8 @@
 // 1. every table, through the Data API (read, change, remove, add), and the
 //    parts of the database it doesn't show;
 // 2. every table through GraphQL (read, change, remove), turned on for this
-//    test as it can be on Supabase's own projects;
+//    test as it can be on Supabase's own projects, then switched off as the
+//    live database has it since step 4a (D509), when it gives nothing at all;
 // 3. every database step anyone signed in, or not, can call;
 // 4. every live-update channel: Jess's own, the plan's, and her records' ids,
 //    private and public, listening and sending;
@@ -34,12 +35,33 @@
 import { type Page, test } from '@playwright/test';
 import { createClient, type RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
+import { strings } from '../strings/en-GB.ts';
+import { goToComingUp } from './coming-up.ts';
 import { expect } from './fixtures.ts';
+import { inGraphQLTurn } from './graphql-turn.ts';
 import { addAccount, allSentOn, jessAndTom, planOf } from './jess-and-tom.ts';
-import { addPayment, updateBalance } from './journeys.ts';
+import { addPayment, openRow, updateBalance } from './journeys.ts';
+import {
+  fillBudget,
+  inviteLink,
+  JESS,
+  newPhone,
+  saveBudget,
+  setUp,
+  share,
+  tomJoins,
+} from './paydays.ts';
 import { radio } from './setup.ts';
 import { newEmail } from './sign-in-helpers.ts';
-import { personOn, quoted, secondPhone, signIn, sql } from './two-phones.ts';
+import {
+  everythingOnThePhone,
+  personOn,
+  quoted,
+  secondPhone,
+  signIn,
+  signUpFromMore,
+  sql,
+} from './two-phones.ts';
 
 /** One of Jess's records, as the database has it. */
 interface Kept {
@@ -387,9 +409,74 @@ for (const person of PEOPLE) {
     /** And for someone outside the plan: anything of it at all. */
     const planSecrets = [...privateSecrets, plan, ...shared.map((one) => one.id)];
 
-    // GraphQL, as it can be on Supabase's own projects. Off in the local
-    // database until now; Supabase's own event trigger lets everyone use it.
-    sql('create extension if not exists pg_graphql');
+    /** Every table through GraphQL: reading, changing and removing, each with Jess's ids. */
+    const everyTableThroughGraphQL = async (
+      who: Who,
+      secrets: readonly string[],
+      member: boolean,
+      targets: readonly Kept[],
+    ) => {
+      for (const table of everyTable()) {
+        const columns = sql(`select string_agg(column_name, ' ' order by ordinal_position)
+        from information_schema.columns where table_schema = 'public' and table_name = ${quoted(table)}
+          and data_type <> 'ARRAY'`);
+        const read = await send(who, 'POST', '/graphql/v1', {
+          query: `{ ${table}Collection(first: 1000) { edges { node { ${columns} } } } }`,
+        });
+        givesNothing(read, secrets, `${who.name}: GraphQL ${table}`);
+        if (member && table === 'series') {
+          expect(read.text, `${who.name} reads shared Rent through GraphQL`).toContain(
+            rent?.id ?? '',
+          );
+        }
+      }
+      for (const target of targets) {
+        if (target.table === 'edits') continue;
+        for (const query of [
+          `mutation { update${target.table}Collection(set: { deleted: true }, filter: { id: { eq: "${target.id}" } }, atMost: 1) { affectedCount records { id } } }`,
+          `mutation { deleteFrom${target.table}Collection(filter: { id: { eq: "${target.id}" } }, atMost: 1) { affectedCount records { id } } }`,
+        ]) {
+          const answer = await send(who, 'POST', '/graphql/v1', { query });
+          givesNothing(answer, secrets, `${who.name}: GraphQL change to ${target.table}`);
+          expect(
+            answer.text,
+            `${who.name}: GraphQL changes nothing in ${target.table}`,
+          ).not.toMatch(/"affectedCount":\s*[1-9]/);
+        }
+      }
+    };
+
+    /**
+     * Once GraphQL is off (D509), the same requests give nothing of the plan
+     * at all, shared Rent included, for anyone: only that it isn't switched on.
+     */
+    const nothingThroughGraphQL = async (
+      who: Who,
+      secrets: readonly string[],
+      targets: readonly Kept[],
+    ) => {
+      const off = (answer: Answer, what: string) => {
+        givesNothing(answer, secrets, `${who.name}: ${what}, with GraphQL off`);
+        expect(answer.text, `${who.name}: ${what} says GraphQL is off`).toBe(
+          '{"errors": [{"message": "pg_graphql extension is not enabled."}]}',
+        );
+      };
+      for (const table of everyTable()) {
+        const read = await send(who, 'POST', '/graphql/v1', {
+          query: `{ ${table}Collection(first: 1000) { edges { node { id } } } }`,
+        });
+        off(read, `GraphQL ${table}`);
+      }
+      for (const target of targets) {
+        if (target.table === 'edits') continue;
+        off(
+          await send(who, 'POST', '/graphql/v1', {
+            query: `mutation { deleteFrom${target.table}Collection(filter: { id: { eq: "${target.id}" } }, atMost: 1) { affectedCount } }`,
+          }),
+          `GraphQL change to ${target.table}`,
+        );
+      }
+    };
 
     const tryEverything = async (
       who: Who,
@@ -462,36 +549,20 @@ for (const person of PEOPLE) {
         givesNothing(answer, secrets, `${who.name}: ${schema}.${table}`);
       }
 
-      // 2. Every table through GraphQL.
-      for (const table of everyTable()) {
-        const columns = sql(`select string_agg(column_name, ' ' order by ordinal_position)
-        from information_schema.columns where table_schema = 'public' and table_name = ${quoted(table)}
-          and data_type <> 'ARRAY'`);
-        const read = await send(who, 'POST', '/graphql/v1', {
-          query: `{ ${table}Collection(first: 1000) { edges { node { ${columns} } } } }`,
-        });
-        givesNothing(read, secrets, `${who.name}: GraphQL ${table}`);
-        if (member && table === 'series') {
-          expect(read.text, `${who.name} reads shared Rent through GraphQL`).toContain(
-            rent?.id ?? '',
-          );
-        }
-      }
-      for (const target of targets) {
-        if (target.table === 'edits') continue;
-        for (const query of [
-          `mutation { update${target.table}Collection(set: { deleted: true }, filter: { id: { eq: "${target.id}" } }, atMost: 1) { affectedCount records { id } } }`,
-          `mutation { deleteFrom${target.table}Collection(filter: { id: { eq: "${target.id}" } }, atMost: 1) { affectedCount records { id } } }`,
-        ]) {
-          const answer = await send(who, 'POST', '/graphql/v1', { query });
-          givesNothing(answer, secrets, `${who.name}: GraphQL change to ${target.table}`);
-          expect(
-            answer.text,
-            `${who.name}: GraphQL changes nothing in ${target.table}`,
-          ).not.toMatch(/"affectedCount":\s*[1-9]/);
-        }
-      }
+      // 2. Every table through GraphQL, switched on for this as it can be on
+      // Supabase's own projects; Supabase's own event trigger lets everyone
+      // use it. Then switched off, as the live database has it since step 4a
+      // (D509), as the Database workflow does. One test at a time.
+      await inGraphQLTurn(async () => {
+        sql('create extension if not exists pg_graphql');
+        await everyTableThroughGraphQL(who, secrets, member, targets);
+        expect(sql('select app.keep_graphql_off()'), 'GraphQL is switched off').toBe(
+          'switched-off',
+        );
+        await nothingThroughGraphQL(who, planSecrets, targets);
+      });
 
+      // 3. Every database step, with each of Jess's ids, and again with the
       // 3. Every database step, with each of Jess's ids, and again with the
       // shared plan where a step names a plan. Leaving the plan, deleting
       // one's own account and starting a plan of one's own act on the person
@@ -694,3 +765,162 @@ for (const person of PEOPLE) {
     await tom.context.close();
   });
 }
+
+/**
+ * Step 4a (D512, D514): a shared budget gives Tom's phone the paydays of the
+ * person who added it, the dates only. Jess's pay, £2,147.63 on the 28th
+ * into her own account, has its November payday moved to Wed 25 Nov and
+ * December's amount changed with a note; her food month is on the joint
+ * account she shares. Every way Tom could look gives the dates of her
+ * paydays and nothing else of her pay: no amount, name, note, account or id.
+ */
+test("step 4a: Tom receives nothing of Jess's pay but its dates", async ({
+  page,
+  browser,
+}, info) => {
+  test.skip(
+    info.project.name !== 'sign-in-360',
+    'About the server, not the screen: run once, at 360px.',
+  );
+  test.setTimeout(600_000);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await setUp(page, { ...JESS, pay: { ...JESS.pay, amount: '2147.63' } });
+  await signUpFromMore(page, newEmail('jess'));
+  // Her November payday (Sat 28 Nov, so Fri 27 Nov) moved to Wed 25 Nov.
+  await goToComingUp(page);
+  const november = await openRow(page, '2026-11-27', 'Jess pay');
+  await november.getByLabel('Date', { exact: true }).fill('2026-11-25');
+  await november.getByRole('button', { name: 'Save' }).click();
+  await expect(november).toBeHidden();
+  // December's (Mon 28 Dec, a bank holiday, so Thu 24 Dec) a new amount, with a note.
+  const december = await openRow(page, '2026-12-24', 'Jess pay');
+  await december.getByLabel('Amount').fill('2300.45');
+  await december.getByLabel('Note').fill('Bonus month');
+  await december.getByRole('button', { name: 'Save' }).click();
+  await expect(december).toBeHidden();
+  await share(page, 'Joint account', null);
+  const tom = await newPhone(browser, info, 'light');
+  await tomJoins(page, tom.page, await inviteLink(page), false);
+  const food = await fillBudget(page, 'Food', '300', 'Joint account');
+  await expect(food.getByTestId('your-paydays')).toHaveText(
+    strings.budgetSheet.partnerWillSee('Tom'),
+  );
+  await saveBudget(food);
+  await allSentOn(page);
+
+  const plan = await planOf(page);
+  const jess = await personOn(page);
+  const mine = recordsIn(plan, jess);
+  const pay = mine.find((one) => one.table === 'series' && one.name === 'Jess pay');
+  expect(pay, "Jess's pay is private to her").toBeDefined();
+  /** Everything of her pay but its dates: its amounts, name, note, account and every private id. */
+  const secrets = [
+    '214763',
+    '2147.63',
+    '230045',
+    '2300.45',
+    'Jess pay',
+    'Bonus month',
+    'Jess current account',
+    ...mine.map((one) => one.id),
+    ...privateEdits(plan, jess).map((one) => one.id),
+  ];
+  const who: Who = { name: 'Tom', token: await tokenOn(tom.page) };
+
+  // 1. Every table through the Data API: her paydays, the dates only, and nothing else.
+  for (const table of everyTable()) {
+    givesNothing(
+      await send(who, 'GET', `/rest/v1/${table}?select=*`),
+      secrets,
+      `Tom: GET ${table}`,
+    );
+  }
+  const paydays = await send(who, 'GET', '/rest/v1/paydays?select=*&deleted=is.false');
+  const rows = JSON.parse(paydays.text) as Record<string, unknown>[];
+  expect(rows, 'Tom reads her paydays').toHaveLength(1);
+  expect(Object.keys(rows[0] ?? {}).sort()).toEqual(
+    [
+      'changed_at',
+      'deleted',
+      'end_rule',
+      'first_number',
+      'holiday_rule',
+      'id',
+      'moved_from',
+      'moved_to',
+      'person',
+      'plan_id',
+      'schedule',
+      'seq',
+      'skipped',
+      'start_date',
+      'version',
+    ].sort(),
+  );
+  expect(rows[0]).toMatchObject({
+    person: jess,
+    start_date: '2026-10-28',
+    schedule: { kind: 'monthly', every: 1, on: { kind: 'day', day: 28 } },
+    end_rule: { kind: 'never' },
+    holiday_rule: 'working-day-before',
+    moved_from: ['2026-11-28'],
+    moved_to: ['2026-11-25'],
+    skipped: [],
+  });
+
+  // 2. Bringing the plan down: the same.
+  const changes = await send(who, 'POST', '/rest/v1/rpc/plan_changes', {
+    plan,
+    shared_after: 0,
+    mine_after: 0,
+  });
+  expect(changes.text, 'Tom brings her paydays down').toContain('"2026-11-25"');
+  givesNothing(changes, secrets, 'Tom: plan_changes');
+
+  // 3. Her pay's history, by its own id: nothing.
+  givesNothing(
+    await send(who, 'POST', '/rest/v1/rpc/payment_history', {
+      plan,
+      family: pay?.id,
+      original_date: '2026-11-28',
+    }),
+    secrets,
+    "Tom: Jess pay's history",
+  );
+
+  // 4. Every table through GraphQL, switched on, then off.
+  await inGraphQLTurn(async () => {
+    sql('create extension if not exists pg_graphql');
+    const read = await send(who, 'POST', '/graphql/v1', {
+      query:
+        '{ paydaysCollection(first: 10) { edges { node { id person start_date holiday_rule first_number } } } }',
+    });
+    expect(read.text, 'Tom reads her paydays through GraphQL').toContain('2026-10-28');
+    for (const table of everyTable()) {
+      const columns = sql(`select string_agg(column_name, ' ' order by ordinal_position)
+        from information_schema.columns where table_schema = 'public' and table_name = ${quoted(table)}
+          and data_type <> 'ARRAY'`);
+      givesNothing(
+        await send(who, 'POST', '/graphql/v1', {
+          query: `{ ${table}Collection(first: 1000) { edges { node { ${columns} } } } }`,
+        }),
+        secrets,
+        `Tom: GraphQL ${table}`,
+      );
+    }
+    expect(sql('select app.keep_graphql_off()')).toBe('switched-off');
+  });
+
+  // 5. Tom's phone keeps her paydays, and nothing else of her pay.
+  await expect
+    .poll(async () => (await everythingOnThePhone(tom.page)).includes('2026-11-25'), {
+      timeout: 30_000,
+    })
+    .toBe(true);
+  const onHisPhone = await everythingOnThePhone(tom.page);
+  expect(
+    secrets.filter((secret) => onHisPhone.includes(secret)),
+    "Tom's phone keeps nothing of her pay but its dates",
+  ).toEqual([]);
+  await tom.context.close();
+});
