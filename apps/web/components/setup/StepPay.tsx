@@ -38,6 +38,7 @@ import { strings } from '../../strings/en-GB.ts';
 import { ChoiceList } from '../ChoiceList.tsx';
 import { CheckOption, DateField, describedBy, Field, MoneyInput } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
+import { focusLater } from '../focusLater.ts';
 import { ChosenDates, isDate, monthlyLabel, useWhenRefs } from '../WhenFields.tsx';
 import { focusFirst } from './focus.ts';
 import styles from './Setup.module.css';
@@ -378,7 +379,7 @@ export function StepPay() {
         onClick={() => {
           const key = newId();
           setDrafts((now) => [...now, { key, form: blankIncome(first, second) }]);
-          requestAnimationFrame(() => document.getElementById(fieldId(key, 'name'))?.focus());
+          focusLater(() => document.getElementById(fieldId(key, 'name')));
         }}
       >
         {t.addAnother}

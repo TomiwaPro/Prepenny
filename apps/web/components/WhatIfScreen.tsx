@@ -49,6 +49,7 @@ import { ComingUpScreen } from './ComingUpScreen.tsx';
 import { ConfirmSheet } from './ConfirmSheet.tsx';
 import { Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
+import { focusLater } from './focusLater.ts';
 import { focusUndoBar } from './focusUndo.ts';
 import { OvertimeSheet } from './OvertimeSheet.tsx';
 import {
@@ -163,9 +164,9 @@ function Shortfall({
               aria-controls={listId}
               onClick={() => {
                 setAll(true);
-                requestAnimationFrame(() => {
+                focusLater(() => {
                   const first = document.getElementById(listId)?.children[COULD_MOVE_SHOWN];
-                  if (first instanceof HTMLElement) first.focus();
+                  return first instanceof HTMLElement ? first : null;
                 });
               }}
             >

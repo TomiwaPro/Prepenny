@@ -45,6 +45,7 @@ import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
 import { CheckOption, DateField, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
 import formStyles from './Form.module.css';
+import { focusLater } from './focusLater.ts';
 import styles from './PayCalculator.module.css';
 import screenStyles from './Screens.module.css';
 import { focusFirst } from './setup/focus.ts';
@@ -227,7 +228,7 @@ function NamedAmounts({
  * another" button once the row has gone (WCAG 2.4.3).
  */
 function focusSoon(id: string) {
-  requestAnimationFrame(() => document.getElementById(id)?.focus());
+  focusLater(() => document.getElementById(id));
 }
 
 function PayslipCheck({

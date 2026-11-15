@@ -12,6 +12,7 @@ import { partOf, SETUP_PARTS, type SetupStep } from '../../lib/setup-progress.ts
 import { strings } from '../../strings/en-GB.ts';
 import { Problem } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
+import { focusLater } from '../focusLater.ts';
 import { SignedInLine } from '../SignedInLine.tsx';
 import styles from './Setup.module.css';
 
@@ -108,10 +109,11 @@ export function StepFrame({
  * (WCAG 2.4.3).
  */
 export function focusAddAnother() {
-  requestAnimationFrame(() => {
-    const add = document.querySelector<HTMLElement>('main [data-add-another]');
-    (add ?? document.querySelector<HTMLElement>('main h1'))?.focus();
-  });
+  focusLater(
+    () =>
+      document.querySelector<HTMLElement>('main [data-add-another]') ??
+      document.querySelector<HTMLElement>('main h1'),
+  );
 }
 
 /** What a step has added so far, one row each with Remove (step 2e). */
