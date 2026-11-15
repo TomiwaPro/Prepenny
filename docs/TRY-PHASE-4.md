@@ -63,6 +63,24 @@ On your phone, device A, signed in as yourself or not:
 6. In **More**, under **Colours**, choose **Dark**, then tap **Home**, and reload the page: it opens dark straight away, with no flash of light colours. That's one of the small scripts the policy now lists by name. Choose **Match this phone** again.
 7. Turn on **Airplane mode**. Close PrePenny and open it again: Home shows your plan, with a note that starts "You're offline." Tap **Coming up** and **More**: each opens. Turn **Airplane mode** off.
 
+## Step 4c: bank holidays (5 minutes)
+
+A new bank holiday can't be made up on the live app, so these check what you can see: the list on PrePenny's own site, why a payment moved, changing its rule, and no signal. The note on Home when a new bank holiday moves a payment, and two phones agreeing, were tested with a made-up bank holiday on the building computer and on GitHub; `docs/screens/4c/home-note-360-light.png` shows the note.
+
+On device A, Jess's plan from step 4a, signed in as `yourname+jess4@gmail.com`:
+
+1. Open https://prepenny.co.uk/bank-holidays.json. It starts `{"version":"`, then a date and a long code, and further on lists `england-and-wales` with each bank holiday's date.
+2. Open https://prepenny.co.uk/app/ and tap **Add a payment**. Name `Water`, amount `30`, **Next payment** 29/03/2027 (Mon 29 Mar 2027, Easter Monday), **Every month, or every few months**, and under **On a weekend or bank holiday**, **Move to the working day before**. Tap **Add payment**.
+3. Tap **Coming up**, then **Change view**. Choose **By calendar month**, and close the sheet. Tap **Show another month** until May 2027 is listed. Under **Next months**, tap the line for March 2027: Water is on Thu 25 Mar 2027, as Easter Monday and Good Friday are bank holidays.
+4. Tap Water. Under its date it says "Moved from Mon 29 Mar 2027: bank holiday". Close it. Tap the line for May 2027: Water is on Fri 28 May 2027. Tap it: "Moved from Sat 29 May 2027: weekend". Close it.
+5. Tap Water in March again. Choose **This and all later ones**: "On a weekend or bank holiday" appears, with **Move to the working day before** chosen. Choose **Keep the date** and tap **Save**. Water is now on Mon 29 Mar 2027, and its sheet has no "Moved from" line. Tap **Undo** in the bar at the bottom: it's back on Thu 25 Mar 2027.
+6. Turn on **Airplane mode**. Close PrePenny and open it again. Water is still on Thu 25 Mar 2027 in March. Turn **Airplane mode** off.
+7. Tidy up: tap Water, then **Remove**, then **Remove this and all later ones**.
+
+On GitHub, a Monday after merging:
+
+8. Open https://github.com/TomiwaPro/Prepenny/actions and tap **Bank holidays**. The newest run says "schedule" and has a green tick. Tap it, then **Keep the site's list up to date**: its last step says "The site already has GOV.UK's list, so there's nothing to do.", or that it put the live app online again because GOV.UK's list changed.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.
