@@ -524,6 +524,24 @@ export const strings = {
     nextDue: 'Next due',
     seeComingUp: 'See everything coming up',
     nothingDue: (date: string) => `Nothing is due up to ${date}.`,
+    /**
+     * Once, when a newer bank holiday list moves a payment, until "Got it"
+     * (step 4c, D539, the owner's answer to PLAN.md question 4): "A new bank
+     * holiday on Mon 8 May 2028 moved Rent to Fri 5 May 2028."
+     */
+    holidayMovedOne: (holiday: string, name: string, to: string) =>
+      `A new bank holiday on ${holiday} moved ${name} to ${to}.`,
+    /** More than one payment, one new bank holiday, then each payment on its own line. */
+    holidayMovedSome: (holiday: string, count: number) =>
+      `A new bank holiday on ${holiday} moved ${count} payments:`,
+    holidayMovedTo: (name: string, to: string) => `${name} to ${to}`,
+    /** More than one new bank holiday. */
+    holidaysMovedSome: (count: number) => `New bank holidays moved ${count} payments:`,
+    holidayMovedFromTo: (name: string, holiday: string, to: string) =>
+      `${name} from ${holiday} to ${to}`,
+    /** After the first 3. */
+    holidayMovedMore: (count: number) => (count === 1 ? 'And 1 more.' : `And ${count} more.`),
+    holidayGotIt: 'Got it',
   },
 
   actions: {
@@ -973,6 +991,21 @@ export const strings = {
     changeOften: 'Change how often it repeats',
     changeOftenHint:
       'This changes it from this payment on, starting on the date above. If it was set to end on a date, it now ends after the same number of payments instead.',
+    /**
+     * Why the weekend and bank holiday rule moved it, under its date (step
+     * 4c, D538): "Moved from Mon 8 May: bank holiday".
+     */
+    movedFrom: (date: string, because: string) => `Moved from ${date}: ${because}`,
+    movedBecause: {
+      weekend: 'weekend',
+      'bank-holiday': 'bank holiday',
+      'weekend-and-bank-holiday': 'weekend and bank holiday',
+    },
+    /** For this and all later ones (brief 4.3, D540), with the same answers as Add a payment. */
+    weekendRule: 'On a weekend or bank holiday',
+    keepDate: 'Keep the date',
+    dayBefore: 'Move to the working day before',
+    dayAfter: 'Move to the working day after',
     amountError: 'Type an amount, for example 25.',
     dateError: 'Choose a date.',
     nameError: 'Type a name, for example Rent.',

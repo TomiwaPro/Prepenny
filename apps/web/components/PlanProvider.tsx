@@ -23,6 +23,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { fetchNewList, takeNewerList } from '../data/bank-holidays.ts';
 import {
   askToKeepData,
   exampleNeedsReplacing,
@@ -399,6 +400,53 @@ export function PlanProvider({ children }: { readonly children: ReactNode }) {
       }),
     [inTurn, keepLoaded],
   );
+
+  // The bank holiday list (step 4c, D536, D537): fetched from PrePenny's own
+  // site once a week, when PrePenny opens or comes back on screen. A plan
+  // kept only on this phone takes a newer list straight away, in turn with
+  // the changes made here; one in an account sends it there, and takes it
+  // when it comes back down, as the other phone does. The fetch itself
+  // holds nothing up.
+  const loadedPlanId = loaded?.plan.id ?? null;
+  useEffect(() => {
+    if (loadedPlanId === null) return;
+    let current = true;
+    const check = async () => {
+      let fetched = false;
+      try {
+        const db = openDb();
+        try {
+          fetched = await fetchNewList(db);
+        } finally {
+          db.close();
+        }
+      } catch {
+        // No database: the plan keeps the list it has.
+      }
+      if (!current) return;
+      await inTurn(async () => {
+        const now = loadedRef.current;
+        if (now === null || now.plan.isExample) return;
+        const db = openDb();
+        try {
+          const records = await takeNewerList(db, now.plan, now.records, now.today);
+          if (records !== null) keepLoaded({ ...now, records, version: now.version + 1 });
+        } finally {
+          db.close();
+        }
+      }).catch(() => undefined);
+      if (fetched) void syncSoon();
+    };
+    void check();
+    const onShow = () => {
+      if (document.visibilityState === 'visible') void check();
+    };
+    document.addEventListener('visibilitychange', onShow);
+    return () => {
+      current = false;
+      document.removeEventListener('visibilitychange', onShow);
+    };
+  }, [loadedPlanId, inTurn, keepLoaded]);
 
   /**
    * Makes one edit, saves it on the phone and works the plan out again. When

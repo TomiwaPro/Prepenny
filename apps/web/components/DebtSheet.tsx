@@ -9,7 +9,7 @@
 
 import type { Debt } from '@prepenny/engine';
 import { useId, useMemo, useState } from 'react';
-import { holidaysFor } from '../lib/holidays.ts';
+import { englandAndWales, holidaysOf } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import type { PaymentErrors } from '../lib/new-payment.ts';
 import { refusalMessage } from '../lib/refusals.ts';
@@ -78,8 +78,8 @@ function DebtSheetForm({
     [records],
   );
   const holidays = useMemo(
-    () => holidaysFor(records?.settings?.nation ?? 'england-and-wales'),
-    [records?.settings?.nation],
+    () => (records === null || records === undefined ? englandAndWales() : holidaysOf(records)),
+    [records],
   );
   const firstAccount = accounts[0]?.value ?? '';
   const [form, setForm] = useState<DebtForm>(() =>

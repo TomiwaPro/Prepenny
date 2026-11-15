@@ -14,7 +14,7 @@ import {
   type RecordWrite,
   sameValue,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 import { onNewestRecords, type PaymentAt, paymentsAt } from './payment-at.ts';
 import { editInputOf } from './plan-input.ts';
 
@@ -42,7 +42,7 @@ export interface EditResult {
 function numberIn(records: PlanRecords, seriesId: string, originalDate: string): number | null {
   const series = records.series.find((one) => one.id === seriesId);
   if (series === undefined) return null;
-  const holidays = holidaysFor(records.settings?.nation ?? 'england-and-wales');
+  const holidays = holidaysOf(records);
   return paymentNumberOf({ series, holidays, originalDate });
 }
 

@@ -11,9 +11,9 @@ import {
   workOutDebts,
   workOutGoals,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 import { type HomeView, homeAccountId, workOutHome } from './home.ts';
-import { planLookAhead, settingsOf, workOutPlanTo } from './plan-input.ts';
+import { planLookAhead, workOutPlanTo } from './plan-input.ts';
 
 export interface SetupView {
   readonly today: string;
@@ -97,7 +97,7 @@ function firstOf(list: readonly (Reached | null)[]): Reached | null {
 function summaryOf(records: PlanRecords, today: string): SetupSummary | null {
   if (records.accounts.length === 0) return null;
   const home = workOutHome(records, today);
-  const holidays = holidaysFor(settingsOf(records).nation);
+  const holidays = holidaysOf(records);
   const to = debtsLookAhead(today);
   const debts =
     (records.debts ?? []).length === 0

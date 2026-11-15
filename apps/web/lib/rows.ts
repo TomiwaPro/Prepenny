@@ -4,18 +4,23 @@
 // from the engine. It holds names and notes the person typed, never words of
 // the app's own: those come from the strings file.
 
-import type {
-  BalanceStatus,
-  Direction,
-  Flow,
-  PaymentType,
-  Pence,
-  Plan,
-  PlanRecords,
-  PlanRow,
-  RowKind,
-  Schedule,
+import {
+  type BalanceStatus,
+  type Direction,
+  type Flow,
+  type HolidayRule,
+  type PaymentType,
+  type Pence,
+  type Plan,
+  type PlanRecords,
+  type PlanRow,
+  type RowKind,
+  type RuleMove,
+  ruleMoveOf,
+  type Schedule,
+  type Series,
 } from '@prepenny/engine';
+import { holidaysOf } from './holidays.ts';
 import type { MonthlyOn } from './new-payment.ts';
 
 /**
@@ -80,6 +85,23 @@ export interface RowView {
    * that way: once, on chosen dates, a weekly estimate, or not a payment.
    */
   readonly repeats: RepeatsView | null;
+  /**
+   * Where it was due and why the weekend and bank holiday rule moved it, for
+   * "Moved from Mon 8 May: bank holiday" (step 4c, D538). Null when the rule
+   * didn't move it, or the person moved it themselves.
+   */
+  readonly ruleMove: RuleMove | null;
+  /**
+   * Its weekend and bank holiday rule, to change for this and all later
+   * ones (D540). Null when it can't be: not a payment, or pay on the last
+   * working day, which always lands on the month's last working day (D145).
+   */
+  readonly holidayRule: HolidayRule | null;
+}
+
+/** Pay on the last working day: its rule is part of its schedule (D145). */
+function onLastWorkingDay(series: Series): boolean {
+  return series.schedule.kind === 'monthly' && series.schedule.on.kind === 'last-working-day';
 }
 
 export interface RepeatsView {
@@ -125,6 +147,7 @@ export function rowMaker(plan: Plan, records: PlanRecords) {
   const series = new Map(records.series.map((one) => [one.id, one]));
   const accountNames = new Map(records.accounts.map((one) => [one.id, one.name ?? '']));
   const paydays = plan.mainPaydays;
+  const holidays = holidaysOf(records);
 
   /**
    * The first main payday after a date. The plan's list starts at the last
@@ -182,6 +205,15 @@ export function rowMaker(plan: Plan, records: PlanRecords) {
           : null,
       isLowest: key === lowestKey,
       repeats: own === undefined || editing !== 'payment' ? null : repeatsOf(own.schedule),
+      // Worked out only for the few rows the rule moved, or pay on the last working day.
+      ruleMove:
+        own === undefined || payment.moved || !(payment.movedByRule || onLastWorkingDay(own))
+          ? null
+          : ruleMoveOf({ series: own, originalDate: payment.originalDate, holidays }),
+      holidayRule:
+        own === undefined || editing !== 'payment' || onLastWorkingDay(own)
+          ? null
+          : own.holidayRule,
     };
   };
 }

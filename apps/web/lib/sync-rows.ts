@@ -22,6 +22,7 @@ import {
   type Account,
   applyWrites,
   type BalanceUpdate,
+  type BankHolidayCopy,
   type Budget,
   type Debt,
   type Goal,
@@ -40,7 +41,7 @@ import {
   type Spend,
   type Tick,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 import type { SetupProgress } from './setup-progress.ts';
 import { derivedId } from './sync-ids.ts';
 
@@ -66,9 +67,15 @@ export const RECORD_TABLES = [
 export type RecordTable = (typeof RECORD_TABLES)[number];
 /**
  * `paydays` are the database's own (step 4a, D512): the dates of another
- * person's pay a shared budget follows. Phones read them and never write them.
+ * person's pay a shared budget follows. `bank_holidays` is the copy of
+ * GOV.UK's list the plan's dates are worked out from (step 4c, D536), sent
+ * only through use_bank_holidays. Phones read them and never write them
+ * with save_edit.
  */
-export type Table = RecordTable | 'plans' | 'paydays';
+export type Table = RecordTable | 'plans' | 'paydays' | 'bank_holidays';
+
+/** The tables only the database writes, which no edit ever sends. */
+const SERVER_ONLY: ReadonlySet<Table> = new Set(['plans', 'paydays', 'bank_holidays']);
 
 /** One row as the server last gave it to this phone: the phone's copy of the server (its "mirror"). */
 export interface MirrorRow {
@@ -207,7 +214,7 @@ export function rowsOf(
     target === null || target === rowPrivacy;
   const budgets = new Map((records.budgets ?? []).map((budget) => [budget.id, budget]));
   const series = new Map(records.series.map((one) => [one.id, one]));
-  const holidays = holidaysFor(records.settings?.nation ?? 'england-and-wales');
+  const holidays = holidaysOf(records);
   const halves = new Map(
     records.series.flatMap((one) => (one.mirrorOf === undefined ? [] : [[one.mirrorOf, one.id]])),
   );
@@ -643,12 +650,7 @@ export function writesFor(
     });
   }
   for (const [key, server] of mirror) {
-    if (
-      server.deleted ||
-      server.table === 'plans' ||
-      server.table === 'paydays' ||
-      wanted.has(key)
-    ) {
+    if (server.deleted || SERVER_ONLY.has(server.table) || wanted.has(key)) {
       continue;
     }
     writes.push({
@@ -995,6 +997,12 @@ export function recordsFromRows(rows: readonly MirrorRow[], me?: string): FromRo
       change: number(v.change),
     };
   });
+  // The plan's bank holiday list, when the server has one (D536).
+  const list = live.find((row) => row.table === 'bank_holidays');
+  const bankHolidays: BankHolidayCopy | undefined =
+    list === undefined || typeof list.values.list_version !== 'string'
+      ? undefined
+      : { version: list.values.list_version, list: list.values.list };
   const plan = live.find((row) => row.table === 'plans');
   const settings: PlanSettings | undefined =
     own === undefined && (plan === undefined || plan.values.nation === 'england-and-wales')
@@ -1020,6 +1028,7 @@ export function recordsFromRows(rows: readonly MirrorRow[], me?: string): FromRo
       payAdjustments,
       ...(settings === undefined ? {} : { settings }),
       ...(otherPaydays.length === 0 ? {} : { otherPaydays }),
+      ...(bankHolidays === undefined ? {} : { bankHolidays }),
     },
     setup: (own?.values.setup as SetupProgress | null | undefined) ?? undefined,
   };

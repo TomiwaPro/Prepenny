@@ -13,6 +13,7 @@
 
 import {
   type EditCommand,
+  type HolidayRule,
   type JustThisOneEdits,
   paymentNumberOf,
   type Schedule,
@@ -24,7 +25,7 @@ import { nameOf, useSharedPlan } from '../data/shared-plan.ts';
 import { amountForTyping, parseAmount } from '../lib/amount.ts';
 import type { ChangeWords } from '../lib/bar-words.ts';
 import { formatDay } from '../lib/dates.ts';
-import { holidaysFor } from '../lib/holidays.ts';
+import { englandAndWales, holidaysOf } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import { formatMoney } from '../lib/money.ts';
 import {
@@ -149,8 +150,8 @@ function EditForm({
   const { makeChange, loaded } = usePlanActions();
   const id = useId();
   const holidays = useMemo(
-    () => holidaysFor(loaded?.records.settings?.nation ?? 'england-and-wales'),
-    [loaded?.records.settings?.nation],
+    () => (loaded === null ? englandAndWales() : holidaysOf(loaded.records)),
+    [loaded],
   );
   // "Change how often it repeats" (D96, step 2f): the boxes start at how it repeats now.
   const [changeOften, setChangeOften] = useState(false);
@@ -179,6 +180,8 @@ function EditForm({
   const [scope, setScope] = useState<Scope>('one');
   const [patternScope, setPatternScope] = useState<PatternScope>('every');
   const [estimateChoice, setEstimateChoice] = useState<boolean | null>(null);
+  // What happens on a weekend or bank holiday, from this payment on (D540).
+  const [holidayRule, setHolidayRule] = useState<HolidayRule | null>(row.holidayRule);
   const [errors, setErrors] = useState<FieldErrors>({});
   const fields = {
     amount: useRef<HTMLInputElement>(null),
@@ -258,6 +261,8 @@ function EditForm({
   // 2 Nov repeats on the 1st (D96). A date typed above is taken as that date.
   const scheduleDate = date === row.paymentDate ? row.originalDate : date;
   const oftenOn = canChangeOften && changeOften;
+  const canChangeRule = later && row.holidayRule !== null;
+  const ruleChanged = canChangeRule && holidayRule !== null && holidayRule !== row.holidayRule;
 
   async function change(
     command: EditCommand,
@@ -315,7 +320,7 @@ function EditForm({
     // is the real one, so it's sent as the real amount even when it's the
     // same as the estimate: a pay-later bill's real amount always stands (D111, D185).
     if (!later && row.isEstimate && !isEstimate && amount !== null) edits.amount = amount;
-    if (Object.keys(edits).length === 0 && schedule === null) {
+    if (Object.keys(edits).length === 0 && schedule === null && !ruleChanged) {
       setProblem({ text: t.nothingChanged, at: 'save' });
       return;
     }
@@ -334,6 +339,7 @@ function EditForm({
     const laterEdits: ThisAndLaterEdits = {
       ...rest,
       ...(schedule === null ? {} : { schedule }),
+      ...(ruleChanged && holidayRule !== null ? { holidayRule } : {}),
       ...(newAmount === undefined
         ? {}
         : askPattern && patternScope === 'step'
@@ -446,6 +452,12 @@ function EditForm({
   const summary = (
     <div className={styles.summary}>
       <p className={styles.where}>{where}</p>
+      {/* Why the weekend and bank holiday rule moved it (D538): "Moved from Mon 8 May: bank holiday". */}
+      {row.ruleMove === null ? null : (
+        <p className={styles.where} data-testid="moved-from">
+          {t.movedFrom(day(row.ruleMove.from), t.movedBecause[row.ruleMove.because])}
+        </p>
+      )}
       <p className={styles.figures}>
         <span className={`${styles.amount} ${row.change > 0 ? styles.in : ''} num`}>
           {formatMoney(row.change, { sign: 'always' })}
@@ -699,6 +711,19 @@ function EditForm({
               refs={repeatRefs}
               holidays={holidays}
               howOften={['weekly', 'monthly']}
+            />
+          ) : null}
+          {canChangeRule ? (
+            <ChoiceList<HolidayRule>
+              legend={t.weekendRule}
+              name={`${id}-weekend`}
+              value={holidayRule ?? 'keep'}
+              options={[
+                { value: 'keep', label: t.keepDate },
+                { value: 'working-day-before', label: t.dayBefore },
+                { value: 'working-day-after', label: t.dayAfter },
+              ]}
+              onChange={setHolidayRule}
             />
           ) : null}
           {askPattern ? (

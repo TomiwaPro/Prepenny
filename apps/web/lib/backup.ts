@@ -46,7 +46,7 @@ import {
   workOutGoals,
 } from '@prepenny/engine';
 import { z } from 'zod';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 import { planLookAhead, workOutPlanTo } from './plan-input.ts';
 
 // Zod checks without making code of its own at run time: the app's security
@@ -148,8 +148,9 @@ export function recordsForBackup(records: PlanRecords): PlanRecords {
   };
   // A partner's paydays, and whose paydays a shared budget follows, are the
   // shared plan's (D508, D512): an imported plan is the importer's own, so
-  // its budgets follow their own pay.
-  const { otherPaydays: _otherPaydays, ...rest } = records;
+  // its budgets follow their own pay. The bank holiday list is GOV.UK's, not
+  // the person's (D536): the plan it goes into keeps its own.
+  const { otherPaydays: _otherPaydays, bankHolidays: _bankHolidays, ...rest } = records;
   return {
     ...rest,
     ...(records.debts === undefined ? {} : { debts: records.debts.map(withoutPerson) }),
@@ -787,10 +788,9 @@ function samePaymentTwice(found: Parsed): boolean {
 /** True when the engine can work the plan out, as Home, Debts and Savings goals do. */
 function engineCanUse(found: PlanRecords, today: string): boolean {
   try {
-    const nation = found.settings?.nation ?? 'england-and-wales';
     const to = planLookAhead(today, 12);
     workOutPlanTo(found, today, to);
-    const holidays = holidaysFor(nation);
+    const holidays = holidaysOf(found);
     workOutDebts({ ...found, debts: found.debts ?? [], holidays, today, to });
     workOutGoals({ ...found, goals: found.goals ?? [], holidays, today, to });
     return true;

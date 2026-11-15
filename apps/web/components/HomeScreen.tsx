@@ -20,6 +20,7 @@ import { BalanceCard } from './BalanceCard.tsx';
 import { EditSheet } from './EditSheet.tsx';
 import { ExampleNote } from './ExampleNote.tsx';
 import { FigureCard } from './FigureCard.tsx';
+import { HolidayNote } from './HolidayNote.tsx';
 import styles from './HomeScreen.module.css';
 import { HomeSkeleton } from './HomeSkeleton.tsx';
 import { PaymentList } from './PaymentList.tsx';
@@ -122,6 +123,8 @@ function Figures({
       />
       {/* In the example, the banner is here, so the account and the lowest point show first (D451). */}
       <ExampleNote />
+      {/* A new bank holiday that moved a payment, once (D539), in the same place. */}
+      <HolidayNote today={home.today} />
       {cover === null ? null : (
         <TotalsCard
           testId="this-pay"
