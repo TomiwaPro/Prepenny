@@ -7,7 +7,7 @@ import { workingDayOnOrBefore } from '../dates/working-days.ts';
 import { checkPenceNotNegative, type Pence } from '../money/pence.ts';
 import { paymentAtIndex, stepOf } from '../schedule/payments.ts';
 import { type PreparedSeries, prepareSeries } from '../schedule/series.ts';
-import type { EndRule, PaymentChange, Schedule, Series } from '../schedule/types.ts';
+import type { EndRule, HolidayRule, PaymentChange, Schedule, Series } from '../schedule/types.ts';
 import {
   type Context,
   checkHalvesMatch,
@@ -159,6 +159,7 @@ interface LaterEdits {
   readonly isEstimate?: boolean | undefined;
   readonly day?: Day | undefined;
   readonly schedule?: Schedule | undefined;
+  readonly holidayRule?: HolidayRule | undefined;
 }
 
 function checkEdits(edits: ThisAndLaterEdits, what: string): LaterEdits {
@@ -178,6 +179,12 @@ function checkEdits(edits: ThisAndLaterEdits, what: string): LaterEdits {
     (edits.schedule === null || typeof edits.schedule !== 'object')
   ) {
     refuse('bad-command', `${what}: the schedule is missing or unknown.`);
+  }
+  if (edits.holidayRule !== undefined && !HOLIDAY_RULES.includes(edits.holidayRule)) {
+    refuse(
+      'bad-command',
+      `${what}: the weekend and bank holiday rule must be keep, working-day-before or working-day-after.`,
+    );
   }
   if (edits.amount !== undefined && edits.stepAmount !== undefined) {
     refuse(
@@ -199,8 +206,11 @@ function checkEdits(edits: ThisAndLaterEdits, what: string): LaterEdits {
     isEstimate: edits.isEstimate,
     day: edits.date === undefined ? undefined : parseDate(edits.date, `${what}: the date`),
     schedule: edits.schedule,
+    holidayRule: edits.holidayRule,
   };
 }
+
+const HOLIDAY_RULES: readonly HolidayRule[] = ['keep', 'working-day-before', 'working-day-after'];
 
 function mod(a: number, b: number): number {
   return ((a % b) + b) % b;
@@ -394,6 +404,9 @@ function changeStretch(
     if (edits.name !== undefined) next.name = edits.name;
     if (edits.note !== undefined) next.note = edits.note === '' ? undefined : edits.note;
     if (edits.isEstimate !== undefined) next.isEstimate = edits.isEstimate;
+    // A new rule moves the dates payments land on, never their dates from
+    // the schedule, so changes and ticks stay on their payments (D540).
+    if (edits.holidayRule !== undefined) next.holidayRule = edits.holidayRule;
     if (edits.amount !== undefined) {
       // One amount for every payment from here on, in place of any pattern
       // (D90). The different last amount stays, unless this is the last payment.
@@ -563,6 +576,14 @@ export function thisAndLater(
     (found.prepared.lastWorkingDay &&
       checked.day === workingDayOnOrBefore(found.payment.originalDay, context.input.holidays));
   const edits = ownDay && checked.schedule === undefined ? { ...checked, day: undefined } : checked;
+  // Pay on the last working day always lands on the month's last working
+  // day, whatever its rule says (D145), so its rule isn't changed (D540).
+  if (edits.holidayRule !== undefined && found.prepared.lastWorkingDay) {
+    refuse(
+      'holiday-rule-fixed',
+      `Series ${ref.seriesId} is on the last working day, which always moves to the working day before.`,
+    );
+  }
   if (edits.stepAmount !== undefined && found.prepared.cycle === null) {
     refuse(
       'no-pattern',

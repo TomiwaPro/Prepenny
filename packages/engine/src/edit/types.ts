@@ -4,6 +4,7 @@
 
 import type { Account, AccountKind, BalanceUpdate, PlanSettings, Tick } from '../balance/types.ts';
 import type { Budget, BudgetLeaves, OtherPaydays, Spend } from '../budgets/types.ts';
+import type { BankHolidayCopy } from '../dates/bank-holiday-copy.ts';
 import type { Nation } from '../dates/bank-holiday-rules.ts';
 import type { BankHolidayLookup } from '../dates/working-days.ts';
 import type { Debt, DebtKind, MinimumRule } from '../debts/types.ts';
@@ -23,7 +24,7 @@ import type {
   Pension,
   YearSoFar,
 } from '../pay/types.ts';
-import type { PaymentChange, Schedule, Series } from '../schedule/types.ts';
+import type { HolidayRule, PaymentChange, Schedule, Series } from '../schedule/types.ts';
 
 /** Everything stored for a plan that an edit can read or change. */
 export interface PlanRecords {
@@ -54,6 +55,13 @@ export interface PlanRecords {
    * edit changes them.
    */
   readonly otherPaydays?: readonly OtherPaydays[];
+  /**
+   * The copy of GOV.UK's bank holiday list the plan's dates are worked out
+   * from, so every phone gives the same dates (step 4c, D536). It comes from
+   * PrePenny's site or the server; no edit changes it. Without it, the app
+   * uses its built-in copy. The engine itself goes by `holidays`.
+   */
+  readonly bankHolidays?: BankHolidayCopy;
 }
 
 /** What an edit needs: the stored records, the plan's settings and today. */
@@ -118,6 +126,12 @@ export interface ThisAndLaterEdits {
    * schedule, and `date` must be a date that schedule gives (D91).
    */
   readonly schedule?: Schedule;
+  /**
+   * What happens on a weekend or bank holiday from this payment on (brief
+   * 4.3, step 4c, D540). Not for pay on the last working day, which always
+   * lands on the month's last working day (D145).
+   */
+  readonly holidayRule?: HolidayRule;
 }
 
 /** A payment ticked inside the Update balance steps (D33). */
