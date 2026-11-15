@@ -2,6 +2,7 @@
 // swaps GOV.UK's newest list into the build when it's different.
 
 import { createHash } from 'node:crypto';
+import { isNewerBankHolidayVersion } from '@prepenny/engine';
 import list from '@prepenny/engine/data/bank-holidays.json';
 import source from '@prepenny/engine/data/bank-holidays.source.json';
 import { describe, expect, it } from 'vitest';
@@ -47,6 +48,50 @@ describe("GOV.UK's newest list on the site", () => {
     expect(newestCopy({ downloaded: newBytes, builtIn, live, today: '2026-11-16' })?.version).toBe(
       `2026-11-09:${newSha}`,
     );
+  });
+
+  it("GOV.UK taking a change back is dated today, so it's newer than the change on every phone", () => {
+    const live = {
+      ...builtIn,
+      version: `2026-11-09:${newSha}`,
+      downloaded_on: '2026-11-09',
+      sha256: newSha,
+    };
+    const back = newestCopy({ downloaded: builtInBytes, builtIn, live, today: '2026-11-16' });
+    expect(back?.version).toBe(`2026-11-16:${builtIn.sha256}`);
+    expect(isNewerBankHolidayVersion(back?.version ?? '', live.version)).toBe(true);
+  });
+
+  it('keeps the built-in copy when the site already has it', () => {
+    expect(
+      newestCopy({ downloaded: builtInBytes, builtIn, live: builtIn, today: '2026-11-16' }),
+    ).toBeNull();
+  });
+
+  it('refuses a download outside the limits the server keeps to (D543)', () => {
+    const crowded = structuredClone(list) as typeof list;
+    for (const day of ['01', '02', '03', '04', '05', '06', '07']) {
+      crowded['england-and-wales'].events.push({
+        title: 'Made up',
+        date: `2027-07-${day}`,
+        notes: '',
+        bunting: true,
+      });
+    }
+    const longTitle = structuredClone(list) as typeof list;
+    (longTitle.scotland.events[0] as { title: string }).title = 'x'.repeat(201);
+    const nullNotes = structuredClone(list) as typeof list;
+    (nullNotes.scotland.events[0] as { notes: string | null }).notes = null;
+    for (const bad of [crowded, longTitle, nullNotes]) {
+      expect(() =>
+        newestCopy({
+          downloaded: Buffer.from(JSON.stringify(bad)),
+          builtIn,
+          live: null,
+          today: '2026-11-16',
+        }),
+      ).toThrow();
+    }
   });
 
   it("refuses a download that isn't a list the engine can read", () => {

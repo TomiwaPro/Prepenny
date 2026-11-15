@@ -18,6 +18,7 @@ import { jessAndTom } from './jess-and-tom.ts';
 import { addPayment, day, holidaysOf, noAxeProblems, openHome } from './journeys.ts';
 import { differences, sharedDays, TODAY, YEAR_ON } from './paydays.ts';
 import { ownRecords } from './setup.ts';
+import { personOn, quoted, secondPhone, signIn, sql } from './two-phones.ts';
 
 const t = strings.home;
 
@@ -160,6 +161,28 @@ for (const [first, colorScheme] of [
       await noAxeProblems(phone);
       await note.getByRole('button', { name: t.holidayGotIt }).click();
       await expect(note).toHaveCount(0);
+    }
+    // A third phone signing in as Tom later gets the plan with its list,
+    // and no note: nothing on it moved for him there (D543).
+    if (colorScheme === 'light') {
+      const address = sql(
+        `select email from auth.users where id = ${quoted(await personOn(tom.page))}`,
+      );
+      const third = await secondPhone(browser, info, colorScheme);
+      await siteHas(third.context, 'no signal');
+      await signIn(third.page, address);
+      await expect(third.page).toHaveURL(/\/app\/$/, { timeout: 30_000 });
+      await expect(third.page.getByTestId('balance')).toBeVisible();
+      await expect
+        .poll(async () => (await ownRecords(third.page)).bankHolidays?.version, { timeout: 30_000 })
+        .toBe(NEW_LIST.version);
+      await expect
+        .poll(async () => councilTaxDates(await ownRecords(third.page)), { timeout: 30_000 })
+        .toEqual(councilTaxDates(tomRecords));
+      await third.page.reload();
+      await expect(third.page.getByTestId('balance')).toBeVisible();
+      await expect(third.page.getByTestId('holiday-note')).toHaveCount(0);
+      await third.context.close();
     }
     await tom.context.close();
   });

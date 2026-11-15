@@ -63,6 +63,7 @@ export {
   usualBankHolidays,
 } from './dates/bank-holiday-rules.ts';
 export {
+  BANK_HOLIDAY_LIMITS,
   BankHolidayCalendar,
   type BankHolidaySource,
   bankHolidayCalendar,

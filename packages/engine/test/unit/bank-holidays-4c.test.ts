@@ -102,8 +102,64 @@ describe('a list version (D536)', () => {
     delete noScotland.scotland;
     expect(() =>
       checkBankHolidayCopy({ version: `2026-10-29:${SHA_A}`, list: noScotland }),
-    ).toThrow(/no events for scotland/);
+    ).toThrow(/from 1 to 1000 events for scotland/);
     expect(() => checkBankHolidayCopy(null)).toThrow(EngineInputError);
+  });
+});
+
+describe("a list's limits, the same as the server's (D543)", () => {
+  const copy = (list: List) => ({ version: `2026-10-29:${SHA_A}`, list });
+  const refused = (list: List) => {
+    try {
+      checkBankHolidayCopy(copy(list));
+      return null;
+    } catch (error) {
+      return error instanceof EngineInputError ? error.code : 'other';
+    }
+  };
+  const days = (from: number, count: number) =>
+    Array.from({ length: count }, (_, i) => `2027-07-${String(from + i).padStart(2, '0')}`);
+
+  it("takes GOV.UK's own list, and 6 bank holidays in 15 days", () => {
+    expect(refused(builtIn())).toBeNull();
+    let six = builtIn();
+    for (const date of days(1, 6)) six = withHoliday(date, 'england-and-wales', six);
+    expect(refused(six)).toBeNull();
+  });
+
+  it('refuses 7 in 15 days, which could leave a payment no working day to move to', () => {
+    let seven = builtIn();
+    for (const date of days(1, 7)) seven = withHoliday(date, 'england-and-wales', seven);
+    expect(refused(seven)).toBe('bad-bank-holiday-list');
+    let spread = builtIn();
+    for (const date of [...days(1, 6), '2027-07-16'])
+      spread = withHoliday(date, 'scotland', spread);
+    expect(refused(spread)).toBeNull();
+  });
+
+  it('refuses a title or notes longer than 200 characters, notes that are not text, and a year no one can read', () => {
+    const long = builtIn();
+    (long.scotland.events[0] as { title: string }).title = 'x'.repeat(201);
+    expect(refused(long)).toBe('bad-bank-holiday-list');
+    const nullNotes = builtIn();
+    (nullNotes.scotland.events[0] as { notes: string | null }).notes = null;
+    expect(refused(nullNotes)).toBe('bad-bank-holiday-list');
+    const farOff = withHoliday('3000-01-01', 'scotland');
+    expect(refused(farOff)).toBe('bad-date');
+  });
+
+  it('refuses no events, or more than 1000, for a nation', () => {
+    const none = builtIn();
+    none['northern-ireland'].events = [];
+    expect(refused(none)).toBe('bad-bank-holiday-list');
+    const many = builtIn();
+    many['northern-ireland'].events = Array.from({ length: 1001 }, (_, i) => ({
+      title: 'Made up',
+      date: formatDate(20_000 + i * 30),
+      notes: '',
+      bunting: false,
+    }));
+    expect(refused(many)).toBe('bad-bank-holiday-list');
   });
 });
 

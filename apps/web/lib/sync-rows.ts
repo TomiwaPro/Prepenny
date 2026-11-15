@@ -24,6 +24,7 @@ import {
   type BalanceUpdate,
   type BankHolidayCopy,
   type Budget,
+  checkBankHolidayCopy,
   type Debt,
   type Goal,
   hasShiftDetails,
@@ -997,12 +998,20 @@ export function recordsFromRows(rows: readonly MirrorRow[], me?: string): FromRo
       change: number(v.change),
     };
   });
-  // The plan's bank holiday list, when the server has one (D536).
+  // The plan's bank holiday list, when the server has one (D536), and only
+  // one every phone can read: the server's checks keep any other out (D543).
   const list = live.find((row) => row.table === 'bank_holidays');
-  const bankHolidays: BankHolidayCopy | undefined =
-    list === undefined || typeof list.values.list_version !== 'string'
-      ? undefined
-      : { version: list.values.list_version, list: list.values.list };
+  let bankHolidays: BankHolidayCopy | undefined;
+  if (list !== undefined && typeof list.values.list_version === 'string') {
+    try {
+      bankHolidays = checkBankHolidayCopy({
+        version: list.values.list_version,
+        list: list.values.list,
+      }).copy;
+    } catch {
+      bankHolidays = undefined;
+    }
+  }
   const plan = live.find((row) => row.table === 'plans');
   const settings: PlanSettings | undefined =
     own === undefined && (plan === undefined || plan.values.nation === 'england-and-wales')

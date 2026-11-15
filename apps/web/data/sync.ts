@@ -166,6 +166,9 @@ const REFUSALS = new Set([
   'link-not-needed',
   'private-belongs-to',
   'has-a-plan',
+  // A bank holiday list the server won't take (D543), and "Can view only" sending one.
+  'bad-list',
+  'view-only',
 ]);
 
 function failureOf(error: { code?: unknown; message?: unknown } | null): Failure {
@@ -496,20 +499,24 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
         const list = records.bankHolidays ?? before?.bankHolidays;
         const next = list === undefined ? records : { ...records, bankHolidays: list };
         await savePlan(db, plan, next);
-        // A newer list that moved a payment, from this phone or another: Home says so (D539).
-        if (before !== undefined) {
+        // A newer list that moved a payment, from this phone or another: Home
+        // says so (D539). Not when the plan has only now come to this phone,
+        // as at a new sign-in: nothing on it moved for the person (D543).
+        if (before !== undefined && before.series.length > 0) {
           const today = testSetting()?.today ?? localToday();
-          await noteMoves(
-            db,
-            link.planId,
-            holidayMoves(
+          let moves: ReturnType<typeof holidayMoves> = [];
+          try {
+            moves = holidayMoves(
               next,
               copyOf(before),
               copyOf(next),
               today,
               planLookAhead(today, HOME_MONTHS_AHEAD),
-            ),
-          );
+            );
+          } catch {
+            // A list that can't be read moves nothing here (D543).
+          }
+          await noteMoves(db, link.planId, moves);
         }
         // Rebuilt from every row kept so far (D510).
         const kept = await db.links.get(link.planId);
@@ -1625,7 +1632,15 @@ async function offerNewerList(client: SupabaseClient, db: PrePennyDb, planId: st
     await newestOnPhone(db),
     (await loadRecords(db, planId)).bankHolidays ?? null,
   );
-  if (!isNewerBankHolidayVersion(offer.version, serverVersion)) return;
+  // A list the server refused isn't sent again, so a phone never sends the
+  // same list every minute (D543).
+  if (refusedLists.has(offer.version)) return;
+  try {
+    if (!isNewerBankHolidayVersion(offer.version, serverVersion)) return;
+  } catch {
+    // A version that can't be read: the server's checks keep one out, so nothing is sent.
+    return;
+  }
   const answer = await rpc<{ saved?: string }>(
     client,
     'use_bank_holidays',
@@ -1634,8 +1649,13 @@ async function offerNewerList(client: SupabaseClient, db: PrePennyDb, planId: st
   );
   if (answer.ok && typeof answer.data.saved === 'string') {
     await bringDown(client, db, (await db.links.get(planId)) ?? link);
+  } else if (!answer.ok && answer.failure.kind === 'refused') {
+    refusedLists.add(offer.version);
   }
 }
+
+/** Lists the server refused while PrePenny has been open (D543). */
+const refusedLists = new Set<string>();
 
 // ---------------------------------------------------------------------------
 // Keeping it in step.

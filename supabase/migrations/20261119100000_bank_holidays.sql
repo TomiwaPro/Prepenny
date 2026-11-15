@@ -52,15 +52,20 @@ create policy read on public.bank_holidays for select to authenticated
 -- ---------------------------------------------------------------------------
 -- 2. A newer list for a plan.
 
--- What's wrong with a list, or null when it's GOV.UK's shape: an object
--- with each nation's events, each with a real date and a title. Never
--- bigger than about ten times GOV.UK's own file.
+-- What's wrong with a list, or null when it's GOV.UK's shape, within the
+-- same limits as the engine's (BANK_HOLIDAY_LIMITS, D543), so every list
+-- the plan keeps is one every phone can read: an object with each nation's
+-- 1 to 1000 events, each with a real date from 1900 to 2999, a title and
+-- any notes as text of up to 200 characters, never more than 6 bank
+-- holidays in 15 days in a row, and never bigger than about ten times
+-- GOV.UK's own file.
 create function app.bank_holiday_list_problem(list jsonb) returns text
 language plpgsql immutable set search_path = '' as $$
 declare
   nation text;
   events jsonb;
   event jsonb;
+  day date;
 begin
   if list is null or jsonb_typeof(list) <> 'object' or octet_length(list::text) > 250000 then
     return 'bad-list';
@@ -82,11 +87,24 @@ begin
         return 'bad-list';
       end if;
       begin
-        perform (event ->> 'date')::date;
+        day := (event ->> 'date')::date;
       exception when others then
         return 'bad-list';
       end;
+      if extract(year from day) not between 1900 and 2999 then
+        return 'bad-list';
+      end if;
     end loop;
+    -- Never 7 bank holidays within 15 days: a payment always has a working day in reach.
+    if exists (
+      select 1 from (
+        select d, lead(d, 6) over (order by d) as seventh
+        from (select (e ->> 'date')::date as d from jsonb_array_elements(events) as t(e)) days
+      ) close_together
+      where seventh is not null and seventh - d < 15
+    ) then
+      return 'bad-list';
+    end if;
   end loop;
   return null;
 end;
@@ -106,7 +124,9 @@ $$;
 
 -- A newer bank holiday list for a plan (D536). Only someone who can change
 -- the plan (D51); a list no newer than the plan's changes nothing and says
--- which the plan has. A day downloaded after tomorrow can't be real.
+-- which the plan has. A list downloaded after today, London time, or before
+-- GOV.UK's list began, can't be real, and one dated in the future could
+-- hold every real list back (D543).
 -- Answers {saved, list_version} or {kept, list_version}.
 create function public.use_bank_holidays(plan uuid, list_version text, list jsonb) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
@@ -126,7 +146,8 @@ begin
     perform app.refuse('bad-list');
   end if;
   begin
-    if split_part(list_version, ':', 1)::date > (now() at time zone 'Europe/London')::date + 1 then
+    if split_part(list_version, ':', 1)::date not between date '2019-01-01'
+        and (now() at time zone 'Europe/London')::date then
       perform app.refuse('bad-list');
     end if;
   exception when sqlstate 'P0001' then

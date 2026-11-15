@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(36);
+select plan(41);
 
 select tests.make_jess_and_tom();
 
@@ -119,7 +119,7 @@ select is(pg_temp.sent((select seq from public.bank_holidays)), '[]'::jsonb,
 select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(-17, 'b'), pg_temp.list()),
   jsonb_build_object('kept', pg_temp.v(-2, 'c')),
   'Her phone sending the older one it had changes nothing, and says which the plan has');
-select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(1, 'c'), pg_temp.list('A one-off')),
+select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'c'), pg_temp.list('A one-off')),
   jsonb_build_object('kept', pg_temp.v(-2, 'c')),
   'nor does the same list downloaded again on a later day');
 select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(-2, 'd'), pg_temp.list('Another')),
@@ -164,8 +164,10 @@ select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), '
   'bad-list', 'A version with no checksum is refused');
 select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), '2026-02-30:' || repeat('e', 64), pg_temp.list()) $$),
   'bad-list', 'and one on a day there isn''t');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(2, 'e'), pg_temp.list()) $$),
-  'bad-list', 'and one downloaded after tomorrow, which would hold every later list back');
+select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(1, 'e'), pg_temp.list()) $$),
+  'bad-list', 'and one downloaded after today, which would hold every real list back (D543)');
+select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), '1899-12-31:' || repeat('e', 64), pg_temp.list()) $$),
+  'bad-list', 'and one from before GOV.UK''s list began, which no phone could read');
 select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
     pg_temp.list() - 'scotland') $$),
   'bad-list', 'A list without Scotland is refused');
@@ -178,7 +180,23 @@ select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), p
 select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
     jsonb_set(pg_temp.list(), '{england-and-wales,events,0,date}', '20270101')) $$),
   'bad-list', 'and one with a date that isn''t text');
-select is(pg_temp.stored(), pg_temp.v(-2, 'd'), 'None of them changed the plan''s list');
+select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
+    jsonb_set(pg_temp.list(), '{scotland,events,0,date}', '"3000-01-01"')) $$),
+  'bad-list', 'A list with a year no phone can read is refused (D543)');
+select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
+    jsonb_set(pg_temp.list(), '{scotland,events,0,notes}', 'null')) $$),
+  'bad-list', 'and one with notes that aren''t text');
+select is(pg_temp.refusal(format($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
+    jsonb_set(pg_temp.list(), '{england-and-wales,events}', %L::jsonb)) $$,
+    (select jsonb_agg(jsonb_build_object('title', 'Made up', 'date', d::date::text))
+     from generate_series(date '2027-07-01', date '2027-07-07', interval '1 day') d)::text)),
+  'bad-list', 'and one with 7 bank holidays in 15 days, which could leave a payment no working day');
+select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
+    jsonb_set(pg_temp.list(), '{england-and-wales,events}',
+      (select jsonb_agg(jsonb_build_object('title', 'Made up', 'date', d::date::text))
+       from generate_series(date '2027-07-01', date '2027-07-06', interval '1 day') d))),
+  jsonb_build_object('saved', pg_temp.v(0, 'e')), 'but 6 in 15 days is taken');
+select is(pg_temp.stored(), pg_temp.v(0, 'e'), 'None of the others changed the plan''s list');
 
 select * from finish();
 rollback;

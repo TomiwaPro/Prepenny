@@ -291,6 +291,24 @@ describe("the plan's list with its records (D536)", () => {
     expect(writesFor(without, { planId: PLAN, personId: JESS }, [row], undefined)).toEqual([]);
   });
 
+  it('a list from the server no phone could read is taken as none, so the plan still works (D543)', () => {
+    for (const [version, badList] of [
+      ['1899-12-31:' + 'c'.repeat(64), list],
+      [copyWith('2027-02-08').version, { scotland: {} }],
+      [copyWith('3000-01-01').version, copyWith('3000-01-01').list],
+    ] as const) {
+      const row = mirrorRowOf('bank_holidays', {
+        id: 'list-id',
+        version: 1,
+        seq: 9,
+        deleted: false,
+        list_version: version,
+        list: badList,
+      });
+      expect(recordsFromRows([row], JESS).records.bankHolidays).toBeUndefined();
+    }
+  });
+
   it('stays out of a backup: the plan it goes into keeps its own', () => {
     expect(
       recordsForBackup({ ...records, bankHolidays: copyWith('2027-02-08') }).bankHolidays,
