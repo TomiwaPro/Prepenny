@@ -59,8 +59,10 @@ create policy read on public.bank_holidays for select to authenticated
 -- any notes as text of up to 200 characters, never more than 6 bank
 -- holidays in 15 days in a row, and never bigger than about ten times
 -- GOV.UK's own file.
+-- Stable, not immutable: reading text as a date follows the database's own
+-- date settings.
 create function app.bank_holiday_list_problem(list jsonb) returns text
-language plpgsql immutable set search_path = '' as $$
+language plpgsql stable set search_path = '' as $$
 declare
   nation text;
   events jsonb;

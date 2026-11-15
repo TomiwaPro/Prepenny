@@ -6580,3 +6580,9 @@ Tests: `supabase/tests/database/34-bank-holidays.test.sql` (41 checks, 5 new), `
 
 Why: a strict outside review before every stop (CLAUDE.md).
 
+
+### D544. The list check is "stable", as GitHub's database lint asks
+
+Decided 15 Nov 2026 in step 4c, from GitHub's ready run. "Lint, type checks, tests and the database" failed at its step "Check the database's own functions for mistakes" (`supabase db lint --level warning --fail-on warning`), which the building computer hadn't run: `app.bank_holiday_list_problem` was marked "immutable", but reading text as a date follows the database's date settings, so it's "stable". It's now marked so. Nothing calls it where that matters (only `use_bank_holidays`, which changes the database anyway), so no result changes. The lint then found nothing, and all 1,268 database checks passed again on a fresh database.
+
+Why: a check's root cause is fixed, never skipped (CLAUDE.md, D498).
