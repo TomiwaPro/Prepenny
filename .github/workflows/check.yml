@@ -113,3 +113,13 @@ jobs:
           else
             node scripts/check-building-blocks.ts
           fi
+
+  end-to-end:
+    # Drafts skip these. On main and on a pull request that's ready, they run
+    # on every push; a newer push stops the older ones, here or in ready.yml.
+    name: End-to-end
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    concurrency:
+      group: end-to-end-${{ github.event.pull_request.number || github.sha }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/end-to-end.yml

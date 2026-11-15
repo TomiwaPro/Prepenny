@@ -160,3 +160,21 @@ test('deploy.yml checks the live pages straight after the live app goes online',
   );
   assert.doesNotMatch(step, /continue-on-error/);
 });
+
+// Found in step 4b (D535): an edit to the building-block step once cut off
+// the rest of check.yml, and with it the end-to-end tests on every push.
+test('check.yml runs the end-to-end tests on main and on a ready pull request, after its first job', () => {
+  const text = readFileSync(join(folder, 'check.yml'), 'utf8');
+  const job = text.slice(text.indexOf('\n  end-to-end:\n'));
+  assert.ok(job.length < text.length, 'check.yml has its end-to-end job');
+  assert.match(
+    job,
+    /\n {4}if: github\.event_name == 'push' \|\| github\.event\.pull_request\.draft == false\n/,
+  );
+  assert.match(job, /\n {4}uses: \.\/\.github\/workflows\/end-to-end\.yml\n/);
+  assert.ok(
+    text.indexOf('- name: Check every building block for known security problems') <
+      text.indexOf('\n  end-to-end:\n'),
+    'the building-block check is a step of the first job',
+  );
+});
