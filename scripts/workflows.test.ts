@@ -178,3 +178,41 @@ test('check.yml runs the end-to-end tests on main and on a ready pull request, a
     'the building-block check is a step of the first job',
   );
 });
+
+// Step 4c (D537): the site's bank holiday list, which phones fetch each
+// week, is kept up to date from GOV.UK. Every Monday the Bank holidays
+// workflow compares GOV.UK's with the live one and, when it has changed,
+// puts the commit that's live online again; every time the live app goes
+// online, the Deploy workflow swaps in GOV.UK's newest before it does.
+test('bank-holidays.yml checks GOV.UK every Monday and puts the live commit online again when its list changed', () => {
+  const text = readFileSync(join(folder, 'bank-holidays.yml'), 'utf8');
+  assert.match(
+    text,
+    /\n {2}schedule:\n {4}# Mondays at 6:23am UTC\.\n {4}- cron: "23 6 \* \* 1"\n/,
+  );
+  const job = text.slice(text.indexOf('\n  keep-the-site-up-to-date:\n'));
+  assert.ok(job.length < text.length, 'bank-holidays.yml has the weekly job');
+  assert.match(job, /github\.event_name == 'schedule'/);
+  assert.match(job, /https:\/\/prepenny\.co\.uk\/bank-holidays\.json/);
+  assert.match(job, /gh run list --repo "\$REPO" --workflow check\.yml --branch main --event push/);
+  assert.match(job, /--status success --limit 1/);
+  assert.match(job, /gh workflow run deploy\.yml --repo "\$REPO" --ref main -f commit="\$commit"/);
+  assert.match(job, /\n {6}actions: write\n/);
+});
+
+test("deploy.yml puts GOV.UK's newest list on the site before the app goes online, and only a commit on main", () => {
+  const text = readFileSync(join(folder, 'deploy.yml'), 'utf8');
+  const newest = text.indexOf("- name: Get GOV.UK's newest bank holiday list");
+  const built = text.indexOf('- name: Build the app');
+  const online = text.indexOf('- name: Put the live app online');
+  assert.ok(built > 0 && newest > built && online > newest, 'in order: build, the list, online');
+  assert.match(
+    text.slice(newest, online),
+    /node scripts\/newest-bank-holidays\.ts "\$RUNNER_TEMP\/gov-uk\.json" out\/bank-holidays\.json/,
+  );
+  assert.match(
+    text,
+    /ref: \$\{\{ github\.event\.workflow_run\.head_sha \|\| inputs\.commit \|\| github\.sha \}\}/,
+  );
+  assert.match(text, /git merge-base --is-ancestor "\$COMMIT" origin\/main/);
+});

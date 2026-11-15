@@ -29,8 +29,16 @@ export default {
   swDest: 'out/sw.js',
   globDirectory: 'out',
   globPatterns: ['**/*.{html,js,css,woff2,png,svg,webmanifest,json,txt}'],
-  // version.json says which version is live now, so it's always fetched fresh (lib/version.ts).
-  globIgnores: ['sw.js', 'version.json', '**/*.map', '404/**', '_not-found/**'],
+  // version.json says which version is live now, so it's always fetched fresh (lib/version.ts),
+  // and so is the bank holiday list, which can change without a new version (step 4c, D537).
+  globIgnores: [
+    'sw.js',
+    'version.json',
+    'bank-holidays.json',
+    '**/*.map',
+    '404/**',
+    '_not-found/**',
+  ],
   // Turbopack's file names already change with their contents.
   dontCacheBustURLsMatching: /^_next\/static\//,
   manifestTransforms: [pagesWithTheirHeaders],

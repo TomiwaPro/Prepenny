@@ -24,7 +24,14 @@ on:
   # from then on. Drafts get none, to save GitHub's minutes (D300).
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  # By hand from main, or by the Bank holidays workflow each Monday when
+  # GOV.UK's list has changed, naming the commit that's live (step 4c, D537).
   workflow_dispatch:
+    inputs:
+      commit:
+        description: "Leave empty to put main online. The Bank holidays workflow fills it in."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -62,8 +69,20 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v5
         with:
-          # For the live app, exactly the commit the checks passed on.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # For the live app, exactly the commit the checks passed on, or the
+          # one the Bank holidays workflow names, which must be on main.
+          ref: ${{ github.event.workflow_run.head_sha || inputs.commit || github.sha }}
+          fetch-depth: ${{ inputs.commit == '' && 1 || 0 }}
+
+      - name: Check the commit named is on main
+        if: github.event_name == 'workflow_dispatch' && inputs.commit != ''
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          if ! [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || ! git merge-base --is-ancestor "$COMMIT" origin/main; then
+            echo "::error title=Not on main::The commit to put online must be a commit on main."
+            exit 1
+          fi
 
       - name: Set up pnpm (the version in package.json)
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0, 13 Mar 2026: runs on Node 24
@@ -114,6 +133,24 @@ jobs:
           fi
           pnpm build
 
+      - name: Get GOV.UK's newest bank holiday list
+        # Step 4c (D537): phones fetch the list each week from PrePenny's own
+        # site, out/bank-holidays.json, which the build wrote from the
+        # built-in copy. GOV.UK's newest goes in its place when it's
+        # different. If GOV.UK can't be reached, or its list can't be read,
+        # the built-in copy stays, with a warning. The offline helper never
+        # keeps this file, so changing it after the build is safe.
+        working-directory: apps/web
+        run: |
+          if curl --fail --silent --show-error --retry 3 --max-time 60 \
+              --output "$RUNNER_TEMP/gov-uk.json" https://www.gov.uk/bank-holidays.json; then
+            curl --fail --silent --max-time 30 --output "$RUNNER_TEMP/live.json" \
+              https://prepenny.co.uk/bank-holidays.json || true
+            node scripts/newest-bank-holidays.ts "$RUNNER_TEMP/gov-uk.json" out/bank-holidays.json "$RUNNER_TEMP/live.json"
+          else
+            echo "::warning title=Built-in bank holidays::GOV.UK couldn't be reached, so the site keeps the built-in copy."
+          fi
+
       - name: Check Cloudflare is set up
         id: cloudflare
         env:
@@ -133,7 +170,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || inputs.commit || github.sha }}
         run: pnpm exec wrangler deploy --message "Commit ${COMMIT::7}"
 
       - name: Check the live pages are PrePenny's own
