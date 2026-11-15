@@ -11,15 +11,23 @@
 // coronation's. Nothing here signs in; two phones are in
 // shared-bank-holidays.spec.ts.
 
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { strings } from '../strings/en-GB.ts';
 import { named } from './coming-up.ts';
 import { siteHas, siteList } from './holiday-site.ts';
-import { addPayment, day, noAxeProblems, undoBar } from './journeys.ts';
+import { addPayment, day, noAxeProblems, noSidewaysScroll, undoBar } from './journeys.ts';
 import { helperInCharge } from './offline-helper.ts';
 import { makeAPlan } from './sign-in-helpers.ts';
 
 const t = strings.home;
+const SCREENS = '../../docs/screens/4c';
+
+/** Screenshots at 360px in light and 320px in dark, as the owner looks at them. */
+async function shoot(page: Page, info: TestInfo, colorScheme: string, name: string) {
+  const width = info.project.name === 'phone-360' ? 360 : 320;
+  if ((width === 360) !== (colorScheme === 'light')) return;
+  await page.screenshot({ path: `${SCREENS}/${name}-${width}-${colorScheme}.png` });
+}
 const e = strings.edit;
 
 /** A row's name for screen readers, starting with its name and date, as "Rent Fri 6 Nov". */
@@ -60,7 +68,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
     test("a new bank holiday arrives from PrePenny's site, moves Rent, and Home says so once", async ({
       context,
       page,
-    }) => {
+    }, info) => {
       // No list from the site yet: the plan uses the built-in one.
       const offline = await siteHas(context, 'no signal');
       await makeAPlan(page);
@@ -93,6 +101,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const noted = await note.boundingBox();
       expect((noted?.y ?? 0) > (lowest?.y ?? 0)).toBe(true);
       await noAxeProblems(page);
+      await noSidewaysScroll(page);
+      await note.scrollIntoViewIfNeeded();
+      await shoot(page, info, colorScheme, 'home-note');
 
       // The sheet says why it moved, and why November's moved.
       let sheet = await openDue(page, 'Mon 7 Dec');
@@ -103,6 +114,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         `Moved from ${day('Tue 8 Dec')}: bank holiday`,
       );
       await noAxeProblems(page);
+      await shoot(page, info, colorScheme, 'sheet-moved-from');
       await sheet.getByRole('button', { name: strings.sheet.close }).click();
       await expect(sheet).toBeHidden();
       sheet = await openDue(page, 'Fri 6 Nov');
@@ -123,7 +135,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
     test("changing Rent's weekend and bank holiday rule for this and all later ones", async ({
       context,
       page,
-    }) => {
+    }, info) => {
       await siteHas(context, siteList([]));
       await makeAPlan(page);
       await addRent(page);
@@ -137,6 +149,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await sheet.getByRole('radio', { name: e.thisAndLater }).check();
       await expect(rule.getByRole('radio', { name: e.dayBefore })).toBeChecked();
       await noAxeProblems(page);
+      await noSidewaysScroll(page);
+      await rule.scrollIntoViewIfNeeded();
+      await shoot(page, info, colorScheme, 'sheet-rule');
       await rule.getByRole('radio', { name: e.dayAfter }).check();
       await sheet.getByRole('button', { name: e.save }).click();
       await expect(sheet).toBeHidden();
