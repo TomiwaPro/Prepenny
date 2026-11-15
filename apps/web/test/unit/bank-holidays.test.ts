@@ -288,14 +288,7 @@ describe("the plan's list with its records (D536)", () => {
     // The server's own row: no edit adds, changes or removes it.
     expect(writesFor(back, { planId: PLAN, personId: JESS }, [row], undefined)).toEqual([]);
     const { bankHolidays: _gone, ...without } = back;
-    expect(
-      writesFor(
-        without,
-        { planId: PLAN, personId: JESS },
-        [row],
-        undefined,
-      ),
-    ).toEqual([]);
+    expect(writesFor(without, { planId: PLAN, personId: JESS }, [row], undefined)).toEqual([]);
   });
 
   it('stays out of a backup: the plan it goes into keeps its own', () => {

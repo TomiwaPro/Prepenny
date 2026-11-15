@@ -406,7 +406,7 @@ describe('payments moved by a new bank holiday (D539)', () => {
       ),
     ).toEqual(['to-joint']);
     // On the partner's phone only the shared half is there, and it's told.
-    const partners: Series = { ...sharedHalf, mirrorOf: undefined };
+    const { mirrorOf: _private, ...partners }: Series = sharedHalf;
     expect(
       movedByNewBankHolidays({ series: [partners], before, after, ...window }).map(
         (one) => one.seriesId,
