@@ -27,6 +27,7 @@ import { strings } from '../../strings/en-GB.ts';
 import { ChoiceList } from '../ChoiceList.tsx';
 import { CheckOption, describedBy, Field } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
+import { focusLater } from '../focusLater.ts';
 import { focusFirst } from './focus.ts';
 import { OutgoingFields, outgoingFieldIds } from './OutgoingFields.tsx';
 import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.tsx';
@@ -367,9 +368,7 @@ export function StepHomeBills() {
         onClick={() => {
           const draft = blankBill(null, firstAccount);
           setDrafts((now) => [...now, draft]);
-          requestAnimationFrame(() =>
-            document.getElementById(`${formId(draft.key)}-name`)?.focus(),
-          );
+          focusLater(() => document.getElementById(`${formId(draft.key)}-name`));
         }}
       >
         {t.addAnother}

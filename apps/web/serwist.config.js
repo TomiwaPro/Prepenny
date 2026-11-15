@@ -2,6 +2,27 @@
 // service-worker/sw.ts with esbuild and lists every file of the static
 // export in it, so the whole app works offline.
 
+import { readFileSync } from 'node:fs';
+import { pageRevision } from './scripts/page-policies.ts';
+
+/**
+ * The offline helper keeps each page with the headers it was fetched with,
+ * its security policy included, and fetches a page again only when its
+ * version changes. So each page's version comes from its file and the
+ * headers Cloudflare sends with it: a phone that has PrePenny already gets
+ * every page again, with its new policy, when only the policy changes (step
+ * 4b, D529). Needs out/_headers, which scripts/write-headers.ts writes first.
+ * @type {import('@serwist/build').ManifestTransform}
+ */
+function pagesWithTheirHeaders(entries) {
+  const headers = readFileSync(new URL('./out/_headers', import.meta.url), 'utf8');
+  const manifest = entries.map((entry) => {
+    if (!entry.url.endsWith('.html') || entry.revision === null) return entry;
+    return { ...entry, revision: pageRevision(entry.revision, headers, entry.url) };
+  });
+  return { manifest, warnings: [] };
+}
+
 /** @type {import('@serwist/cli').BuildOptions} */
 export default {
   swSrc: 'service-worker/sw.ts',
@@ -12,6 +33,7 @@ export default {
   globIgnores: ['sw.js', 'version.json', '**/*.map', '404/**', '_not-found/**'],
   // Turbopack's file names already change with their contents.
   dontCacheBustURLsMatching: /^_next\/static\//,
+  manifestTransforms: [pagesWithTheirHeaders],
   maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
   esbuildOptions: { minify: true, target: 'es2022', legalComments: 'none' },
 };

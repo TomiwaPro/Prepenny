@@ -87,3 +87,94 @@ for (const [name, job] of [
     assert.match(step, /exit 1/);
   });
 }
+
+// Step 4b (D527): every building block is checked for known security
+// problems on every pull request and on main, and the live app and the
+// database are updated only once that check has passed.
+test('check.yml checks every building block on pull requests and on main, even when another check failed', () => {
+  const text = readFileSync(join(folder, 'check.yml'), 'utf8');
+  assert.match(text, /^on:\n {2}push:\n {4}branches: \[main\]\n {2}pull_request:\n/m);
+  const step = text.slice(
+    text.indexOf('- name: Check every building block for known security problems'),
+  );
+  assert.ok(step.length < text.length, 'the step is in check.yml');
+  const until = step.indexOf('\n      - name:', 1);
+  const body = until === -1 ? step : step.slice(0, until);
+  assert.match(
+    body,
+    /BEFORE: \$\{\{ github\.event\.pull_request\.base\.sha \|\| github\.event\.before \}\}/,
+  );
+  assert.match(
+    body,
+    /node scripts\/check-building-blocks\.ts --before "\$RUNNER_TEMP\/pnpm-lock-before\.yaml"\n/,
+  );
+  assert.match(body, /else\n {12}node scripts\/check-building-blocks\.ts\n {10}fi\n/);
+  assert.match(body, /if: \$\{\{ !cancelled\(\) && steps\.install\.outcome == 'success' \}\}/);
+  assert.doesNotMatch(body, /continue-on-error/);
+  assert.match(text, /- name: Install\n {8}id: install\n/);
+});
+
+for (const name of ['deploy.yml', 'database.yml']) {
+  test(`${name} updates the live site only after the Check workflow passed on main`, () => {
+    const text = readFileSync(join(folder, name), 'utf8');
+    assert.match(
+      text,
+      /workflow_run:\n {4}workflows: \[Check\]\n {4}types: \[completed\]\n {4}branches: \[main\]/,
+    );
+    assert.match(text, /github\.event\.workflow_run\.conclusion == 'success'/);
+  });
+}
+
+// Step 4b (D528): Dependabot's list is sent from main only, and only its
+// one job may write, never the whole workflow.
+test("building-blocks.yml sends main's list only, with write permission for its one job", () => {
+  const text = readFileSync(join(folder, 'building-blocks.yml'), 'utf8');
+  assert.match(text, /^on:\n {2}push:\n {4}branches: \[main\]\n {2}workflow_dispatch:\n/m);
+  assert.match(text, /^permissions:\n {2}contents: read\n/m);
+  assert.match(text, /if: github\.ref == 'refs\/heads\/main'/);
+  assert.equal([...text.matchAll(/contents: write/g)].length, 1);
+  assert.match(text, /\n {4}permissions:\n(?: {6}#.*\n)* {6}contents: write\n/);
+  assert.match(
+    text,
+    /run: node scripts\/building-blocks-list\.ts > "\$RUNNER_TEMP\/building-blocks\.json"/,
+  );
+  assert.match(text, /dependency-graph\/snapshots/);
+});
+
+// Step 4b (D530): straight after the live app goes online, its pages are
+// checked against the build just put online, and never on a preview.
+test('deploy.yml checks the live pages straight after the live app goes online', () => {
+  const text = readFileSync(join(folder, 'deploy.yml'), 'utf8');
+  const online = text.indexOf('- name: Put the live app online');
+  const check = text.indexOf("- name: Check the live pages are PrePenny's own");
+  const preview = text.indexOf('- name: Upload a preview of this pull request');
+  assert.ok(online > 0 && check > online && preview > check, 'in order: online, check, preview');
+  const step = text.slice(check, preview);
+  assert.match(
+    step,
+    /if: steps\.cloudflare\.outputs\.ready == 'true' && github\.event_name != 'pull_request'/,
+  );
+  assert.match(
+    step,
+    /working-directory: apps\/web\n {8}run: node scripts\/check-live-site\.ts https:\/\/prepenny\.co\.uk\n/,
+  );
+  assert.doesNotMatch(step, /continue-on-error/);
+});
+
+// Found in step 4b (D535): an edit to the building-block step once cut off
+// the rest of check.yml, and with it the end-to-end tests on every push.
+test('check.yml runs the end-to-end tests on main and on a ready pull request, after its first job', () => {
+  const text = readFileSync(join(folder, 'check.yml'), 'utf8');
+  const job = text.slice(text.indexOf('\n  end-to-end:\n'));
+  assert.ok(job.length < text.length, 'check.yml has its end-to-end job');
+  assert.match(
+    job,
+    /\n {4}if: github\.event_name == 'push' \|\| github\.event\.pull_request\.draft == false\n/,
+  );
+  assert.match(job, /\n {4}uses: \.\/\.github\/workflows\/end-to-end\.yml\n/);
+  assert.ok(
+    text.indexOf('- name: Check every building block for known security problems') <
+      text.indexOf('\n  end-to-end:\n'),
+    'the building-block check is a step of the first job',
+  );
+});

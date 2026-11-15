@@ -22,6 +22,7 @@ import { strings } from '../../strings/en-GB.ts';
 import { DEBT_FIELD_ORDER, DebtFields } from '../DebtFields.tsx';
 import { CheckOption } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
+import { focusLater } from '../focusLater.ts';
 import { focusFirst } from './focus.ts';
 import { OutgoingFields, outgoingFieldIds } from './OutgoingFields.tsx';
 import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.tsx';
@@ -194,7 +195,7 @@ export function StepDebts() {
           onClick={() => {
             const key = newId();
             setDrafts((now) => [...now, { key, form: blankDebt(firstAccount) }]);
-            requestAnimationFrame(() => document.getElementById(`${formId(key)}-name`)?.focus());
+            focusLater(() => document.getElementById(`${formId(key)}-name`));
           }}
         >
           {t.add}

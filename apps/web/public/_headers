@@ -1,7 +1,10 @@
 # Sent with every file by Cloudflare (D68). No script, font or connection
-# from anywhere but PrePenny's own site (CLAUDE.md, D23).
+# from anywhere but PrePenny's own site (CLAUDE.md, D23). No script written
+# into a page either, unless it's listed by its fingerprint: after the build,
+# scripts/write-headers.ts adds the not-found page's scripts here, and a rule
+# of its own for each other page, listing exactly that page's (step 4b, D529).
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()

@@ -53,7 +53,7 @@ Anyone can read this repository (since 12 Nov 2026, D452). Never put real email 
 - Work one step at a time and stop at the end of each step.
 - At each stop, report in plain English:
   - what works now
-  - how to try it on a phone (a link and 3 or 4 steps)
+  - no try-it steps: instead, add what the owner should check by hand to the phase's guide, `docs/TRY-PHASE-4.md` in Phase 4, one short section per step, with the clean-up steps for test accounts (D526)
   - what's left
   - any decisions you need from the owner
 

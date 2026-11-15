@@ -707,6 +707,66 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('goal')).toContainText('New phone');
       await noAxeProblems(page);
     });
+
+    test('test 10: on a slow phone, a form added with "Add another" never takes the cursor from a box being typed in (D533)', async ({
+      page,
+    }) => {
+      // The screen's next frame is held, as on a slow phone or a busy
+      // computer, until the test lets it through: "Add another" moves the
+      // cursor to the new form's name in that frame. GitHub's run found the
+      // cursor taken from "What you owe now" while it was being typed in,
+      // so the typing went into the debt's name.
+      const holdFrames = () =>
+        page.evaluate(() => {
+          const held: FrameRequestCallback[] = [];
+          Reflect.set(window, '__heldFrames', held);
+          window.requestAnimationFrame = (callback) => held.push(callback);
+        });
+      const letFramesThrough = () =>
+        page.evaluate(() => {
+          const held = Reflect.get(window, '__heldFrames') as FrameRequestCallback[];
+          for (const callback of held.splice(0)) callback(performance.now());
+        });
+
+      await startSetup(page, '2026-11-04');
+      // Screen 1: "Add another account", then typing a balance before the frame comes.
+      await fillAccount(lastForm(page, 'account'), {
+        name: 'Current account',
+        balance: '500',
+        warning: '20',
+      });
+      await holdFrames();
+      await page.getByRole('button', { name: 'Add another account' }).click();
+      const savings = lastForm(page, 'account');
+      await box(savings, 'Type what your bank shows today').fill('100');
+      await letFramesThrough();
+      await expect(box(savings, 'Type what your bank shows today')).toBeFocused();
+      await expect(box(savings, 'Type what your bank shows today')).toHaveValue('100');
+      await expect(box(savings, 'Name of the account')).not.toBeFocused();
+      await box(savings, 'Name of the account').fill('Savings');
+      await box(savings, 'Warn me when it goes under').fill('0');
+      await next(page);
+      await expectStep(page, 2, "How you're paid");
+      await skip(page);
+      await expectStep(page, 3, 'Home and bills');
+      await skip(page);
+      await expectStep(page, 4, 'Debts');
+
+      // Screen 4: "Add a debt", then typing what's owed before the frame comes.
+      await holdFrames();
+      await page.getByRole('button', { name: 'Add a debt' }).click();
+      const debt = lastForm(page, 'debt');
+      await box(debt, 'What you owe now').fill('453.77');
+      await letFramesThrough();
+      await expect(box(debt, 'What you owe now')).toBeFocused();
+      await expect(box(debt, 'What you owe now')).toHaveValue('453.77');
+      await expect(box(debt, 'Name')).toHaveValue('');
+
+      // With nothing typed before the frame, the cursor still goes to the new form's name.
+      await page.getByRole('button', { name: 'Add a debt' }).click();
+      await letFramesThrough();
+      await expect(box(lastForm(page, 'debt'), 'Name')).toBeFocused();
+    });
   });
 }
 

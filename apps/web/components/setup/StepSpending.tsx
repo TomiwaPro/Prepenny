@@ -24,6 +24,7 @@ import { strings } from '../../strings/en-GB.ts';
 import { ChoiceList } from '../ChoiceList.tsx';
 import { describedBy, Field, MoneyInput } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
+import { focusLater } from '../focusLater.ts';
 import { focusFirst } from './focus.ts';
 import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.tsx';
 import { useStep } from './useStep.ts';
@@ -281,7 +282,7 @@ export function StepSpending() {
         onClick={() => {
           const key = newId();
           setDrafts((now) => [...now, { key, form: blankBudget('', 'week', firstAccount) }]);
-          requestAnimationFrame(() => document.getElementById(`${formId(key)}-name`)?.focus());
+          focusLater(() => document.getElementById(`${formId(key)}-name`));
         }}
       >
         {t.addAnother}

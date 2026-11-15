@@ -22,6 +22,7 @@ import { strings } from '../../strings/en-GB.ts';
 import { ChoiceList } from '../ChoiceList.tsx';
 import { CheckOption, describedBy, Field, MoneyInput } from '../Fields.tsx';
 import formStyles from '../Form.module.css';
+import { focusLater } from '../focusLater.ts';
 import { focusFirst } from './focus.ts';
 import styles from './Setup.module.css';
 import { AddedList, focusAddAnother, SetupCard, StepFrame } from './StepFrame.tsx';
@@ -287,7 +288,7 @@ export function StepAccounts() {
             { key, form: blankAccount(false, KIND_NAMES.savings), named: false },
           ]);
           // The new account's name box takes focus once it's drawn.
-          requestAnimationFrame(() => document.getElementById(fieldId(key, 'name'))?.focus());
+          focusLater(() => document.getElementById(fieldId(key, 'name')));
         }}
       >
         {t.addAnother}

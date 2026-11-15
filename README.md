@@ -24,8 +24,17 @@ GitHub checks every change, once for each commit, on its pull request and again 
 
 GitHub runs two sets of checks:
 
-- **Lint, type checks, tests and the database** checks the code, runs every engine and app test, and builds a fresh copy of the database on GitHub's machine to test who can see and change what (see "The database" below). About 2 minutes, on every push.
+- **Lint, type checks, tests and the database** checks the code, runs every engine and app test, and builds a fresh copy of the database on GitHub's machine to test who can see and change what (see "The database" below). Its last step, **Check every building block for known security problems**, checks every package PrePenny uses against the list of known security problems (from step 4b, D527). About 2 minutes, on every push.
 - **Build and end-to-end tests** builds the app and uses it in a real browser at 320px and 360px wide, in light and dark, as a phone would, in three parts side by side so it finishes sooner: "part 1 of 3", "part 2 of 3" and "part 3 of 3". Each part also takes a third of the tests that sign up, sign in and sign out, send plans up and bring them down on second phones, make changes with no signal and on two phones at once, and from step 3e sign out other devices, use two-step sign-in, change email addresses, get back in with a backup email (with its 24-hour wait and its stop link, from step 3e hardening) and update an old version, against a copy of Supabase on GitHub's machine, with its function runner, which catches the emails instead of sending them. From step 3i, they also run brief 8.7's tests 1 to 6 on two phones, a security test that tries every request a partner could make for someone's private records, and the six people's journeys signed in on two phones. Each part runs one test at a time (D343, D389), with up to 60 minutes (D499), and a test that fails isn't tried a second time: it fails, and its report is kept (D498).
+
+### Known security problems in PrePenny's building blocks
+
+PrePenny is built from about 330 packages other people wrote: Next.js, React, Supabase's code and the tools that build and test them. Two things look out for known security problems in them (step 4b, D527, D528):
+
+- **The check on every change.** The step **Check every building block for known security problems** asks npm about every package, on every pull request and on `main`. A **serious** problem (high or critical) that the change brings in gives a red cross, so the change can't be merged with a green tick, and on `main` it doesn't go live. Its message says which package and version, how serious, the version that fixes it, and whether it comes in through the app or only through the tools that build and test it. A serious problem that was already there before the change, because it was found after that package was added, shows as a yellow warning on every run, and doesn't stop other changes, as stopping them wouldn't take the package off the live site: ask Claude Code to update it soon. A less serious one (moderate or low) is a yellow warning too.
+- **Dependabot alerts,** GitHub's own watch, between changes. After every change to `main`, the **Dependabot's list** workflow sends GitHub the list of every package (it can't read pnpm 12's lockfile itself, D528). When GitHub learns of a new problem in one of them, or in a GitHub action the workflows use by its version number, the repository gets an alert: on GitHub, **Security and quality**, then under **Findings**, **Dependabot**, then **Vulnerabilities**. For a new critical or high one, GitHub tells people who can change the repository and watch it with security alerts on: by email, on GitHub, or both. To choose which, open https://github.com/settings/notifications and change the setting for Dependabot alerts ("There are new Dependabot alerts in your repository.").
+
+**What to do when either finds something:** ask Claude Code to update the package, naming the alert or the failed check, such as "the building block check failed on pull request 41" or "Dependabot alert for minimist". Nothing else needs doing: the live app keeps working as it was. If a problem ever has no fix yet and can't reach PrePenny, Claude Code can accept it on purpose with a decision; every run then says so.
 
 GitHub's minutes cost money once the free ones are used, so the end-to-end tests wait until a pull request is ready. Claude Code opens each step's pull request as a **draft**, which gets the first set on every push, and marks it **Ready for review** when the step is done, which starts the end-to-end tests and the preview link. Every push after that runs both, and so does `main`, always, before anything goes live. A newer push stops the older checks on a pull request, never on `main`.
 
@@ -59,12 +68,14 @@ You don't need to type any commands. Everything is done on github.com, on a phon
 2. **Try the preview.** A few minutes after the pull request is marked ready, a comment appears on it from **github-actions** with a preview link, such as `https://pr-19-prepenny.prepenny.workers.dev/app/`. Open it on your phone and try the update. It's a separate copy, and says "Test version: don't use real details." at the top: nothing you do there touches the live app or the real database. **What a preview can do for now** (D411): everything kept on the phone, such as the welcome, setup, the example plan, and every screen and change. **What it can't:** signing in is off on previews until the preview database is set up, with Supabase's paid plan before launch, so signing in, saving the plan in an account and keeping two devices in step are tried on the live app after merging, with a spare email address. If no link appears after 15 minutes, see "If something goes wrong" below.
 3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are five: "Lint, type checks, tests and the database", "Build and end-to-end tests" parts 1, 2 and 3, and "Put the app online". "Get the preview database ready, and try the preview" shows as skipped until the preview database is set up (D411), and is a sixth tick after that. A yellow dot means it's still running (about 20 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong". If it still says **Draft**, Claude Code hasn't finished the step yet.
 4. **Merge it.** When you're happy with the preview and every tick is green, tap **Merge pull request**, then **Confirm merge**. GitHub may say **Squash and merge** or **Create a merge commit** instead; either is fine.
-5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about 20 minutes after merging in all, and the Database workflow sends any database changes to the real database. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
+5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about 20 minutes after merging in all, then checks every live page is exactly PrePenny's own (step 4b); the Database workflow sends any database changes to the real database; and **Dependabot's list** tells GitHub which building blocks PrePenny now uses. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
 6. **See it on your phone.** Open the live app. If PrePenny was already open, a note at the bottom says "PrePenny has been updated. Tap to reload." Tap it. People's plans stay as they were: they're saved on their own phones, and an update never changes them.
 
 ### If something goes wrong
 
 - **A check has a red cross.** Don't merge. Tap **Details** beside it to see which test failed, and ask Claude Code to fix it: say "the checks failed on pull request" and its number. The live app is unchanged.
+- **"Check every building block for known security problems" has a red cross.** The change brings in a building block with a serious known security problem, named in the message. Don't merge; ask Claude Code to update it, quoting the message. On `main`, the live app stays as it was until it's fixed. A yellow warning naming a serious problem "already in PrePenny" doesn't stop anything, but ask Claude Code to update it soon. See "Known security problems in PrePenny's building blocks" above.
+- **"Check the live pages are PrePenny's own" has a red cross, in Deploy.** The update is online, but a live page isn't exactly as built: the message says what. If it names something of Cloudflare's, part N below says how to switch it off; then open the run and tap **Re-run all jobs**. Anything else, ask Claude Code, quoting the message.
 - **No preview link.** Tap **Actions**, then **Deploy**, then the newest run for the pull request. If it says "Cloudflare isn't set up yet", the Cloudflare key has expired or been removed: follow "Setting it up the first time" below to make a new one.
 - **The live app didn't change after merging.** Tap **Actions**. If the **Check** run on `main` has a red cross, nothing went live, which is on purpose: ask Claude Code to fix it. If **Deploy** has a red cross, tap it, then **Re-run all jobs**. You can also put `main` online by hand: **Actions**, then **Deploy**, then **Run workflow**, keeping **Branch: main**, then **Run workflow** again.
 - **Take an update back.** Open the merged pull request and tap **Revert**, then **Create pull request**. That makes a new pull request that undoes it; merge it the same way, from step 3.
@@ -716,47 +727,26 @@ This computer couldn't open supabase.com today, so Supabase's guide and the desc
 
 To check it worked, after merging: **Actions**, then **Database**, then the newest run: a green tick, and its step **Check GraphQL is still off** says "GraphQL is off." Then **Deploy**: a green tick.
 
-#### Trying it on the live app, alone, with two devices
+#### Trying it on the live app
 
-You need your phone (device A, playing Jess) and a computer or a second browser with a **private or incognito window** (device B, playing Tom). Use two new Gmail "+" addresses made from your own: if your address is `yourname@gmail.com`, Gmail delivers mail for `yourname+jess4@gmail.com` and `yourname+tom4@gmail.com` to your own inbox, but PrePenny treats them as two new people. Put your own name where these steps say `yourname`. Your own plan isn't touched.
+What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4a", with the test accounts deleted at its end. Walk through it once, with the rest of Phase 4, at the end of Phase 4 (D526).
 
-Jess's plan, on device A:
+### N. Step 4b: safer building blocks
 
-1. Open https://prepenny.co.uk/app/, tap **More**, then **Sign out**, then **Sign out** again. Your own plan is safe in your account.
-2. Tap **Make my plan**. Name the account `Jess current account`, with `410`. Tap **Add another account**: `Joint account`, choose **Joint account**, `1050`. Tap **Next**.
-3. On "How you're paid": name `Jess pay`, **Monthly, on a date**, next payday the 28th of this month (of next month if it's past), `2100`, into **Jess current account**, and **No** to extra hours. Tap **Next**, then **Skip this step** on each of the next three screens, then **Go to my plan**.
-4. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+jess4@gmail.com`.
-5. Tap **More**, then **Share with my partner**, then **Choose shared accounts**. Tick **Joint account** only, tap **Share these accounts**, then **Yes, share**. Go back.
-6. Under **Invite your partner**, type `Jess`, keep **Can edit** and **A link I send myself**, tap **Make the invite link**, then **Copy the link**, and send it to yourself so you can open it on device B.
+What changed (D527 to D532): every building block is checked for known security problems on every change, a change that brings in a serious one is stopped, and GitHub is sent the list for Dependabot alerts after each change to `main` ("Checks", above); each page's security policy lists exactly the scripts PrePenny wrote into it, so a script slipped into a page can't run; and straight after each update, the Deploy workflow checks the live pages are exactly PrePenny's own, with nothing of Cloudflare's in them.
 
-Tom's plan, on device B, in a private or incognito window:
+**What you need to set up**, checked against each service's own pages on 14 Nov 2026:
 
-7. Open https://prepenny.co.uk/app/ and tap **Make my plan**. Name the account `Tom current account`, with `520`, and tap **Next**. On "How you're paid": `Tom pay`, **Monthly, on a date**, next payday the 15th of next month, `2350`, and **No** to extra hours. Tap **Next**, **Skip this step** three times, then **Go to my plan**.
-8. Tap **More**, then **Sign up or sign in**, and sign up with `yourname+tom4@gmail.com`.
-9. Open the invite link. It says your plan comes with you. Type `Tom` and tap **Ask to join**.
-10. On device A, within a few seconds, "Tom wants to join your plan": tap **Allow**, then **Got it**. On device B, Home opens.
+1. **Cloudflare: switch off Web Analytics** (about 3 minutes, before merging). Cloudflare switched it on by itself, and was writing its analytics script into every page of prepenny.co.uk (D531). The security policy has always stopped it running, but it shouldn't be there, and from this step the Deploy workflow fails while it is. From Cloudflare's own "Get started" page for Web Analytics:
+   1. Sign in at https://dash.cloudflare.com and go to the **Web Analytics** page, or open https://dash.cloudflare.com/?to=/:account/web-analytics.
+   2. On the card for **prepenny.co.uk**, select **Manage site**.
+   3. Change the automatic setup to **Disable** ("The JS Snippet will not be injected and has been disabled."). If there's no choice of setup there, only **Delete**, select **Delete**: Cloudflare's help gives that for analytics it switched on by itself.
+   If prepenny.co.uk isn't on that page at all, tell Claude Code: Cloudflare has a second switch, a Configuration Rule called "Disable Real User Monitoring (RUM)".
+2. **Cloudflare: switch off Network Error Logging** (recommended, about 2 minutes, any time). Cloudflare asks phones to tell it when they fail to reach PrePenny: the address they tried and the error, never anything about money (D531). PrePenny doesn't use those reports. From Cloudflare's own "Get started" page for Network Error Logging: go to **Account home**, select **Network**, find **Network Error Logging Monitoring**, and turn its toggle off. If **Network** isn't on Account home, select **prepenny.co.uk** first and look there. Until it's off, each Deploy run shows a yellow warning about it, and nothing fails.
+3. **GitHub: nothing new.** Dependabot alerts are on, which also switches on the dependency graph that Dependabot's list needs ("When enabled, GitHub immediately generates the dependency graph", GitHub's own words). Dependabot's list sends with GitHub's own key for each run: no secret or variable.
+4. **Supabase, Resend and Google: nothing.** No new package.
 
-Each adds a budget, and is told first:
-
-11. On device A, tap **More**, then **Budgets**, then **Add a budget**: name `Food`, amount `300`, **Month**, from **Joint account**. Above **Add budget** it says "Tom will see this money leave on your paydays." Choose **Jess current account** instead: the sentence goes. Choose **Joint account** again and tap **Add budget**.
-12. On device B, the same with `Meals out`, `60`, **Month**, from **Joint account**: "Jess will see this money leave on your paydays." Tap **Add budget**.
-13. Within a minute, on device A, **Budgets** says under Food "Tom sees this leave on your paydays." and under Meals out "Leaves on Tom's paydays." On device B, under Food "Leaves on Jess's paydays." and under Meals out "Jess sees this leave on your paydays." Food's "This month, to …" is the same day on both devices, and so is Meals out's.
-
-The same joint account on both phones:
-
-14. On both devices, tap **Coming up**, then **Switch account**, then **Joint account**. Food's −£300.00 is on Jess's next payday on both, Meals out's −£60.00 on Tom's, and every "Left after this" is the same. Nothing of Jess's pay shows on device B: no Jess current account and no Jess pay.
-
-Jess leaves:
-
-15. On device A, tap **More**, then **Share with my partner**, then **Leave this plan**. Choose **No, just my own things**, tap **Leave this plan**, then **Yes, leave**.
-16. On device B, within a minute, **Budgets** says under Food "The person who added this has left the plan, so it now leaves on your paydays.", and its "This month, to …" is now the same day as Meals out's.
-17. On device B, tap **More**, then **Share with my partner**. Under **Invite your partner**: "Whoever joins will see Food and Meals out leave on your paydays."
-
-#### Removing the two test accounts afterwards
-
-18. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete`, and tap **Delete my account and all my data**.
-19. On device A, the same with the code sent to `yourname+jess4@gmail.com`.
-20. Close the private window. On device A, sign in again with your own address: your own plan comes back.
+**To check it worked, after merging:** **Actions**, then **Deploy**, then the newest run: a green tick, and its step **Check the live pages are PrePenny's own** says "each exactly as built, with its own security policy, and nothing of Cloudflare's written into them". If it has a red cross naming "Cloudflare's Web Analytics script", do step 1 above, then **Re-run all jobs**. Then **Dependabot's list**: a green tick. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4b".
 
 ## Bank holidays
 
