@@ -93,7 +93,7 @@ export function HolidayNote({ today }: { readonly today: string }) {
         type="button"
         className={styles.leave}
         onClick={async () => {
-          setNote(null);
+          // Gone from the phone first, so PrePenny closed straight after never brings it back.
           try {
             const db = openDb();
             try {
@@ -104,6 +104,7 @@ export function HolidayNote({ today }: { readonly today: string }) {
           } catch {
             // No database: it was never kept.
           }
+          setNote(null);
         }}
       >
         {t.holidayGotIt}

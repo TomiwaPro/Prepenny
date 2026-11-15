@@ -11,6 +11,8 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 import {
+  bankHolidayCalendar,
+  checkBankHolidayCopy,
   type EditCommand,
   type PlanRecords,
   parsePounds,
@@ -18,7 +20,7 @@ import {
   workOutPlan,
 } from '@prepenny/engine';
 import { build, fixtureRecords } from '../../../packages/engine/test/fixtures/from-empty.ts';
-import { calendarFor as holidaysFor } from '../../../packages/engine/test/fixtures/holidays.ts';
+import { calendarFor } from '../../../packages/engine/test/fixtures/holidays.ts';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, openPeriod, period, rowIn } from './coming-up.ts';
@@ -56,11 +58,24 @@ export async function openNewPhone(page: Page, today: string) {
 /** Each account's end-of-day balance, from today to `to`. */
 export type Days = Record<string, Record<string, number>>;
 
+/**
+ * A plan's bank holidays as the phone uses them: its own copy of the list,
+ * or the built-in one (step 4c, D536). The app's lib/holidays.ts reads the
+ * built-in list in a way only the app's build understands.
+ */
+export function holidaysOf(records: PlanRecords) {
+  const nation = records.settings?.nation ?? 'england-and-wales';
+  return records.bankHolidays === undefined
+    ? calendarFor(nation)
+    : bankHolidayCalendar(nation, checkBankHolidayCopy(records.bankHolidays).official);
+}
+
 export function daysOf(records: PlanRecords, today: string, to: string): Days {
   const plan = workOutPlan({
     ...records,
     mainPayFamilyId: records.settings?.mainPayFamilyId ?? null,
-    holidays: holidaysFor(records.settings?.nation ?? 'england-and-wales'),
+    // The plan's own bank holiday list, as the phone uses it (step 4c, D536).
+    holidays: holidaysOf(records),
     today,
     to,
   });
