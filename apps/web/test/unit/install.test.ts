@@ -73,9 +73,7 @@ describe('what this phone keeps', () => {
       answered: true,
       installed: true,
     });
-    expect(readKept('{"firstDay":"16 Nov","answered":"yes","installed":1,"other":2}')).toEqual(
-      {},
-    );
+    expect(readKept('{"firstDay":"16 Nov","answered":"yes","installed":1,"other":2}')).toEqual({});
   });
 });
 
