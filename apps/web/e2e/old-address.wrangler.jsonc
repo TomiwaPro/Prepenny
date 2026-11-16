@@ -19,8 +19,10 @@
       "/*",
       "!/_next/*",
       "!/version.json",
+      "!/bank-holidays.json",
       "!/sw.js",
       "!/icons/*",
+      "!/splash/*",
       "!/engine-worker-*",
       "!/manifest.webmanifest"
     ],

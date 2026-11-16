@@ -31,10 +31,13 @@ export default {
   globPatterns: ['**/*.{html,js,css,woff2,png,svg,webmanifest,json,txt}'],
   // version.json says which version is live now, so it's always fetched fresh (lib/version.ts),
   // and so is the bank holiday list, which can change without a new version (step 4c, D537).
+  // An iPhone fetches its one opening screen only when PrePenny is added to its
+  // Home Screen, so the 26 aren't downloaded to every phone (step 4d, D550).
   globIgnores: [
     'sw.js',
     'version.json',
     'bank-holidays.json',
+    'splash/**',
     '**/*.map',
     '404/**',
     '_not-found/**',
