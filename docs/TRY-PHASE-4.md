@@ -81,6 +81,32 @@ On GitHub, a Monday after merging:
 
 8. Open https://github.com/TomiwaPro/Prepenny/actions and tap **Bank holidays**. The newest run says "schedule" and has a green tick. Tap it, then **Keep the site's list up to date**: its last step says "The site already has GOV.UK's list, so there's nothing to do.", or that it put the live app online again because GOV.UK's list changed.
 
+## Step 4d: installing to the home screen (10 minutes, over two days)
+
+The suggestion on Home comes on the second day someone uses their own plan, so steps 1 to 3 need two days on your own phone, device A, in its browser rather than from its home screen. If PrePenny already suggested it to you after step 4d went live and you answered it, it won't come back, which is right (D546): go to step 4. No test accounts are needed, and your plan isn't changed.
+
+The suggestion on Home, device A, in the browser:
+
+1. **Day 1:** open https://prepenny.co.uk/app/ in Chrome (Android) or Safari (iPhone), with your own plan. Nothing about the home screen shows.
+2. **Day 2:** open it again in the same browser. Under the lowest point: "Add PrePenny to your home screen." with **Show me how** (or **Add to home screen** on Android, where Chrome offers it) and **Not now**.
+3. Tap **Show me how**. A sheet shows the steps for your phone first, numbered. Close it. In its place on Home: "The steps are in More, under Home screen, whenever you want them." Open PrePenny again, the next day too: the suggestion doesn't come back.
+
+The steps, and adding it, device A:
+
+4. Tap **More**. Under **Home screen**, tap **Add to home screen**. Your phone's steps are first. Follow them.
+5. Open PrePenny from the new icon on your home screen. It opens without the browser's address bar. On an iPhone, while it opens, the screen shows PrePenny's icon and name on the cream paper colour, not a white screen. On an iPhone, sign in there with your own address: your plan comes down, as the home-screen app keeps its own storage.
+6. In PrePenny, tap **More**: under **Home screen** it now says "PrePenny is on this phone's home screen".
+7. Switch your phone to dark mode and open PrePenny from the home screen again. On an iPhone, the opening screen should be dark navy: if it's still cream, note it (D550: no source says whether an iPhone uses the dark one). On Android it stays light: Chrome doesn't read dark colours for it yet (D550). Switch dark mode back if you like.
+8. **Android only:** press and hold PrePenny's icon. It offers **Update balance** and **I spent**. Tap **Update balance**: PrePenny opens with Update balance open. Close it without saving.
+
+Before setup on an iPhone (only if device A is an iPhone):
+
+9. In Safari, open a **Private** tab and go to https://prepenny.co.uk. Tap **Make my plan**. A sheet says "Add PrePenny to your Home Screen first" and "On an iPhone, a plan made here in Safari stays in Safari. PrePenny on your Home Screen starts empty, unless you sign in.", with **Show me how** and **Make my plan here in Safari**. Tap **Close**, then close the private tab: nothing is kept.
+
+Cloudflare's script, once README.md part N, step 1 is done:
+
+10. Open https://github.com/TomiwaPro/Prepenny/actions, tap **Deploy**, then its newest run from `main`, then **Put the app online**, then **Check the live pages are PrePenny's own**. It doesn't name "its Real User Monitoring (RUM) script". If it names a page with "a different security policy", note what it says it was sent instead.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.
