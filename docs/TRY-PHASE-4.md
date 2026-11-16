@@ -89,7 +89,7 @@ The suggestion on Home, device A, in the browser:
 
 1. **Day 1:** open https://prepenny.co.uk/app/ in Chrome (Android) or Safari (iPhone), with your own plan. Nothing about the home screen shows.
 2. **Day 2:** open it again in the same browser. Under the lowest point: "Add PrePenny to your home screen." with **Show me how** (or **Add to home screen** on Android, where Chrome offers it) and **Not now**.
-3. Tap **Show me how**. A sheet shows the steps for your phone first, numbered. Close it. In its place on Home: "The steps are in More, under Home screen, whenever you want them." Open PrePenny again, the next day too: the suggestion doesn't come back.
+3. Tap **Show me how**. A sheet shows the steps for your phone first, numbered. Close it. In its place on Home: "The steps are in More, under Home screen, whenever you want them." Open PrePenny again, the next day too: the suggestion doesn't come back. On Android, if the first button says **Add to home screen**, tap it and confirm with Chrome's **Install** instead: Home then says "PrePenny is on your home screen now. Open it from there." Go to step 5.
 
 The steps, and adding it, device A:
 
@@ -97,7 +97,7 @@ The steps, and adding it, device A:
 5. Open PrePenny from the new icon on your home screen. It opens without the browser's address bar. On an iPhone, while it opens, the screen shows PrePenny's icon and name on the cream paper colour, not a white screen. On an iPhone, sign in there with your own address: your plan comes down, as the home-screen app keeps its own storage.
 6. In PrePenny, tap **More**: under **Home screen** it now says "PrePenny is on this phone's home screen".
 7. Switch your phone to dark mode and open PrePenny from the home screen again. On an iPhone, the opening screen should be dark navy: if it's still cream, note it (D550: no source says whether an iPhone uses the dark one). On Android it stays light: Chrome doesn't read dark colours for it yet (D550). Switch dark mode back if you like.
-8. **Android only:** press and hold PrePenny's icon. It offers **Update balance** and **I spent**. Tap **Update balance**: PrePenny opens with Update balance open. Close it without saving.
+8. **Android only:** press and hold PrePenny's icon. It offers **Update balance** and **I spent**. Tap **Update balance**: PrePenny opens with Update balance open (with the app lock on, after your PIN). Close it without saving.
 
 Before setup on an iPhone (only if device A is an iPhone):
 
