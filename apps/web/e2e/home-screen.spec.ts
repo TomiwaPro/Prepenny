@@ -87,6 +87,13 @@ async function skipToPlan(page: Page) {
 
 const suggestion = (page: Page) => page.getByTestId('home-screen-suggestion');
 
+/** Waits until Home has kept the first day it showed the person's own plan. */
+async function dayKept(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('prepenny-home-screen') ?? ''))
+    .toContain(DAY_1);
+}
+
 /** Chrome's offer to install, as Chrome sends it, with the person's answer. */
 async function browserOffers(page: Page, outcome: 'accepted' | 'dismissed') {
   await page.evaluate((answer) => {
@@ -110,7 +117,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await setUpOwnPlan(page);
-      // Day 1: not yet, even opened again.
+      // Day 1: not yet, even opened again, once Home has kept the day (D554).
+      await dayKept(page);
       await expect(suggestion(page)).toHaveCount(0);
       await page.reload();
       await expect(page.getByTestId('lowest-point')).toBeVisible();
@@ -205,11 +213,17 @@ for (const colorScheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await setUpOwnPlan(page);
-      await openHomeOn(page, DAY_2);
-      await expect(suggestion(page)).toBeVisible();
+      await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today: DAY_2 }] as const);
+      // Chrome offers it while More is showing, then Home is opened.
+      await page.goto('/app/more/');
       await browserOffers(page, 'accepted');
       // PrePenny kept Chrome from suggesting it by itself, and asks with its own button.
       expect(await page.evaluate(() => Reflect.get(window, '__offerKeptBack'))).toBe(true);
+      await page
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('link', { name: 'Home' })
+        .click();
+      await expect(suggestion(page)).toBeVisible();
       const add = suggestion(page).getByRole('button', { name: t.addNow });
       await expect(add).toBeVisible();
       await expect(suggestion(page).getByRole('button', { name: t.suggest.showMeHow })).toHaveCount(
@@ -228,7 +242,52 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await browserOffers(page, 'dismissed');
       await page.getByRole('button', { name: t.addNow }).click();
       await expect(page.getByTestId('install-said')).toHaveText(t.notAdded);
+      // The button has gone, so focus is on what the browser said (D554).
+      await expect(page.getByTestId('install-said')).toBeFocused();
       await noAxeProblems(page);
+    });
+
+    test("3. an offer arriving after Home is drawn doesn't change the button under a finger", async ({
+      page,
+    }) => {
+      await setUpOwnPlan(page);
+      await openHomeOn(page, DAY_2);
+      await expect(
+        suggestion(page).getByRole('button', { name: t.suggest.showMeHow }),
+      ).toBeVisible();
+      await browserOffers(page, 'accepted');
+      // Still "Show me how": its sheet offers Chrome's install instead (D554).
+      await expect(
+        suggestion(page).getByRole('button', { name: t.suggest.showMeHow }),
+      ).toBeVisible();
+      await suggestion(page).getByRole('button', { name: t.suggest.showMeHow }).click();
+      const sheet = page.getByRole('dialog', { name: t.heading });
+      await sheet.getByRole('button', { name: t.addNow }).click();
+      await expect(sheet.getByTestId('install-said')).toHaveText(t.added);
+      await expect(sheet.getByTestId('install-said')).toBeFocused();
+    });
+
+    test('3. added from Chrome itself, or installed before, is never suggested', async ({
+      page,
+    }) => {
+      // Chrome says PrePenny was added, with nothing answered.
+      await setUpOwnPlan(page);
+      await dayKept(page);
+      await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
+      await openHomeOn(page, DAY_2);
+      await expect(page.getByTestId('lowest-point')).toBeVisible();
+      await expect(suggestion(page)).toHaveCount(0);
+    });
+
+    test('3. Chrome saying PrePenny is installed already counts too', async ({ page }) => {
+      await page.addInitScript(() => {
+        Reflect.set(navigator, 'getInstalledRelatedApps', async () => [{ platform: 'webapp' }]);
+      });
+      await setUpOwnPlan(page);
+      await dayKept(page);
+      await openHomeOn(page, DAY_2);
+      await expect(page.getByTestId('lowest-point')).toBeVisible();
+      await expect(suggestion(page)).toHaveCount(0);
     });
 
     test('4. never while PrePenny is open from the home screen, and More says so', async ({
@@ -333,15 +392,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
       expect(await layoutProblems(page)).toEqual([]);
 
-      // Or setup here in Safari.
-      await sheet.getByRole('button', { name: t.before.makeHere }).click();
-      await expectStep(page, 1, 'Your account');
-
-      // Answered: never again, before setup or on Home on the second day.
-      await page.getByRole('button', { name: 'Back', exact: true }).click();
-      await page.getByRole('button', { name: 'Carry on making my plan' }).click();
+      // Answered: closed now, and "Make my plan" goes straight to setup, before setup has started (D554).
+      await sheet.getByRole('button', { name: strings.sheet.close }).click();
+      await expect(sheet).toBeHidden();
+      await page.reload();
+      await make.click();
       await expectStep(page, 1, 'Your account');
       await expect(page.getByRole('dialog')).toHaveCount(0);
+      // Never again on Home on the second day either.
       await fillAccount(lastForm(page, 'account'), {
         name: 'Current account',
         balance: '410',
@@ -421,6 +479,35 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await context.close();
       });
     }
+
+    test("4. a laptop in full screen isn't taken for the home screen", async ({ page }) => {
+      await page.addInitScript(() => {
+        const real = window.matchMedia.bind(window);
+        window.matchMedia = (query: string) =>
+          query.includes('display-mode: fullscreen')
+            ? ({ ...real(query), matches: true, media: query } as MediaQueryList)
+            : real(query);
+      });
+      await setUpOwnPlan(page);
+      await page.goto('/app/more/');
+      await expect(page.getByTestId('home-screen')).toContainText(t.more.line);
+      await expect(page.getByTestId('home-screen')).not.toContainText(t.more.lineAdded);
+    });
+
+    test('6. in Chrome on an iPhone, "sign up first" says this browser, not Safari', async ({
+      browser,
+    }) => {
+      const context = await browser.newContext({
+        userAgent: IPHONE_CHROME,
+        colorScheme,
+        viewport: { width: 360, height: 780 },
+      });
+      const page = await context.newPage();
+      await setUpOwnPlan(page);
+      await page.goto('/app/home-screen/');
+      await expect(page.getByTestId('sign-up-first')).toContainText(t.iphone.signUpFirstHere);
+      await context.close();
+    });
 
     test('1. a laptop is never asked on Home either', async ({ page }) => {
       await setUpOwnPlan(page);
