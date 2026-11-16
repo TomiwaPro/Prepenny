@@ -122,7 +122,7 @@ describe('the live site, checked after an update', () => {
   });
 
   it("says which page's policy a page was sent instead of its own, such as the general one", async () => {
-    // As on the live site on 15 Nov 2026, when "/" was sent a policy other than its own (D554).
+    // As on the live site on 15 Nov 2026, when "/" was sent a policy other than its own (D553).
     cloudflare = { beacon: false, nel: false, older: false, policy: withScript('missing()') };
     const result = await checkOnce(site, out);
     expect(result.findings.map((one) => one.kind)).toEqual(['policy', 'policy']);

@@ -6,7 +6,7 @@
 // 2026 it wrote its Real User Monitoring (RUM) script, the beacon its Web
 // Analytics uses, into every live page. Cloudflare switches RUM on by itself
 // for free plans, so it can be there with no Web Analytics site listed in
-// the account (step 4d, D554). So every page
+// the account (step 4d, D553). So every page
 // is fetched as a phone opens it, and must be exactly the file that was
 // built, with exactly the security policy written for it (D529). Anything
 // Cloudflare wrote into a page, or a different policy, fails the check and
@@ -31,7 +31,7 @@ const POLICY = 'content-security-policy';
 
 /**
  * Things Cloudflare can write into a page, and how to recognise them, named
- * as Cloudflare's own dashboard and documentation name them (step 4d, D554).
+ * as Cloudflare's own dashboard and documentation name them (step 4d, D553).
  */
 export const CLOUDFLARE_ADDITIONS: readonly { readonly name: string; readonly mark: RegExp }[] = [
   {
@@ -119,7 +119,7 @@ export interface Finding {
 /**
  * Whose policy a page was sent instead of its own, in words: the general
  * one (the not-found page's), another page's, none, or one this build
- * didn't write, such as the version before's (step 4d, D554).
+ * didn't write, such as the version before's (step 4d, D553).
  */
 function whosePolicy(policy: string | undefined, known: ReadonlyMap<string, string>): string {
   if (policy === undefined) return 'it was sent none at all';

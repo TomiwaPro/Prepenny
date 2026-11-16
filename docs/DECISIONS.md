@@ -6410,6 +6410,8 @@ Why: the policy blocks anything Cloudflare writes into a page, but a page with s
 
 ### D531. What Cloudflare adds to the live site of its own, and what to switch off
 
+Its first point's steps are replaced by D553: the script is Cloudflare's Real User Monitoring (RUM), which the Web Analytics page doesn't list for prepenny.co.uk, and a Configuration Rule on prepenny.co.uk switches it off.
+
 Decided 14 Nov 2026 in step 4b, PLAN.md item 31. Checked on the live site the same day, from the building computer (which can now open prepenny.co.uk), against a build of the same code: all 30 pages and the not-found page were exactly PrePenny's own, apart from what's below.
 
 - **Web Analytics, written into every page. Switch it off.** Before `</body>`, every page had `<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/…" data-cf-beacon='{…"token":…,"spa":2}'>`. Cloudflare's documentation (Speed, Observatory, updated 17 Aug 2026): "Free customers have RUM enabled automatically, with traffic from EEA/UK/CH excluded, and can switch it off if they prefer." It measures page loads and sends them to Cloudflare. The policy has always stopped it loading (it isn't from PrePenny's own address), so it never ran on a phone, but it's a third-party script in money screens (CLAUDE.md), it's turned on by Cloudflare, not by the owner, and it fills each page's error log. The exclusion goes by the Cloudflare data centre a phone connects to (Cloudflare's RUM beacon page, 5 Oct 2026), so a phone reaching one outside the UK and EEA gets it, as the building computer did, through Chicago. **Steps** (Web Analytics, "Get started", updated 17 Apr 2026): Web Analytics page, then **Manage site** for prepenny.co.uk, then change the automatic setup to **Disable** ("The JS Snippet will not be injected and has been disabled."). Cloudflare's Observatory FAQ (16 Apr 2026) gives **Delete** in the same place for RUM that was switched on by itself. README.md part N has the steps.
@@ -6619,3 +6621,110 @@ The owner's words: "suggest it once on Home, on the second day someone uses thei
 - **Always findable in More,** with the steps for Android (Chrome) and iPhone (Safari), in the phone's own button names, and the browser's own install where the phone offers one.
 
 Why: the owner's answer. One suggestion, when the person has come back and PrePenny has shown it's worth keeping, and the steps always there for anyone who wants them later.
+
+
+## Made during step 4d
+
+D547 to D553 were decided on 16 Nov 2026 while building step 4d, installing to the home screen (PLAN.md question 5, D546).
+
+### D547. How the suggestion on Home works
+
+Decided 16 Nov 2026 in step 4d. Builds D546.
+
+- **The second day.** The phone keeps the first day Home showed the person's own plan. On any later day, Home suggests it: "Add PrePenny to your home screen.", "It then opens like an app, straight from your home screen, and works with no signal.", with **Show me how** and **Not now**. It sits under the lowest point, after the bank holiday note (D539), so a 320 by 568 phone still shows the account and the lowest point first (D442, D451). Someone whose plan was set up before this step counts from the first day they open Home after it.
+- **Once.** It stays until it's answered, and any answer ends it for good: **Show me how**, the browser's own **Add to home screen**, or **Not now**. "Show me how" answers it too because on an iPhone, Safari can't tell when PrePenny has been added (the home-screen app keeps its own storage, D548), so a suggestion left until then could come back in Safari after it was added; and the steps are always in More.
+- **Once answered,** one line takes its place, with focus on it so it isn't lost (WCAG 2.4.3): "The steps are in More, under Home screen, whenever you want them." It's gone the next time Home opens.
+- **Only on a phone:** an Android phone, an iPhone or an iPad (which says it's a Mac, but has a touch screen). Never on a laptop, never on Sam's example or a test plan in its place, and never while PrePenny is open from the home screen.
+- **On the home screen** means PrePenny is open from it (the page's display mode is `standalone`, `fullscreen`, `minimal-ui` or `window-controls-overlay`, or, on an iPhone, `navigator.standalone`; an iPhone's home-screen app reports `fullscreen` rather than `standalone`, WebKit bug 264218), or the browser said it was added (`appinstalled`, or a yes to its own confirm). Once seen, it's kept.
+- **The browser's own offer.** Chrome on Android sends `beforeinstallprompt` when PrePenny can be installed. PrePenny keeps it back on every page (`preventDefault`), so Chrome doesn't suggest it by itself on the first day as well (its own message, "Install PrePenny"); Chrome's menu still has it. Where Chrome has offered, the suggestion's first button is **Add to home screen**, which asks Chrome, with Chrome's own confirm. Chrome lets that be asked once, and only from a tap.
+- **What's kept,** on this phone only, in the browser's small store like Light or Dark (D173): the first day, whether it was answered, and whether PrePenny was seen on the home screen. Nothing is sent anywhere. Signing out removes it with everything else (D308), so a phone signed out and used again starts afresh; open from the home screen, it's never suggested whatever is kept.
+
+Test: `apps/web/e2e/home-screen.spec.ts` tests 1 to 4 (Android at 320px and 360px, in light and dark, with axe and at 200% text), and the laptop's test 1; `apps/web/test/unit/install.test.ts`.
+
+Why: the owner's answer (D546), built so it can't nag: one card, ended by any answer.
+
+### D548. The steps under More, in each phone's own words
+
+Decided 16 Nov 2026 in step 4d. Builds D546 and PLAN.md's step 4d.
+
+- **Where:** More has a **Home screen** card with **Add to home screen**, "Steps for Android and iPhone, so PrePenny opens like an app", which opens `/app/home-screen/`: "Put PrePenny on your phone's home screen. It then opens like an app, and works with no signal." Open from the home screen, the line says "PrePenny is on this phone's home screen", and the page "PrePenny is on your home screen. You're using it from there now." The same steps open in a sheet from Home's **Show me how** and before setup on an iPhone (D549).
+- **This phone's first:** the iPhone's on an iPhone or iPad, Android's otherwise, each numbered.
+- **Android, in Chrome:** "Open prepenny.co.uk/app in Chrome.", "Tap More, the three dots to the right of the address bar.", "Tap Install and create shortcut. On an older Chrome, it says Add to Home screen.", "Tap Install, then Install again.", and "In another browser, such as Samsung Internet, look in its menu for Install."
+- **iPhone, in Safari:** "Open prepenny.co.uk/app in Safari.", "Tap the three dots beside the address, then Share. If Share, the square with an arrow pointing up, is on the screen already, tap that instead.", "Scroll down and tap Add to Home Screen. If it isn't in the list, tap Edit Actions at the bottom, then Add to Home Screen.", "Turn on Open as Web App, then tap Add. On an older iPhone there's no Open as Web App: just tap Add." Then "In Chrome on an iPhone, tap Share on the right of the address bar, then Add to Home Screen, then Add." and "On an iPhone, PrePenny on your Home Screen keeps its own copy of everything, apart from the browser you added it from. Sign in there, and your plan comes with you."
+- **Sign up first:** on an iPhone, with a plan of one's own and not signed in: "Your plan is only in Safari on this phone for now. Sign up first, so it comes with you to the Home Screen.", with **Sign up or sign in**.
+- **The browser's own install,** where it offers one: **Add to home screen** first, as the main button, "Your phone then asks you to confirm.", then "PrePenny is on your home screen now. Open it from there." or "PrePenny wasn't added. You can follow the steps below at any time."
+- **Where the words come from.** support.apple.com and support.google.com couldn't be opened from the building computer, so:
+  - Chrome's words are from Chrome's own code, Chromium's source on 16 Nov 2026 (`components/webapps/browser/android/android_webapps_strings.grd` and the app menu's code): the menu item is "Install and create shortcut" since Chrome 150, "Add to Home screen" from 140 to 149; it opens "Install" or "Create shortcut" ("Shortcuts open in Chrome"); Install then asks "Install app", with **Install**. Google's Chrome Help, as search engines show it: "On the right of the address bar, tap More and then Install and create shortcut and then Install."
+  - Apple's words are from its iPhone User Guide page "Turn a website into an app in Safari on iPhone", as search engines show it: "Tap the Page Menu button, then tap Share. If your Tabs layout is Bottom or Top, tap the Share button.", "Scroll down the list of options, then tap Add to Home Screen. If you don't see Add to Home Screen, you can add it. Scroll down to the bottom of the list, tap Edit Actions, then tap Add to Home Screen.", "Turn on Open as Web App.", "Tap Add." Some copies call the three dots "More" rather than "Page Menu", so the steps say "the three dots beside the address". Apple's Safari 26 release notes (fetched): "Added support for any website to become a web app on iOS or iPadOS."
+  - Separate storage, from Apple's WWDC23 session "What's new in web apps" (fetched): "Home Screen web apps have a standalone, app-like experience on iOS, with separate cookies and storage from the browser." On Android, Chrome's installed app shares Chrome's storage, so nothing is lost there.
+  - Chrome on an iPhone, from Google's Chrome Help for iPhone, as search engines show it: "On the right of the address bar, tap Share. Find and tap Add to Home Screen. Confirm or edit the website details and tap Add."
+
+Test: `apps/web/e2e/home-screen.spec.ts` tests 2, 3, 4 and 6, the every-screen checks (`e2e/checks.spec.ts`: axe, keyboard all the way round, 200% text, nothing sent) and the no-signal check (`e2e/offline.spec.ts`).
+
+Why: the owner asked for the phone's own button names, and the steps always findable in More.
+
+### D549. Before setup on an iPhone: a sheet from "Make my plan", not a card on the welcome
+
+Decided 16 Nov 2026 in step 4d. Builds D546's second point.
+
+- **Why a sheet.** The welcome's words and buttons sit in the middle of the screen, so a card added once the page has loaded, which is when PrePenny knows it's an iPhone and has no plan yet, would move the buttons. D362 keeps them still, so no tap lands on the wrong one. A sheet opened by the tap itself moves nothing, and is read before setup starts.
+- **On an iPhone in Safari,** with no plan of one's own yet, **Make my plan** first opens "Add PrePenny to your Home Screen first": "On an iPhone, a plan made here in Safari stays in Safari. PrePenny on your Home Screen starts empty, unless you sign in." Then **Show me how**, which shows the steps in the sheet, the iPhone's first, or **Make my plan here in Safari**, which starts setup. Either answers it, for Home too (D546: never again once dismissed). **Close** answers nothing: setup hasn't started, and the next tap asks again. **Look at an example plan** and **Sign in** aren't held up.
+- **Safari only.** In Chrome on an iPhone, or an app's own browser, "in Safari" wouldn't be true, so it doesn't ask; More's steps cover Chrome on an iPhone, and Home still suggests it on the second day. Not on Android or a laptop, where the home-screen app shares the browser's storage.
+
+Test: `apps/web/e2e/home-screen.spec.ts` test 5 (an iPhone in Safari, then Android, Chrome on an iPhone and a laptop), in light and dark, at 320px and 360px, with axe and at 200% text.
+
+Why: the owner's answer (D546), and D362.
+
+### D550. The opening screens: on an iPhone in PrePenny's colours; on Android, dark waits for Chrome
+
+Decided 16 Nov 2026 in step 4d. Builds PLAN.md's step 4d.
+
+- **iPhone.** An iPhone shows a plain white screen while a home-screen web app starts, unless the page lists a picture for its exact screen (`apple-touch-startup-image`, with a `media` query for its size). Apple's only document on it is its 2016 Safari Web Content Guide, still published; current guides confirm it's still the way, and that an iPhone doesn't make one from the app's details. So every page lists 13 iPhone sizes, from 320 by 568 (iPhone SE, 1st) to 440 by 956 (16 and 17 Pro Max), upright, each in light and dark: PrePenny's icon, 128 points, on the paper colour, with "PrePenny" under it in Figtree, as Android draws its own. `scripts/make-splash-screens.ts` draws the 26 pictures (1.1 MB in the repository). The offline helper never downloads them, and Cloudflare's few lines in front of the app never run for them. The list adds about 6 KB to each page, about 320 bytes as Cloudflare sends it, compressed.
+- **Dark on an iPhone:** each dark picture is listed for `(prefers-color-scheme: dark)`. No source says whether an iPhone looks at that when it chooses, so the try-it guide checks it on a phone.
+- **Android, dark: not possible yet.** Chrome draws Android's opening screen itself, from the app's `background_color`, and reads no dark colour: it tried one (`WebAppDarkMode`) and took it out in Chrome 127, as Chromium's source shows. The manifest standard added `color_scheme_dark` in April 2026 (w3c/manifest pull request 1207), and Chromium lists it as planned. PrePenny's details now have it, with the dark paper colour, so Android picks it up once Chrome reads it, with no update to PrePenny; a browser that doesn't know it leaves it alone. Until then, Android's opening screen is light in dark mode, as before.
+
+Test: `apps/web/test/unit/install.test.ts` (every picture at its exact size, its corner the paper colour; the list in the head; the dark colours in the details) and `apps/web/e2e/home-screen.spec.ts` test 8.
+
+Why: PLAN.md's step 4d asked for both. The iPhone's is built; Android's needs Chrome, so it's ready for it and said plainly.
+
+### D551. A long press of the icon on Android: Update balance and I spent
+
+Decided 16 Nov 2026 in step 4d. Builds PLAN.md's step 4d.
+
+- The app's details list two shortcuts: **Update balance**, opening `/app/#update-balance`, and **I spent**, opening `/app/#i-spent`, each with PrePenny's 192 by 192 icon. Home opens that sheet once the plan is ready, and the address loses the "#" part, so going back or opening PrePenny again doesn't open it twice. I spent with no budget offers Add a budget, as before (D207).
+- After a "#", so the offline helper serves Home for them with no signal, and nothing about them reaches PrePenny's site (as D337).
+- Android shows up to three of an app's own shortcuts (Chrome adds Site settings); Chromium's source keeps a shortcut's "#" part, and picks its icon from those for any purpose, near 48dp. An iPhone doesn't offer shortcuts for web apps.
+
+Test: `apps/web/e2e/home-screen.spec.ts` test 7 (the details as served, and each address opening its sheet), and `apps/web/test/unit/install.test.ts`.
+
+Why: PLAN.md's step 4d, the two things people do most.
+
+### D552. How step 4d is tested, and smaller choices
+
+Decided 16 Nov 2026 in step 4d.
+
+- `apps/web/e2e/home-screen.spec.ts`: each test at 320px and 360px, in light and dark, with axe; the card and both sheets at 200% text. The test phones say they're a laptop unless a test says it's an Android phone or an iPhone, so every older test runs as before. With the second-day rule changed to the first day and "Not now" not kept, tests 1, 2 and 5 failed; put back, they pass.
+- The every-screen checks and the no-signal check include `/app/home-screen/`. The live check covers it by itself, as it checks every page built.
+- The suggestion's buttons are outlined, as Home has one navy button (DESIGN.md); its colour is the sunk colour, like the bank holiday note. The steps are numbered lists, which the base styles otherwise show without numbers.
+- "Home Screen" with capitals where it's an iPhone's, as Apple writes it; "home screen" everywhere else.
+- `e2e/old-address.wrangler.jsonc`, the test copy of the hosting settings, now leaves the bank holiday list out of the few lines in front of the app too, as `wrangler.jsonc` has since step 4c.
+
+Why: each follows DESIGN.md, VOICE.md or an earlier decision where the instructions didn't say exactly.
+
+### D553. Cloudflare's script is its Real User Monitoring, switched off with a rule on prepenny.co.uk
+
+Decided 16 Nov 2026 in step 4d, from the owner's instruction: after step 4b was merged, the Deploy run's check found Cloudflare's script in every page, while the owner's Web Analytics page says "Get started", with no site set up. Replaces D531's first point's steps.
+
+- **What it is.** The script's address, from the Deploy run's own log and step 4b's look at the live pages (D531), is `https://static.cloudflareinsights.com/beacon.min.js`, with `data-cf-beacon`. Cloudflare's documentation (read from its own source, github.com/cloudflare/cloudflare-docs, on 16 Nov 2026, as developers.cloudflare.com couldn't be opened from the building computer) calls it Real User Monitoring (RUM), the beacon Web Analytics uses: "The RUM beacon is a JavaScript snippet that runs when a Cloudflare customer enables RUM through Web Analytics or Observatory." And: "Free customers have RUM enabled automatically, with traffic from EEA/UK/CH excluded, and can switch it off if they prefer." The exclusion goes by the Cloudflare data centre a request reaches, so GitHub's machines in the US get the script; a phone reaching a UK data centre may not, but that can't be relied on.
+- **Why the Web Analytics page shows nothing.** The documentation's only steps to switch RUM off start from that page ("Select **Manage Site** for the hostname"), and it doesn't say the free plan's automatic RUM is listed there. For prepenny.co.uk it isn't, as the owner found. D531's steps can't be followed.
+- **Every other feature that can add a script was checked**, in the same documentation: none uses static.cloudflareinsights.com (Cloudflare's own security policy page lists only Web Analytics with it). Zaraz writes `/cdn-cgi/zaraz/i.js`; bot checks `/cdn-cgi/challenge-platform/`; Email Address Obfuscation `email-decode.min.js`; Rocket Loader its own loader; Automatic Platform Optimization is WordPress only; Cloudflare Fonts and Speed Brain add no script. The live check fails on each, and found none on 15 Nov 2026. Browser Insights is RUM's old name.
+- **The switch, from prepenny.co.uk.** The one way the documentation gives that starts from the domain is a Configuration Rule with the setting "Disable Real User Monitoring (RUM)": "Use this setting to turn off Web Analytics for matching requests." and "Configuration rules have precedence over any Web Analytics rules." Free plans have 10 configuration rules, and they apply to a Worker on a custom domain in the owner's own zone, as prepenny.co.uk is (Workers documentation). README.md part N has the exact steps.
+- **Not chosen:** `Cache-Control: no-transform` on every page would stop Cloudflare writing anything in too, but it also stops Cloudflare compressing pages ("Compression is disabled when the `no-transform` directive is present"), which would slow PrePenny on a weak signal.
+- **GitHub's key can't do it, and isn't widened.** Switching RUM off by Cloudflare's API needs "Zone Settings Edit" (`PATCH /zones/{zone_id}/settings/rum`) or "Config Rules Edit" (the rule), from Cloudflare's own API description. GitHub's key has "Workers Scripts Edit", "Workers Routes Edit" and "Zone Read" (README.md, Signing in, part A). The same goes for Network Error Logging (`PATCH /zones/{zone_id}/settings/nel`, "Zone Settings Edit").
+- **Network Error Logging,** from the documentation's "Get started" page (7 May 2026): "go to the **Account home** page. Select **Network** and locate **Network Error Logging Monitoring**. Select the toggle", the same toggle switching it off. README.md part N has the steps.
+- **The check's words.** It said "Cloudflare's Web Analytics script", which sent the owner to a page with nothing on it. It now says "its Real User Monitoring (RUM) script (static.cloudflareinsights.com)", and the other things as Cloudflare names them.
+- **The front page's policy.** The same run also found "/" sent a security policy other than its own, with every other page right. Cloudflare's asset code as Wrangler 4.151.3 ships it, and Wrangler's own copy of the site here, give "/" its own; the live site can't be reached from the building computer to see which it got. The check now says whose policy a page was sent instead ("the general one, written for the not-found page", another page's, or one this build didn't write), so the next Deploy run says exactly. Nothing about it can let a script run that isn't PrePenny's: every policy lists only PrePenny's own.
+
+Test: `apps/web/test/unit/check-live-site.test.ts` (the RUM name, and whose policy a page was sent, for the general one, another page's and one not written).
+
+Why: the owner's instruction: find exactly what adds it, give one exact path from "open prepenny.co.uk", and fix the check's message where it named the wrong thing.
