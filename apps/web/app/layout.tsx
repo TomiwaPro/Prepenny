@@ -61,6 +61,9 @@ export const metadata: Metadata = {
     startupImage: startupImages(),
   },
   formatDetection: { telephone: false },
+  // Next.js writes only the newer "mobile-web-app-capable"; an iPhone has
+  // long looked for its own name before using the opening screens (D554).
+  other: { 'apple-mobile-web-app-capable': 'yes' },
 };
 
 export const viewport: Viewport = {

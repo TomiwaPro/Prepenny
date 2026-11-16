@@ -1781,7 +1781,7 @@ export const strings = {
       steps: [
         'Open prepenny.co.uk/app in Chrome.',
         'Tap More, the three dots to the right of the address bar.',
-        'Tap Install and create shortcut. On an older Chrome, it says Add to Home screen.',
+        'Tap Install and create shortcut. On an older Chrome, it says Install app or Add to Home screen.',
         'Tap Install, then Install again.',
       ],
       notes: ['In another browser, such as Samsung Internet, look in its menu for Install.'],
@@ -1793,14 +1793,17 @@ export const strings = {
         'Open prepenny.co.uk/app in Safari.',
         'Tap the three dots beside the address, then Share. If Share, the square with an arrow pointing up, is on the screen already, tap that instead.',
         "Scroll down and tap Add to Home Screen. If it isn't in the list, tap Edit Actions at the bottom, then Add to Home Screen.",
-        "Turn on Open as Web App, then tap Add. On an older iPhone there's no Open as Web App: just tap Add.",
+        "Make sure Open as Web App is on, then tap Add. On an older iPhone there's no Open as Web App: just tap Add.",
       ],
       notes: [
         'In Chrome on an iPhone, tap Share on the right of the address bar, then Add to Home Screen, then Add.',
-        'On an iPhone, PrePenny on your Home Screen keeps its own copy of everything, apart from the browser you added it from. Sign in there, and your plan comes with you.',
+        'On an iPhone, PrePenny on your Home Screen keeps its own copy of everything, separate from the browser you added it from. Sign in there, and your plan comes with you.',
       ],
       signUpFirst:
         'Your plan is only in Safari on this phone for now. Sign up first, so it comes with you to the Home Screen.',
+      /** In Chrome or another browser on an iPhone (D554). */
+      signUpFirstHere:
+        'Your plan is only in this browser on this phone for now. Sign up first, so it comes with you to the Home Screen.',
       signUp: 'Sign up or sign in',
     },
     /** On Home, once, on the second day (D546). */

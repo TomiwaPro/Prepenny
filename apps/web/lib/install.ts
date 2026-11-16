@@ -98,14 +98,21 @@ export function suggestOnHome(state: HomeScreenState, today: string): boolean {
 }
 
 /**
- * On an iPhone in Safari, the welcome suggests it too, before setup starts,
- * as a plan made in Safari stays in Safari (D546, D549).
+ * On an iPhone in Safari, "Make my plan" suggests it too, before setup
+ * starts, as a plan made in Safari stays in Safari (D546, D549). Not for
+ * someone signed in, whose plan goes to their account, so the words
+ * wouldn't be true (D554).
  */
-export function suggestOnWelcome(state: HomeScreenState, setupStarted: boolean): boolean {
+export function suggestOnWelcome(
+  state: HomeScreenState,
+  setupStarted: boolean,
+  signedIn: boolean,
+): boolean {
   const { phone, safari, asApp, kept } = state;
   return (
     phone === 'iphone' &&
     safari &&
+    !signedIn &&
     !asApp &&
     !setupStarted &&
     kept.answered !== true &&
@@ -124,6 +131,11 @@ interface InstallOffer extends Event {
 let offer: InstallOffer | null = null;
 const listeners = new Set<() => void>();
 let snapshot: HomeScreenState | null = null;
+/**
+ * Answered while PrePenny is open, even when the phone couldn't keep it, as
+ * in a private window or with its storage full, so the card goes (D554).
+ */
+let answeredNow = false;
 
 const SERVER: HomeScreenState = {
   phone: 'other',
@@ -151,19 +163,26 @@ function keep(change: Partial<Kept>) {
   changed();
 }
 
-/** PrePenny is open from the home screen: as an app on Android, or from the Home Screen on an iPhone. */
-function openAsApp(): boolean {
+/**
+ * PrePenny is open from the home screen: as an app on Android, or from the
+ * Home Screen on an iPhone, which says "fullscreen" rather than
+ * "standalone" (WebKit bug 264218). Elsewhere "fullscreen" is a browser in
+ * full screen, as on a laptop, so it counts only on an iPhone (D554).
+ */
+function openAsApp(phone: Phone): boolean {
   if (Reflect.get(navigator, 'standalone') === true) return true;
-  return ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'].some(
-    (mode) => window.matchMedia?.(`(display-mode: ${mode})`).matches === true,
-  );
+  const modes = ['standalone', 'minimal-ui', 'window-controls-overlay'];
+  if (phone === 'iphone') modes.push('fullscreen');
+  return modes.some((mode) => window.matchMedia?.(`(display-mode: ${mode})`).matches === true);
 }
 
 function current(): HomeScreenState {
   if (snapshot !== null) return snapshot;
   const userAgent = navigator.userAgent;
-  const asApp = openAsApp();
+  const phone = phoneOf(userAgent, navigator.maxTouchPoints);
+  const asApp = openAsApp(phone);
   let kept = readKept(storedText());
+  if (answeredNow) kept = { ...kept, answered: true };
   if (asApp && kept.installed !== true) {
     // Seen on the home screen: never suggested again (D546).
     kept = { ...kept, installed: true };
@@ -174,7 +193,7 @@ function current(): HomeScreenState {
     }
   }
   snapshot = {
-    phone: phoneOf(userAgent, navigator.maxTouchPoints),
+    phone,
     safari: isSafari(userAgent),
     asApp,
     kept,
@@ -214,6 +233,7 @@ export function noteOwnPlanDay(today: string) {
 
 /** "Show me how", the browser's own install or "Not now": never suggested again (D546). */
 export function answerSuggestion() {
+  answeredNow = true;
   keep({ answered: true });
 }
 
@@ -255,6 +275,20 @@ function listen() {
     offer = null;
     keep({ installed: true });
   });
+  // Chrome on Android also says whether PrePenny is installed already, as
+  // from its own menu before step 4d, or before signing out wiped what was
+  // kept (D554). The app's details name it (`related_applications`).
+  const related: unknown = Reflect.get(navigator, 'getInstalledRelatedApps');
+  if (typeof related === 'function') {
+    (related as () => Promise<readonly unknown[]>)
+      .call(navigator)
+      .then((apps) => {
+        if (apps.length > 0 && readKept(storedText()).installed !== true) keep({ installed: true });
+      })
+      .catch(() => {
+        // Not known: suggested as usual.
+      });
+  }
 }
 
 listen();

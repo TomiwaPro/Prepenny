@@ -5,6 +5,7 @@
 
 import type { MetadataRoute } from 'next';
 import { SHORTCUTS } from '../lib/shortcuts.ts';
+import { LIVE_SITE } from '../lib/site.ts';
 import { PAPER } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
 
@@ -41,6 +42,10 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       { src: '/icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
     ],
+    // PrePenny itself, so Chrome on Android can say it's installed already
+    // (`getInstalledRelatedApps`, lib/install.ts, D554). Never preferred over it.
+    related_applications: [{ platform: 'webapp', url: `${LIVE_SITE}/manifest.webmanifest` }],
+    prefer_related_applications: false,
     // PrePenny's own icon beside each, as Android asks for one at least 96 by 96.
     shortcuts: [
       {

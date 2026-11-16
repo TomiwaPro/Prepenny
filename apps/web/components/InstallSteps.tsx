@@ -7,8 +7,7 @@
 // without an account stays in Safari, so someone with a plan who isn't
 // signed in is told to sign up first, so it comes with them.
 
-import Link from 'next/link';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { answerSuggestion, installWithBrowser, useHomeScreen } from '../lib/install.ts';
 import { strings } from '../strings/en-GB.ts';
 import formStyles from './Form.module.css';
@@ -21,10 +20,13 @@ function PhoneSteps({
   phone,
   level,
   signUpFirst,
+  safari,
 }: {
   readonly phone: 'android' | 'iphone';
   readonly level: 2 | 3;
   readonly signUpFirst: boolean;
+  /** Safari itself, so "only in Safari" is true; another browser is "this browser" (D554). */
+  readonly safari: boolean;
 }) {
   const Heading = level === 2 ? 'h2' : 'h3';
   const words = phone === 'android' ? t.android : t.iphone;
@@ -43,8 +45,9 @@ function PhoneSteps({
       ))}
       {phone === 'iphone' && signUpFirst ? (
         <div className={styles.signUp} data-testid="sign-up-first">
-          <p>{t.iphone.signUpFirst}</p>
-          <Link href="/sign-in/?to=sign-up&from=more">{t.iphone.signUp}</Link>
+          <p>{safari ? t.iphone.signUpFirst : t.iphone.signUpFirstHere}</p>
+          {/* A plain link, so nothing is fetched ahead of a tap, as on More (AccountCard). */}
+          <a href="/sign-in/?to=sign-up&from=more">{t.iphone.signUp}</a>
         </div>
       ) : null}
     </section>
@@ -61,6 +64,11 @@ export function InstallSteps({
 }) {
   const state = useHomeScreen();
   const [said, setSaid] = useState('');
+  const saidRef = useRef<HTMLParagraphElement>(null);
+  // The button goes once the browser has answered, so focus goes to what it said (WCAG 2.4.3).
+  useEffect(() => {
+    if (said !== '') saidRef.current?.focus();
+  }, [said]);
   const order =
     state.phone === 'iphone' ? (['iphone', 'android'] as const) : (['android', 'iphone'] as const);
   return (
@@ -87,8 +95,14 @@ export function InstallSteps({
           <p className={styles.note}>{t.addNowHint}</p>
         </div>
       ) : null}
-      {/* Said aloud as soon as the browser has answered. */}
-      <p className={styles.status} role="status" data-testid="install-said">
+      {/* Said aloud as soon as the browser has answered, and given focus. */}
+      <p
+        ref={saidRef}
+        className={styles.status}
+        role="status"
+        tabIndex={-1}
+        data-testid="install-said"
+      >
         {said}
       </p>
       {order.map((phone) => (
@@ -97,6 +111,7 @@ export function InstallSteps({
           phone={phone}
           level={level}
           signUpFirst={signUpFirst && state.phone === 'iphone' && !state.asApp}
+          safari={state.safari}
         />
       ))}
     </div>

@@ -102,17 +102,21 @@ describe('on Home, once, on the second day someone uses their own plan (D546)', 
 describe('before setup, on an iPhone in Safari only (D546, D549)', () => {
   const iphone = state({ phone: 'iphone', safari: true, kept: {} });
   it('before setup starts, and never again once answered or on the Home Screen', () => {
-    expect(suggestOnWelcome(iphone, false)).toBe(true);
-    expect(suggestOnWelcome(iphone, true)).toBe(false);
-    expect(suggestOnWelcome({ ...iphone, kept: { answered: true } }, false)).toBe(false);
-    expect(suggestOnWelcome({ ...iphone, kept: { installed: true } }, false)).toBe(false);
-    expect(suggestOnWelcome({ ...iphone, asApp: true }, false)).toBe(false);
+    expect(suggestOnWelcome(iphone, false, false)).toBe(true);
+    expect(suggestOnWelcome(iphone, true, false)).toBe(false);
+    expect(suggestOnWelcome({ ...iphone, kept: { answered: true } }, false, false)).toBe(false);
+    expect(suggestOnWelcome({ ...iphone, kept: { installed: true } }, false, false)).toBe(false);
+    expect(suggestOnWelcome({ ...iphone, asApp: true }, false, false)).toBe(false);
+  });
+
+  it('not for someone signed in, whose plan goes to their account (D554)', () => {
+    expect(suggestOnWelcome(iphone, false, true)).toBe(false);
   });
 
   it('not on Android, a laptop, or another browser on an iPhone', () => {
-    expect(suggestOnWelcome(state({ kept: {} }), false)).toBe(false);
-    expect(suggestOnWelcome(state({ phone: 'other', kept: {} }), false)).toBe(false);
-    expect(suggestOnWelcome({ ...iphone, safari: false }, false)).toBe(false);
+    expect(suggestOnWelcome(state({ kept: {} }), false, false)).toBe(false);
+    expect(suggestOnWelcome(state({ phone: 'other', kept: {} }), false, false)).toBe(false);
+    expect(suggestOnWelcome({ ...iphone, safari: false }, false, false)).toBe(false);
   });
 });
 
@@ -196,6 +200,11 @@ describe('a long press of the icon on Android (D551)', () => {
     expect(shortcutFor('#')).toBeNull();
     expect(shortcutFor('#id=abc')).toBeNull();
     expect(shortcutFor('#balance')).toBeNull();
+    // PrePenny names itself, so Chrome can say it's installed already (D554).
+    expect(manifest().related_applications).toEqual([
+      { platform: 'webapp', url: 'https://prepenny.co.uk/manifest.webmanifest' },
+    ]);
+    expect(manifest().prefer_related_applications).toBe(false);
     expect(Object.keys(SHORTCUTS)).toEqual(['update-balance', 'spent']);
   });
 });

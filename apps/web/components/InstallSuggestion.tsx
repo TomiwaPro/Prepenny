@@ -33,6 +33,10 @@ export function InstallSuggestion({ today }: { readonly today: string }) {
   const titleId = useId();
   const [steps, setSteps] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
+  // The first button is chosen once, as Home opens, so it never changes
+  // under a finger when Chrome's offer arrives a moment later (D362, D554).
+  // "Show me how" then offers Chrome's install in its sheet.
+  const [withBrowser] = useState(home.canInstall);
   const saidRef = useRef<HTMLParagraphElement>(null);
 
   // The first day Home shows the person's own plan is kept (D547).
@@ -60,7 +64,7 @@ export function InstallSuggestion({ today }: { readonly today: string }) {
           </h2>
           <p className={styles.line}>{t.suggest.line}</p>
           <div className={styles.buttons}>
-            {home.canInstall ? (
+            {withBrowser && home.canInstall ? (
               <button
                 type="button"
                 onClick={async () => {

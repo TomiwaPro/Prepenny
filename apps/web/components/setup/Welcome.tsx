@@ -51,6 +51,10 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
   const progress = ready ? state.progress : null;
   const own = ready ? state.plan : null;
   const done = progress?.step === 'done';
+  // Before setup on an iPhone in Safari, for someone not signed in (D549, D554).
+  const suggest =
+    own === null &&
+    suggestOnWelcome(home, false, account.status === 'signed-in' || account.status === 'checking');
   const make =
     own === null
       ? strings.welcome.makeMyPlan
@@ -75,7 +79,7 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
         type="button"
         className={formStyles.main}
         aria-disabled={!ready}
-        aria-haspopup={own === null && suggestOnWelcome(home, false) ? 'dialog' : undefined}
+        aria-haspopup={suggest ? 'dialog' : undefined}
         onClick={async () => {
           if (!ready) return;
           if (done) {
@@ -84,7 +88,7 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
             return;
           }
           // Before setup starts, on an iPhone in Safari: the Home Screen first (D546, D549).
-          if (own === null && suggestOnWelcome(home, false)) {
+          if (suggest) {
             setBefore(true);
             return;
           }
