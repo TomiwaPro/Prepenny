@@ -6,9 +6,11 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
+import { InstallListener } from '../components/InstallListener.tsx';
 import { OldAddress } from '../components/OldAddress.tsx';
 import { PreviewLine } from '../components/PreviewLine.tsx';
 import { ServiceWorker } from '../components/ServiceWorker.tsx';
+import { startupImages } from '../lib/splash-screens.ts';
 import { coloursScript, PAPER } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
 import '../styles/tokens.css';
@@ -51,7 +53,13 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
   },
-  appleWebApp: { capable: true, title: strings.app.name, statusBarStyle: 'default' },
+  appleWebApp: {
+    capable: true,
+    title: strings.app.name,
+    statusBarStyle: 'default',
+    // The opening screen on an iPhone's Home Screen, in PrePenny's colours (step 4d, D550).
+    startupImage: startupImages(),
+  },
   formatDetection: { telephone: false },
 };
 
@@ -77,6 +85,7 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
         <OldAddress />
         {children}
         <ServiceWorker />
+        <InstallListener />
       </body>
     </html>
   );
