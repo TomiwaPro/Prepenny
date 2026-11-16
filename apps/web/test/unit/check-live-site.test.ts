@@ -199,7 +199,7 @@ describe('one page', () => {
           '<a class="__cf_email__" href="/cdn-cgi/l/email-protection">[email&#160;protected]</a></body>',
         ),
       ),
-    ).toBe("/app/: Cloudflare wrote its Email Address Obfuscation into the page.");
+    ).toBe('/app/: Cloudflare wrote its Email Address Obfuscation into the page.');
     expect(
       words(
         built.replace(
@@ -207,9 +207,7 @@ describe('one page', () => {
           '<script>(function(){a.src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"})()</script></body>',
         ),
       ),
-    ).toBe(
-      "/app/: Cloudflare wrote its bot checks (JavaScript detections) into the page.",
-    );
+    ).toBe('/app/: Cloudflare wrote its bot checks (JavaScript detections) into the page.');
     expect(
       words(
         built.replace(
@@ -217,13 +215,13 @@ describe('one page', () => {
           '<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js"></script></body>',
         ),
       ),
-    ).toBe("/app/: Cloudflare wrote its Rocket Loader into the page.");
+    ).toBe('/app/: Cloudflare wrote its Rocket Loader into the page.');
     expect(
       words(built.replace('</body>', '<script src="/cdn-cgi/zaraz/i.js"></script></body>')),
-    ).toBe("/app/: Cloudflare wrote its Zaraz into the page.");
+    ).toBe('/app/: Cloudflare wrote its Zaraz into the page.');
     expect(
       words(built.replace('</body>', '<script src="/cdn-cgi/new-thing.js"></script></body>')),
-    ).toBe("/app/: Cloudflare wrote something else of its own (under /cdn-cgi/) into the page.");
+    ).toBe('/app/: Cloudflare wrote something else of its own (under /cdn-cgi/) into the page.');
   });
 
   it('expects the status the page should have', () => {
