@@ -22,8 +22,8 @@
 import { expect, type Page, test } from '@playwright/test';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { strings } from '../strings/en-GB.ts';
-import { settingScript } from './fixtures.ts';
 import { layoutProblems } from './coming-up.ts';
+import { settingScript } from './fixtures.ts';
 import { noSidewaysScroll } from './journeys.ts';
 import {
   expectStep,
@@ -269,6 +269,25 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noAxeProblems(page);
       await page.goto('/app/#i-spent');
       await expect(page.getByRole('dialog', { name: strings.actions.spent })).toBeVisible();
+      await expect(page).toHaveURL(/\/app\/$/);
+
+      // With the app lock on, the sheet waits for the PIN: it never sits over the lock screen.
+      await page.goto('/app/lock/');
+      const settings = page.getByTestId('lock-settings');
+      await settings.getByLabel(strings.lock.pinLabel, { exact: true }).fill('2580');
+      await settings.getByLabel(strings.lock.againLabel, { exact: true }).fill('2580');
+      await settings.getByRole('button', { name: strings.lock.turnOn }).click();
+      await expect(page.getByTestId('lock-said')).toHaveText(strings.lock.turnedOn);
+      await page.goto('/app/#update-balance');
+      const lock = page.getByRole('dialog', { name: strings.lock.screenHeading });
+      await expect(lock).toBeVisible();
+      await expect(page.getByRole('dialog', { name: strings.actions.updateBalance })).toHaveCount(
+        0,
+      );
+      await lock.getByLabel(strings.lock.screenLabel, { exact: true }).fill('2580');
+      await lock.getByRole('button', { name: strings.lock.open }).click();
+      await expect(lock).toBeHidden();
+      await expect(page.getByRole('dialog', { name: strings.actions.updateBalance })).toBeVisible();
       await expect(page).toHaveURL(/\/app\/$/);
     });
   });
