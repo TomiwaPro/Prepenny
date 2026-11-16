@@ -23,6 +23,7 @@ import { expect, type Page, test } from '@playwright/test';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { strings } from '../strings/en-GB.ts';
 import { settingScript } from './fixtures.ts';
+import { layoutProblems } from './coming-up.ts';
 import { noSidewaysScroll } from './journeys.ts';
 import {
   expectStep,
@@ -141,6 +142,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('lowest-point')).toBeVisible();
       await expect(suggestion(page)).toBeVisible();
 
+      // With text at 200%, nothing is cut off or wider than the screen.
+      await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(page)).toEqual([]);
+
       // "Not now": gone, and a line in its place says where the steps are, with focus on it.
       await suggestion(page).getByRole('button', { name: t.suggest.notNow }).click();
       await expect(suggestion(page)).toHaveCount(0);
@@ -186,6 +191,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       if (shoots(width))
         await page.screenshot({ path: `${SCREENS}/sheet-steps-android-320-light.png` });
 
+      await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(page)).toEqual([]);
       await sheet.getByRole('button', { name: strings.sheet.close }).click();
       await expect(sheet).toBeHidden();
       await expect(page.getByTestId('home-screen-said')).toHaveText(t.suggest.inMore);
@@ -302,6 +309,10 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await noAxeProblems(page);
       if (shoots(width))
         await page.screenshot({ path: `${SCREENS}/sheet-steps-iphone-320-light.png` });
+
+      // With text at 200%, nothing is cut off or wider than the screen.
+      await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+      expect(await layoutProblems(page)).toEqual([]);
 
       // Or setup here in Safari.
       await sheet.getByRole('button', { name: t.before.makeHere }).click();
