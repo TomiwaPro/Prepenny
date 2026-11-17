@@ -771,7 +771,7 @@ What changed (D546 to D552): Home suggests adding PrePenny to the home screen on
 
 ### Q. Step 4d-2: the Next.js update and the front page
 
-What changed (D557 to D559): Next.js, which turns PrePenny's screens into the site's files, is 16.4.6 instead of 16.4.3, with the fix for the known problem the building-block check listed (PLAN.md item 88). And the front page, https://prepenny.co.uk/, is sent exactly its own security policy again: the live site was sending it two, so its buttons did nothing (item 89). The few lines in front of the app's files (`apps/web/cloudflare/worker.ts`) now send every page one policy, its own.
+What changed (D557 to D559): Next.js, which turns PrePenny's screens into the site's files, is 16.4.6 instead of 16.4.3, with the fix for the known problem the building-block check listed (PLAN.md item 88). And the front page, https://prepenny.co.uk/, is sent exactly its own security policy again: the live site was sending it two, which kept its buttons from working wherever they were sent (item 89). The few lines in front of the app's files (`apps/web/cloudflare/worker.ts`) now send every page one policy, its own.
 
 **What you need to set up: nothing.** Checked on 17 Nov 2026: no workflow changed, so no new secret or variable on GitHub; on Cloudflare, the Deploy workflow puts the new files and the few lines in front of them online with the key it already has, as before ("Workers Scripts Edit"), and no hosting setting changed; no database change, so nothing for Supabase; nothing for Resend or Google.
 
