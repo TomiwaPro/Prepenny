@@ -119,13 +119,32 @@ export interface Finding {
 /**
  * Whose policy a page was sent instead of its own, in words: the general
  * one (the not-found page's), another page's, none, or one this build
- * didn't write, such as the version before's (step 4d, D553).
+ * didn't write, such as the version before's (step 4d, D553). A comma
+ * separates policies sent together, as "/" was sent its own and then the
+ * general one, and a browser applies every one (D559).
  */
-function whosePolicy(policy: string | undefined, known: ReadonlyMap<string, string>): string {
+function whosePolicy(
+  policy: string | undefined,
+  known: ReadonlyMap<string, string>,
+  own?: string,
+): string {
   if (policy === undefined) return 'it was sent none at all';
-  const whose = known.get(policy);
-  if (whose === undefined) return "it was sent one this build didn't write";
-  return `it was sent ${whose}`;
+  const each = policy.split(',').map((one) => one.trim());
+  const whose = (one: string) =>
+    one === own ? 'its own' : (known.get(one) ?? "one this build didn't write");
+  if (each.length > 1) {
+    return `it was sent ${each.length} policies, and a browser applies every one: ${each.map(whose).join(', then ')}`;
+  }
+  return `it was sent ${whose(policy)}`;
+}
+
+/** The scripts part of each policy sent, for the words: never the rest, such as the database's address. */
+function scriptsParts(policy: string | undefined): string {
+  if (policy === undefined) return 'none at all';
+  return policy
+    .split(',')
+    .map((one) => /(?:^|;\s*)(script-src [^;]*)/.exec(one)?.[1] ?? 'none')
+    .join(', then ');
 }
 
 /** Compares a page from the live site with the file that was built and its policy. */
@@ -179,11 +198,7 @@ export function comparePage(
     found.push({
       path,
       kind: 'policy',
-      words: `${path} has a different security policy from the one written for it: ${whosePolicy(policy, known)}. Its scripts part: ${
-        policy === undefined
-          ? 'none at all'
-          : (/(?:^|;\s*)(script-src [^;]*)/.exec(policy)?.[1] ?? 'none')
-      }`,
+      words: `${path} has a different security policy from the one written for it: ${whosePolicy(policy, known, expectedPolicy)}. Its scripts part: ${scriptsParts(policy)}`,
     });
   }
   return found;

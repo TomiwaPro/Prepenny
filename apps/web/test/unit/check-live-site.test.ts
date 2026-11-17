@@ -44,7 +44,8 @@ let cloudflare: {
   beacon: boolean;
   nel: boolean;
   older: boolean;
-  policy: string | null;
+  /** Policies sent instead of each page's own: one, or more than one, each on a line of its own. */
+  policy: string | readonly string[] | null;
   status?: number;
 } = { beacon: false, nel: false, older: false, policy: null };
 
@@ -133,6 +134,23 @@ describe('the live site, checked after an update', () => {
     const other = await checkOnce(site, out);
     expect(other.findings[0]?.words).toBe(
       `/ has a different security policy from the one written for it: it was sent the one written for /app/. Its scripts part: script-src 'self' ${scriptHash('home()')}`,
+    );
+  });
+
+  it('names each policy a page was sent when it was sent more than one', async () => {
+    // As on the live site on 17 Nov 2026: "/" was sent its own, then the general one (D559).
+    cloudflare = {
+      beacon: false,
+      nel: false,
+      older: false,
+      policy: [withScript('welcome()'), withScript('missing()')],
+    };
+    const result = await checkOnce(site, out);
+    expect(result.findings[0]?.words).toBe(
+      `/ has a different security policy from the one written for it: it was sent 2 policies, and a browser applies every one: its own, then the general one, written for the not-found page. Its scripts part: script-src 'self' ${scriptHash('welcome()')}, then script-src 'self' ${scriptHash('missing()')}`,
+    );
+    expect(result.findings[1]?.words).toBe(
+      `/app/ has a different security policy from the one written for it: it was sent 2 policies, and a browser applies every one: the one written for /, then the general one, written for the not-found page. Its scripts part: script-src 'self' ${scriptHash('welcome()')}, then script-src 'self' ${scriptHash('missing()')}`,
     );
   });
 
