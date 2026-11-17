@@ -11,7 +11,7 @@ import type { EditCommand, GoalEdits } from '@prepenny/engine';
 import { useId, useMemo, useState } from 'react';
 import { myName } from '../data/shared-plan.ts';
 import { amountForTyping, parseAmount } from '../lib/amount.ts';
-import { holidaysFor } from '../lib/holidays.ts';
+import { englandAndWales, holidaysOf } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import type { GoalCard } from '../lib/money-views.ts';
 import { type PaymentErrors, readDate } from '../lib/new-payment.ts';
@@ -133,8 +133,8 @@ function GoalSheetForm({
   const records = loaded?.records ?? null;
   const today = loaded?.today ?? '';
   const holidays = useMemo(
-    () => holidaysFor(records?.settings?.nation ?? 'england-and-wales'),
-    [records?.settings?.nation],
+    () => (records === null || records === undefined ? englandAndWales() : holidaysOf(records)),
+    [records],
   );
   const open = (records?.accounts ?? []).filter((one) => one.closed !== true);
   const accounts = open.map((one) => ({ value: one.id, label: one.name ?? '' }));

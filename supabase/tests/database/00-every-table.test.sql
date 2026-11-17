@@ -47,10 +47,13 @@ select is_empty(
 
 -- The paydays a shared budget follows (step 4a, D512) are the database's own,
 -- read by everyone in the plan and written by nobody else: their rules are
--- checked in 33-shared-budget-paydays.test.sql.
+-- checked in 33-shared-budget-paydays.test.sql. So is a plan's bank holiday
+-- list (step 4c, D536), written only by use_bank_holidays: its rules are
+-- checked in 34-bank-holidays.test.sql.
 select set_eq(
   $$ select t from tests.every_table() t
-     where t not in ('people', 'plans', 'plan_members', 'invites', 'edits', 'notices', 'paydays') $$,
+     where t not in ('people', 'plans', 'plan_members', 'invites', 'edits', 'notices', 'paydays',
+       'bank_holidays') $$,
   $$ select unnest(app.record_tables()) $$,
   'Every other table is a plan record table, with the same rules as the rest'
 );
@@ -119,7 +122,9 @@ select set_eq(
     -- Step 3h: download my data, import a backup and delete my account.
     'my_account_data', 'replace_plan', 'delete_my_account',
     -- Step 3i: when a change reached the account, for plan_changes (D492).
-    'utc_exact'],
+    'utc_exact',
+    -- Step 4c: a newer bank holiday list for the plan (D536).
+    'use_bank_holidays'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -139,7 +144,9 @@ select set_eq(
     'plan_activity', 'undo_change', 'change_role', 'make_private', 'share_record',
     'leave_plan', 'payment_history',
     -- Step 3h: download my data, import a backup and delete my account.
-    'my_account_data', 'replace_plan', 'delete_my_account'],
+    'my_account_data', 'replace_plan', 'delete_my_account',
+    -- Step 4c: a newer bank holiday list for the plan (D536).
+    'use_bank_holidays'],
   'The Data API''s part holds only the steps the phone calls'
 );
 

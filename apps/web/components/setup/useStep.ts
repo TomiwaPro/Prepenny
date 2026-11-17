@@ -6,7 +6,7 @@
 
 import type { Account, PlanRecords } from '@prepenny/engine';
 import { useMemo, useState } from 'react';
-import { holidaysFor } from '../../lib/holidays.ts';
+import { holidaysOf } from '../../lib/holidays.ts';
 import { refusalMessage } from '../../lib/refusals.ts';
 import type { SetupItem, SetupProgress, SetupStep } from '../../lib/setup-progress.ts';
 import { strings } from '../../strings/en-GB.ts';
@@ -16,7 +16,7 @@ export interface StepBasics {
   readonly records: PlanRecords;
   readonly progress: SetupProgress;
   readonly today: string;
-  readonly holidays: ReturnType<typeof holidaysFor>;
+  readonly holidays: ReturnType<typeof holidaysOf>;
   /** Open accounts, in the order they were added. */
   readonly accounts: readonly Account[];
   readonly view: SetupActions['view'];
@@ -41,8 +41,8 @@ export function useStep(step: SetupStep): StepBasics {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [removeProblems, setRemoveProblems] = useState<Readonly<Record<string, string>>>({});
-  const nation = state.records.settings?.nation ?? 'england-and-wales';
-  const holidays = useMemo(() => holidaysFor(nation), [nation]);
+  const records = state.records;
+  const holidays = useMemo(() => holidaysOf(records), [records]);
   return {
     records: state.records,
     progress: state.progress,

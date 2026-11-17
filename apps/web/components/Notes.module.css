@@ -45,3 +45,18 @@
   font-weight: 600;
   line-height: 1.25;
 }
+
+/*
+ * The bank holiday note's list of payments a new bank holiday moved (step
+ * 4c): the words beside "Got it" wherever they fit, as the example banner's.
+ */
+.moves {
+  flex: 1 1 12rem;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.moves ul {
+  margin: 0;
+  padding-left: var(--space-5);
+}

@@ -23,29 +23,78 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * The limits a list must keep to (D543), the same as the server's
+ * (supabase/migrations/20261119100000_bank_holidays.sql), so a list one
+ * phone takes is one every phone and the server can read: GOV.UK's own list
+ * keeps well inside them. A title or note longer than GOV.UK's ever are,
+ * more events than a thousand years of them, or more bank holidays close
+ * together than any real year has (D74's rules give at most 4 in 15 days),
+ * which could leave no working day to move a payment to.
+ */
+export const BANK_HOLIDAY_LIMITS = {
+  /** Events for one nation. */
+  events: 1000,
+  /** Characters in a title or a note. */
+  text: 200,
+  /** Bank holidays in any `window` days in a row. */
+  together: 6,
+  window: 15,
+} as const;
+
 function readNation(json: Record<string, unknown>, nation: Nation): OfficialNationList {
   const section = json[nation];
-  if (!isRecord(section) || !Array.isArray(section.events)) {
+  if (
+    !isRecord(section) ||
+    !Array.isArray(section.events) ||
+    section.events.length === 0 ||
+    section.events.length > BANK_HOLIDAY_LIMITS.events
+  ) {
     throw new EngineInputError(
       'bad-bank-holiday-list',
-      `The bank holiday list has no events for ${nation}.`,
+      `The bank holiday list needs from 1 to ${BANK_HOLIDAY_LIMITS.events} events for ${nation}.`,
     );
   }
   const byYear = new Map<number, BankHoliday[]>();
+  const days: Day[] = [];
   section.events.forEach((event: unknown, index: number) => {
-    if (!isRecord(event) || typeof event.date !== 'string' || typeof event.title !== 'string') {
+    const what = `Bank holiday ${index + 1} for ${nation}`;
+    if (
+      !isRecord(event) ||
+      typeof event.date !== 'string' ||
+      typeof event.title !== 'string' ||
+      event.title.length > BANK_HOLIDAY_LIMITS.text ||
+      (event.notes !== undefined &&
+        (typeof event.notes !== 'string' || event.notes.length > BANK_HOLIDAY_LIMITS.text))
+    ) {
       throw new EngineInputError(
         'bad-bank-holiday-list',
-        `Bank holiday ${index + 1} for ${nation} needs a date and a title.`,
+        `${what} needs a date, a title and any notes, as text of up to ${BANK_HOLIDAY_LIMITS.text} characters.`,
       );
     }
-    const day = parseDate(event.date, `Bank holiday ${index + 1} for ${nation}`);
+    const day = parseDate(event.date, what);
+    days.push(day);
     const notes = typeof event.notes === 'string' ? event.notes : '';
     const year = partsOfDay(day).year;
     const list = byYear.get(year) ?? [];
     list.push({ day, title: event.title, substitute: /substitute day/i.test(notes) });
     byYear.set(year, list);
   });
+
+  // Never more bank holidays close together than any real year has, so a
+  // payment always has a working day within reach (LONGEST_RUN_WITHOUT_A_WORKING_DAY).
+  days.sort((a, b) => a - b);
+  for (let first = 0; first < days.length; first += 1) {
+    const last = first + BANK_HOLIDAY_LIMITS.together;
+    const lastDay = days[last];
+    const firstDay = days[first] as Day;
+    if (lastDay !== undefined && lastDay - firstDay < BANK_HOLIDAY_LIMITS.window) {
+      throw new EngineInputError(
+        'bad-bank-holiday-list',
+        `The bank holiday list has more than ${BANK_HOLIDAY_LIMITS.together} bank holidays in ${BANK_HOLIDAY_LIMITS.window} days for ${nation}.`,
+      );
+    }
+  }
 
   const coveredYears = new Set<number>();
   for (const [year, holidays] of byYear) {

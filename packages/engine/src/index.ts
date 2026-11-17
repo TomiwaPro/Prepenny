@@ -49,6 +49,13 @@ export {
   type Spend,
 } from './budgets/types.ts';
 export {
+  type BankHolidayCopy,
+  bankHolidayVersion,
+  checkBankHolidayCopy,
+  isNewerBankHolidayVersion,
+  sameBankHolidayList,
+} from './dates/bank-holiday-copy.ts';
+export {
   type BankHoliday,
   easterSunday,
   NATIONS,
@@ -56,6 +63,7 @@ export {
   usualBankHolidays,
 } from './dates/bank-holiday-rules.ts';
 export {
+  BANK_HOLIDAY_LIMITS,
   BankHolidayCalendar,
   type BankHolidaySource,
   bankHolidayCalendar,
@@ -251,6 +259,15 @@ export {
   type PlanPeriod,
   type PlanPeriods,
 } from './periods/periods.ts';
+export {
+  type HolidayMove,
+  type HolidayMovesRequest,
+  movedByNewBankHolidays,
+  type RuleMove,
+  type RuleMoveReason,
+  type RuleMoveRequest,
+  ruleMoveOf,
+} from './schedule/holiday-moves.ts';
 export {
   applyHolidayRule,
   type PaymentNumberOfRequest,

@@ -7,6 +7,7 @@
 // database: no logs, no error reports (CLAUDE.md).
 
 import type {
+  BankHolidayCopy,
   EditCommand,
   OtherPaydays,
   PlanRecords,
@@ -65,9 +66,11 @@ export type Showing = 'own' | 'example';
 /**
  * The kinds of record, as the engine's edits name them (D87), and
  * `paydays`: another person's paydays, the dates only, which come from the
- * server and no edit changes (step 4a, D512), one for each person.
+ * server and no edit changes (step 4a, D512), one for each person; and
+ * `bank-holidays`: the copy of GOV.UK's list the plan's dates are worked out
+ * from, which no edit changes either (step 4c, D536), one for the plan.
  */
-export type RecordKind = RecordWrite['kind'] | 'paydays';
+export type RecordKind = RecordWrite['kind'] | 'paydays' | 'bank-holidays';
 
 /** One record of one plan. */
 export interface StoredRecord {
@@ -269,11 +272,15 @@ const listOf = {
   'pay-profile': 'payProfiles',
   'pay-week': 'payWeeks',
   'pay-adjustment': 'payAdjustments',
-} as const satisfies Record<Exclude<RecordKind, 'settings' | 'paydays'>, keyof PlanRecords>;
+} as const satisfies Record<
+  Exclude<RecordKind, 'settings' | 'paydays' | 'bank-holidays'>,
+  keyof PlanRecords
+>;
 
 type ListKind = keyof typeof listOf;
 
 const SETTINGS_KEY = 'settings';
+const BANK_HOLIDAYS_KEY = 'bank-holidays';
 
 function keyOfValue(kind: ListKind, value: unknown): string {
   const record = value as {
@@ -314,6 +321,15 @@ export function rowsOf(planId: string, records: PlanRecords): StoredRecord[] {
   (records.otherPaydays ?? []).forEach((value, seq) => {
     rows.push({ planId, kind: 'paydays', key: value.person, seq, value });
   });
+  if (records.bankHolidays !== undefined) {
+    rows.push({
+      planId,
+      kind: 'bank-holidays',
+      key: BANK_HOLIDAYS_KEY,
+      seq: 0,
+      value: records.bankHolidays,
+    });
+  }
   return rows;
 }
 
@@ -322,6 +338,7 @@ export function recordsOf(rows: readonly StoredRecord[]): PlanRecords {
   const lists: Record<string, unknown[]> = {};
   for (const list of Object.values(listOf)) lists[list] = [];
   let settings: PlanSettings | undefined;
+  let bankHolidays: BankHolidayCopy | undefined;
   const otherPaydays: OtherPaydays[] = [];
   const sorted = [...rows].sort(
     (a, b) => (a.seq ?? 0) - (b.seq ?? 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0),
@@ -335,12 +352,17 @@ export function recordsOf(rows: readonly StoredRecord[]): PlanRecords {
       otherPaydays.push(row.value as OtherPaydays);
       continue;
     }
+    if (row.kind === 'bank-holidays') {
+      bankHolidays = row.value as BankHolidayCopy;
+      continue;
+    }
     lists[listOf[row.kind]]?.push(row.value);
   }
   return {
     ...(lists as unknown as PlanRecords),
     ...(settings === undefined ? {} : { settings }),
     ...(otherPaydays.length === 0 ? {} : { otherPaydays }),
+    ...(bankHolidays === undefined ? {} : { bankHolidays }),
   };
 }
 
@@ -394,6 +416,21 @@ export async function saveWrites(db: PrePennyDb, planId: string, writes: readonl
       }
       await db.records.put({ planId, kind: write.kind, key: key[2], seq, value: write.value });
     }
+  });
+}
+
+/**
+ * Saves the copy of the bank holiday list a plan uses (step 4c, D536). Not
+ * an edit: it's GOV.UK's list, not the person's change, so it has no undo
+ * and is never sent as one.
+ */
+export async function saveBankHolidays(db: PrePennyDb, planId: string, copy: BankHolidayCopy) {
+  await db.records.put({
+    planId,
+    kind: 'bank-holidays',
+    key: BANK_HOLIDAYS_KEY,
+    seq: 0,
+    value: copy,
   });
 }
 

@@ -16,7 +16,7 @@ import {
 } from '@prepenny/engine';
 import { type RefObject, useId, useMemo, useRef, useState } from 'react';
 import { myName, useSharedPlan } from '../data/shared-plan.ts';
-import { holidaysFor } from '../lib/holidays.ts';
+import { englandAndWales, holidaysOf } from '../lib/holidays.ts';
 import { newId, timeNow } from '../lib/ids.ts';
 import {
   blankPayment,
@@ -117,8 +117,8 @@ function PaymentFields({
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const holidays = useMemo(
-    () => holidaysFor(loaded?.records.settings?.nation ?? 'england-and-wales'),
-    [loaded?.records.settings?.nation],
+    () => (loaded === null ? englandAndWales() : holidaysOf(loaded.records)),
+    [loaded],
   );
   // Each box, or for a group of choices the group, so focus can go to the first mistake.
   const when = useWhenRefs();

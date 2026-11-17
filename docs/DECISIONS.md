@@ -6471,3 +6471,118 @@ Decided 15 Nov 2026 in step 4b. A mistake of the building computer's, found on t
 - The job is back exactly as it is on `main`, and `scripts/workflows.test.ts` now fails if `check.yml` has no end-to-end job, if it doesn't run on `main` and ready pull requests, or if the building-block check isn't in the first job. It fails without the job.
 
 Why: the end-to-end tests are what stop a broken screen going live (D175, D300).
+
+
+## Made during step 4c
+
+D536 to D542 were decided on 15 Nov 2026 while building step 4c, bank holidays (D57, PLAN.md item 9). D539 is the owner's answer to `PLAN.md` question 4, given with step 4c's instructions.
+
+### D536. Each plan keeps the bank holiday list its dates come from
+
+Decided 15 Nov 2026 in step 4c. Adds to D57.
+
+- **The list goes with the plan.** Each plan keeps the copy of GOV.UK's list its dates are worked out from, with its version: the day it was downloaded from GOV.UK and a checksum of what's in it, such as `2026-10-29:538b…`. Every date in the plan, on every screen and in every change, comes from that copy. A plan with none uses the copy built into PrePenny.
+- **In an account, the server's copy decides,** in a new table, `bank_holidays`, one row per plan, which everyone in the plan reads. Only `use_bank_holidays` writes it, and it takes a list only when it's newer than the plan's and only from someone who can change the plan ("Can edit" or the owner, D51). The phone that has a newer list, fetched from PrePenny's site or built into a newer PrePenny, sends it; the other phone is nudged and brings it down within seconds, and both then work out every date from the same list, whichever fetched it first. "Can view only" never sends one, and uses the plan's.
+- **Newer** means a different list downloaded on a later day; on the same day, the larger checksum, so every phone and the server choose the same. The same list downloaded again on another day isn't newer. A day after today, or before 2019, is refused, so a made-up date can't hold every later list back (D543).
+- **Not the person's change.** It keeps no history, shows in no Activity and has no undo: it's GOV.UK's list, not something anyone typed. A backup leaves it out; the plan it goes into keeps its own.
+- **A plan only on the phone** takes a newer list straight away. Until the server has a list for a plan, the phone keeps the one it had, and sends it.
+
+Why: the owner's instruction for step 4c: "In a shared plan, both phones must agree on every date, a year ahead, whichever phone fetched the new list first." Each phone fetching for itself can't promise that: one may have no signal for a week. Keeping the list with the plan, like any shared record, does. It also means the reminders of step 4e, worked out on the server, can use the plan's own list.
+
+Test: `supabase/tests/database/34-bank-holidays.test.sql` (36 checks; with the newer-only rule or the "Can edit" rule taken out, 6 and 3 of them fail), `packages/engine/test/unit/bank-holidays-4c.test.ts`, `apps/web/test/unit/bank-holidays.test.ts`, and `apps/web/e2e/shared-bank-holidays.spec.ts`: Jess and Tom on two phones, only one of which gets the new list from the site, Jess's first and Tom's first, at 320px and 360px in light and dark. Both end on the new list, every payment's date and every day's balance a year ahead is the same on both, and both show the note on Home. With the phone's sending taken out, both orders fail.
+
+### D537. The list on PrePenny's own site, kept up to date each Monday; phones fetch it once a week
+
+Decided 15 Nov 2026 in step 4c. Builds D57 and ARCHITECTURE.md 2.9.
+
+- **PrePenny's site serves the list** at `/bank-holidays.json`: GOV.UK's list with its version, where it came from and when. Each build writes the built-in copy there. Each time the live app is put online, the Deploy workflow downloads GOV.UK's list first and puts it in place of the built-in copy when it's different, checked as the engine reads it; if GOV.UK can't be reached, or its list can't be read, the built-in copy stays, with a yellow warning, and the app still goes online. The same list keeps the day it first went online, so its version doesn't change from one update to the next.
+- **The Bank holidays workflow, every Monday at 6:23am UTC,** downloads GOV.UK's list and compares it with the one on prepenny.co.uk. Only when GOV.UK's has changed, it runs the Deploy workflow again for the commit that's live: the newest on `main` whose checks passed, never anything else, which Deploy checks is on `main`. So a new bank holiday reaches the site within a week of GOV.UK publishing it, and nothing else about the live app changes: no "PrePenny has been updated" note. It can be run by hand on `main` too. Its other job, keeping the built-in copy fresh when a pull request is ready, is unchanged.
+- **Phones fetch it once a week,** when PrePenny opens or comes back on screen and a week has passed since the last time, always fresh from the site, never from the browser's or the offline helper's copy, with the same 30-second limit as every request (D404). A failed fetch, with no signal, changes nothing and is tried at the next opening. The phone keeps the newest list it has fetched. The offline helper never keeps the file, and Cloudflare's few lines in front of the app never run for it (D438).
+- **With no signal, or before the first fetch,** the phone uses the copy built into PrePenny, so everything works offline.
+- **Sam's example** always uses the built-in copy and never changes.
+
+Why: D57 ("the phone never contacts another site") and the owner's instruction that phones get the newest list each week from PrePenny's own site, kept up to date by the Bank holidays workflow. Deploying again needs nothing new. GitHub's documentation, read in its own source on 15 Nov 2026 (docs.github.com itself couldn't be reached from the building computer): events made with the workflow's own key don't start other workflows, except that "`workflow_dispatch` and `repository_dispatch` events always create workflow runs"; a workflow file's `permissions` adjust the key's permissions "first at the workflow level and then at the job level", so the Monday job asks for `actions: write` for itself; "Scheduled workflows will only run on the default branch", so the Monday check starts once this is on `main`; and "In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred in 60 days" (PLAN.md item 85). The Deploy workflow has its Cloudflare key already.
+
+Test: `scripts/workflows.test.ts` (the Monday schedule, the comparison, the commit that's live; Deploy swapping in the list before going online, and only a commit on `main`), `apps/web/test/unit/newest-bank-holidays.test.ts`, `apps/web/test/unit/bank-holidays.test.ts` (once a week, fresh, newer only, no signal), and `apps/web/e2e/bank-holidays.spec.ts` test 3: with no signal, Universal Credit due Mon 28 Dec 2026 still comes in on Thu 24 Dec, as the built-in list has Boxing Day's substitute day.
+
+### D538. A payment's sheet says why the rule moved it
+
+Decided 15 Nov 2026 in step 4c. From the owner's instruction, with the weekend added.
+
+- Under the date and account at the top of a payment's sheet: "Moved from Mon 8 May: bank holiday" when a bank holiday moved it, "Moved from Sun 1 Nov: weekend" when a weekend did, and "Moved from Sat 26 Dec: weekend and bank holiday" when it was due on a weekend and the working day next to it is a bank holiday too.
+- The date after "Moved from" is the day it was due by its schedule. For pay on the last working day, which is due on the month's last working day (D145), it's the month's last weekday, and only a bank holiday there moves it: Priya's pay on Fri 29 Jan 2027, with Sun 31 Jan the month's last day, didn't move.
+- A date the person moved themselves says nothing: that's their own change.
+
+Why: the owner's instruction, "A payment moved by a bank holiday says why, in its sheet". A weekend moves more payments than bank holidays do, and the same line answers "why is Rent on Monday?" for both, so it's said for weekends too. PLAN.md had said "on its row"; the owner's instruction for the step says "in its sheet", which keeps the rows as they are.
+
+Test: `packages/engine/test/unit/bank-holidays-4c.test.ts` (each reason, Dee's Universal Credit and Priya's pay), `packages/engine/test/property/holiday-moves.property.test.ts`, and `apps/web/e2e/bank-holidays.spec.ts`.
+
+### D539. A new bank holiday that moves a payment: one note on Home
+
+Agreed 15 Nov 2026, the owner's answer to `PLAN.md` question 4, as recommended.
+
+The owner's words: "when a new bank holiday moves a payment, one note on Home says so, for example 'A new bank holiday on Mon 8 May 2028 moved Rent to Fri 5 May.', with Got it."
+
+- When a newer list arrives, from this phone's fetch or from the account, PrePenny works out which payments from today to a year ahead (as far as Home looks, D178) are now on another day because a day they were on is a new bank holiday. Payments already ticked, skipped or moved by the person don't change and aren't listed; nor is the shared half of a private transfer when its other half is there, as it's the same money.
+- **One note on Home,** under the lowest point, as the example's banner is, so a 320 by 568 phone still shows the account and the lowest point first (D442, D451), with **Got it**:
+  - one payment: "A new bank holiday on Tue 8 Dec moved Rent to Mon 7 Dec."
+  - more, one new bank holiday: "A new bank holiday on Tue 8 Dec moved 3 payments:", then "Rent to Mon 7 Dec" and so on, one a line;
+  - more than one new bank holiday: "New bank holidays moved 3 payments:", then "Rent from Tue 8 Dec to Mon 7 Dec";
+  - after 3 lines, "And 2 more."
+- It stays until **Got it**, on each phone, and a later list adds to it. A payment told twice is told once, where it is now.
+- **A day taken off the list** (rare: GOV.UK correcting itself) moves a payment back to its own day without a note: the owner's answer is about new bank holidays.
+- **A year GOV.UK adds to its list** brings no note when its days are the ones the rules already gave (D74), which they always are apart from one-off days.
+
+Why: the owner's answer to question 4.
+
+Test: `packages/engine/test/unit/bank-holidays-4c.test.ts` (the owner's example to the day: rent on the 8th, a new bank holiday on Mon 8 May 2028, now Fri 5 May 2028), `packages/engine/test/property/holiday-moves.property.test.ts` (300 made-up plans, each with one new bank holiday: exactly the payments that moved are listed), `apps/web/e2e/bank-holidays.spec.ts` test 1 and `apps/web/e2e/shared-bank-holidays.spec.ts`.
+
+### D540. The weekend and bank holiday rule, for this and all later ones
+
+Decided 15 Nov 2026 in step 4c. Adds to brief 4.3 and D88.
+
+- In a payment's sheet, choosing **This and all later ones** shows "On a weekend or bank holiday" with **Keep the date**, **Move to the working day before** and **Move to the working day after**, the same words as Add a payment, starting on the payment's own rule. Saving changes it from this payment on, as any "this and all later ones" change does: on the first payment, the whole series; otherwise the series splits there (D88). It's one change with one undo, and both halves of a private transfer change together (D94).
+- Only the days payments land on change, never their dates from the schedule, so every tick and one-off change stays on its payment (brief 5.2).
+- **Not for pay on the last working day,** which always lands on the month's last working day whatever its rule (D145): the choice isn't shown, and the engine refuses it.
+- "Just this one" has no rule to change: moving one payment is its new date.
+
+Why: the owner's instruction, "A payment's weekend and bank holiday rule can be changed (keep the date, the working day before, or the working day after)".
+
+Test: `packages/engine/test/unit/bank-holidays-4c.test.ts` (the whole series, a split, ticks and changes kept, both halves, refusals, undo exactly back) and `apps/web/e2e/bank-holidays.spec.ts` test 2.
+
+### D541. The note's dates have their year when it isn't this year
+
+Decided 15 Nov 2026 in step 4c. VOICE.md over the example's words.
+
+The owner's example says "A new bank holiday on Mon 8 May 2028 moved Rent to Fri 5 May." VOICE.md adds the year to a date only when it isn't this year, and every date in PrePenny follows that, so in 2026 the note says "A new bank holiday on Mon 8 May 2028 moved Rent to Fri 5 May 2028.", and in 2028 "A new bank holiday on Mon 8 May moved Rent to Fri 5 May." The same for "Moved from" in a sheet.
+
+Why: CLAUDE.md: where VOICE.md is stricter than the brief, it wins, and one rule for dates everywhere is easier to read.
+
+### D542. "Got it" takes the note off the phone before it goes from the screen
+
+Decided 15 Nov 2026 in step 4c, from its own tests.
+
+One run in 16 of `e2e/bank-holidays.spec.ts` test 1 found the note back after "Got it" and opening PrePenny again. The note went from the screen at the tap, and from the phone's database a moment later, so closing PrePenny in that moment kept it. Now it's taken off the phone first, then from the screen. 36 runs in 36 passed after the fix.
+
+Why: what's on screen and what's kept must agree when PrePenny is closed at any moment (D510).
+
+### D543. From the outside review of step 4c
+
+Decided 15 Nov 2026 in step 4c. An outside review read the step's changes and tried each problem on the local database and with the engine. It found no way for anyone to read anyone else's records through the new table or step, and confirmed the engine's rules (the reason a payment moved, the payments a new bank holiday moved, the rule for this and all later ones with ticks, changes and both halves of a private transfer). It found these, all fixed:
+
+- **A list no phone could read could stop a shared plan coming down (serious).** The server checked only that each date was a real date, but the engine reads years 1900 to 2999 only. Someone who can edit, using their own software rather than PrePenny, could send a list with a bank holiday in the year 3000, or a version dated before 1900, and every other phone would fail to work the plan out from then on, bringing nothing more down, and a version the phones couldn't read could never be replaced. Now the server, the engine and the site's script keep to the same limits (`BANK_HOLIDAY_LIMITS`): each nation 1 to 1000 events, each with a date from 1900 to 2999, a title and any notes as text of up to 200 characters, and never more than 6 bank holidays in 15 days in a row, so a payment always has a working day within reach of a weekend or bank holiday (GOV.UK's own lists have at most 4); and a version dated from 2019 to today, not tomorrow. A phone also takes a list from the server only if it can read it, treats one it can't read as none, and never sends a list again once the server has refused it.
+- **GOV.UK taking a change back didn't reach anyone.** The site's script kept the built-in copy whenever GOV.UK's list matched it, so if GOV.UK published a change and then took it back, the site went back to the built-in copy's older date, which no phone took as newer. Now a list different from the live one is always dated today, even when it's the built-in one again. The same list as the live one keeps its day.
+- **A note on a phone that had just signed in.** A phone bringing a plan down for the first time, at a new sign-in, could say a new bank holiday had moved a payment, when nothing had moved for the person there. Now the note is only worked out for a plan that was already on the phone.
+- **Two different lists from GOV.UK on the same day** are put in order by their checksums, not by which came second. GOV.UK changes its list a few times a year, so this is accepted.
+- **A made-up list that can be read** (accepted for now, `PLAN.md` question 26): someone who can edit, with their own software, could still put in a made-up list within the limits. It moves the plan's payments due on its made-up bank holidays to the working day beside them, on both phones, Home says so, and the next real list from GOV.UK replaces it. Nothing private is shown to anyone. Taking only PrePenny's own lists needs the database to fetch the list itself, which step 4e's scheduled jobs on the server make possible.
+
+Tests: `supabase/tests/database/34-bank-holidays.test.sql` (41 checks, 5 new), `packages/engine/test/unit/bank-holidays-4c.test.ts` (4 new), `apps/web/test/unit/newest-bank-holidays.test.ts` (3 new), `apps/web/test/unit/bank-holidays.test.ts` (1 new), and `e2e/shared-bank-holidays.spec.ts`: a third phone signing in as Tom gets the plan with its new list, the same dates, and no note.
+
+Why: a strict outside review before every stop (CLAUDE.md).
+
+
+### D544. The list check is "stable", as GitHub's database lint asks
+
+Decided 15 Nov 2026 in step 4c, from GitHub's ready run. "Lint, type checks, tests and the database" failed at its step "Check the database's own functions for mistakes" (`supabase db lint --level warning --fail-on warning`), which the building computer hadn't run: `app.bank_holiday_list_problem` was marked "immutable", but reading text as a date follows the database's date settings, so it's "stable". It's now marked so. Nothing calls it where that matters (only `use_bank_holidays`, which changes the database anyway), so no result changes. The lint then found nothing, and all 1,268 database checks passed again on a fresh database.
+
+Why: a check's root cause is fixed, never skipped (CLAUDE.md, D498).

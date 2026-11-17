@@ -26,7 +26,7 @@ import {
   parseDate,
   workOutGoals,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 import { editInputOf, planLookAhead, settingsOf, workOutPlanTo } from './plan-input.ts';
 
 export interface BudgetCard {
@@ -209,7 +209,7 @@ export function workOutGoalsView(records: PlanRecords, today: string): GoalsView
   const plan = workOutGoals({
     ...records,
     goals,
-    holidays: holidaysFor(settingsOf(records).nation),
+    holidays: holidaysOf(records),
     today,
     to,
   });

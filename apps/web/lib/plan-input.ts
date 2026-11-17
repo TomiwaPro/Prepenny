@@ -15,7 +15,7 @@ import {
   partsOfDay,
   workOutPlan,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 
 /** How far ahead Home looks: 12 months, so a yearly bill is never missed (D178). */
 export const HOME_MONTHS_AHEAD = 12;
@@ -47,7 +47,7 @@ export function workOutPlanTo(records: PlanRecords, today: string, to: string): 
   return workOutPlan({
     ...records,
     mainPayFamilyId: settings.mainPayFamilyId,
-    holidays: holidaysFor(settings.nation),
+    holidays: holidaysOf(records),
     today,
     to,
   });
@@ -59,7 +59,7 @@ export function editInputOf(records: PlanRecords, today: string): EditInput {
   return {
     ...records,
     mainPayFamilyId: settings.mainPayFamilyId,
-    holidays: holidaysFor(settings.nation),
+    holidays: holidaysOf(records),
     today,
   };
 }

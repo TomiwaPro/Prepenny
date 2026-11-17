@@ -29,7 +29,7 @@
 //   sent (D182). Nothing here writes an amount, a name, a note or an email
 //   address to the console or anywhere else (CLAUDE.md).
 
-import type { PlanRecords, RecordWrite } from '@prepenny/engine';
+import { isNewerBankHolidayVersion, type PlanRecords, type RecordWrite } from '@prepenny/engine';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import {
@@ -40,7 +40,9 @@ import {
   stillSignedIn,
 } from '../lib/account.ts';
 import type { ClashFacts, QueuedChange } from '../lib/clash.ts';
+import { copyOf, holidayMoves, newerCopy } from '../lib/holidays.ts';
 import { newId } from '../lib/ids.ts';
+import { HOME_MONTHS_AHEAD, planLookAhead } from '../lib/plan-input.ts';
 import { SETUP_LAYOUT, type SetupProgress, setupDone } from '../lib/setup-progress.ts';
 import {
   type DbWrite,
@@ -50,6 +52,8 @@ import {
   savedRows,
   type Table,
 } from '../lib/sync-rows.ts';
+import { testSetting } from '../lib/test-setting.ts';
+import { localToday } from '../lib/today.ts';
 import { updateWhenSafe } from '../lib/update.ts';
 import { differs, liveVersion } from '../lib/version.ts';
 import {
@@ -58,6 +62,7 @@ import {
   syncRecordsInBackground,
   syncWritesInBackground,
 } from '../worker/client.ts';
+import { newestOnPhone, noteMoves } from './bank-holidays.ts';
 import { clashesChanged } from './clashes.ts';
 import { clockFrom, clockOn, correctedTime, rememberClock } from './clock.ts';
 import {
@@ -161,6 +166,9 @@ const REFUSALS = new Set([
   'link-not-needed',
   'private-belongs-to',
   'has-a-plan',
+  // A bank holiday list the server won't take (D543), and "Can view only" sending one.
+  'bad-list',
+  'view-only',
 ]);
 
 function failureOf(error: { code?: unknown; message?: unknown } | null): Failure {
@@ -473,7 +481,7 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
     );
     const done = await db.transaction(
       'rw',
-      [db.plans, db.records, db.unsent, db.links],
+      [db.plans, db.records, db.unsent, db.links, db.device],
       async () => {
         const now = (await db.unsent.where('planId').equals(link.planId).last())?.n ?? 0;
         if (now !== last) return false;
@@ -485,7 +493,31 @@ async function rebuild(db: PrePennyDb, link: PlanLink): Promise<void> {
           // A change made on these records was made on what's been brought down so far (step 3d).
           seen: { shared: link.shared, mine: link.mine },
         };
-        await savePlan(db, plan, records);
+        // The plan's bank holiday list is the server's (D536). Until the
+        // server has one, the phone keeps the one it had, and sends it.
+        const before = stored === undefined ? undefined : await loadRecords(db, link.planId);
+        const list = records.bankHolidays ?? before?.bankHolidays;
+        const next = list === undefined ? records : { ...records, bankHolidays: list };
+        await savePlan(db, plan, next);
+        // A newer list that moved a payment, from this phone or another: Home
+        // says so (D539). Not when the plan has only now come to this phone,
+        // as at a new sign-in: nothing on it moved for the person (D543).
+        if (before !== undefined && before.series.length > 0) {
+          const today = testSetting()?.today ?? localToday();
+          let moves: ReturnType<typeof holidayMoves> = [];
+          try {
+            moves = holidayMoves(
+              next,
+              copyOf(before),
+              copyOf(next),
+              today,
+              planLookAhead(today, HOME_MONTHS_AHEAD),
+            );
+          } catch {
+            // A list that can't be read moves nothing here (D543).
+          }
+          await noteMoves(db, link.planId, moves);
+        }
         // Rebuilt from every row kept so far (D510).
         const kept = await db.links.get(link.planId);
         if (kept?.rebuildDue === true) {
@@ -1562,14 +1594,68 @@ export async function importOnPhone(planId: string, records: PlanRecords): Promi
       'rw',
       [db.plans, db.records, db.rows, db.unsent, db.links, db.sent, db.clashes],
       async () => {
+        // The bank holiday list stays the phone's: it's GOV.UK's, not the backup's (D536).
+        const kept = own === undefined ? undefined : (await loadRecords(db, own.id)).bankHolidays;
         if (own !== undefined) await removeFromPhone(db, own.id);
         await db.plans.put({ id: planId, isExample: false, setup: DONE });
-        await db.records.bulkPut(storedRowsOf(planId, records));
+        await db.records.bulkPut(
+          storedRowsOf(planId, kept === undefined ? records : { ...records, bankHolidays: kept }),
+        );
       },
     );
     await setShowing(db, 'own');
   });
 }
+
+// ---------------------------------------------------------------------------
+// The plan's bank holiday list (step 4c, D536).
+
+/**
+ * Sends the account a newer bank holiday list than the plan's, from this
+ * phone: one it fetched from PrePenny's site, the one built into a newer
+ * PrePenny, or the one it kept before the account had any. Only someone who
+ * can change the plan sends one; the server takes it only if it's newer,
+ * and the plan's next look brings it down here, as the nudge does on the
+ * other phone, so both work their dates out from the same list.
+ */
+async function offerNewerList(client: SupabaseClient, db: PrePennyDb, planId: string) {
+  const link = await db.links.get(planId);
+  if (link === undefined) return;
+  const role = link.roles?.[link.personId];
+  if (role === 'viewer') return;
+  const server = (await rowsOn(db, planId)).find(
+    (row) => row.table === 'bank_holidays' && !row.deleted,
+  );
+  const serverVersion =
+    typeof server?.values.list_version === 'string' ? server.values.list_version : null;
+  const offer = newerCopy(
+    await newestOnPhone(db),
+    (await loadRecords(db, planId)).bankHolidays ?? null,
+  );
+  // A list the server refused isn't sent again, so a phone never sends the
+  // same list every minute (D543).
+  if (refusedLists.has(offer.version)) return;
+  try {
+    if (!isNewerBankHolidayVersion(offer.version, serverVersion)) return;
+  } catch {
+    // A version that can't be read: the server's checks keep one out, so nothing is sent.
+    return;
+  }
+  const answer = await rpc<{ saved?: string }>(
+    client,
+    'use_bank_holidays',
+    { plan: planId, list_version: offer.version, list: offer.list },
+    db,
+  );
+  if (answer.ok && typeof answer.data.saved === 'string') {
+    await bringDown(client, db, (await db.links.get(planId)) ?? link);
+  } else if (!answer.ok && answer.failure.kind === 'refused') {
+    refusedLists.add(offer.version);
+  }
+}
+
+/** Lists the server refused while PrePenny has been open (D543). */
+const refusedLists = new Set<string>();
 
 // ---------------------------------------------------------------------------
 // Keeping it in step.
@@ -1743,6 +1829,7 @@ async function keepInStepOnce(client: SupabaseClient, person: string): Promise<b
     link = (await db.links.get(own.id)) ?? link;
     const down = await bringDown(client, db, link);
     if (typeof down === 'object' && refusedWith(down, 'not-found')) return true;
+    if (typeof down !== 'object') await offerNewerList(client, db, own.id);
     const cantSend =
       (sent !== true && sent.kind === 'unreachable') ||
       (typeof down === 'object' && down.kind === 'unreachable');

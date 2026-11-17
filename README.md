@@ -748,9 +748,23 @@ What changed (D527 to D532): every building block is checked for known security 
 
 **To check it worked, after merging:** **Actions**, then **Deploy**, then the newest run: a green tick, and its step **Check the live pages are PrePenny's own** says "each exactly as built, with its own security policy, and nothing of Cloudflare's written into them". If it has a red cross naming "Cloudflare's Web Analytics script", do step 1 above, then **Re-run all jobs**. Then **Dependabot's list**: a green tick. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4b".
 
+### O. Step 4c: bank holidays
+
+What changed (D536 to D542): phones get the newest UK bank holiday list each week from PrePenny's own site, which the **Bank holidays** workflow keeps up to date from GOV.UK every Monday, and use the copy built into PrePenny with no signal. In a shared plan both phones work out every date from the same list. A payment's sheet says why it moved, its weekend and bank holiday rule can be changed for this and all later ones, and when a new bank holiday moves a payment, Home says so once ("Bank holidays", below).
+
+**What you need to set up: nothing.** Checked on 15 Nov 2026 against GitHub's own documentation (in its source, as docs.github.com couldn't be opened from the building computer): the Monday check starts the Deploy workflow with GitHub's own key, which GitHub allows ("`workflow_dispatch` and `repository_dispatch` events always create workflow runs"), and asks for the permission to in its own file; the Deploy workflow already has the Cloudflare key; the database change goes to the real database with the Database workflow after merging, as every step's does; and GOV.UK's list needs no key.
+
+**To check it worked, after merging:** the Monday after, **Actions**, then **Bank holidays**: a run from "schedule" with a green tick, saying "The site already has GOV.UK's list, so there's nothing to do." (or, if GOV.UK's list changed, that it put the live app online again, followed by a **Deploy** run with a green tick). What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4c".
+
 ## Bank holidays
 
-The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow**. It only saves a new commit if the list has changed.
+The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.
+
+Since step 4c (D537), phones also fetch the newest list from PrePenny's own site, https://prepenny.co.uk/bank-holidays.json, once a week. Every Monday morning the **Bank holidays** workflow compares GOV.UK's list with that one, and when GOV.UK's has changed, puts the live app online again with it, the same commit that's live, so a new bank holiday reaches people's phones within about a week with no update to PrePenny. Every time the live app is put online, it gets GOV.UK's newest list too. Each plan keeps the list it uses, so both phones in a shared plan always agree (D536).
+
+- **To update it now,** without waiting for Monday: **Actions**, then **Bank holidays**, then **Run workflow**, keeping **Branch: main**.
+- **If the Monday runs stop:** GitHub switches off a public repository's scheduled workflows after 60 days with no change to it (PLAN.md item 85). To switch it back on: **Actions**, then **Bank holidays** in the list on the left, then **Enable workflow**. Until then, every update put online still gets the newest list.
+- **A yellow warning "Built-in bank holidays"** on a Deploy run means GOV.UK couldn't be reached at that moment: the site keeps the list built into that version, and the next Monday tries again. Nothing else needs doing.
 
 ## Tax figures
 

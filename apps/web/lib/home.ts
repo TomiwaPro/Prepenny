@@ -12,7 +12,7 @@ import {
   type PlanRecords,
   workOutPayments,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 import { HOME_MONTHS_AHEAD, planLookAhead, settingsOf, workOutPlanTo } from './plan-input.ts';
 import { type RowView, rowMaker } from './rows.ts';
 
@@ -157,7 +157,7 @@ function payToday(
     series: records.series.filter((one) => one.familyId === family),
     changes: records.changes ?? [],
     payAdjustments: records.payAdjustments ?? [],
-    holidays: holidaysFor(settingsOf(records).nation),
+    holidays: holidaysOf(records),
     from: plan.today,
     to: plan.today,
   }).filter(

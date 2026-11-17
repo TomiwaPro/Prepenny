@@ -6,7 +6,8 @@
 // newest migration in supabase/migrations, which the database checks on
 // every request, and the commit it was built from. Both go into the app
 // (.env.local) and into public/version.json, which the live site serves
-// fresh, so a phone can tell when a newer version is live.
+// fresh, so a phone can tell when a newer version is live. And the bank
+// holiday list phones fetch each week, public/bank-holidays.json (step 4c).
 //
 // It's built on its own, not by Next.js, because Turbopack's workers read
 // their settings from the end of their own address (#params=...), and that
@@ -18,7 +19,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { build } from 'esbuild';
 
@@ -64,6 +65,26 @@ try {
 writeFileSync(
   join(publicFolder, 'version.json'),
   `${JSON.stringify({ database, build: commit })}\n`,
+);
+// The bank holiday list phones fetch each week (step 4c, D537): the built-in
+// copy, with its version. Putting the live app online swaps in GOV.UK's
+// newest list (scripts/newest-bank-holidays.ts), as the Bank holidays
+// workflow does each Monday when GOV.UK's has changed.
+const engineData = join(root, '..', '..', 'packages', 'engine', 'data');
+const source = JSON.parse(readFileSync(join(engineData, 'bank-holidays.source.json'), 'utf8')) as {
+  source: string;
+  downloaded_on: string;
+  sha256: string;
+};
+writeFileSync(
+  join(publicFolder, 'bank-holidays.json'),
+  `${JSON.stringify({
+    version: `${source.downloaded_on}:${source.sha256}`,
+    source: source.source,
+    downloaded_on: source.downloaded_on,
+    sha256: source.sha256,
+    list: JSON.parse(readFileSync(join(engineData, 'bank-holidays.json'), 'utf8')),
+  })}\n`,
 );
 writeFileSync(
   join(root, '.env.local'),

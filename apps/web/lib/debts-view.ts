@@ -26,8 +26,8 @@ import {
   workOutDebts,
   workOutPayments,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
-import { settingsOf, workOutPlanTo } from './plan-input.ts';
+import { holidaysOf } from './holidays.ts';
+import { workOutPlanTo } from './plan-input.ts';
 import { type RowView, rowMaker } from './rows.ts';
 
 /** A linked payment as it comes off the debt. */
@@ -210,7 +210,7 @@ function fixCommands(
   amount: Pence,
   today: string,
 ): EditCommand[] {
-  const holidays = holidaysFor(settingsOf(records).nation);
+  const holidays = holidaysOf(records);
   const own = records.series.find((one) => one.id === row.seriesId);
   const commands: EditCommand[] = [
     {
@@ -256,7 +256,7 @@ function continuesAfter(
   records: PlanRecords,
   familyId: string,
   to: string,
-  holidays: ReturnType<typeof holidaysFor>,
+  holidays: ReturnType<typeof holidaysOf>,
 ): boolean {
   const list = records.series.filter((one) => one.familyId === familyId);
   const last = parseDate(to);
@@ -291,7 +291,7 @@ function plannedOf(
     if (family === undefined) continue;
     byFamily.set(family, [...(byFamily.get(family) ?? []), row]);
   }
-  const holidays = holidaysFor(settingsOf(records).nation);
+  const holidays = holidaysOf(records);
   const commands: EditCommand[] = [];
   let count = 0;
   let continues = false;
@@ -380,7 +380,7 @@ function rowsOf(
             ? other.payment.number > payment.number
             : other.payment.date > payment.date;
         });
-        const holidays = holidaysFor(settingsOf(records).nation);
+        const holidays = holidaysOf(records);
         fix = {
           amount,
           inDebt: leftBefore,
@@ -515,7 +515,7 @@ export function workOutDebtsView(records: PlanRecords, today: string): DebtsView
   const plan = workOutDebts({
     ...records,
     debts,
-    holidays: holidaysFor(settingsOf(records).nation),
+    holidays: holidaysOf(records),
     today,
     to,
   });

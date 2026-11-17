@@ -15,7 +15,7 @@ import {
   type Series,
   type Tick,
 } from '@prepenny/engine';
-import { holidaysFor } from './holidays.ts';
+import { holidaysOf } from './holidays.ts';
 
 /** One payment as the person sees it: what a change to it can change. */
 export interface PaymentFacts {
@@ -43,8 +43,7 @@ export interface PaymentAt {
   readonly after: PaymentFacts | null;
 }
 
-export const holidaysOf = (records: PlanRecords) =>
-  holidaysFor(records.settings?.nation ?? 'england-and-wales');
+export { holidaysOf };
 
 /** The payment a family has with this payment number, and the series it's in. */
 export function paymentInFamily(

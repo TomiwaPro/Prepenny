@@ -130,13 +130,20 @@ for (const colorScheme of ['light', 'dark'] as const) {
       }
       // Then the plan went up to the account, through PrePenny's own steps only
       // (step 3c), after asking whether the sign-in stands and the version is
-      // the one expected, which sends nothing at all (step 3e).
+      // the one expected, which sends nothing at all (step 3e). Since step 4c
+      // the phone also gives the plan its bank holiday list: GOV.UK's, with
+      // nothing the person typed (D536).
       for (const request of sent) {
         expect(new URL(request.url()).pathname).toMatch(
-          /^\/(auth\/v1\/(otp|verify|user|token)|rest\/v1\/(plan_members|rpc\/(start_plan|save_edit|plan_changes|hello))|realtime\/v1\/.*)$/,
+          /^\/(auth\/v1\/(otp|verify|user|token)|rest\/v1\/(plan_members|rpc\/(start_plan|save_edit|plan_changes|hello|use_bank_holidays))|realtime\/v1\/.*)$/,
         );
         if (new URL(request.url()).pathname === '/rest/v1/rpc/hello') {
           expect(request.postData() ?? '{}').toBe('{}');
+        }
+        if (new URL(request.url()).pathname === '/rest/v1/rpc/use_bank_holidays') {
+          const body = JSON.parse(request.postData() ?? '{}') as Record<string, unknown>;
+          expect(Object.keys(body).sort()).toEqual(['list', 'list_version', 'plan']);
+          for (const word of MONEY) expect(request.postData() ?? '').not.toContain(word);
         }
       }
     });
