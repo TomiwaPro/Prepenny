@@ -264,7 +264,7 @@ describe('the snapshot for GitHub', () => {
     }
     const scope = (url: string) => resolved[url]?.scope;
     for (const url of [
-      'pkg:npm/next@16.4.3',
+      'pkg:npm/next@16.4.6',
       'pkg:npm/react@19.3.1',
       'pkg:npm/%40supabase/supabase-js@2.118.0',
       'pkg:npm/dexie@4.4.7',

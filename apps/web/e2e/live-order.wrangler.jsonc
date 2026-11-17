@@ -1,0 +1,27 @@
+// A third copy of the app on this computer for e2e/live-order.spec.ts (D559):
+// the same few lines in front of the files (../cloudflare/worker.ts), on port
+// 4175, serving the copy e2e/live-order.ts makes, whose rules are in the live
+// site's order: the front page's own before the general one.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "prepenny-live-order-test",
+  "main": "../cloudflare/worker.ts",
+  "compatibility_date": "2026-10-19",
+  "assets": {
+    "directory": "./.live-order",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/*",
+      "!/_next/*",
+      "!/version.json",
+      "!/bank-holidays.json",
+      "!/sw.js",
+      "!/icons/*",
+      "!/splash/*",
+      "!/engine-worker-*",
+      "!/manifest.webmanifest"
+    ],
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
