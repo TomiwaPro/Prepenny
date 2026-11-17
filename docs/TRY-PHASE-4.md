@@ -107,6 +107,20 @@ Cloudflare's script, once README.md part N, step 1 is done:
 
 10. Open https://github.com/TomiwaPro/Prepenny/actions, tap **Deploy**, then its newest run from `main`, then **Put the app online**, then **Check the live pages are PrePenny's own**. It doesn't name "its Real User Monitoring (RUM) script". If it names a page with "a different security policy", note what it says it was sent instead.
 
+## Step 4d-2: the Next.js update (3 minutes)
+
+Nothing in the app looks different. These check that the update went online and the warning has gone. No test accounts are needed.
+
+On GitHub, on your phone or a computer:
+
+1. Open https://github.com/TomiwaPro/Prepenny/actions and tap **Check**, then its newest run from `main`, then **Lint, type checks, tests and the database**, then the step **Check every building block for known security problems**. It says "332 checked against the list of known security problems, and this change brings in no serious one." with no yellow warning naming next.
+2. On the repository's page, tap **Security and quality**, then under **Findings**, **Dependabot**, then **Vulnerabilities**. There's no open alert for next. If there was one for next 16.4.3, it closes by itself once **Dependabot's list** has run after the merge.
+
+On your phone, device A:
+
+3. Open https://prepenny.co.uk/app/. If "PrePenny has been updated. Tap to reload." shows, tap it. Home shows your plan. Tap **Coming up**, **Debts** and **More**: each opens with your figures.
+4. Turn on **Airplane mode**. Close PrePenny and open it again: Home shows your plan, with a note that starts "You're offline." Turn **Airplane mode** off.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.

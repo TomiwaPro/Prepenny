@@ -769,6 +769,14 @@ What changed (D546 to D552): Home suggests adding PrePenny to the home screen on
 
 **To check it worked, after merging:** **Actions**, then **Deploy**: a green tick once part N, step 1 is done. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4d".
 
+### Q. Step 4d-2: the Next.js update
+
+What changed (D557, D558): Next.js, which turns PrePenny's screens into the site's files, is 16.4.6 instead of 16.4.3, with the fix for the known problem the building-block check listed (PLAN.md item 88). Nothing looks or works differently.
+
+**What you need to set up: nothing.** Checked on 17 Nov 2026: no workflow changed, so no new secret or variable on GitHub; on Cloudflare, the Deploy workflow puts the new files online with the key it already has, as before; no database change, so nothing for Supabase; nothing for Resend or Google.
+
+**To check it worked, after merging:** **Actions**, then **Deploy**: a green tick once part N, step 1 is done. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4d-2".
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.
