@@ -15,6 +15,7 @@ import {
   suggestOnHome,
   suggestOnWelcome,
 } from '../../lib/install.ts';
+import { EARLY_INSTALLED, EARLY_OFFER, installEarlyScript } from '../../lib/install-early.ts';
 import { SHORTCUTS, shortcutFor } from '../../lib/shortcuts.ts';
 import {
   IPHONE_SCREENS,
@@ -43,6 +44,25 @@ const state = (change: Partial<HomeScreenState> = {}): HomeScreenState => ({
   kept: { firstDay: '2026-11-16' },
   canInstall: false,
   ...change,
+});
+
+describe("Chrome's offer, kept back from the page's first moment (D554)", () => {
+  it('keeps the offer back and keeps it, and notes PrePenny was added', () => {
+    const heard: Record<string, (event: { preventDefault(): void }) => void> = {};
+    const window = {} as Record<string, unknown>;
+    const run = new Function('addEventListener', 'window', installEarlyScript);
+    run((name: string, listener: (event: { preventDefault(): void }) => void) => {
+      heard[name] = listener;
+    }, window);
+    let keptBack = false;
+    const offer = { preventDefault: () => (keptBack = true) };
+    heard.beforeinstallprompt?.(offer);
+    expect(keptBack).toBe(true);
+    expect(window[EARLY_OFFER]).toBe(offer);
+    heard.appinstalled?.({ preventDefault: () => undefined });
+    expect(window[EARLY_INSTALLED]).toBe(true);
+    expect(window[EARLY_OFFER]).toBeNull();
+  });
 });
 
 describe('which phone this is', () => {

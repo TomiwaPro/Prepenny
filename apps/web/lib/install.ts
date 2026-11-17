@@ -14,6 +14,7 @@
 // else about the phone is read or sent anywhere.
 
 import { useSyncExternalStore } from 'react';
+import { EARLY_INSTALLED, EARLY_OFFER } from './install-early.ts';
 
 /** The phones PrePenny has steps for. An iPad counts as an iPhone: the same steps work there. */
 export type Phone = 'android' | 'iphone' | 'other';
@@ -265,6 +266,10 @@ export async function installWithBrowser(): Promise<'accepted' | 'dismissed' | '
 function listen() {
   if (typeof window === 'undefined' || Reflect.get(window, '__prepennyInstall') === true) return;
   Reflect.set(window, '__prepennyInstall', true);
+  // What came before this code started, kept back by the page's own first script (D554).
+  const early: unknown = Reflect.get(window, EARLY_OFFER);
+  if (early instanceof Event) offer = early as InstallOffer;
+  if (Reflect.get(window, EARLY_INSTALLED) === true) keep({ installed: true });
   window.addEventListener('beforeinstallprompt', (event) => {
     // PrePenny's own button asks instead, once, on the second day (D546).
     event.preventDefault();

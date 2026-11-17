@@ -10,6 +10,7 @@ import { InstallListener } from '../components/InstallListener.tsx';
 import { OldAddress } from '../components/OldAddress.tsx';
 import { PreviewLine } from '../components/PreviewLine.tsx';
 import { ServiceWorker } from '../components/ServiceWorker.tsx';
+import { installEarlyScript } from '../lib/install-early.ts';
 import { startupImages } from '../lib/splash-screens.ts';
 import { coloursScript, PAPER } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -82,6 +83,8 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: our own fixed script, no data in it */}
         <script dangerouslySetInnerHTML={{ __html: coloursScript }} />
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: our own fixed script, no data in it (D554) */}
+        <script dangerouslySetInnerHTML={{ __html: installEarlyScript }} />
       </head>
       <body>
         <PreviewLine />
