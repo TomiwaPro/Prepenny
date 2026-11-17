@@ -566,11 +566,12 @@ grant usage on schema tests to service_role;
 -- the scheduled jobs are switched off, so nothing runs by itself between a
 -- test's steps, and no request goes to the real prepenny.co.uk; the tests
 -- start the reminders function themselves, with a test clock and a
--- stand-in push service on the building computer, reached from Supabase's
--- function runner as host.docker.internal (e2e/push-service.ts).
+-- stand-in push service on the building computer, on a port of each test's
+-- own, reached from Supabase's function runner as host.docker.internal
+-- (e2e/push-service.ts).
 select cron.unschedule(jobname) from cron.job
   where jobname in ('prepenny-reminders', 'prepenny-bank-holidays');
 delete from app.bank_holiday_fetches;
 update app.reminder_server
-  set test_push_prefix = 'http://host.docker.internal:4199/push/', test_clock = true
+  set test_push_prefix = 'http://host.docker.internal:', test_clock = true
   where one;

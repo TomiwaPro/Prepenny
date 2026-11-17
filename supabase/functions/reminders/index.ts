@@ -50,8 +50,9 @@ Deno.serve(async (request) => {
   const key = secretKey();
   if (url === undefined || key === null) return answer(503);
   const tick = request.headers.get('x-prepenny-tick') ?? '';
-  // A test clock, which the database takes only on a local Supabase.
+  // A test clock and a test's own person, which the database takes only on a local Supabase.
   const at = request.headers.get('x-prepenny-test-now');
+  const testPerson = request.headers.get('x-prepenny-test-person');
 
   // A new secret key goes in "apikey" only, as Supabase asks; the older
   // service key, a token itself, goes in both.
@@ -71,7 +72,9 @@ Deno.serve(async (request) => {
       await done.body?.cancel();
       throw new Refused(done.status);
     }
-    return done.json();
+    // A step that gives nothing back answers with nothing at all (204).
+    const text = await done.text();
+    return text === '' ? null : JSON.parse(text);
   };
   const push = async (
     endpoint: string,
@@ -96,6 +99,7 @@ Deno.serve(async (request) => {
   const work = runReminders(
     { step, push, seconds: () => Date.now() / 1000 },
     at === null || at === '' ? null : at,
+    testPerson === null || testPerson === '' ? null : testPerson,
   );
   // The scheduled job doesn't wait; the end-to-end tests do, to check what was sent.
   if (request.headers.get('x-prepenny-wait') === 'yes') {

@@ -9,6 +9,7 @@
 // loaded afresh, straight after.
 
 import { Dexie } from 'dexie';
+import { unsubscribeHere } from '../lib/push-here.ts';
 import { openDb, ownPlanOnPhone } from './db.ts';
 
 /** The phone database's name (data/db.ts). */
@@ -47,6 +48,9 @@ export async function planSafelyKept(): Promise<boolean> {
 }
 
 export async function forgetEverything(): Promise<void> {
+  // The browser forgets PrePenny's push address, so no reminder reaches this
+  // phone any more, even with no signal to tell PrePenny's server (step 4e, D563).
+  await unsubscribeHere();
   try {
     await Promise.race([
       Dexie.delete(DATABASE),

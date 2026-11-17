@@ -1881,8 +1881,6 @@ export const strings = {
     signIn: 'Sign up or sign in',
     signInOff:
       "Reminders need an account, and signing in isn't switched on in this version of PrePenny.",
-    example:
-      'Reminders are for your own plan, not the example. Go back to your own plan to turn them on.',
     iphone:
       'On an iPhone, reminders only work in PrePenny opened from your Home Screen. Add PrePenny to your Home Screen, open it from there, sign in, then turn reminders on there.',
     iphoneSteps: 'Show me how',
@@ -1893,6 +1891,7 @@ export const strings = {
     askedNo: "Your phone didn't allow notifications, so nothing was turned on.",
     offline: "You're offline. Reminders can be changed once you're back online.",
     server: "PrePenny couldn't reach its server, so nothing was changed. Try again in a moment.",
+    tryAgain: 'Try again',
     loading: 'Looking at your reminders.',
     /** The words of each notification (D560, D561, D565). */
     notification: {

@@ -476,7 +476,8 @@ $$;
 -- reminder on and a phone that gets them, in a plan, whose plan has changed
 -- since it last looked, or whose next reminder time has come since. Nobody
 -- in quiet hours. 200 at a time, those looked at longest ago first.
-create function public.reminder_work(tick text, at_time timestamptz default null) returns jsonb
+create function public.reminder_work(tick text, at_time timestamptz default null,
+  test_person uuid default null) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
   moment timestamptz;
@@ -515,6 +516,9 @@ begin
           and jsonb_array_length(app.live_addresses(c.person_id)) > 0
           and (c.looked_at is null or c.looked_at < slot
             or c.looked_mark is distinct from app.plan_mark(c.person_id))
+          -- On a local Supabase with the test clock on, a test looks at its own person only.
+          and (test_person is null or not (select s.test_clock from app.reminder_server s)
+            or c.person_id = test_person)
         order by c.looked_at nulls first
         limit 200
       ) c), '[]'::jsonb) end);
@@ -821,14 +825,14 @@ revoke all on function
   from public, anon, authenticated, service_role;
 
 revoke all on function
-  public.reminder_work(text, timestamptz), public.reminder_plan(text, uuid, uuid),
+  public.reminder_work(text, timestamptz, uuid), public.reminder_plan(text, uuid, uuid),
   public.claim_reminder(text, uuid, text, date, boolean, timestamptz),
   public.unclaim_reminder(text, uuid, text, date),
   public.done_looking(text, uuid, text, jsonb, timestamptz),
   public.forget_push_address(text, text), public.keep_signing_key(text, text, jsonb)
   from public, anon, authenticated;
 grant execute on function
-  public.reminder_work(text, timestamptz), public.reminder_plan(text, uuid, uuid),
+  public.reminder_work(text, timestamptz, uuid), public.reminder_plan(text, uuid, uuid),
   public.claim_reminder(text, uuid, text, date, boolean, timestamptz),
   public.unclaim_reminder(text, uuid, text, date),
   public.done_looking(text, uuid, text, jsonb, timestamptz),

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/build-worker.ts && NEXT_TELEMETRY_DISABLED=1 next dev",
-    "build": "node scripts/build-worker.ts && NEXT_TELEMETRY_DISABLED=1 next build && node scripts/write-headers.ts && NO_UPDATE_NOTIFIER=1 serwist build serwist.config.js",
+    "build": "node scripts/build-worker.ts && node scripts/build-reminders.ts && NEXT_TELEMETRY_DISABLED=1 next build && node scripts/write-headers.ts && NO_UPDATE_NOTIFIER=1 serwist build serwist.config.js",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --project tsconfig.json && tsc --project service-worker/tsconfig.json",
     "e2e": "playwright test"

@@ -57,4 +57,76 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Reminders (step 4e, D564): a reminder arrives sealed for this phone, and
+// the browser opens it before it gets here. It's shown as it came: its
+// words, worked out on PrePenny's server, and a tag, so a newer reminder of
+// the same kind replaces an older one. A tap opens PrePenny. Nothing is
+// kept, and nothing is sent anywhere.
+
+/** The name, shown as the title if a reminder's own can't be read. */
+const NAME = 'PrePenny';
+
+interface Reminder {
+  readonly title: string;
+  readonly body: string;
+  readonly tag: string;
+  readonly url: string;
+}
+
+function reminderOf(data: PushMessageData | null): Reminder {
+  const shown: Reminder = { title: NAME, body: '', tag: 'prepenny', url: '/app/' };
+  try {
+    const sent: unknown = data?.json();
+    if (typeof sent !== 'object' || sent === null) return shown;
+    const field = (name: keyof Reminder) => {
+      const value = (sent as Record<string, unknown>)[name];
+      return typeof value === 'string' && value.length <= 1000 ? value : shown[name];
+    };
+    // Only one of PrePenny's own pages opens from a tap.
+    const url = field('url');
+    return {
+      title: field('title'),
+      body: field('body'),
+      tag: field('tag'),
+      url: /^\/app\/[A-Za-z0-9/_#-]*$/.test(url) ? url : shown.url,
+    };
+  } catch {
+    return shown;
+  }
+}
+
+self.addEventListener('push', (event) => {
+  const reminder = reminderOf(event.data);
+  event.waitUntil(
+    self.registration.showNotification(reminder.title, {
+      body: reminder.body,
+      tag: reminder.tag,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: reminder.url },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const data: unknown = event.notification.data;
+  const path =
+    typeof data === 'object' && data !== null && typeof (data as { url?: unknown }).url === 'string'
+      ? (data as { url: string }).url
+      : '/app/';
+  const target = new URL(path, self.location.origin);
+  event.waitUntil(
+    (async () => {
+      const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const app = open.find((client) => new URL(client.url).pathname.startsWith('/app'));
+      if (app !== undefined) {
+        await app.focus();
+        return;
+      }
+      await self.clients.openWindow(target.href);
+    })(),
+  );
+});
+
 serwist.addEventListeners();

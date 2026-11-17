@@ -3,6 +3,7 @@ import { AccountCard } from '../../../components/AccountCard.tsx';
 import { ColourChoice } from '../../../components/ColourChoice.tsx';
 import { InstallMoreCard } from '../../../components/InstallMoreCard.tsx';
 import { MoreLinks } from '../../../components/MoreLinks.tsx';
+import { RemindersCard } from '../../../components/RemindersCard.tsx';
 import { SecurityCard } from '../../../components/SecurityCard.tsx';
 import { SimplePage } from '../../../components/SimplePage.tsx';
 import { StartAgain } from '../../../components/StartAgain.tsx';
@@ -20,6 +21,7 @@ export default function MorePage() {
     >
       <MoreLinks />
       <AccountCard />
+      <RemindersCard />
       <SecurityCard />
       <YourDataCard />
       <InstallMoreCard />

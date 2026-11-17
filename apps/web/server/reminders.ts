@@ -103,9 +103,13 @@ export function messageOf(due: DueReminder): string {
 export async function runReminders(
   server: ReminderServer,
   at: string | null,
+  testPerson: string | null = null,
 ): Promise<RemindersRun> {
   const counts = { looked: 0, sent: 0, notSent: 0, problems: 0 };
-  const work = (await server.step('reminder_work', { at_time: at })) as Work;
+  const work = (await server.step('reminder_work', {
+    at_time: at,
+    test_person: testPerson,
+  })) as Work;
   let key = work.key;
   if (key === null) {
     // The first run makes PrePenny's signing key; the database keeps it,
