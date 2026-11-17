@@ -11,8 +11,8 @@
 //
 // Every other address, prepenny.co.uk, a pull request's preview
 // (pr-31-prepenny.prepenny.workers.dev) and this computer's own copy in the
-// tests, is served exactly as before. Nothing about a request is kept or
-// written anywhere.
+// tests, is served as before, with one security policy per page (D559).
+// Nothing about a request is kept or written anywhere.
 
 import { LIVE_SITE, OLD_LIVE_HOST } from '../lib/site.ts';
 
@@ -37,12 +37,40 @@ export function movedTo(request: Request): string | null {
   return `${LIVE_SITE}${url.pathname}${url.search}`;
 }
 
+/**
+ * A page with exactly one security policy: its own (D559).
+ *
+ * public/_headers gives every file the general policy, and each page a rule
+ * of its own that takes it off ("! Content-Security-Policy") and puts the
+ * page's own on (D529). Cloudflare applies each rule as it comes: "!" takes
+ * off only what a rule before it has put on, and a policy put on when there
+ * is one already is added as a second policy. Cloudflare's documentation
+ * says the rules come in the file's order, and Wrangler's own copy on this
+ * computer keeps it; the live site doesn't for the front page, "/", which
+ * gets its own rule before the general one, so it's sent its own policy and
+ * then the general one. A browser applies every policy it's sent, so the
+ * front page's own data, listed only in its own, was refused.
+ *
+ * In any order, a page's own policy comes first: its rule takes off
+ * whatever policy came before it. Anything after it was added by the
+ * general rule, so it's taken off here. A comma separates policies in the
+ * header (the CSP standard), and never appears inside one of PrePenny's.
+ */
+export function onePolicy(response: Response): Response {
+  const policies = response.headers.get('Content-Security-Policy');
+  if (policies === null || !policies.includes(',')) return response;
+  const own = policies.slice(0, policies.indexOf(',')).trim();
+  const kept = new Response(response.body, response);
+  kept.headers.set('Content-Security-Policy', own);
+  return kept;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const to = movedTo(request);
     if (to !== null) {
       return new Response(null, { status: 301, headers: { Location: to } });
     }
-    return env.ASSETS.fetch(request);
+    return onePolicy(await env.ASSETS.fetch(request));
   },
 };
