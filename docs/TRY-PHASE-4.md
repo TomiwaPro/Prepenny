@@ -107,19 +107,26 @@ Cloudflare's script, once README.md part N, step 1 is done:
 
 10. Open https://github.com/TomiwaPro/Prepenny/actions, tap **Deploy**, then its newest run from `main`, then **Put the app online**, then **Check the live pages are PrePenny's own**. It doesn't name "its Real User Monitoring (RUM) script". If it names a page with "a different security policy", note what it says it was sent instead.
 
-## Step 4d-2: the Next.js update (3 minutes)
+## Step 4d-2: the Next.js update and the front page (5 minutes)
 
-Nothing in the app looks different. These check that the update went online and the warning has gone. No test accounts are needed.
+Nothing in the app looks different. These check that the update went online, the warning has gone, and the front page's buttons work again (D559). No test accounts are needed.
 
 On GitHub, on your phone or a computer:
 
 1. Open https://github.com/TomiwaPro/Prepenny/actions and tap **Check**, then its newest run from `main`, then **Lint, type checks, tests and the database**, then the step **Check every building block for known security problems**. It says "332 checked against the list of known security problems, and this change brings in no serious one." with no yellow warning naming next.
-2. On the repository's page, tap **Security and quality**, then under **Findings**, **Dependabot**, then **Vulnerabilities**. There's no open alert for next. If there was one for next 16.4.3, it closes by itself once **Dependabot's list** has run after the merge.
+2. Back on **Actions**, tap **Deploy**, then its newest run from `main`, then **Put the app online**, then **Check the live pages are PrePenny's own**. It doesn't say "/ has a different security policy". Once README.md part N, step 1 is done, it ends "each exactly as built, with its own security policy, and nothing of Cloudflare's written into them."
+3. On the repository's page, tap **Security and quality**, then under **Findings**, **Dependabot**, then **Vulnerabilities**. There's no open alert for next. If there was one for next 16.4.3, it closes by itself once **Dependabot's list** has run after the merge.
 
-On your phone, device A:
+The front page's buttons on the live site, in a private or incognito window on your phone, so nothing of yours is used:
 
-3. Open https://prepenny.co.uk/app/. If "PrePenny has been updated. Tap to reload." shows, tap it. Home shows your plan. Tap **Coming up**, **Debts** and **More**: each opens with your figures.
-4. Turn on **Airplane mode**. Close PrePenny and open it again: Home shows your plan, with a note that starts "You're offline." Turn **Airplane mode** off.
+4. Open https://prepenny.co.uk/. It says "Plan every penny before payday." Tap **Look at an example plan**: Home opens on Sam's example, with £267.54.
+5. Go back to https://prepenny.co.uk/ and tap **Make my plan**: setup opens at "Part 1 of 3: Money in". On an iPhone, a sheet "Add PrePenny to your Home Screen first" opens first: tap **Make my plan here in Safari**, and setup opens.
+6. Close the private window: nothing is kept.
+
+On your phone, device A, in your usual browser:
+
+7. Open https://prepenny.co.uk/app/. If "PrePenny has been updated. Tap to reload." shows, tap it. Home shows your plan. Tap **Coming up**, **Debts** and **More**: each opens with your figures.
+8. Turn on **Airplane mode**. Close PrePenny and open it again: Home shows your plan, with a note that starts "You're offline." Turn **Airplane mode** off.
 
 ## Last: delete the test accounts (2 minutes)
 
