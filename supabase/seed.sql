@@ -572,4 +572,5 @@ select cron.unschedule(jobname) from cron.job
   where jobname in ('prepenny-reminders', 'prepenny-bank-holidays');
 delete from app.bank_holiday_fetches;
 update app.reminder_server
-  set test_push_prefix = 'http://host.docker.internal:4199/push/', test_clock = true;
+  set test_push_prefix = 'http://host.docker.internal:4199/push/', test_clock = true
+  where one;

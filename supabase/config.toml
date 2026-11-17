@@ -444,6 +444,15 @@ deno_version = 2
 enabled = true
 verify_jwt = false
 
+# Reminders (step 4e): started by the database's own scheduled job every 15
+# minutes, which shows it a tick only the database knows; the database
+# refuses every step without it. No sign-in token, as nobody signs in to
+# start it. Its work is built into _built/run.js by
+# apps/web/scripts/build-reminders.ts first.
+[functions.reminders]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = false
 port = 54327

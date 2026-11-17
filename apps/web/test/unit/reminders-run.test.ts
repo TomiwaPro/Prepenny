@@ -1,0 +1,262 @@
+// The reminders function's work (step 4e, server/reminders.ts), with a
+// stand-in database and stand-in phones that open what they're sent with
+// their own keys: the plan read as the person's own phone reads it, each
+// reminder taken once, sealed for each phone, an address that's gone
+// forgotten, a reminder nobody took tried again, and nothing logged.
+
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { examplePlan } from '../../data/example-plan.ts';
+import { NO_REMINDERS, type ReminderChoices } from '../../lib/reminders.ts';
+import { type PlanChangesRows, rowsOf } from '../../lib/sync-rows.ts';
+import { base64url, openOnPhone } from '../../lib/web-push.ts';
+import { keepFor, type ReminderServer, runReminders } from '../../server/reminders.ts';
+
+const PLAN = '01900000-0000-7000-8000-000000000001';
+const SAM = '01900000-0000-7000-8000-00000000000a';
+const SESSION = '01900000-0000-7000-8000-0000000000aa';
+
+/** Sam's example plan as plan_changes gives it to his own phone. */
+function samsRows(): PlanChangesRows {
+  const wanted = rowsOf(examplePlan, { planId: PLAN, personId: SAM }, new Map(), undefined);
+  return {
+    plan: { id: PLAN, nation: 'england-and-wales', version: 1, seq: 1 },
+    rows: [...wanted.values()]
+      .filter((one) => one.table !== 'plans')
+      .map((one) => ({
+        table: one.table,
+        row: { ...one.values, id: one.id, version: 1, seq: 1, private_to: SAM, deleted: false },
+      })),
+  };
+}
+
+async function phone(endpoint: string) {
+  const keys = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
+    'deriveBits',
+  ])) as CryptoKeyPair;
+  return {
+    endpoint,
+    keys,
+    p256dh: base64url(new Uint8Array(await crypto.subtle.exportKey('raw', keys.publicKey))),
+    auth: base64url(crypto.getRandomValues(new Uint8Array(16))),
+  };
+}
+
+type Phone = Awaited<ReturnType<typeof phone>>;
+
+/** A stand-in database and push services: what each step was asked, and what each phone opened. */
+function standIn(options: {
+  readonly now: string;
+  readonly choices: ReminderChoices;
+  readonly phones: readonly Phone[];
+  readonly status?: (endpoint: string) => number;
+  readonly claimed?: Set<string>;
+}) {
+  const asked: { name: string; args: Readonly<Record<string, unknown>> }[] = [];
+  const opened: {
+    endpoint: string;
+    message: Record<string, string>;
+    headers: Record<string, string>;
+  }[] = [];
+  const claimed = options.claimed ?? new Set<string>();
+  const server: ReminderServer = {
+    seconds: () => 1_794_000_000,
+    step: async (name, args) => {
+      asked.push({ name, args });
+      switch (name) {
+        case 'reminder_work':
+          return {
+            now: options.now,
+            key: null,
+            testPushPrefix: null,
+            people: [
+              { person: SAM, session: SESSION, mark: 'm', choices: options.choices, known: [] },
+            ],
+          };
+        case 'keep_signing_key':
+          return { publicKey: args.public_key, privateJwk: args.private_jwk };
+        case 'reminder_plan':
+          return samsRows();
+        case 'claim_reminder': {
+          const key = `${String(args.kind)}|${String(args.for_day)}`;
+          if (claimed.has(key)) return { sent: false, why: 'sent' };
+          claimed.add(key);
+          return {
+            sent: true,
+            phones: options.phones.map(({ endpoint, p256dh, auth }) => ({
+              endpoint,
+              p256dh,
+              auth,
+            })),
+          };
+        }
+        case 'unclaim_reminder':
+          claimed.delete(`${String(args.kind)}|${String(args.for_day)}`);
+          return null;
+        default:
+          return null;
+      }
+    },
+    push: async (endpoint, headers, body) => {
+      const target = options.phones.find((one) => one.endpoint === endpoint);
+      if (target !== undefined) {
+        opened.push({
+          endpoint,
+          headers: { ...headers },
+          message: JSON.parse(await openOnPhone(body, target)) as Record<string, string>,
+        });
+      }
+      return options.status?.(endpoint) ?? 201;
+    },
+  };
+  return { server, asked, opened, claimed };
+}
+
+afterEach(() => vi.restoreAllMocks());
+
+describe('the reminders function (D564)', () => {
+  it("sends Sam's evening reminder, sealed for each of his phones, once", async () => {
+    const phones = [
+      await phone('https://fcm.googleapis.com/fcm/send/one'),
+      await phone('https://web.push.apple.com/two'),
+    ];
+    const run = standIn({
+      now: '2026-10-31T19:00:00Z',
+      choices: { ...NO_REMINDERS, evening: true },
+      phones,
+    });
+    expect(await runReminders(run.server, null)).toEqual({
+      looked: 1,
+      sent: 1,
+      notSent: 0,
+      problems: 0,
+    });
+    expect(run.opened.map((one) => one.message)).toEqual([
+      {
+        title: 'PrePenny',
+        body: "Rent goes out tomorrow. You'll have £4.53 left until Friday.",
+        tag: 'prepenny-evening',
+        url: '/app/',
+      },
+      {
+        title: 'PrePenny',
+        body: "Rent goes out tomorrow. You'll have £4.53 left until Friday.",
+        tag: 'prepenny-evening',
+        url: '/app/',
+      },
+    ]);
+    const headers = run.opened[0]?.headers ?? {};
+    expect(headers['Content-Encoding']).toBe('aes128gcm');
+    expect(headers.Authorization).toMatch(/^vapid t=[^ ]+, k=B[A-Za-z0-9_-]{86}$/);
+    // Kept by the push service only until 9pm, so it never arrives in quiet hours.
+    expect(headers.TTL).toBe(String(2 * 60 * 60));
+    // Taken once, for tomorrow, and done looking.
+    expect(run.asked.filter((one) => one.name === 'claim_reminder').map((one) => one.args)).toEqual(
+      [
+        {
+          person: SAM,
+          kind: 'evening',
+          for_day: '2026-11-01',
+          hide_amounts: false,
+          at_time: null,
+        },
+      ],
+    );
+    expect(run.asked.at(-1)).toEqual({
+      name: 'done_looking',
+      args: { person: SAM, mark: 'm', known: [], at_time: null },
+    });
+
+    // The next run, a minute later, sends nothing more.
+    const again = standIn({
+      now: '2026-10-31T19:15:00Z',
+      choices: { ...NO_REMINDERS, evening: true },
+      phones,
+      claimed: run.claimed,
+    });
+    expect(await runReminders(again.server, null)).toMatchObject({ sent: 0, notSent: 1 });
+    expect(again.opened).toEqual([]);
+  });
+
+  it('with amounts hidden, no amount reaches the phone (D561)', async () => {
+    const phones = [await phone('https://fcm.googleapis.com/fcm/send/one')];
+    const run = standIn({
+      now: '2026-10-31T19:00:00Z',
+      choices: { ...NO_REMINDERS, evening: true, hideAmounts: true },
+      phones,
+    });
+    await runReminders(run.server, null);
+    expect(run.opened[0]?.message.body).toBe('Rent goes out tomorrow.');
+  });
+
+  it('forgets an address the push service says is gone, and tries again when nobody took it', async () => {
+    const phones = [await phone('https://fcm.googleapis.com/fcm/send/gone')];
+    const run = standIn({
+      now: '2026-10-30T09:00:00Z',
+      choices: { ...NO_REMINDERS, payday: true },
+      phones,
+      status: () => 410,
+    });
+    expect(await runReminders(run.server, null)).toMatchObject({ sent: 0, notSent: 1 });
+    expect(run.asked.map((one) => one.name)).toContain('forget_push_address');
+    expect(run.asked.find((one) => one.name === 'unclaim_reminder')?.args).toEqual({
+      person: SAM,
+      kind: 'payday',
+      for_day: '2026-10-30',
+    });
+  });
+
+  it('never sends anywhere but a push service', async () => {
+    const phones = [await phone('https://example.com/not-a-push-service')];
+    const run = standIn({
+      now: '2026-10-30T09:00:00Z',
+      choices: { ...NO_REMINDERS, payday: true },
+      phones,
+    });
+    await runReminders(run.server, null);
+    expect(run.opened).toEqual([]);
+  });
+
+  it('keeps the shortfall it warned about as known: its account and date only', async () => {
+    const phones = [await phone('https://fcm.googleapis.com/fcm/send/one')];
+    const run = standIn({
+      // Sat 31 Oct, 9am: Sam isn't short, so nothing is known.
+      now: '2026-10-31T09:00:00Z',
+      choices: { ...NO_REMINDERS, shortfall: true },
+      phones,
+    });
+    await runReminders(run.server, null);
+    expect(run.asked.at(-1)?.args.known).toEqual([]);
+  });
+
+  it('logs nothing, ever', async () => {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((name) =>
+      vi.spyOn(console, name),
+    );
+    const phones = [await phone('https://fcm.googleapis.com/fcm/send/one')];
+    const run = standIn({
+      now: '2026-10-25T18:00:00Z',
+      choices: { payday: true, evening: true, shortfall: true, weekly: true, hideAmounts: false },
+      phones,
+    });
+    await runReminders(run.server, null);
+    // A step that fails is counted, never described.
+    await runReminders(
+      {
+        ...run.server,
+        step: async (name, args) => {
+          if (name === 'reminder_plan') throw new Error('Rent £600.00');
+          return run.server.step(name, args);
+        },
+      },
+      null,
+    );
+    for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('keeps a reminder until quiet hours start, a minute at least', () => {
+    expect(keepFor('2026-10-31T19:00:00Z')).toBe(7200);
+    // In summer, 7pm UTC is 8pm BST: one hour to quiet hours.
+    expect(keepFor('2027-06-05T19:00:00Z')).toBe(3600);
+    expect(keepFor('2026-10-31T20:59:30Z')).toBe(60);
+  });
+});

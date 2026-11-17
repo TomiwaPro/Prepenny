@@ -19,3 +19,5 @@ apps/web/.env*.local
 # The Supabase command line's own working files (step 3a).
 supabase/.temp/
 supabase/.branches/
+# The reminders function's work, built from apps/web/server/reminders.ts (step 4e).
+supabase/functions/reminders/_built/

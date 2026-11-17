@@ -47,8 +47,8 @@ import { SETUP_LAYOUT, type SetupProgress, setupDone } from '../lib/setup-progre
 import {
   type DbWrite,
   type MirrorRow,
-  mirrorRowOf,
   newToThisPhone,
+  rowsOfChanges,
   savedRows,
   type Table,
 } from '../lib/sync-rows.ts';
@@ -424,33 +424,7 @@ interface Notice {
 }
 
 /** The server's rows as this phone keeps them, from what plan_changes gave back. */
-function rowsFrom(changes: PlanChanges): MirrorRow[] {
-  const {
-    edit_made_at: planMadeAt,
-    edit_saved_at: planSavedAt,
-    edit_by: planBy,
-    edit_kind: planKind,
-    ...plan
-  } = changes.plan;
-  return [
-    mirrorRowOf('plans', plan, {
-      madeAt: planMadeAt,
-      savedAt: planSavedAt,
-      by: planBy,
-      kind: planKind,
-    }),
-    ...changes.rows.map(
-      ({
-        table,
-        row,
-        edit_made_at: madeAt,
-        edit_saved_at: savedAt,
-        edit_by: by,
-        edit_kind: kind,
-      }) => mirrorRowOf(table, row, { madeAt, savedAt, by, kind }),
-    ),
-  ];
-}
+const rowsFrom = (changes: PlanChanges): MirrorRow[] => rowsOfChanges(changes);
 
 /** Each person in the plan's role (step 3g): "owner", "editor" ("Can edit") or "viewer" ("Can view only"). */
 function rolesOf(changes: PlanChanges): Record<string, string> | undefined {

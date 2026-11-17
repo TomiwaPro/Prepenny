@@ -490,6 +490,8 @@ begin
     where s.name = app.signing_key_name();
   return jsonb_build_object(
     'now', app.utc_exact(moment),
+    -- Null on the real project: the stand-in push service of the local tests only.
+    'testPushPrefix', (select s.test_push_prefix from app.reminder_server s),
     'key', case when private_key is null then null
       else jsonb_build_object('publicKey', (select s.public_key from app.reminder_server s),
         'privateJwk', private_key::jsonb) end,
@@ -642,7 +644,7 @@ begin
     end if;
     perform vault.create_secret(private_jwk::text, app.signing_key_name(),
       'PrePenny''s key for signing reminders to push services (step 4e, RFC 8292)');
-    update app.reminder_server s set public_key = public_key;
+    update app.reminder_server s set public_key = public_key where s.one;
     kept := private_jwk::text;
   end if;
   return jsonb_build_object('publicKey', (select s.public_key from app.reminder_server s),
@@ -785,7 +787,7 @@ begin
   if address is null or address !~ '^https://[a-z0-9]+\.supabase\.co/functions/v1/reminders$' then
     perform app.refuse('bad-address');
   end if;
-  update app.reminder_server s set address = address returning * into server;
+  update app.reminder_server s set address = address where s.one returning * into server;
   perform net.http_post(
     url := server.address,
     body := '{}'::jsonb,
