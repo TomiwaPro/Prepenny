@@ -21,6 +21,8 @@ const SIGN_IN_TESTS =
 const port = 4173;
 /** The second copy, for the move from the old address (D428). */
 const OLD_ADDRESS_PORT = 4174;
+/** The third copy, with its rules in the live site's order (D559). */
+const LIVE_ORDER_PORT = 4175;
 /**
  * A pull request's preview on Cloudflare, tried for real by the Deploy
  * workflow (step 3e-2, D408). Given, only that test runs, against it.
@@ -92,6 +94,15 @@ export default defineConfig({
             command: `wrangler dev --config e2e/old-address.wrangler.jsonc --port ${OLD_ADDRESS_PORT} --ip 127.0.0.1 --local-protocol https --log-level warn`,
             url: `https://127.0.0.1:${OLD_ADDRESS_PORT}/app/`,
             ignoreHTTPSErrors: true,
+            reuseExistingServer: process.env.CI === undefined,
+            env: { WRANGLER_SEND_METRICS: 'false' },
+            timeout: 60_000,
+          },
+          // The same app with its rules in the live site's order, the front
+          // page's own before the general one (e2e/live-order.spec.ts, D559).
+          {
+            command: `node e2e/live-order.ts && wrangler dev --config e2e/live-order.wrangler.jsonc --port ${LIVE_ORDER_PORT} --ip 127.0.0.1 --log-level warn`,
+            url: `http://127.0.0.1:${LIVE_ORDER_PORT}/app/`,
             reuseExistingServer: process.env.CI === undefined,
             env: { WRANGLER_SEND_METRICS: 'false' },
             timeout: 60_000,

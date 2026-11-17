@@ -10,6 +10,7 @@ apps/web/test-results/
 apps/web/playwright-report/
 apps/web/.wrangler/
 apps/web/e2e/.wrangler/
+apps/web/e2e/.live-order/
 *.tsbuildinfo
 apps/web/public/engine-worker*.js
 apps/web/public/version.json
