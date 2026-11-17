@@ -22,6 +22,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
+import { layoutProblems } from './coming-up.ts';
 import { addAccount, jessAndTom } from './jess-and-tom.ts';
 import { addPayment, noSidewaysScroll } from './journeys.ts';
 import {
@@ -171,6 +172,11 @@ for (const colorScheme of ['light', 'dark'] as const) {
           await page.screenshot({ path: `${SCREENS}/reminders-on-360-light.png`, fullPage: true });
         }
         await noAxeProblems(page);
+        // With text at 200%, nothing is cut off or wider than the screen.
+        await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+        expect(await layoutProblems(page)).toEqual([]);
+        await page.reload();
+        await expect(box(page, t.payday)).toBeChecked();
         for (const name of [t.payday, t.evening, t.shortfall]) await choose(page, name, false);
         expect(choicesOf(person)).toBe('f,f,f,t,f');
         await choose(page, t.weekly, false);
