@@ -26,6 +26,9 @@
 // 5. the get-back-in function, with Jess's address, and Supabase's own
 //    administrator routes.
 //
+// And since step 4e, her reminders: nobody can send her one, take her
+// phone's push address, or read her reminder choices (D563).
+//
 // Each must give nothing of Jess's private records and change nothing of
 // them, nor of her account. Alex and someone signed out get nothing of the
 // plan at all, and "Can view only" changes nothing shared. Each kind of
@@ -51,10 +54,12 @@ import {
   share,
   tomJoins,
 } from './paydays.ts';
+import { givePushAddress, phoneKeys, standInPushService } from './push-service.ts';
 import { radio } from './setup.ts';
-import { newEmail } from './sign-in-helpers.ts';
+import { makeAPlan, newEmail } from './sign-in-helpers.ts';
 import {
   everythingOnThePhone,
+  openMore,
   personOn,
   quoted,
   secondPhone,
@@ -162,6 +167,11 @@ function fingerprint(plan: string, jess: string, shared: boolean): string {
     sql(`select coalesce(md5(string_agg(to_jsonb(g)::text, '|')), '') from app.get_back_in g
       where g.person_id = ${quoted(jess)}`),
     sql(`select md5(to_jsonb(p)::text) from public.people p where p.id = ${quoted(jess)}`),
+    // Her reminders (step 4e): her choices and her phones' push addresses.
+    sql(`select coalesce(md5(string_agg(to_jsonb(c)::text, '|')), '') from app.reminder_choices c
+      where c.person_id = ${quoted(jess)}`),
+    sql(`select coalesce(md5(string_agg(to_jsonb(a)::text, '|' order by a.endpoint)), '')
+      from app.push_addresses a where a.person_id = ${quoted(jess)}`),
   );
   return parts.join('/');
 }
@@ -923,4 +933,151 @@ test("step 4a: Tom receives nothing of Jess's pay but its dates", async ({
     "Tom's phone keeps nothing of her pay but its dates",
   ).toEqual([]);
   await tom.context.close();
+});
+
+test("step 4e: nobody can send Jess a reminder, take her phone's push address, or read her reminder choices", async ({
+  page,
+  browser,
+}, info) => {
+  test.skip(
+    info.project.name !== 'sign-in-360',
+    'About the server, not the screen: run once, at 360px.',
+  );
+  test.setTimeout(300_000);
+  const service = await standInPushService();
+  try {
+    // Jess, with the evening reminder on and her phone getting it.
+    const jessKeys = await phoneKeys();
+    const jessAddress = service.address('jess-security');
+    await givePushAddress(page.context(), jessAddress, jessKeys);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await makeAPlan(page);
+    await signUpFromMore(page, newEmail('jess'));
+    await openMore(page);
+    await page
+      .getByTestId('reminders-card')
+      .getByRole('link', { name: strings.reminders.more.link })
+      .click();
+    await page.getByRole('checkbox', { name: strings.reminders.evening, exact: true }).check();
+    await expect(page.getByTestId('reminders-said')).toHaveText(strings.reminders.saved);
+    const jess = await personOn(page);
+    const session = sql(
+      `select session_id from app.push_addresses where person_id = ${quoted(jess)}`,
+    );
+    expect(session).not.toBe('');
+    const jessSecrets = [jessAddress, jessKeys.p256dh, jessKeys.auth, session];
+    const before = sql(`select md5(string_agg(to_jsonb(r)::text, '|')) from (
+      select to_jsonb(c) - 'looked_at' - 'looked_mark' as r from app.reminder_choices c
+        where c.person_id = ${quoted(jess)}
+      union all select to_jsonb(a) from app.push_addresses a where a.person_id = ${quoted(jess)}) r`);
+
+    // Tom, signed in on his own phone, in no plan of hers.
+    const tom = await secondPhone(browser, info, 'light');
+    await makeAPlan(tom.page);
+    await signUpFromMore(tom.page, newEmail('tom'));
+    const tomWho: Who = { name: 'Tom', token: await tokenOn(tom.page) };
+    const nobody: Who = { name: 'someone signed out', token: null };
+
+    for (const who of [tomWho, nobody]) {
+      // The server's own steps: none of them, for anyone but the reminders function.
+      for (const [step, args] of [
+        ['reminder_work', { tick: 'a guess', at_time: null, test_person: jess }],
+        ['reminder_plan', { tick: 'a guess', person: jess, session }],
+        [
+          'claim_reminder',
+          {
+            tick: 'a guess',
+            person: jess,
+            kind: 'evening',
+            for_day: '2026-10-26',
+            hide_amounts: false,
+          },
+        ],
+        [
+          'unclaim_reminder',
+          { tick: 'a guess', person: jess, kind: 'evening', for_day: '2026-10-26' },
+        ],
+        ['done_looking', { tick: 'a guess', person: jess, mark: '', known: [] }],
+        ['forget_push_address', { tick: 'a guess', endpoint: jessAddress }],
+        ['keep_signing_key', { tick: 'a guess', public_key: 'B', private_jwk: {} }],
+        ['push_token', { tick: 'a guess', audience: 'https://fcm.googleapis.com' }],
+        [
+          'keep_push_token',
+          { tick: 'a guess', audience: 'https://fcm.googleapis.com', token: 'x' },
+        ],
+      ] as const) {
+        const answer = await send(who, 'POST', `/rest/v1/rpc/${step}`, args);
+        expect(answer.status, `${who.name}: ${step}`).toBeGreaterThanOrEqual(400);
+        givesNothing(answer, jessSecrets, `${who.name}: ${step}`);
+      }
+      // Her choices and push addresses can't be read straight, through the Data API or as its app part.
+      for (const table of ['reminder_choices', 'push_addresses']) {
+        for (const extra of [{}, { 'Accept-Profile': 'app' }]) {
+          const answer = await send(who, 'GET', `/rest/v1/${table}?select=*`, undefined, extra);
+          expect(answer.status, `${who.name}: GET ${table}`).toBeGreaterThanOrEqual(400);
+          givesNothing(answer, jessSecrets, `${who.name}: GET ${table}`);
+        }
+      }
+      // Starting the reminders function without the database's tick does nothing.
+      for (const tick of [null, 'a guess']) {
+        const started = await fetch(`${LOCAL_SUPABASE.url}/functions/v1/reminders`, {
+          method: 'POST',
+          headers: {
+            ...(who.token === null ? {} : { Authorization: `Bearer ${who.token}` }),
+            'x-prepenny-wait': 'yes',
+            'x-prepenny-test-now': '2026-10-25T19:00:00Z',
+            ...(tick === null ? {} : { 'x-prepenny-tick': tick }),
+          },
+        });
+        expect(started.status, `${who.name}: the reminders function`).toBe(403);
+      }
+    }
+
+    // Signed out: no reminders to read or change.
+    for (const step of [
+      'my_reminders',
+      'choose_reminders',
+      'add_push_address',
+      'remove_push_address',
+    ]) {
+      const answer = await send(nobody, 'POST', `/rest/v1/rpc/${step}`, {});
+      expect(answer.status, `someone signed out: ${step}`).toBeGreaterThanOrEqual(400);
+    }
+
+    // Tom reads only his own choices, and can't take her phone's address for his.
+    const his = await send(tomWho, 'POST', '/rest/v1/rpc/my_reminders', {});
+    expect(his.status).toBe(200);
+    expect(JSON.parse(his.text)).toMatchObject({ evening: false, this_phone: null });
+    givesNothing(his, jessSecrets, 'Tom: my_reminders');
+    const taken = await send(tomWho, 'POST', '/rest/v1/rpc/add_push_address', {
+      endpoint: jessAddress,
+      p256dh: jessKeys.p256dh,
+      auth_secret: jessKeys.auth,
+    });
+    expect(taken.status).toBeGreaterThanOrEqual(400);
+    expect(taken.text).toContain('in-use');
+    // His own choices change only his.
+    const chosen = await send(tomWho, 'POST', '/rest/v1/rpc/choose_reminders', {
+      payday: true,
+      evening: true,
+      shortfall: true,
+      weekly: true,
+      hide_amounts: true,
+    });
+    expect(chosen.status).toBe(200);
+    givesNothing(chosen, jessSecrets, 'Tom: choose_reminders');
+    await send(tomWho, 'POST', '/rest/v1/rpc/remove_push_address', {});
+
+    // Nothing of Jess's reminders changed, and nothing reached her phone.
+    expect(
+      sql(`select md5(string_agg(to_jsonb(r)::text, '|')) from (
+        select to_jsonb(c) - 'looked_at' - 'looked_mark' as r from app.reminder_choices c
+          where c.person_id = ${quoted(jess)}
+        union all select to_jsonb(a) from app.push_addresses a where a.person_id = ${quoted(jess)}) r`),
+    ).toBe(before);
+    expect(service.arrived).toEqual([]);
+    await tom.context.close();
+  } finally {
+    await service.close();
+  }
 });

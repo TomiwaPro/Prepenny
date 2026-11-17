@@ -2,7 +2,7 @@ name: Database
 
 # Sends the database changes in supabase/migrations to PrePenny's real
 # Supabase project in London (step 3a, D297), then the get-back-in function
-# (step 3e hardening), checks GraphQL is still off (step 4a, D509), then sets
+# (step 3e hardening) and the reminders function (step 4e), checks GraphQL is still off (step 4a, D509), then sets
 # its sign-in settings (step 3b, D305), once it has checked its key has every
 # permission all that needs (step 3e-2, D406):
 # - only from main, and only after the Check workflow has passed on that exact
@@ -129,6 +129,58 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: supabase functions deploy get-back-in --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
+
+      - name: Set up pnpm (the version in package.json)
+        # Step 4e: the reminders function's work is built from the app's own
+        # code (apps/web/scripts/build-reminders.ts), so it needs the app's
+        # building blocks, exactly as the lockfile lists them.
+        if: steps.supabase.outputs.ready == 'true'
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0, 13 Mar 2026: runs on Node 24
+
+      - name: Build the reminders function's work
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+        run: |
+          pnpm install --frozen-lockfile
+          node apps/web/scripts/build-reminders.ts
+
+      - name: Put the reminders function online
+        # Step 4e (D564): every 15 minutes the database's own scheduled job
+        # starts it, with a tick only the database knows; it reads each due
+        # person's plan as their own phone does, works out their reminders
+        # and sends each, sealed for that phone alone. No sign-in token
+        # starts it (--no-verify-jwt): the database refuses every step
+        # without the tick. Supabase gives it the project's own secret key;
+        # it makes PrePenny's signing key itself and keeps it in Supabase's
+        # Vault. Needs the same Edge Functions: Read-write as get-back-in.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase functions deploy reminders --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api
+
+      - name: Tell the database where the reminders function is
+        # Its address is the project's own, which is a secret here as the
+        # repository is public, so it can't be in the migration. The
+        # database keeps it, and starts the function once straight away, so
+        # its signing key is made before anyone turns a reminder on. With
+        # "Database: Read-write", as the GraphQL check below.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          address="https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/reminders"
+          status=$(jq -n --arg address "$address" '{query: "select app.reminders_address($1) as reminders", parameters: [$address]}' | curl --silent --show-error \
+            --output "$RUNNER_TEMP/reminders.json" --write-out '%{http_code}' --request POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ] || [ "$(jq -r '.[0].reminders // empty' "$RUNNER_TEMP/reminders.json")" != "set" ]; then
+            echo "::error title=Reminders::Supabase answered $status when told the reminders function's address: $(jq -r '.message // .msg // "no message"' "$RUNNER_TEMP/reminders.json" 2>/dev/null). Run this workflow again; if it fails again, ask Claude Code to look at this step."
+            exit 1
+          fi
+          echo "The database knows where the reminders function is, and has started it once."
 
       - name: Check the Data API shows PrePenny's public part only
         # The Data API (PostgREST) answers for the schemas listed in the

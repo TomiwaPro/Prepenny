@@ -220,6 +220,19 @@ export async function signedFor(
   key: SigningKey,
   nowSeconds: number,
 ): Promise<string> {
+  return withSignature(await signatureFor(endpoint, key, nowSeconds), key);
+}
+
+/** The Authorization header for a signature made before: Apple asks for one an hour at most. */
+export const withSignature = (token: string, key: SigningKey) =>
+  `vapid t=${token}, k=${key.publicKey}`;
+
+/** The signature itself (a JSON Web Token) for one push service's address. */
+export async function signatureFor(
+  endpoint: string,
+  key: SigningKey,
+  nowSeconds: number,
+): Promise<string> {
   const audience = new URL(endpoint).origin;
   const part = (value: unknown) => base64url(encoder.encode(JSON.stringify(value)));
   const unsigned = `${part({ typ: 'JWT', alg: 'ES256' })}.${part({
@@ -241,5 +254,5 @@ export async function signedFor(
       encoder.encode(unsigned),
     ),
   );
-  return `vapid t=${unsigned}.${base64url(signature)}, k=${key.publicKey}`;
+  return `${unsigned}.${base64url(signature)}`;
 }

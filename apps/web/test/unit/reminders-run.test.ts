@@ -58,6 +58,7 @@ function standIn(options: {
     headers: Record<string, string>;
   }[] = [];
   const claimed = options.claimed ?? new Set<string>();
+  const tokens = new Map<string, string>();
   const server: ReminderServer = {
     seconds: () => 1_794_000_000,
     step: async (name, args) => {
@@ -74,6 +75,11 @@ function standIn(options: {
           };
         case 'keep_signing_key':
           return { publicKey: args.public_key, privateJwk: args.private_jwk };
+        case 'push_token':
+          return tokens.get(String(args.audience)) ?? null;
+        case 'keep_push_token':
+          tokens.set(String(args.audience), String(args.token));
+          return args.token;
         case 'reminder_plan':
           return samsRows();
         case 'claim_reminder': {
@@ -108,7 +114,7 @@ function standIn(options: {
       return options.status?.(endpoint) ?? 201;
     },
   };
-  return { server, asked, opened, claimed };
+  return { server, asked, opened, claimed, tokens };
 }
 
 afterEach(() => vi.restoreAllMocks());
@@ -175,6 +181,29 @@ describe('the reminders function (D564)', () => {
     });
     expect(await runReminders(again.server, null)).toMatchObject({ sent: 0, notSent: 1 });
     expect(again.opened).toEqual([]);
+  });
+
+  it('one signature for each push service, kept an hour, as Apple asks (D573)', async () => {
+    const phones = [
+      await phone('https://fcm.googleapis.com/fcm/send/one'),
+      await phone('https://fcm.googleapis.com/fcm/send/two'),
+      await phone('https://web.push.apple.com/three'),
+    ];
+    const run = standIn({
+      now: '2026-10-31T19:00:00Z',
+      choices: { ...NO_REMINDERS, evening: true },
+      phones,
+    });
+    await runReminders(run.server, null);
+    const [one, two, three] = run.opened.map((item) => item.headers.Authorization);
+    expect(one).toBe(two);
+    expect(three).not.toBe(one);
+    // Made once for each push service, and kept for the next run.
+    expect(run.asked.filter((item) => item.name === 'keep_push_token')).toHaveLength(2);
+    expect([...run.tokens.keys()].sort()).toEqual([
+      'https://fcm.googleapis.com',
+      'https://web.push.apple.com',
+    ]);
   });
 
   it('with amounts hidden, no amount reaches the phone (D561)', async () => {

@@ -30,7 +30,8 @@ import {
   type PushTarget,
   type SigningKey,
   sealForPhone,
-  signedFor,
+  signatureFor,
+  withSignature,
 } from '../lib/web-push.ts';
 import { strings } from '../strings/en-GB.ts';
 
@@ -77,7 +78,7 @@ interface Claim {
 
 /** The browsers' push services (app.push_address_ok): nothing is ever sent anywhere else. */
 const PUSH_SERVICE =
-  /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)\//;
+  /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)\//;
 
 /**
  * How long a push service keeps a reminder for a phone that's switched off:
@@ -121,6 +122,24 @@ export async function runReminders(
     })) as SigningKey;
   }
   const signingKey = key;
+  // PrePenny's signature for each push service, kept an hour, as Apple asks
+  // ("Don't refresh your JWT more frequently than once per hour", D573).
+  const signatures = new Map<string, string>();
+  const signature = async (endpoint: string) => {
+    const audience = new URL(endpoint).origin;
+    let token = signatures.get(audience);
+    if (token === undefined) {
+      token = ((await server.step('push_token', { audience })) as string | null) ?? undefined;
+    }
+    if (token === undefined) {
+      token = (await server.step('keep_push_token', {
+        audience,
+        token: await signatureFor(endpoint, signingKey, server.seconds()),
+      })) as string;
+    }
+    signatures.set(audience, token);
+    return withSignature(token, signingKey);
+  };
   const allowed = (endpoint: string) =>
     PUSH_SERVICE.test(endpoint) ||
     (typeof work.testPushPrefix === 'string' && endpoint.startsWith(work.testPushPrefix));
@@ -157,7 +176,13 @@ export async function runReminders(
         let delivered = 0;
         for (const phone of claim.phones ?? []) {
           if (!allowed(phone.endpoint)) continue;
-          const status = await deliver(server, signingKey, phone, due, work.now);
+          const status = await deliver(
+            server,
+            await signature(phone.endpoint),
+            phone,
+            due,
+            work.now,
+          );
           if (status >= 200 && status < 300) delivered += 1;
           else if (status === 404 || status === 410) {
             // The phone's push service says the address is gone, as when
@@ -194,7 +219,7 @@ export async function runReminders(
 
 async function deliver(
   server: ReminderServer,
-  key: SigningKey,
+  authorization: string,
   phone: PushTarget,
   due: DueReminder,
   now: string,
@@ -203,7 +228,7 @@ async function deliver(
   return server.push(
     phone.endpoint,
     {
-      Authorization: await signedFor(phone.endpoint, key, server.seconds()),
+      Authorization: authorization,
       'Content-Encoding': 'aes128gcm',
       'Content-Type': 'application/octet-stream',
       TTL: String(keepFor(now)),

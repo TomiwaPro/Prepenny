@@ -5,6 +5,7 @@
 import { createHash } from 'node:crypto';
 import type { BrowserContext } from '@playwright/test';
 import { officialJson } from '../../../packages/engine/test/fixtures/holidays.ts';
+import { sql } from './two-phones.ts';
 
 type Event = { title: string; date: string; notes: string; bunting: boolean };
 type GovUk = Record<string, { division?: string; events: Event[] }>;
@@ -52,4 +53,18 @@ export async function siteHas(
         });
   });
   return count;
+}
+
+/**
+ * The database's own weekly fetch of PrePenny's site (step 4e, D545), played
+ * by the tests: the list is kept as one the database fetched, so a phone
+ * sending it is believed. Only kept, not given to every plan as the real
+ * fetch does (app.take_bank_holiday_list), so tests running beside this one
+ * keep their own lists.
+ */
+export function databaseFetched(file: ReturnType<typeof siteList>) {
+  const quoted = (text: string) => `'${text.replaceAll("'", "''")}'`;
+  sql(
+    `insert into app.bank_holiday_lists (list_version, list) values (${quoted(file.version)}, ${quoted(JSON.stringify(file.list))}::jsonb) on conflict do nothing`,
+  );
 }

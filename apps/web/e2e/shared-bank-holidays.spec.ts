@@ -9,11 +9,13 @@
 // site then has a new one-off bank holiday on Tue 8 Dec 2026. Only one phone
 // gets it from the site; the other's site answers nothing, as with no
 // signal for that one file, so the list can only reach it through the account.
+// From step 4e the database has fetched the same list itself, as only such a
+// list is taken (D545).
 
 import { expect, type Page, test } from '@playwright/test';
 import { type PlanRecords, workOutPlan } from '@prepenny/engine';
 import { strings } from '../strings/en-GB.ts';
-import { siteHas, siteList } from './holiday-site.ts';
+import { databaseFetched, siteHas, siteList } from './holiday-site.ts';
 import { jessAndTom } from './jess-and-tom.ts';
 import { addPayment, day, holidaysOf, noAxeProblems, openHome } from './journeys.ts';
 import { differences, sharedDays, TODAY, YEAR_ON } from './paydays.ts';
@@ -117,7 +119,9 @@ for (const [first, colorScheme] of [
         .toEqual(['2026-11-06', '2026-12-08']);
     }
 
-    // The site has the new bank holiday. Only the first phone gets it from there.
+    // The site has the new bank holiday, and the database has fetched it
+    // too (D545). Only the first phone gets it from there.
+    databaseFetched(NEW_LIST);
     const [firstPhone, otherPhone] = first === 'Jess' ? [page, tom.page] : [tom.page, page];
     const asked = await siteHas(firstPhone.context(), NEW_LIST);
     await aWeekLater(firstPhone);

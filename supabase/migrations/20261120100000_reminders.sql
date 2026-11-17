@@ -28,7 +28,10 @@
 -- 36-bank-holidays-fetched.test.sql.
 
 create extension if not exists pg_net with schema extensions;
+-- As Supabase's own guide to Supabase Cron says (apps/docs, guides/cron/install).
 create extension if not exists pg_cron with schema pg_catalog;
+grant usage on schema cron to postgres;
+grant all privileges on all tables in schema cron to postgres;
 
 -- ---------------------------------------------------------------------------
 -- 1. Bank holiday lists only from PrePenny's own site (D545).
@@ -331,13 +334,14 @@ $$;
 
 -- Whether a push address is one of the browsers' push services: Google's
 -- (Chrome, Edge on Android, Samsung Internet and others), Mozilla's
--- (Firefox), Apple's (Safari, and PrePenny on an iPhone's Home Screen) or
--- Microsoft's (Edge on Windows). Or, on a local Supabase only, the tests'
+-- (Firefox), Apple's (Safari, and PrePenny on an iPhone's Home Screen: any
+-- *.push.apple.com, as Apple's own documentation says) or Microsoft's (Edge
+-- on Windows). Or, on a local Supabase only, the tests'
 -- stand-in.
 create function app.push_address_ok(endpoint text) returns boolean
 language sql stable security definer set search_path = '' as $$
   select endpoint is not null and length(endpoint) <= 1000 and endpoint !~ '[[:space:]]' and (
-    endpoint ~ '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)/.'
+    endpoint ~ '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com)/.'
     or exists (
       select 1 from app.reminder_server s
       where s.test_push_prefix is not null and starts_with(endpoint, s.test_push_prefix)
@@ -475,7 +479,8 @@ $$;
 -- yet, and the people it may need to send to. Each is someone with a
 -- reminder on and a phone that gets them, in a plan, whose plan has changed
 -- since it last looked, or whose next reminder time has come since. Nobody
--- in quiet hours. 200 at a time, those looked at longest ago first.
+-- in quiet hours. 50 at a time, those looked at longest ago first, so one
+-- run stays inside a function's 2 seconds of the computer's time (D573).
 create function public.reminder_work(tick text, at_time timestamptz default null,
   test_person uuid default null) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
@@ -520,7 +525,7 @@ begin
           and (test_person is null or not (select s.test_clock from app.reminder_server s)
             or c.person_id = test_person)
         order by c.looked_at nulls first
-        limit 200
+        limit 50
       ) c), '[]'::jsonb) end);
 end;
 $$;
@@ -649,10 +654,57 @@ begin
     perform vault.create_secret(private_jwk::text, app.signing_key_name(),
       'PrePenny''s key for signing reminders to push services (step 4e, RFC 8292)');
     update app.reminder_server s set public_key = public_key where s.one;
+    -- Signatures made with any key before are no good with this one.
+    delete from app.push_tokens t where t.audience is not null;
     kept := private_jwk::text;
   end if;
   return jsonb_build_object('publicKey', (select s.public_key from app.reminder_server s),
     'privateJwk', kept::jsonb);
+end;
+$$;
+
+-- PrePenny's signature for each push service, kept an hour (D573): Apple's
+-- own documentation asks "Don't refresh your JWT more frequently than once
+-- per hour". It lasts 12 hours, so one kept an hour is always still good.
+create table app.push_tokens (
+  audience text primary key check (audience ~ '^https://[a-z0-9.-]+$'),
+  token text not null,
+  made_at timestamptz not null default now()
+);
+
+-- The signature kept for a push service, made in the last 55 minutes, or null.
+create function public.push_token(tick text, audience text) returns text
+language plpgsql volatile security definer set search_path = '' as $$
+#variable_conflict use_variable
+begin
+  perform app.check_tick(tick);
+  return (select t.token from app.push_tokens t
+    where t.audience = audience and t.made_at > now() - interval '55 minutes');
+end;
+$$;
+
+-- Keeps a new signature for a push service, unless one made in the last 55
+-- minutes is kept already, as by a run at the same moment: then that one,
+-- which is given back.
+create function public.keep_push_token(tick text, audience text, token text) returns text
+language plpgsql volatile security definer set search_path = '' as $$
+#variable_conflict use_variable
+declare
+  kept text;
+begin
+  perform app.check_tick(tick);
+  if audience is null or audience !~ '^https://[a-z0-9.-]+$' or token is null
+      or length(token) > 2000 then
+    perform app.refuse('bad-token');
+  end if;
+  insert into app.push_tokens as t (audience, token, made_at) values (audience, token, now())
+    on conflict on constraint push_tokens_pkey do update set token = excluded.token, made_at = now()
+      where t.made_at <= now() - interval '55 minutes'
+    returning t.token into kept;
+  if kept is null then
+    select t.token into kept from app.push_tokens t where t.audience = audience;
+  end if;
+  return kept;
 end;
 $$;
 
@@ -812,7 +864,8 @@ select cron.schedule('prepenny-bank-holidays', '41 7 * * 1', $$select app.ask_fo
 -- function alone, with Supabase's own secret key and the tick.
 
 revoke all on app.bank_holiday_lists, app.bank_holiday_fetches, app.reminder_choices,
-  app.push_addresses, app.reminders_sent, app.known_shortfalls, app.reminder_server
+  app.push_addresses, app.reminders_sent, app.known_shortfalls, app.reminder_server,
+  app.push_tokens
   from public, anon, authenticated, service_role;
 
 revoke all on function
@@ -829,14 +882,16 @@ revoke all on function
   public.claim_reminder(text, uuid, text, date, boolean, timestamptz),
   public.unclaim_reminder(text, uuid, text, date),
   public.done_looking(text, uuid, text, jsonb, timestamptz),
-  public.forget_push_address(text, text), public.keep_signing_key(text, text, jsonb)
+  public.forget_push_address(text, text), public.keep_signing_key(text, text, jsonb),
+  public.push_token(text, text), public.keep_push_token(text, text, text)
   from public, anon, authenticated;
 grant execute on function
   public.reminder_work(text, timestamptz, uuid), public.reminder_plan(text, uuid, uuid),
   public.claim_reminder(text, uuid, text, date, boolean, timestamptz),
   public.unclaim_reminder(text, uuid, text, date),
   public.done_looking(text, uuid, text, jsonb, timestamptz),
-  public.forget_push_address(text, text), public.keep_signing_key(text, text, jsonb)
+  public.forget_push_address(text, text), public.keep_signing_key(text, text, jsonb),
+  public.push_token(text, text), public.keep_push_token(text, text, text)
   to service_role;
 
 revoke all on function

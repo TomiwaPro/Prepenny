@@ -230,6 +230,12 @@ Found in step 4d:
 91. **Whether an iPhone uses the dark opening screen** (D550): no source says whether an iPhone looks at the colour scheme when it chooses one. `docs/TRY-PHASE-4.md`, step 4d, checks it on a phone.
 92. **Brief 8.7 test 5 read Home's four buttons as one line, once** (any time): in step 4d, on the building computer, in a run of the sign-in tests beside a full run of the others and Docker unpacking Supabase (load around 20 on 4 processors), the test's word-for-word check of Home failed only because the four buttons' words were read run together, as they are before the buttons' styles apply; no figure differed. It passed all four runs of the next full sign-in run. Slowing Home's own stylesheet by 3 seconds doesn't make it happen (Next.js waits for it before showing Home), so the cause isn't known yet. If it happens on GitHub, its trace shows the moment.
 
+Found in step 4e:
+
+93. **More people with reminders than one run can look at** (when PrePenny grows): a function has 2 seconds of the computer's time a request (D573), so each 15-minute run looks at 50 people at most, those looked at longest ago first. That covers about 400 people's evening reminders between 7pm and 9pm. Beyond that, the scheduled job can start the function several times a run. Supabase's Pro plan doesn't change the 2 seconds.
+94. **The preview database's job doesn't put the reminders function online yet** (with Supabase's paid plan, D411): it's switched off, and couldn't be tried. When it's switched on, it needs the same three steps as the Database workflow (build, put online, tell the database its address), with the preview project's own address.
+95. **A real push service, and how a phone shows a reminder,** can only be seen on a real phone: the tests use a stand-in push service, and Chrome's headless shell can't show notifications (D571). `docs/TRY-PHASE-4.md`, step 4e, checks both.
+
 ## Ideas for the owner to decide on later
 
 Not built. Each needs the owner's yes, and its details, before a step builds it. Planned as steps 4m and 4n, each waiting for a yes or no (questions 17 to 19).

@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(80);
+select plan(87);
 
 select tests.make_jess_and_tom();
 
@@ -88,7 +88,7 @@ select is_empty(
   $$ select t.table_name from information_schema.role_table_grants t
      where t.table_schema = 'app'
        and t.table_name in ('reminder_choices', 'push_addresses', 'reminders_sent', 'known_shortfalls',
-         'reminder_server', 'bank_holiday_lists', 'bank_holiday_fetches')
+         'reminder_server', 'bank_holiday_lists', 'bank_holiday_fetches', 'push_tokens')
        and t.grantee in ('anon', 'authenticated', 'service_role', 'public') $$,
   'Nobody can read or change the reminder tables straight, not even with Supabase''s own key');
 
@@ -96,7 +96,7 @@ select is_empty(
   $$ select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public'
        and p.proname in ('reminder_work', 'reminder_plan', 'claim_reminder', 'unclaim_reminder',
-         'done_looking', 'forget_push_address', 'keep_signing_key')
+         'done_looking', 'forget_push_address', 'keep_signing_key', 'push_token', 'keep_push_token')
        and (has_function_privilege('anon', p.oid, 'execute')
          or has_function_privilege('authenticated', p.oid, 'execute')
          or not has_function_privilege('service_role', p.oid, 'execute')
@@ -356,6 +356,25 @@ select is((select count(*)::integer from vault.secrets where name = app.signing_
 select tests.as_person('alex');
 select is(public.my_reminders() ->> 'public_key', 'B' || repeat('K', 86),
   'Each phone''s browser is given only the public half');
+
+-- Its signature for each push service, kept an hour, as Apple asks (D573).
+select tests.as_supabase_admin();
+select is(public.push_token(pg_temp.tick(), 'https://web.push.apple.com'), null,
+  'No signature is kept for a push service at first');
+select is(public.keep_push_token(pg_temp.tick(), 'https://web.push.apple.com', 'first'), 'first',
+  'The first is kept');
+select is(public.keep_push_token(pg_temp.tick(), 'https://web.push.apple.com', 'second'), 'first',
+  'and a second made within the hour is given the first back, so Apple sees one an hour');
+select is(public.push_token(pg_temp.tick(), 'https://web.push.apple.com'), 'first', 'which is used');
+select tests.as_test();
+update app.push_tokens set made_at = now() - interval '56 minutes';
+select tests.as_supabase_admin();
+select is(public.push_token(pg_temp.tick(), 'https://web.push.apple.com'), null,
+  'After 55 minutes it isn''t used');
+select is(public.keep_push_token(pg_temp.tick(), 'https://web.push.apple.com', 'third'), 'third',
+  'and a new one is kept');
+select is(pg_temp.refusal($$ select public.keep_push_token(pg_temp.tick(), 'http://evil.example', 'x') $$),
+  'bad-token', 'Only for a push service''s https address');
 
 -- ---------------------------------------------------------------------------
 -- 8. UK time, through the clock changes (D560).

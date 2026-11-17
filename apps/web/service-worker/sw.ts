@@ -8,6 +8,7 @@
 
 import { type PrecacheEntry, Serwist } from 'serwist';
 import { TAKE_CHARGE } from './messages.ts';
+import { reminderOf } from './reminder.ts';
 
 declare const self: ServiceWorkerGlobalScope & {
   readonly __SW_MANIFEST: (PrecacheEntry | string)[];
@@ -63,40 +64,8 @@ self.addEventListener('message', (event) => {
 // the same kind replaces an older one. A tap opens PrePenny. Nothing is
 // kept, and nothing is sent anywhere.
 
-/** The name, shown as the title if a reminder's own can't be read. */
-const NAME = 'PrePenny';
-
-interface Reminder {
-  readonly title: string;
-  readonly body: string;
-  readonly tag: string;
-  readonly url: string;
-}
-
-function reminderOf(data: PushMessageData | null): Reminder {
-  const shown: Reminder = { title: NAME, body: '', tag: 'prepenny', url: '/app/' };
-  try {
-    const sent: unknown = data?.json();
-    if (typeof sent !== 'object' || sent === null) return shown;
-    const field = (name: keyof Reminder) => {
-      const value = (sent as Record<string, unknown>)[name];
-      return typeof value === 'string' && value.length <= 1000 ? value : shown[name];
-    };
-    // Only one of PrePenny's own pages opens from a tap.
-    const url = field('url');
-    return {
-      title: field('title'),
-      body: field('body'),
-      tag: field('tag'),
-      url: /^\/app\/[A-Za-z0-9/_#-]*$/.test(url) ? url : shown.url,
-    };
-  } catch {
-    return shown;
-  }
-}
-
 self.addEventListener('push', (event) => {
-  const reminder = reminderOf(event.data);
+  const reminder = reminderOf(() => event.data?.json());
   event.waitUntil(
     self.registration.showNotification(reminder.title, {
       body: reminder.body,
