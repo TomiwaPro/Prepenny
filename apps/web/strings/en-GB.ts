@@ -1833,6 +1833,99 @@ export const strings = {
   },
 
   /**
+   * Reminders (step 4e, brief 4.11, D560 to D565): the screen under More,
+   * and the words of each notification, worked out on the server when it's
+   * due (lib/reminders.ts).
+   */
+  reminders: {
+    heading: 'Reminders',
+    purpose:
+      "Notifications on this phone on payday, before money goes out and when you'd be short, so you know before it happens.",
+    back: 'Back to More',
+    /** The row on More. */
+    more: {
+      heading: 'Reminders',
+      link: 'Reminders',
+      line: "On payday, before money goes out, and when you'd be short",
+    },
+    /** Each reminder, with what it does and when. Every one is off until it's turned on (D560). */
+    choose: 'Which reminders do you want?',
+    payday: 'Payday',
+    paydayLine: 'At 9am on payday: "Payday: update your balance."',
+    evening: 'The evening before money goes out',
+    eveningLine:
+      'At 7pm, naming the biggest payment, with what you\'ll have left until payday: "Rent goes out tomorrow. You\'ll have £4.53 left until Friday."',
+    shortfall: "When you'd be short",
+    shortfallLine:
+      'When a shortfall first appears, and again at 9am the day before, one a day at most: "You\'ll be £40.00 short on Sun 1 Nov."',
+    weekly: 'Weekly summary',
+    weeklyLine:
+      'On Sundays at 6pm: "This week: 5 payments going out, £1,336.07 in all. Lowest point ahead: £4.53 on Sun 1 Nov."',
+    hideAmounts: 'Hide amounts in notifications',
+    hideAmountsLine:
+      'Notifications can show on a locked phone, where someone else could see them. With this on, they leave out every amount: "Rent goes out tomorrow."',
+    quiet:
+      'Nothing comes between 9pm and 8am: anything due then waits until 8am. Times are UK time, all year round.',
+    /** Saving a choice. */
+    saving: 'Saving.',
+    saved: 'Saved.',
+    /** This phone's own part: settings are the person's, notifications go to each phone they turn them on for. */
+    thisPhone: 'This phone',
+    phoneOn: 'This phone gets your reminders.',
+    phoneOff: "This phone doesn't get your reminders yet.",
+    getOnThisPhone: 'Get reminders on this phone',
+    phoneAllOff: 'Turn on a reminder above, and this phone gets it.',
+    /** What's needed first (D562). */
+    signedOut:
+      "Reminders need an account, so PrePenny's server can send them to your phone, even when PrePenny is closed.",
+    signIn: 'Sign up or sign in',
+    signInOff:
+      "Reminders need an account, and signing in isn't switched on in this version of PrePenny.",
+    example:
+      'Reminders are for your own plan, not the example. Go back to your own plan to turn them on.',
+    iphone:
+      'On an iPhone, reminders only work in PrePenny opened from your Home Screen. Add PrePenny to your Home Screen, open it from there, sign in, then turn reminders on there.',
+    iphoneSteps: 'Show me how',
+    cantHere:
+      "This browser can't show notifications from PrePenny. Try PrePenny in Chrome, or added to your home screen.",
+    blocked:
+      "Notifications from PrePenny are blocked on this phone. To allow them, open your phone's Settings, find this browser or PrePenny, then Notifications, and allow them. Then come back here.",
+    askedNo: "Your phone didn't allow notifications, so nothing was turned on.",
+    offline: "You're offline. Reminders can be changed once you're back online.",
+    server: "PrePenny couldn't reach its server, so nothing was changed. Try again in a moment.",
+    loading: 'Looking at your reminders.',
+    /** The words of each notification (D560, D561, D565). */
+    notification: {
+      title: 'PrePenny',
+      payday: 'Payday: update your balance.',
+      goesOut: (name: string) => `${name} goes out tomorrow.`,
+      goOut: (name: string, more: number) => `${name} and ${more} more go out tomorrow.`,
+      /** In the account the main pay comes into: Home's. */
+      leftUntil: (amount: string, until: string) => `You'll have ${amount} left until ${until}.`,
+      left: (amount: string) => `You'll have ${amount} left.`,
+      /** In another account. */
+      accountLeftUntil: (account: string, amount: string, until: string) =>
+        `${account} will have ${amount} left until ${until}.`,
+      accountLeft: (account: string, amount: string) => `${account} will have ${amount} left.`,
+      short: (amount: string, date: string) => `You'll be ${amount} short on ${date}.`,
+      shortHidden: (date: string) => `You'll be short on ${date}.`,
+      accountShort: (account: string, amount: string, date: string) =>
+        `${account} will be ${amount} short on ${date}.`,
+      accountShortHidden: (account: string, date: string) => `${account} will be short on ${date}.`,
+      week: (count: number, total: string) =>
+        count === 0
+          ? 'This week: nothing going out.'
+          : `This week: ${count} ${count === 1 ? 'payment' : 'payments'} going out, ${total} in all.`,
+      weekHidden: (count: number) =>
+        count === 0
+          ? 'This week: nothing going out.'
+          : `This week: ${count} ${count === 1 ? 'payment' : 'payments'} going out.`,
+      lowest: (amount: string, date: string) => `Lowest point ahead: ${amount} on ${date}.`,
+      lowestHidden: (date: string) => `Lowest point ahead: ${date}.`,
+    },
+  },
+
+  /**
    * The same thing changed on two phones, or a change the account couldn't
    * take (step 3d, D59, PLAN.md item 32). One at a time, oldest first.
    */
