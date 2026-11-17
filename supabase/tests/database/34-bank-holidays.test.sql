@@ -5,11 +5,16 @@
 -- by writing the table; a list no newer than the plan's changes nothing,
 -- so two phones sending at once end on the same; and it comes down with the
 -- plan's other records, once, with a nudge for the other phone.
+--
+-- From step 4e (D545), a phone's list is taken only when the database
+-- fetched that same list itself, so each list a phone sends here is first
+-- one the database fetched (pg_temp.fetched); section 4 checks the rest.
+-- Checking a fetched list's shape is in 36-bank-holidays-fetched.test.sql.
 
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(35);
 
 select tests.make_jess_and_tom();
 
@@ -46,6 +51,14 @@ create function pg_temp.v(days integer, digit text) returns text language sql as
   select to_char((now() at time zone 'Europe/London')::date + days, 'YYYY-MM-DD') || ':' || repeat(digit, 64)
 $$;
 grant execute on function pg_temp.v(integer, text) to anon, authenticated;
+
+-- The database fetching a list itself (D545), as app.take_bank_holiday_list
+-- keeps it, without giving it to every plan, so each step below is the
+-- phone's own.
+create function pg_temp.fetched(version text, list jsonb) returns void language sql security definer as $$
+  insert into app.bank_holiday_lists (list_version, list) values (version, list) on conflict do nothing
+$$;
+grant execute on function pg_temp.fetched(text, jsonb) to anon, authenticated;
 
 -- The plan's list as the test sees it.
 create function pg_temp.stored() returns text language sql security definer as $$
@@ -84,6 +97,7 @@ select is(pg_temp.refusal($$ insert into public.bank_holidays (id, plan_id, list
 -- ---------------------------------------------------------------------------
 -- 2. A newer list, from someone who can change the plan.
 
+select pg_temp.fetched(pg_temp.v(-17, 'b'), pg_temp.list());
 select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(-17, 'b'), pg_temp.list()),
   jsonb_build_object('saved', pg_temp.v(-17, 'b')), 'Jess sends the list her phone has');
 select is(pg_temp.stored(), pg_temp.v(-17, 'b'), 'and the plan keeps it');
@@ -104,6 +118,7 @@ select is(
 delete from tests.nudges;
 
 select tests.as_person('tom');
+select pg_temp.fetched(pg_temp.v(-2, 'c'), pg_temp.list('A one-off'));
 select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(-2, 'c'), pg_temp.list('A one-off')),
   jsonb_build_object('saved', pg_temp.v(-2, 'c')), 'Tom, who can edit, sends a newer list his phone fetched');
 select is(pg_temp.stored(), pg_temp.v(-2, 'c'), 'and the plan has it');
@@ -119,9 +134,11 @@ select is(pg_temp.sent((select seq from public.bank_holidays)), '[]'::jsonb,
 select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(-17, 'b'), pg_temp.list()),
   jsonb_build_object('kept', pg_temp.v(-2, 'c')),
   'Her phone sending the older one it had changes nothing, and says which the plan has');
+select pg_temp.fetched(pg_temp.v(0, 'c'), pg_temp.list('A one-off'));
 select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'c'), pg_temp.list('A one-off')),
   jsonb_build_object('kept', pg_temp.v(-2, 'c')),
   'nor does the same list downloaded again on a later day');
+select pg_temp.fetched(pg_temp.v(-2, 'd'), pg_temp.list('Another'));
 select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(-2, 'd'), pg_temp.list('Another')),
   jsonb_build_object('saved', pg_temp.v(-2, 'd')),
   'Two different lists from the same day: the larger checksum is newer, as on every phone');
@@ -157,45 +174,23 @@ select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), p
 select is((select count(*)::integer from public.bank_holidays), 0, 'and he reads nothing then');
 
 -- ---------------------------------------------------------------------------
--- 4. Only GOV.UK's shape, and a real day.
+-- 4. Only a list the database fetched itself (D545), from step 4e.
 
 select tests.as_person('jess');
 select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), '2026-11-30', pg_temp.list()) $$),
   'bad-list', 'A version with no checksum is refused');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), '2026-02-30:' || repeat('e', 64), pg_temp.list()) $$),
-  'bad-list', 'and one on a day there isn''t');
+select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'), pg_temp.list()) $$),
+  'not-fetched', 'A list the database didn''t fetch itself is refused (D545)');
 select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(1, 'e'), pg_temp.list()) $$),
-  'bad-list', 'and one downloaded after today, which would hold every real list back (D543)');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), '1899-12-31:' || repeat('e', 64), pg_temp.list()) $$),
-  'bad-list', 'and one from before GOV.UK''s list began, which no phone could read');
+  'not-fetched', 'and one dated after today, which no fetched list can be (D543)');
 select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    pg_temp.list() - 'scotland') $$),
-  'bad-list', 'A list without Scotland is refused');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    jsonb_set(pg_temp.list(), '{scotland,events,0,date}', '"2027-02-30"')) $$),
-  'bad-list', 'and one with a day there isn''t');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    pg_temp.list(repeat('x', 201))) $$),
-  'bad-list', 'and one with a title too long to be GOV.UK''s');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    jsonb_set(pg_temp.list(), '{england-and-wales,events,0,date}', '20270101')) $$),
-  'bad-list', 'and one with a date that isn''t text');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    jsonb_set(pg_temp.list(), '{scotland,events,0,date}', '"3000-01-01"')) $$),
-  'bad-list', 'A list with a year no phone can read is refused (D543)');
-select is(pg_temp.refusal($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    jsonb_set(pg_temp.list(), '{scotland,events,0,notes}', 'null')) $$),
-  'bad-list', 'and one with notes that aren''t text');
-select is(pg_temp.refusal(format($$ select public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    jsonb_set(pg_temp.list(), '{england-and-wales,events}', %L::jsonb)) $$,
-    (select jsonb_agg(jsonb_build_object('title', 'Made up', 'date', d::date::text))
-     from generate_series(date '2027-07-01', date '2027-07-07', interval '1 day') d)::text)),
-  'bad-list', 'and one with 7 bank holidays in 15 days, which could leave a payment no working day');
-select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'),
-    jsonb_set(pg_temp.list(), '{england-and-wales,events}',
-      (select jsonb_agg(jsonb_build_object('title', 'Made up', 'date', d::date::text))
-       from generate_series(date '2027-07-01', date '2027-07-06', interval '1 day') d))),
-  jsonb_build_object('saved', pg_temp.v(0, 'e')), 'but 6 in 15 days is taken');
+    pg_temp.list('Made up')) $$),
+  'not-fetched', 'whatever it says is in it');
+select pg_temp.fetched(pg_temp.v(0, 'e'), pg_temp.list('Fetched by the database'));
+select is(public.use_bank_holidays(tests.id('plan'), pg_temp.v(0, 'e'), pg_temp.list('Made up by the phone')),
+  jsonb_build_object('saved', pg_temp.v(0, 'e')), 'Once the database has fetched that list, it''s taken');
+select is((select list -> 'england-and-wales' -> 'events' -> 1 ->> 'title' from public.bank_holidays),
+  'Fetched by the database', 'and the plan keeps the database''s own copy, never what the phone sent');
 select is(pg_temp.stored(), pg_temp.v(0, 'e'), 'None of the others changed the plan''s list');
 
 select * from finish();
