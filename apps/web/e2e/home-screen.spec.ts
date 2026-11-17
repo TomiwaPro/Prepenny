@@ -267,6 +267,31 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(sheet.getByTestId('install-said')).toBeFocused();
     });
 
+    test("3. Chrome's offer before PrePenny's own code starts is kept back too, for one tap", async ({
+      page,
+    }) => {
+      await setUpOwnPlan(page);
+      // Offered as soon as the page is read, before any of PrePenny's own code has started (D554).
+      await page.addInitScript(() => {
+        document.addEventListener('DOMContentLoaded', () => {
+          const offer = new Event('beforeinstallprompt', { cancelable: true });
+          Reflect.set(offer, 'prompt', async () => Reflect.set(window, '__asked', true));
+          Reflect.set(
+            offer,
+            'userChoice',
+            Promise.resolve({ outcome: 'accepted', platform: 'web' }),
+          );
+          window.dispatchEvent(offer);
+          Reflect.set(window, '__offerKeptBack', offer.defaultPrevented);
+        });
+      });
+      await openHomeOn(page, DAY_2);
+      expect(await page.evaluate(() => Reflect.get(window, '__offerKeptBack'))).toBe(true);
+      await suggestion(page).getByRole('button', { name: t.addNow }).click();
+      expect(await page.evaluate(() => Reflect.get(window, '__asked'))).toBe(true);
+      await expect(page.getByTestId('home-screen-said')).toHaveText(t.added);
+    });
+
     test('3. added from Chrome itself, or installed before, is never suggested', async ({
       page,
     }) => {
@@ -532,6 +557,11 @@ test.describe('8. the opening screens on an iPhone', () => {
     await page.goto('/setup/');
     const links = page.locator('link[rel="apple-touch-startup-image"]');
     await expect(links).toHaveCount(26);
+    // The iPhone's own tag, which it has long looked for before using them (D554).
+    await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute(
+      'content',
+      'yes',
+    );
     const first = await links.first().getAttribute('href');
     expect(first).toBe('/splash/iphone-1320x2868-light.png');
     const picture = await page.request.get(first ?? '');
