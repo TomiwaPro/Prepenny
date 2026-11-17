@@ -4,6 +4,7 @@
 // reminder taken once, sealed for each phone, an address that's gone
 // forgotten, a reminder nobody took tried again, and nothing logged.
 
+import { type PlanRecords, parsePounds as pounds } from '@prepenny/engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { examplePlan } from '../../data/example-plan.ts';
 import { NO_REMINDERS, type ReminderChoices } from '../../lib/reminders.ts';
@@ -16,8 +17,8 @@ const SAM = '01900000-0000-7000-8000-00000000000a';
 const SESSION = '01900000-0000-7000-8000-0000000000aa';
 
 /** Sam's example plan as plan_changes gives it to his own phone. */
-function samsRows(): PlanChangesRows {
-  const wanted = rowsOf(examplePlan, { planId: PLAN, personId: SAM }, new Map(), undefined);
+function samsRows(records: PlanRecords = examplePlan): PlanChangesRows {
+  const wanted = rowsOf(records, { planId: PLAN, personId: SAM }, new Map(), undefined);
   return {
     plan: { id: PLAN, nation: 'england-and-wales', version: 1, seq: 1 },
     rows: [...wanted.values()]
@@ -50,6 +51,7 @@ function standIn(options: {
   readonly phones: readonly Phone[];
   readonly status?: (endpoint: string) => number;
   readonly claimed?: Set<string>;
+  readonly records?: PlanRecords;
 }) {
   const asked: { name: string; args: Readonly<Record<string, unknown>> }[] = [];
   const opened: {
@@ -70,7 +72,14 @@ function standIn(options: {
             key: null,
             testPushPrefix: null,
             people: [
-              { person: SAM, session: SESSION, mark: 'm', choices: options.choices, known: [] },
+              {
+                person: SAM,
+                session: SESSION,
+                mark: 'm',
+                version: 3,
+                choices: options.choices,
+                known: [],
+              },
             ],
           };
         case 'keep_signing_key':
@@ -81,7 +90,7 @@ function standIn(options: {
           tokens.set(String(args.audience), String(args.token));
           return args.token;
         case 'reminder_plan':
-          return samsRows();
+          return samsRows(options.records);
         case 'claim_reminder': {
           const key = `${String(args.kind)}|${String(args.for_day)}`;
           if (claimed.has(key)) return { sent: false, why: 'sent' };
@@ -111,7 +120,9 @@ function standIn(options: {
           message: JSON.parse(await openOnPhone(body, target)) as Record<string, string>,
         });
       }
-      return options.status?.(endpoint) ?? 201;
+      const status = options.status?.(endpoint) ?? 201;
+      if (status < 0) throw new Error('no answer');
+      return status;
     },
   };
   return { server, asked, opened, claimed, tokens };
@@ -169,7 +180,7 @@ describe('the reminders function (D564)', () => {
     );
     expect(run.asked.at(-1)).toEqual({
       name: 'done_looking',
-      args: { person: SAM, mark: 'm', known: [], at_time: null },
+      args: { person: SAM, mark: 'm', known: [], at_time: null, version: 3 },
     });
 
     // The next run, a minute later, sends nothing more.
@@ -232,6 +243,35 @@ describe('the reminders function (D564)', () => {
       kind: 'payday',
       for_day: '2026-10-30',
     });
+    // And the next run looks again: no mark of having looked (D574).
+    expect(run.asked.at(-1)?.args.mark).toBe('');
+  });
+
+  it("one phone's trouble never stops the others, and a reminder no phone took is let go (D574)", async () => {
+    const phones = [
+      await phone('https://fcm.googleapis.com/fcm/send/broken'),
+      await phone('https://fcm.googleapis.com/fcm/send/fine'),
+    ];
+    const run = standIn({
+      now: '2026-10-30T09:00:00Z',
+      choices: { ...NO_REMINDERS, payday: true },
+      phones,
+      status: (endpoint) => (endpoint.endsWith('broken') ? -1 : 201),
+    });
+    expect(await runReminders(run.server, null)).toMatchObject({ sent: 1, problems: 1 });
+    expect(run.opened).toHaveLength(2);
+    expect(run.asked.map((one) => one.name)).not.toContain('unclaim_reminder');
+
+    const none = standIn({
+      now: '2026-10-30T09:00:00Z',
+      choices: { ...NO_REMINDERS, payday: true },
+      phones: [await phone('https://fcm.googleapis.com/fcm/send/broken')],
+      status: () => -1,
+    });
+    expect(await runReminders(none.server, null)).toMatchObject({ sent: 0, notSent: 1 });
+    expect(none.asked.map((one) => one.name)).toContain('unclaim_reminder');
+    expect(none.claimed.size).toBe(0);
+    expect(none.asked.at(-1)?.args.mark).toBe('');
   });
 
   it('never sends anywhere but a push service', async () => {
@@ -247,14 +287,33 @@ describe('the reminders function (D564)', () => {
 
   it('keeps the shortfall it warned about as known: its account and date only', async () => {
     const phones = [await phone('https://fcm.googleapis.com/fcm/send/one')];
+    // Sam's rent on Sun 1 Nov as £640.00: £35.47 short that day.
+    const short: PlanRecords = {
+      ...examplePlan,
+      changes: (examplePlan.changes ?? []).map((one) =>
+        one.seriesId === 'rent' ? { ...one, amount: pounds('640.00') } : one,
+      ),
+    };
     const run = standIn({
-      // Sat 31 Oct, 9am: Sam isn't short, so nothing is known.
-      now: '2026-10-31T09:00:00Z',
+      now: '2026-10-26T10:00:00Z',
+      choices: { ...NO_REMINDERS, shortfall: true },
+      phones,
+      records: short,
+    });
+    await runReminders(run.server, null);
+    expect(run.opened.map((one) => (one.message.body ?? '').replaceAll('\u00a0', ' '))).toEqual([
+      "You'll be £35.47 short on Sun 1 Nov.",
+    ]);
+    expect(run.asked.at(-1)?.args.known).toEqual([{ accountId: 'current', date: '2026-11-01' }]);
+
+    // Not short: nothing is known.
+    const fine = standIn({
+      now: '2026-10-26T10:00:00Z',
       choices: { ...NO_REMINDERS, shortfall: true },
       phones,
     });
-    await runReminders(run.server, null);
-    expect(run.asked.at(-1)?.args.known).toEqual([]);
+    await runReminders(fine.server, null);
+    expect(fine.asked.at(-1)?.args.known).toEqual([]);
   });
 
   it('logs nothing, ever', async () => {

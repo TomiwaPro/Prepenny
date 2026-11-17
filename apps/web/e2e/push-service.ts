@@ -10,10 +10,13 @@
 //   own private key, as the phone's browser would: so each check reads the
 //   words the person would see, after the real encryption.
 
+import { randomUUID } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { BrowserContext } from '@playwright/test';
+import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { base64url, openOnPhone } from '../lib/web-push.ts';
+import { sql } from './two-phones.ts';
 
 export interface Arrived {
   readonly path: string;
@@ -122,4 +125,30 @@ export async function wordsFor(service: StandIn, endpoint: string, phone: PhoneK
     opened.push(JSON.parse(await openOnPhone(one.body, phone)));
   }
   return opened;
+}
+
+/**
+ * Starts the local reminders function as the database's scheduled job does,
+ * at a test time, for one person only (supabase/seed.sql's test clock).
+ */
+export async function startReminders(person: string, at: string): Promise<Response> {
+  return fetch(`${LOCAL_SUPABASE.url}/functions/v1/reminders`, {
+    method: 'POST',
+    headers: {
+      'x-prepenny-tick': sql('select tick from app.reminder_server'),
+      'x-prepenny-wait': 'yes',
+      'x-prepenny-test-now': at,
+      'x-prepenny-test-person': person,
+    },
+  });
+}
+
+/**
+ * The function makes PrePenny's signing key the first time it runs, as when
+ * the Database workflow sets it up (README.md, part R), so a phone can be
+ * given its public half. Nobody is looked at.
+ */
+export async function signingKeyReady(): Promise<void> {
+  const started = await startReminders(randomUUID(), '2026-10-25T12:00:00Z');
+  if (started.status !== 200) throw new Error(`The reminders function answered ${started.status}.`);
 }

@@ -549,8 +549,15 @@ export function finishBeforeSigningOut(work: () => Promise<unknown>): () => void
 export async function signOutAndForget(): Promise<void> {
   forgetting = true;
   if (signInConfig() !== null && hasStoredSignIn() && !offline()) {
-    // Reminders stop first, while this sign-in can still say so (step 4e, D563).
-    await import('./reminders-phone.ts').then((reminders) => reminders.forgetThisPhone());
+    // Reminders stop first, while this sign-in can still say so (step 4e,
+    // D563): a few seconds at most, and never in the way of signing out, as
+    // the browser forgets the address anyway when the phone is cleared.
+    await Promise.race([
+      import('./reminders-phone.ts')
+        .then((reminders) => reminders.forgetThisPhone())
+        .catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, SIGN_OUT_WAIT_MS)),
+    ]);
     // Supabase is given a few seconds at most: with a weak signal the phone
     // forgets the sign-in all the same, straight after (D314).
     await Promise.race([

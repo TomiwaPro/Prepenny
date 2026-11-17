@@ -65,6 +65,7 @@ interface Work {
     readonly person: string;
     readonly session: string | null;
     readonly mark: string;
+    readonly version: number;
     readonly choices: ReminderChoices;
     readonly known: readonly ShortfallMark[];
   }[];
@@ -122,8 +123,8 @@ export async function runReminders(
     })) as SigningKey;
   }
   const signingKey = key;
-  // PrePenny's signature for each push service, kept an hour, as Apple asks
-  // ("Don't refresh your JWT more frequently than once per hour", D573).
+  // PrePenny's signature for each push service, kept 11 hours, as Apple asks
+  // ("Don't refresh your JWT more frequently than once per hour", D573, D574).
   const signatures = new Map<string, string>();
   const signature = async (endpoint: string) => {
     const audience = new URL(endpoint).origin;
@@ -145,6 +146,9 @@ export async function runReminders(
     (typeof work.testPushPrefix === 'string' && endpoint.startsWith(work.testPushPrefix));
 
   for (const one of work.people) {
+    let known: ShortfallMark[] = [...one.known];
+    // Something let go, or a problem part-way: the next run looks again (D574).
+    let again = false;
     try {
       if (one.session === null) continue;
       const changes = (await server.step('reminder_plan', {
@@ -160,7 +164,7 @@ export async function runReminders(
         choices: one.choices,
         knownShortfalls: one.known,
       });
-      const known = [...found.stillKnown];
+      known = [...found.stillKnown];
       for (const due of found.due) {
         const claim = (await server.step('claim_reminder', {
           person: one.person,
@@ -174,43 +178,63 @@ export async function runReminders(
           continue;
         }
         let delivered = 0;
-        for (const phone of claim.phones ?? []) {
-          if (!allowed(phone.endpoint)) continue;
-          const status = await deliver(
-            server,
-            await signature(phone.endpoint),
-            phone,
-            due,
-            work.now,
-          );
-          if (status >= 200 && status < 300) delivered += 1;
-          else if (status === 404 || status === 410) {
-            // The phone's push service says the address is gone, as when
-            // PrePenny was removed from the phone: forgotten.
-            await server.step('forget_push_address', { endpoint: phone.endpoint });
+        try {
+          for (const phone of claim.phones ?? []) {
+            if (!allowed(phone.endpoint)) continue;
+            // One phone's trouble never stops the others getting it.
+            try {
+              const status = await deliver(
+                server,
+                await signature(phone.endpoint),
+                phone,
+                due,
+                work.now,
+              );
+              if (status >= 200 && status < 300) delivered += 1;
+              else if (status === 404 || status === 410) {
+                // The phone's push service says the address is gone, as when
+                // PrePenny was removed from the phone: forgotten.
+                await server.step('forget_push_address', { endpoint: phone.endpoint });
+              }
+            } catch {
+              counts.problems += 1;
+            }
+          }
+        } finally {
+          if (delivered === 0) {
+            // No phone took it: let go, so it can go at the next look, while its time lasts.
+            again = true;
+            await server.step('unclaim_reminder', {
+              person: one.person,
+              kind: due.kind,
+              for_day: due.key,
+            });
           }
         }
         if (delivered === 0) {
-          // No phone took it: it can go at the next look, while its time lasts.
-          await server.step('unclaim_reminder', {
-            person: one.person,
-            kind: due.kind,
-            for_day: due.key,
-          });
           counts.notSent += 1;
           continue;
         }
         counts.sent += 1;
         if (due.shortfall !== undefined) known.push(due.shortfall);
       }
-      await server.step('done_looking', {
-        person: one.person,
-        mark: one.mark,
-        known,
-        at_time: at,
-      });
     } catch {
       // Never the error's words, which could name something: a count only.
+      counts.problems += 1;
+      again = true;
+    }
+    try {
+      // Looked at: not again until the plan changes or a reminder's time
+      // comes, unless something was let go. Only if their choices haven't
+      // changed since this run began (D574).
+      await server.step('done_looking', {
+        person: one.person,
+        mark: again ? '' : one.mark,
+        known,
+        at_time: at,
+        version: one.version,
+      });
+    } catch {
       counts.problems += 1;
     }
   }

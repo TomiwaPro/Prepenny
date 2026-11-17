@@ -235,6 +235,7 @@ Found in step 4e:
 93. **More people with reminders than one run can look at** (when PrePenny grows): a function has 2 seconds of the computer's time a request (D573), so each 15-minute run looks at 50 people at most, those looked at longest ago first. That covers about 400 people's evening reminders between 7pm and 9pm. Beyond that, the scheduled job can start the function several times a run. Supabase's Pro plan doesn't change the 2 seconds.
 94. **The preview database's job doesn't put the reminders function online yet** (with Supabase's paid plan, D411): it's switched off, and couldn't be tried. When it's switched on, it needs the same three steps as the Database workflow (build, put online, tell the database its address), with the preview project's own address.
 95. **A real push service, and how a phone shows a reminder,** can only be seen on a real phone: the tests use a stand-in push service, and Chrome's headless shell can't show notifications (D571). `docs/TRY-PHASE-4.md`, step 4e, checks both.
+96. **A phone whose browser changes its push address by itself** (accepted for now, D574): browsers can replace a push address (`pushsubscriptionchange`). PrePenny's server then gets "gone" from the old one and forgets it, and the Reminders screen says "This phone doesn't get your reminders yet." with **Get reminders on this phone**. Following the change from the offline helper would need the sign-in there; it's rare, so it waits.
 
 ## Ideas for the owner to decide on later
 

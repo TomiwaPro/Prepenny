@@ -54,7 +54,13 @@ import {
   share,
   tomJoins,
 } from './paydays.ts';
-import { givePushAddress, phoneKeys, standInPushService } from './push-service.ts';
+import {
+  givePushAddress,
+  phoneKeys,
+  signingKeyReady,
+  standInPushService,
+  startReminders,
+} from './push-service.ts';
 import { radio } from './setup.ts';
 import { makeAPlan, newEmail } from './sign-in-helpers.ts';
 import {
@@ -944,6 +950,7 @@ test("step 4e: nobody can send Jess a reminder, take her phone's push address, o
     'About the server, not the screen: run once, at 360px.',
   );
   test.setTimeout(300_000);
+  await signingKeyReady();
   const service = await standInPushService();
   try {
     // Jess, with the evening reminder on and her phone getting it.
@@ -952,6 +959,8 @@ test("step 4e: nobody can send Jess a reminder, take her phone's push address, o
     await givePushAddress(page.context(), jessAddress, jessKeys);
     await page.emulateMedia({ colorScheme: 'light' });
     await makeAPlan(page);
+    // Rent tomorrow, so the real function has something to send her, at the end.
+    await addPayment(page, { name: 'Rent', amount: '200', date: '2026-10-26' });
     await signUpFromMore(page, newEmail('jess'));
     await openMore(page);
     await page
@@ -1076,6 +1085,12 @@ test("step 4e: nobody can send Jess a reminder, take her phone's push address, o
         union all select to_jsonb(a) from app.push_addresses a where a.person_id = ${quoted(jess)}) r`),
     ).toBe(before);
     expect(service.arrived).toEqual([]);
+    // And so that check can fail: with the database's own tick, at 7pm, her
+    // evening reminder does reach her phone.
+    const started = await startReminders(jess, '2026-10-25T19:00:00Z');
+    expect(started.status).toBe(200);
+    expect(service.arrived).toHaveLength(1);
+    expect(service.arrived[0]?.path).toBe(new URL(jessAddress).pathname);
     await tom.context.close();
   } finally {
     await service.close();

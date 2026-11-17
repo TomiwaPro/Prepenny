@@ -249,6 +249,9 @@ create table app.reminder_choices (
   weekly boolean not null default false,
   hide_amounts boolean not null default false,
   changed_at timestamptz not null default now(),
+  -- Goes up with every change of choices and every phone added, so a look
+  -- that began before one doesn't count as having seen it (D574).
+  version integer not null default 1,
   -- When the reminders function last looked at the person's plan, and the
   -- plan's change counts then (shared and their own), so it looks again
   -- only when something changed or a reminder's time has come.
@@ -508,6 +511,7 @@ begin
             where a.person_id = c.person_id and app.session_reads(c.person_id, a.session_id)
             order by a.made_at desc limit 1),
           'mark', app.plan_mark(c.person_id),
+          'version', c.version,
           'choices', jsonb_build_object('payday', c.payday, 'evening', c.evening,
             'shortfall', c.shortfall, 'weekly', c.weekly, 'hideAmounts', c.hide_amounts),
           'known', (select coalesce(jsonb_agg(jsonb_build_object('accountId', k.account_id,
@@ -601,14 +605,17 @@ $$;
 -- shortfalls they now know about (accounts and dates only), only while
 -- their shortfall reminder is on.
 create function public.done_looking(tick text, person uuid, mark text, known jsonb,
-  at_time timestamptz default null) returns void
+  at_time timestamptz default null, version integer default null) returns void
 language plpgsql volatile security definer set search_path = '' as $$
+#variable_conflict use_variable
 declare
   one jsonb;
 begin
   perform app.check_tick(tick);
+  -- Only when nothing changed since the look began: a reminder turned on,
+  -- or a phone added, while it was looking is looked at again (D574).
   update app.reminder_choices c set looked_at = app.reminder_time(at_time), looked_mark = mark
-    where c.person_id = person;
+    where c.person_id = person and (version is null or c.version = version);
   delete from app.known_shortfalls k where k.person_id = person;
   if jsonb_typeof(known) = 'array' and exists (
     select 1 from app.reminder_choices c where c.person_id = person and c.shortfall
@@ -663,28 +670,28 @@ begin
 end;
 $$;
 
--- PrePenny's signature for each push service, kept an hour (D573): Apple's
--- own documentation asks "Don't refresh your JWT more frequently than once
--- per hour". It lasts 12 hours, so one kept an hour is always still good.
+-- PrePenny's signature for each push service, kept 11 hours (D573, D574):
+-- Apple's own documentation asks "Don't refresh your JWT more frequently
+-- than once per hour". It lasts 12 hours, so one kept 11 is always still good.
 create table app.push_tokens (
-  audience text primary key check (audience ~ '^https://[a-z0-9.-]+$'),
+  audience text primary key check (audience ~ '^https?://[a-z0-9.-]+(:[0-9]+)?$'),
   token text not null,
   made_at timestamptz not null default now()
 );
 
--- The signature kept for a push service, made in the last 55 minutes, or null.
+-- The signature kept for a push service, made in the last 11 hours, or null.
 create function public.push_token(tick text, audience text) returns text
 language plpgsql volatile security definer set search_path = '' as $$
 #variable_conflict use_variable
 begin
   perform app.check_tick(tick);
   return (select t.token from app.push_tokens t
-    where t.audience = audience and t.made_at > now() - interval '55 minutes');
+    where t.audience = audience and t.made_at > now() - interval '11 hours');
 end;
 $$;
 
--- Keeps a new signature for a push service, unless one made in the last 55
--- minutes is kept already, as by a run at the same moment: then that one,
+-- Keeps a new signature for a push service, unless one made in the last 11
+-- hours is kept already, as by a run at the same moment: then that one,
 -- which is given back.
 create function public.keep_push_token(tick text, audience text, token text) returns text
 language plpgsql volatile security definer set search_path = '' as $$
@@ -693,13 +700,16 @@ declare
   kept text;
 begin
   perform app.check_tick(tick);
-  if audience is null or audience !~ '^https://[a-z0-9.-]+$' or token is null
-      or length(token) > 2000 then
+  if audience is null or token is null or length(token) > 2000 or not (
+      audience ~ '^https://[a-z0-9.-]+$'
+      -- On a local Supabase only: the tests' stand-in push service.
+      or exists (select 1 from app.reminder_server s
+        where s.test_push_prefix is not null and starts_with(audience || '/', s.test_push_prefix))) then
     perform app.refuse('bad-token');
   end if;
   insert into app.push_tokens as t (audience, token, made_at) values (audience, token, now())
     on conflict on constraint push_tokens_pkey do update set token = excluded.token, made_at = now()
-      where t.made_at <= now() - interval '55 minutes'
+      where t.made_at <= now() - interval '11 hours'
     returning t.token into kept;
   if kept is null then
     select t.token into kept from app.push_tokens t where t.audience = audience;
@@ -752,7 +762,7 @@ begin
     values (auth.uid(), payday, evening, shortfall, weekly, hide_amounts)
     on conflict (person_id) do update set payday = payday, evening = evening,
       shortfall = shortfall, weekly = weekly, hide_amounts = hide_amounts,
-      changed_at = now(), looked_at = null, looked_mark = null;
+      changed_at = now(), version = c.version + 1, looked_at = null, looked_mark = null;
   if not (payday or evening or shortfall or weekly) then
     delete from app.push_addresses a where a.person_id = auth.uid();
   end if;
@@ -789,7 +799,8 @@ begin
   insert into app.push_addresses as a (endpoint, person_id, session_id, p256dh, auth)
     values (endpoint, auth.uid(), app.session_id(), p256dh, auth_secret)
     on conflict on constraint push_addresses_pkey do update set p256dh = p256dh, auth = auth_secret;
-  update app.reminder_choices c set looked_at = null where c.person_id = auth.uid();
+  update app.reminder_choices c set looked_at = null, version = c.version + 1
+    where c.person_id = auth.uid();
   return public.my_reminders();
 end;
 $$;
@@ -881,7 +892,7 @@ revoke all on function
   public.reminder_work(text, timestamptz, uuid), public.reminder_plan(text, uuid, uuid),
   public.claim_reminder(text, uuid, text, date, boolean, timestamptz),
   public.unclaim_reminder(text, uuid, text, date),
-  public.done_looking(text, uuid, text, jsonb, timestamptz),
+  public.done_looking(text, uuid, text, jsonb, timestamptz, integer),
   public.forget_push_address(text, text), public.keep_signing_key(text, text, jsonb),
   public.push_token(text, text), public.keep_push_token(text, text, text)
   from public, anon, authenticated;
@@ -889,7 +900,7 @@ grant execute on function
   public.reminder_work(text, timestamptz, uuid), public.reminder_plan(text, uuid, uuid),
   public.claim_reminder(text, uuid, text, date, boolean, timestamptz),
   public.unclaim_reminder(text, uuid, text, date),
-  public.done_looking(text, uuid, text, jsonb, timestamptz),
+  public.done_looking(text, uuid, text, jsonb, timestamptz, integer),
   public.forget_push_address(text, text), public.keep_signing_key(text, text, jsonb),
   public.push_token(text, text), public.keep_push_token(text, text, text)
   to service_role;

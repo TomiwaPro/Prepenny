@@ -18,9 +18,7 @@
 // 3. On an iPhone in Safari: reminders need PrePenny on the Home Screen, said
 //    plainly, with the steps; and signed out, they need an account.
 
-import { randomUUID } from 'node:crypto';
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
-import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
 import { layoutProblems } from './coming-up.ts';
 import { addAccount, jessAndTom } from './jess-and-tom.ts';
@@ -29,7 +27,9 @@ import {
   givePushAddress,
   phoneKeys,
   type StandIn,
+  signingKeyReady,
   standInPushService,
+  startReminders,
   UNSUBSCRIBED,
   wordsFor,
 } from './push-service.ts';
@@ -54,16 +54,7 @@ const shoots = (info: TestInfo, colorScheme: string) =>
 
 /** Starts the reminders function as the scheduled job does, at a test time, for one person only. */
 async function runReminders(person: string, at: string) {
-  const tick = sql('select tick from app.reminder_server');
-  const response = await fetch(`${LOCAL_SUPABASE.url}/functions/v1/reminders`, {
-    method: 'POST',
-    headers: {
-      'x-prepenny-tick': tick,
-      'x-prepenny-wait': 'yes',
-      'x-prepenny-test-now': at,
-      'x-prepenny-test-person': person,
-    },
-  });
+  const response = await startReminders(person, at);
   expect(response.status, 'the reminders function ran').toBe(200);
   const counts = (await response.json()) as { problems: number };
   expect(counts.problems, 'with no problems').toBe(0);
@@ -109,12 +100,7 @@ const bodies = async (
   phone: Awaited<ReturnType<typeof phoneKeys>>,
 ) => (await wordsFor(service, endpoint, phone)).map((one) => one.body.replaceAll(' ', ' '));
 
-// The function makes PrePenny's signing key the first time it runs, as it
-// does when the Database workflow sets it up (README.md, "Reminders"), so a
-// phone can be given the public half. Nobody is looked at.
-test.beforeAll(async () => {
-  await runReminders(randomUUID(), '2026-10-25T12:00:00Z');
-});
+test.beforeAll(signingKeyReady);
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Reminders, in ${colorScheme} mode`, () => {

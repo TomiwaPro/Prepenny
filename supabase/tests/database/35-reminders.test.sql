@@ -9,7 +9,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(87);
+select plan(90);
 
 select tests.make_jess_and_tom();
 
@@ -187,6 +187,11 @@ select is((select person_id from app.push_addresses where endpoint = pg_temp.end
 select tests.as_person('tom');
 select is(public.choose_reminders(false, true, false, true, false) ->> 'weekly', 'true',
   'Tom turns on the evening one and the weekly summary');
+select tests.as_test();
+create table pg_temp.tom_version as
+  select version from app.reminder_choices where person_id = tests.id('tom');
+grant select on pg_temp.tom_version to service_role;
+select tests.as_person('tom');
 select is(public.add_push_address(pg_temp.endpoint('tom'), pg_temp.key(), pg_temp.secret()) ->> 'this_phone',
   pg_temp.endpoint('tom'), 'on his phone');
 insert into pg_temp.phone_reads values ('tom', pg_temp.ids(public.plan_changes(tests.id('plan'), 0, 0)));
@@ -364,17 +369,34 @@ select is(public.push_token(pg_temp.tick(), 'https://web.push.apple.com'), null,
 select is(public.keep_push_token(pg_temp.tick(), 'https://web.push.apple.com', 'first'), 'first',
   'The first is kept');
 select is(public.keep_push_token(pg_temp.tick(), 'https://web.push.apple.com', 'second'), 'first',
-  'and a second made within the hour is given the first back, so Apple sees one an hour');
+  'and a second made at the same moment is given the first back');
 select is(public.push_token(pg_temp.tick(), 'https://web.push.apple.com'), 'first', 'which is used');
 select tests.as_test();
-update app.push_tokens set made_at = now() - interval '56 minutes';
+update app.push_tokens set made_at = now() - interval '10 hours 59 minutes';
+select tests.as_supabase_admin();
+select is(public.push_token(pg_temp.tick(), 'https://web.push.apple.com'), 'first',
+  'for 11 hours, so Apple never sees a new one more than once an hour (D574)');
+select tests.as_test();
+update app.push_tokens set made_at = now() - interval '11 hours 1 minute';
 select tests.as_supabase_admin();
 select is(public.push_token(pg_temp.tick(), 'https://web.push.apple.com'), null,
-  'After 55 minutes it isn''t used');
+  'After 11 hours it isn''t used: it lasts 12');
 select is(public.keep_push_token(pg_temp.tick(), 'https://web.push.apple.com', 'third'), 'third',
   'and a new one is kept');
 select is(pg_temp.refusal($$ select public.keep_push_token(pg_temp.tick(), 'http://evil.example', 'x') $$),
   'bad-token', 'Only for a push service''s https address');
+select is(public.keep_push_token(pg_temp.tick(), 'http://host.docker.internal:4199', 'local'), 'local',
+  'or, on a local Supabase only, the tests'' stand-in push service');
+
+-- A look that began before a change of choices doesn't count as having seen it (D574).
+select tests.as_test();
+update app.reminder_choices set looked_at = null, looked_mark = null where person_id = tests.id('tom');
+select tests.as_supabase_admin();
+select public.done_looking(pg_temp.tick(), tests.id('tom'), 'a mark', '[]'::jsonb, pg_temp.evening(),
+  (select version from pg_temp.tom_version));
+select tests.as_test();
+select is((select looked_at from app.reminder_choices where person_id = tests.id('tom')), null,
+  'A look that began before Tom changed his choices leaves him to be looked at again');
 
 -- ---------------------------------------------------------------------------
 -- 8. UK time, through the clock changes (D560).
