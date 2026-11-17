@@ -177,7 +177,7 @@ jobs:
         # Step 4b (PLAN.md items 20 and 31, D530): every page on
         # prepenny.co.uk must be exactly the file just built, with exactly its
         # own security policy (D529). Cloudflare can add things of its own,
-        # as it did its Web Analytics script on 14 Nov 2026: any of that, or
+        # as it did its Real User Monitoring (RUM) script on 14 Nov 2026: any of that, or
         # a different policy, fails here and says what it is. Headers it adds
         # that send something from the phone, or keep a cookie, are warnings.
         # Asks again for up to 2 minutes while Cloudflare still sends the

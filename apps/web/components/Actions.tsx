@@ -4,14 +4,18 @@
 // main button (Update balance) and the others outlined. Each opens its own
 // bottom sheet (brief 4.2, 4.3, 4.5): every change saves at once, updates
 // the plan and shows the undo bar. Closing a sheet puts focus back on its
-// button.
+// button. A long press of PrePenny's icon on Android opens Update balance
+// or I spent straight away, through the address (step 4d, D551).
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLockState } from '../lib/app-lock.ts';
+import { shortcutFor } from '../lib/shortcuts.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Actions.module.css';
 import { AddPaymentSheet } from './AddPaymentSheet.tsx';
 import { BudgetSheet } from './BudgetSheet.tsx';
 import { OvertimeSheet } from './OvertimeSheet.tsx';
+import { usePlan } from './PlanProvider.tsx';
 import { SpentSheet } from './SpentSheet.tsx';
 import { UpdateBalanceSheet } from './UpdateBalanceSheet.tsx';
 
@@ -26,6 +30,25 @@ type ActionId = (typeof actions)[number]['id'] | 'add-budget';
 
 export function Actions() {
   const [open, setOpen] = useState<ActionId | null>(null);
+  const ready = usePlan().status === 'ready';
+  // With the app lock on, only once the PIN is typed: a sheet opened before
+  // would sit over the lock screen and show the plan (step 3e, D385).
+  const unlocked = useLockState() === 'open';
+  // "#update-balance" or "#i-spent" from the icon's shortcuts: that sheet,
+  // once the plan is ready. The address then loses it, so going back or
+  // opening PrePenny again doesn't open it a second time.
+  useEffect(() => {
+    if (!ready || !unlocked) return;
+    const fromAddress = () => {
+      const sheet = shortcutFor(window.location.hash);
+      if (sheet === null) return;
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      setOpen(sheet);
+    };
+    fromAddress();
+    window.addEventListener('hashchange', fromAddress);
+    return () => window.removeEventListener('hashchange', fromAddress);
+  }, [ready, unlocked]);
   // Each sheet closes only itself: a sheet that closes because another one
   // opened in its place mustn't close the new one too.
   const closeIf = (id: ActionId) => () => setOpen((now) => (now === id ? null : now));

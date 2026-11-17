@@ -23,6 +23,7 @@ import { FigureCard } from './FigureCard.tsx';
 import { HolidayNote } from './HolidayNote.tsx';
 import styles from './HomeScreen.module.css';
 import { HomeSkeleton } from './HomeSkeleton.tsx';
+import { InstallSuggestion } from './InstallSuggestion.tsx';
 import { PaymentList } from './PaymentList.tsx';
 import { isSamsExample, usePlan } from './PlanProvider.tsx';
 import { RowItem } from './RowItem.tsx';
@@ -125,6 +126,8 @@ function Figures({
       <ExampleNote />
       {/* A new bank holiday that moved a payment, once (D539), in the same place. */}
       <HolidayNote today={home.today} />
+      {/* Adding PrePenny to the home screen, once, on the second day (D546), in the same place. */}
+      <InstallSuggestion today={home.today} />
       {cover === null ? null : (
         <TotalsCard
           testId="this-pay"

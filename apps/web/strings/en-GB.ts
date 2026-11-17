@@ -1759,6 +1759,80 @@ export const strings = {
   },
 
   /**
+   * Adding PrePenny to the home screen (step 4d, D546 to D551): the
+   * suggestion on Home on the second day, before setup on an iPhone, and the
+   * steps under More, in each phone's own button names.
+   */
+  homeScreen: {
+    heading: 'Add to home screen',
+    purpose:
+      "Put PrePenny on your phone's home screen. It then opens like an app, and works with no signal.",
+    back: 'Back to More',
+    /** Open from the home screen already. */
+    usingApp: "PrePenny is on your home screen. You're using it from there now.",
+    /** The browser's own install, where the phone offers one: one tap, then the phone's own confirm. */
+    addNow: 'Add to home screen',
+    addNowHint: 'Your phone then asks you to confirm.',
+    added: 'PrePenny is on your home screen now. Open it from there.',
+    notAdded: "PrePenny wasn't added. You can follow the steps below at any time.",
+    /** Chrome's own words since Chrome 150, and before it (D548). */
+    android: {
+      heading: 'On an Android phone, in Chrome',
+      steps: [
+        'Open prepenny.co.uk/app in Chrome.',
+        'Tap More, the three dots to the right of the address bar.',
+        'Tap Install and create shortcut. On an older Chrome, it says Install app or Add to Home screen.',
+        'Tap Install, then Install again.',
+      ],
+      notes: ['In another browser, such as Samsung Internet, look in its menu for Install.'],
+    },
+    /** Apple's own words, iOS 26 and later, and before (D548). */
+    iphone: {
+      heading: 'On an iPhone, in Safari',
+      steps: [
+        'Open prepenny.co.uk/app in Safari.',
+        'Tap the three dots beside the address, then Share. If Share, the square with an arrow pointing up, is on the screen already, tap that instead.',
+        "Scroll down and tap Add to Home Screen. If it isn't in the list, tap Edit Actions at the bottom, then Add to Home Screen.",
+        "Make sure Open as Web App is on, then tap Add. On an older iPhone there's no Open as Web App: just tap Add.",
+      ],
+      notes: [
+        'In Chrome on an iPhone, tap Share on the right of the address bar, then Add to Home Screen, then Add.',
+        'On an iPhone, PrePenny on your Home Screen keeps its own copy of everything, separate from the browser you added it from. Sign in there, and your plan comes with you.',
+      ],
+      signUpFirst:
+        'Your plan is only in Safari on this phone for now. Sign up first, so it comes with you to the Home Screen.',
+      /** In Chrome or another browser on an iPhone (D554). */
+      signUpFirstHere:
+        'Your plan is only in this browser on this phone for now. Sign up first, so it comes with you to the Home Screen.',
+      signUp: 'Sign up or sign in',
+    },
+    /** On Home, once, on the second day (D546). */
+    suggest: {
+      title: 'Add PrePenny to your home screen.',
+      line: 'It then opens like an app, straight from your home screen, and works with no signal.',
+      showMeHow: 'Show me how',
+      notNow: 'Not now',
+      /** In the suggestion's place once it's answered. */
+      inMore: 'The steps are in More, under Home screen, whenever you want them.',
+    },
+    /** On an iPhone in Safari, before setup starts (D546, D549). */
+    before: {
+      title: 'Add PrePenny to your Home Screen first',
+      intro:
+        'On an iPhone, a plan made here in Safari stays in Safari. PrePenny on your Home Screen starts empty, unless you sign in.',
+      showMeHow: 'Show me how',
+      makeHere: 'Make my plan here in Safari',
+    },
+    /** The row on More (D548). */
+    more: {
+      heading: 'Home screen',
+      link: 'Add to home screen',
+      line: 'Steps for Android and iPhone, so PrePenny opens like an app',
+      lineAdded: "PrePenny is on this phone's home screen",
+    },
+  },
+
+  /**
    * The same thing changed on two phones, or a change the account couldn't
    * take (step 3d, D59, PLAN.md item 32). One at a time, oldest first.
    */

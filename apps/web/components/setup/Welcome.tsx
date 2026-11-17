@@ -4,15 +4,18 @@
 // sentence on what PrePenny does, how long setting it up takes (D356), then
 // "Make my plan" and "Look at an example plan". Someone part-way through setup carries on from it; someone with a
 // plan goes to it. Then "Already have an account? Sign in", or who's signed
-// in with "Sign out" (step 3b, D353).
+// in with "Sign out" (step 3b, D353). On an iPhone in Safari, "Make my plan"
+// first suggests adding PrePenny to the Home Screen (step 4d, D549).
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAccount } from '../../lib/account.ts';
+import { suggestOnWelcome, useHomeScreen } from '../../lib/install.ts';
 import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
 import formStyles from '../Form.module.css';
 import { SignedInLine } from '../SignedInLine.tsx';
+import { InstallBeforeSetup } from './InstallBeforeSetup.tsx';
 import styles from './Setup.module.css';
 import { useSetup } from './SetupProvider.tsx';
 
@@ -20,6 +23,8 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
   const { state, start, show } = useSetup();
   const router = useRouter();
   const account = useAccount();
+  const home = useHomeScreen();
+  const [before, setBefore] = useState(false);
   const [signedOut, setSignedOut] = useState<string | null>(null);
   useEffect(() => {
     // Just signed out from More (step 3b), a sign-in that ended by itself
@@ -46,12 +51,20 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
   const progress = ready ? state.progress : null;
   const own = ready ? state.plan : null;
   const done = progress?.step === 'done';
+  // Before setup on an iPhone in Safari, for someone not signed in (D549, D554).
+  const suggest =
+    own === null &&
+    suggestOnWelcome(home, false, account.status === 'signed-in' || account.status === 'checking');
   const make =
     own === null
       ? strings.welcome.makeMyPlan
       : done
         ? strings.welcome.goToMyPlan
         : strings.welcome.carryOn;
+  const makeMyPlan = async () => {
+    await start();
+    if (!inSetup) router.push('/setup/');
+  };
   return (
     <main className={`${styles.page} ${styles.welcome}`}>
       <p className={styles.signedOut} role="status">
@@ -66,6 +79,7 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
         type="button"
         className={formStyles.main}
         aria-disabled={!ready}
+        aria-haspopup={suggest ? 'dialog' : undefined}
         onClick={async () => {
           if (!ready) return;
           if (done) {
@@ -73,8 +87,12 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
             router.push('/app/');
             return;
           }
-          await start();
-          if (!inSetup) router.push('/setup/');
+          // Before setup starts, on an iPhone in Safari: the Home Screen first (D546, D549).
+          if (suggest) {
+            setBefore(true);
+            return;
+          }
+          await makeMyPlan();
         }}
       >
         {make}
@@ -102,6 +120,14 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
       ) : null}
       {/* Who's signed in, with "Sign out", since the welcome can't reach More (D353). */}
       <SignedInLine />
+      <InstallBeforeSetup
+        open={before}
+        onClose={() => setBefore(false)}
+        onMakeHere={async () => {
+          setBefore(false);
+          await makeMyPlan();
+        }}
+      />
     </main>
   );
 }

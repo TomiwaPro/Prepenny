@@ -108,7 +108,7 @@ describe('the live site, checked after an update', () => {
     expect(result.notes).toEqual([]);
   });
 
-  it("fails on Cloudflare's Web Analytics script, naming it, on every page", async () => {
+  it("fails on Cloudflare's Real User Monitoring (RUM) script, naming it as Cloudflare does, on every page", async () => {
     cloudflare = { beacon: true, nel: false, older: false, policy: null };
     const result = await checkOnce(site, out);
     expect(result.findings.map((one) => one.kind)).toEqual([
@@ -117,7 +117,22 @@ describe('the live site, checked after an update', () => {
       'cloudflare',
     ]);
     expect(result.findings[0]?.words).toBe(
-      "/: Cloudflare wrote Cloudflare's Web Analytics script into the page.",
+      '/: Cloudflare wrote its Real User Monitoring (RUM) script (static.cloudflareinsights.com) into the page.',
+    );
+  });
+
+  it("says which page's policy a page was sent instead of its own, such as the general one", async () => {
+    // As on the live site on 15 Nov 2026, when "/" was sent a policy other than its own (D553).
+    cloudflare = { beacon: false, nel: false, older: false, policy: withScript('missing()') };
+    const result = await checkOnce(site, out);
+    expect(result.findings.map((one) => one.kind)).toEqual(['policy', 'policy']);
+    expect(result.findings[0]?.words).toBe(
+      `/ has a different security policy from the one written for it: it was sent the general one, written for the not-found page. Its scripts part: script-src 'self' ${scriptHash('missing()')}`,
+    );
+    cloudflare = { beacon: false, nel: false, older: false, policy: withScript('home()') };
+    const other = await checkOnce(site, out);
+    expect(other.findings[0]?.words).toBe(
+      `/ has a different security policy from the one written for it: it was sent the one written for /app/. Its scripts part: script-src 'self' ${scriptHash('home()')}`,
     );
   });
 
@@ -184,7 +199,7 @@ describe('one page', () => {
           '<a class="__cf_email__" href="/cdn-cgi/l/email-protection">[email&#160;protected]</a></body>',
         ),
       ),
-    ).toBe("/app/: Cloudflare wrote Cloudflare's Email Address Obfuscation into the page.");
+    ).toBe('/app/: Cloudflare wrote its Email Address Obfuscation into the page.');
     expect(
       words(
         built.replace(
@@ -192,9 +207,7 @@ describe('one page', () => {
           '<script>(function(){a.src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"})()</script></body>',
         ),
       ),
-    ).toBe(
-      "/app/: Cloudflare wrote Cloudflare's bot checks (JavaScript detections) into the page.",
-    );
+    ).toBe('/app/: Cloudflare wrote its bot checks (JavaScript detections) into the page.');
     expect(
       words(
         built.replace(
@@ -202,13 +215,13 @@ describe('one page', () => {
           '<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js"></script></body>',
         ),
       ),
-    ).toBe("/app/: Cloudflare wrote Cloudflare's Rocket Loader into the page.");
+    ).toBe('/app/: Cloudflare wrote its Rocket Loader into the page.');
     expect(
       words(built.replace('</body>', '<script src="/cdn-cgi/zaraz/i.js"></script></body>')),
-    ).toBe("/app/: Cloudflare wrote Cloudflare's Zaraz into the page.");
+    ).toBe('/app/: Cloudflare wrote its Zaraz into the page.');
     expect(
       words(built.replace('</body>', '<script src="/cdn-cgi/new-thing.js"></script></body>')),
-    ).toBe("/app/: Cloudflare wrote something else of Cloudflare's into the page.");
+    ).toBe('/app/: Cloudflare wrote something else of its own (under /cdn-cgi/) into the page.');
   });
 
   it('expects the status the page should have', () => {
@@ -252,7 +265,7 @@ describe('what a wrong policy says', () => {
     };
     const [finding] = comparePage('/app/', 'x', "script-src 'self'", served);
     expect(finding?.words).toBe(
-      "/app/ has a different security policy from the one written for it. Its scripts part: script-src 'self' 'unsafe-inline'",
+      "/app/ has a different security policy from the one written for it: it was sent one this build didn't write. Its scripts part: script-src 'self' 'unsafe-inline'",
     );
   });
 });

@@ -168,6 +168,12 @@ const SCREENS = [
     heading: strings.yourData.deleteHeading,
     purpose: strings.yourData.deletePurpose,
   },
+  // Add to home screen, under More (step 4d), as a laptop sees it.
+  {
+    path: '/app/home-screen/',
+    heading: strings.homeScreen.heading,
+    purpose: strings.homeScreen.purpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

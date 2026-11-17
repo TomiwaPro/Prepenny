@@ -32,6 +32,8 @@ const SCREENS = [
   { path: '/app/job/', heading: 'Your job', shows: 'Warehouse job' },
   { path: '/app/what-if/', heading: 'What if', shows: 'Your real plan and practice' },
   { path: '/app/what-if/?from=coming-up', heading: 'What if', shows: 'Back to Coming up' },
+  // Add to home screen (step 4d): its steps work with no signal too.
+  { path: '/app/home-screen/', heading: 'Add to home screen', shows: 'Open as Web App' },
   { path: '/pay-calculator/', heading: 'Take-home pay calculator', shows: '1257L' },
   { path: '/sign-in/', heading: 'Sign in', shows: strings.signIn.signInPurpose },
   {

@@ -3,7 +3,10 @@
 // straight after `wrangler deploy`, with the same build it put online.
 //
 // Cloudflare can add things of its own to the pages it serves: on 14 Nov
-// 2026 it wrote its Web Analytics script into every live page. So every page
+// 2026 it wrote its Real User Monitoring (RUM) script, the beacon its Web
+// Analytics uses, into every live page. Cloudflare switches RUM on by itself
+// for free plans, so it can be there with no Web Analytics site listed in
+// the account (step 4d, D553). So every page
 // is fetched as a phone opens it, and must be exactly the file that was
 // built, with exactly the security policy written for it (D529). Anything
 // Cloudflare wrote into a page, or a different policy, fails the check and
@@ -26,23 +29,28 @@ import { rulesFor, servedAt } from './page-policies.ts';
 const OUT = join(import.meta.dirname, '..', 'out');
 const POLICY = 'content-security-policy';
 
-/** Things Cloudflare can write into a page, and how to recognise them. */
+/**
+ * Things Cloudflare can write into a page, and how to recognise them, named
+ * as Cloudflare's own dashboard and documentation name them (step 4d, D553).
+ */
 export const CLOUDFLARE_ADDITIONS: readonly { readonly name: string; readonly mark: RegExp }[] = [
   {
-    name: "Cloudflare's Web Analytics script",
+    // The beacon Cloudflare's documentation calls both Real User Monitoring
+    // and Web Analytics, from static.cloudflareinsights.com.
+    name: 'its Real User Monitoring (RUM) script (static.cloudflareinsights.com)',
     mark: /static\.cloudflareinsights\.com|data-cf-beacon/,
   },
   {
-    name: "Cloudflare's Email Address Obfuscation",
+    name: 'its Email Address Obfuscation',
     mark: /__cf_email__|\/cdn-cgi\/l\/email-protection/,
   },
   {
-    name: "Cloudflare's bot checks (JavaScript detections)",
+    name: 'its bot checks (JavaScript detections)',
     mark: /\/cdn-cgi\/challenge-platform\//,
   },
-  { name: "Cloudflare's Rocket Loader", mark: /rocket-loader|data-cf-settings/ },
-  { name: "Cloudflare's Zaraz", mark: /\/cdn-cgi\/zaraz\// },
-  { name: "something else of Cloudflare's", mark: /\/cdn-cgi\// },
+  { name: 'its Rocket Loader', mark: /rocket-loader|data-cf-settings/ },
+  { name: 'its Zaraz', mark: /\/cdn-cgi\/zaraz\// },
+  { name: 'something else of its own (under /cdn-cgi/)', mark: /\/cdn-cgi\// },
 ];
 
 /** Headers Cloudflare can add that send something from the phone, or keep something on it. */
@@ -108,6 +116,18 @@ export interface Finding {
   readonly words: string;
 }
 
+/**
+ * Whose policy a page was sent instead of its own, in words: the general
+ * one (the not-found page's), another page's, none, or one this build
+ * didn't write, such as the version before's (step 4d, D553).
+ */
+function whosePolicy(policy: string | undefined, known: ReadonlyMap<string, string>): string {
+  if (policy === undefined) return 'it was sent none at all';
+  const whose = known.get(policy);
+  if (whose === undefined) return "it was sent one this build didn't write";
+  return `it was sent ${whose}`;
+}
+
 /** Compares a page from the live site with the file that was built and its policy. */
 export function comparePage(
   path: string,
@@ -115,6 +135,7 @@ export function comparePage(
   expectedPolicy: string | undefined,
   served: Served,
   expectedStatus = 200,
+  known: ReadonlyMap<string, string> = new Map(),
 ): Finding[] {
   const found: Finding[] = [];
   if (served.status === 0 || served.status >= 500) {
@@ -158,7 +179,7 @@ export function comparePage(
     found.push({
       path,
       kind: 'policy',
-      words: `${path} has a different security policy from the one written for it. Its scripts part: ${
+      words: `${path} has a different security policy from the one written for it: ${whosePolicy(policy, known)}. Its scripts part: ${
         policy === undefined
           ? 'none at all'
           : (/(?:^|;\s*)(script-src [^;]*)/.exec(policy)?.[1] ?? 'none')
@@ -204,6 +225,32 @@ async function fetchOnce(site: string, path: string): Promise<Served> {
   return { status: response.status, body: await response.text(), headers: response.headers };
 }
 
+/**
+ * Every policy this build wrote, and whose it is in words: "the general one,
+ * written for the not-found page" or "the one written for /app/".
+ */
+export function knownPolicies(
+  headers: string,
+  pages: readonly { readonly path: string; readonly file: string }[],
+): Map<string, string> {
+  const known = new Map<string, string>();
+  // The not-found page first, so a page with no rule of its own says "the general one".
+  const general = [...pages].sort(
+    (a, b) => Number(b.file === '404.html') - Number(a.file === '404.html'),
+  );
+  for (const { path, file } of general) {
+    const policy = expectedHeader(headers, path, POLICY);
+    if (policy === undefined || known.has(policy)) continue;
+    known.set(
+      policy,
+      file === '404.html'
+        ? 'the general one, written for the not-found page'
+        : `the one written for ${path}`,
+    );
+  }
+  return known;
+}
+
 /** Checks every page once: what's wrong, and the notes for headers. */
 export async function checkOnce(site: string, out = OUT) {
   const headers = readFileSync(join(out, '_headers'), 'utf8');
@@ -214,11 +261,12 @@ export async function checkOnce(site: string, out = OUT) {
     // An address with no page: Cloudflare sends the not-found page, with the general policy.
     { path: `/no-such-page-${Date.now()}/`, file: '404.html', status: 404 },
   ];
+  const known = knownPolicies(headers, pages);
   for (const { path, file, status } of pages) {
     const served = await fetchPage(site, path);
     const built = readFileSync(join(out, file), 'utf8');
     findings.push(
-      ...comparePage(path, built, expectedHeader(headers, path, POLICY), served, status),
+      ...comparePage(path, built, expectedHeader(headers, path, POLICY), served, status, known),
     );
     for (const note of headerNotes(served.headers)) notes.add(note);
   }

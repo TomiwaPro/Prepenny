@@ -6,9 +6,12 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
+import { InstallListener } from '../components/InstallListener.tsx';
 import { OldAddress } from '../components/OldAddress.tsx';
 import { PreviewLine } from '../components/PreviewLine.tsx';
 import { ServiceWorker } from '../components/ServiceWorker.tsx';
+import { installEarlyScript } from '../lib/install-early.ts';
+import { startupImages } from '../lib/splash-screens.ts';
 import { coloursScript, PAPER } from '../lib/theme.ts';
 import { strings } from '../strings/en-GB.ts';
 import '../styles/tokens.css';
@@ -51,8 +54,17 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
   },
-  appleWebApp: { capable: true, title: strings.app.name, statusBarStyle: 'default' },
+  appleWebApp: {
+    capable: true,
+    title: strings.app.name,
+    statusBarStyle: 'default',
+    // The opening screen on an iPhone's Home Screen, in PrePenny's colours (step 4d, D550).
+    startupImage: startupImages(),
+  },
   formatDetection: { telephone: false },
+  // Next.js writes only the newer "mobile-web-app-capable"; an iPhone has
+  // long looked for its own name before using the opening screens (D554).
+  other: { 'apple-mobile-web-app-capable': 'yes' },
 };
 
 export const viewport: Viewport = {
@@ -71,12 +83,15 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: our own fixed script, no data in it */}
         <script dangerouslySetInnerHTML={{ __html: coloursScript }} />
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: our own fixed script, no data in it (D554) */}
+        <script dangerouslySetInnerHTML={{ __html: installEarlyScript }} />
       </head>
       <body>
         <PreviewLine />
         <OldAddress />
         {children}
         <ServiceWorker />
+        <InstallListener />
       </body>
     </html>
   );

@@ -737,16 +737,21 @@ What changed (D527 to D532): every building block is checked for known security 
 
 **What you need to set up**, checked against each service's own pages on 14 Nov 2026:
 
-1. **Cloudflare: switch off Web Analytics** (about 3 minutes, before merging). Cloudflare switched it on by itself, and was writing its analytics script into every page of prepenny.co.uk (D531). The security policy has always stopped it running, but it shouldn't be there, and from this step the Deploy workflow fails while it is. From Cloudflare's own "Get started" page for Web Analytics:
-   1. Sign in at https://dash.cloudflare.com and go to the **Web Analytics** page, or open https://dash.cloudflare.com/?to=/:account/web-analytics.
-   2. On the card for **prepenny.co.uk**, select **Manage site**.
-   3. Change the automatic setup to **Disable** ("The JS Snippet will not be injected and has been disabled."). If there's no choice of setup there, only **Delete**, select **Delete**: Cloudflare's help gives that for analytics it switched on by itself.
-   If prepenny.co.uk isn't on that page at all, tell Claude Code: Cloudflare has a second switch, a Configuration Rule called "Disable Real User Monitoring (RUM)".
-2. **Cloudflare: switch off Network Error Logging** (recommended, about 2 minutes, any time). Cloudflare asks phones to tell it when they fail to reach PrePenny: the address they tried and the error, never anything about money (D531). PrePenny doesn't use those reports. From Cloudflare's own "Get started" page for Network Error Logging: go to **Account home**, select **Network**, find **Network Error Logging Monitoring**, and turn its toggle off. If **Network** isn't on Account home, select **prepenny.co.uk** first and look there. Until it's off, each Deploy run shows a yellow warning about it, and nothing fails.
+1. **Cloudflare: switch off Real User Monitoring (RUM)** (about 3 minutes). Cloudflare switched it on by itself for prepenny.co.uk, as it does for every free plan, and writes its script (from `static.cloudflareinsights.com`) into every page. The security policy has always stopped it running, but it shouldn't be there, and the Deploy workflow fails while it is. It isn't listed on Cloudflare's **Web Analytics** page, which says "Get started", so these steps start from the domain instead (D553, from Cloudflare's own documentation for Configuration Rules, 16 Nov 2026):
+   1. Sign in at https://dash.cloudflare.com. On **Account home**, select **prepenny.co.uk**.
+   2. In the menu on the left, select **Rules**, then **Overview**.
+   3. Select **Create rule**, then **Configuration Rule**.
+   4. In **Rule name**, type `No Cloudflare scripts in PrePenny`.
+   5. Under **When incoming requests match**, choose **All incoming requests**.
+   6. Under **Then the settings are**, add the setting **Disable Real User Monitoring (RUM)** and turn it on. Cloudflare's documentation names the setting, not the button that adds it: it may say **+ Add** or **Select setting**.
+   7. Select **Deploy**.
+
+   Then, on GitHub, open **Actions**, then **Deploy**, then its newest run from `main`, and tap **Re-run all jobs**. Its step **Check the live pages are PrePenny's own** should no longer name "its Real User Monitoring (RUM) script".
+2. **Cloudflare: switch off Network Error Logging** (recommended, about 2 minutes, any time). Cloudflare asks phones to tell it when they fail to reach PrePenny: the address they tried and the error, never anything about money (D531). PrePenny doesn't use those reports. From Cloudflare's own "Get started" page for Network Error Logging: on **Account home**, select **Network**, find **Network Error Logging Monitoring**, and turn its toggle off. If **Network** isn't on Account home, select **prepenny.co.uk** first and find **Network** in the menu on the left. Until it's off, each Deploy run shows a yellow warning about it, and nothing fails.
 3. **GitHub: nothing new.** Dependabot alerts are on, which also switches on the dependency graph that Dependabot's list needs ("When enabled, GitHub immediately generates the dependency graph", GitHub's own words). Dependabot's list sends with GitHub's own key for each run: no secret or variable.
 4. **Supabase, Resend and Google: nothing.** No new package.
 
-**To check it worked, after merging:** **Actions**, then **Deploy**, then the newest run: a green tick, and its step **Check the live pages are PrePenny's own** says "each exactly as built, with its own security policy, and nothing of Cloudflare's written into them". If it has a red cross naming "Cloudflare's Web Analytics script", do step 1 above, then **Re-run all jobs**. Then **Dependabot's list**: a green tick. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4b".
+**To check it worked, after merging:** **Actions**, then **Deploy**, then the newest run: a green tick, and its step **Check the live pages are PrePenny's own** says "each exactly as built, with its own security policy, and nothing of Cloudflare's written into them". If it has a red cross naming "its Real User Monitoring (RUM) script", do step 1 above, then **Re-run all jobs**. If it names a page with "a different security policy from the one written for it", tell Claude Code what it says it was sent instead (D553). Then **Dependabot's list**: a green tick. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4b".
 
 ### O. Step 4c: bank holidays
 
@@ -755,6 +760,14 @@ What changed (D536 to D542): phones get the newest UK bank holiday list each wee
 **What you need to set up: nothing.** Checked on 15 Nov 2026 against GitHub's own documentation (in its source, as docs.github.com couldn't be opened from the building computer): the Monday check starts the Deploy workflow with GitHub's own key, which GitHub allows ("`workflow_dispatch` and `repository_dispatch` events always create workflow runs"), and asks for the permission to in its own file; the Deploy workflow already has the Cloudflare key; the database change goes to the real database with the Database workflow after merging, as every step's does; and GOV.UK's list needs no key.
 
 **To check it worked, after merging:** the Monday after, **Actions**, then **Bank holidays**: a run from "schedule" with a green tick, saying "The site already has GOV.UK's list, so there's nothing to do." (or, if GOV.UK's list changed, that it put the live app online again, followed by a **Deploy** run with a green tick). What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4c".
+
+### P. Step 4d: installing to the home screen
+
+What changed (D546 to D552): Home suggests adding PrePenny to the home screen once, on the second day someone uses their own plan; on an iPhone in Safari, **Make my plan** suggests it first, as a plan made in Safari stays in Safari; the steps for Android and iPhone are always under **More**, **Home screen**; an iPhone shows PrePenny's colours while the home-screen app opens; and on Android a long press of the icon offers **Update balance** and **I spent**. Also (D553): Cloudflare's script is its Real User Monitoring, and part N, step 1, now says exactly where to switch it off.
+
+**What you need to set up: nothing new for step 4d.** Checked on 16 Nov 2026: no new secret or variable on GitHub (no workflow asks for one); on Cloudflare, the hosting settings change only the list of files the few lines in front of the app skip, which the Deploy workflow's key already puts online (`wrangler deploy`, "Workers Scripts Edit", as before); no database change, so nothing for Supabase; nothing for Resend or Google; and no Apple or Google developer account, as adding to the home screen needs neither. Part N, step 1 (Cloudflare's Real User Monitoring) is still to do if you haven't, and its steps have changed.
+
+**To check it worked, after merging:** **Actions**, then **Deploy**: a green tick once part N, step 1 is done. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4d".
 
 ## Bank holidays
 

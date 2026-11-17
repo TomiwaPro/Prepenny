@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AccountCard } from '../../../components/AccountCard.tsx';
 import { ColourChoice } from '../../../components/ColourChoice.tsx';
+import { InstallMoreCard } from '../../../components/InstallMoreCard.tsx';
 import { MoreLinks } from '../../../components/MoreLinks.tsx';
 import { SecurityCard } from '../../../components/SecurityCard.tsx';
 import { SimplePage } from '../../../components/SimplePage.tsx';
@@ -21,6 +22,7 @@ export default function MorePage() {
       <AccountCard />
       <SecurityCard />
       <YourDataCard />
+      <InstallMoreCard />
       <ColourChoice />
       <StartAgain />
     </SimplePage>
