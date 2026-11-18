@@ -45,13 +45,13 @@ const list = (page: Page) => page.getByTestId('help-list').getByRole('link');
 const found = (page: Page) => page.getByTestId('help-found');
 const card = (page: Page) => page.getByTestId('money-help');
 
-async function useSetting(page: Page, setting: TestSetting) {
+async function putSetting(page: Page, setting: TestSetting) {
   await page.addInitScript(settingScript, [TEST_SETTING_KEY, setting] as const);
 }
 
 /** Opens Home with a test plan and today, and waits for its figures. */
 async function openHome(page: Page, setting: TestSetting) {
-  await useSetting(page, setting);
+  await putSetting(page, setting);
   await page.goto('/app/');
   await expect(page.getByTestId('lowest-point')).toBeVisible();
   await settled(page);
@@ -133,9 +133,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.goto('/app/help/updating-your-balance/');
       const steps = page.getByTestId('help-article').getByRole('list').first();
       await expect(steps.getByRole('listitem')).toHaveCount(4);
-      await expect(steps.getByRole('listitem').first()).toHaveText(
-        'On Home, tap Update balance.',
-      );
+      await expect(steps.getByRole('listitem').first()).toHaveText('On Home, tap Update balance.');
       await page.getByRole('link', { name: t.backToHelp }).click();
       await expect(page).toHaveURL(/\/app\/help\/$/);
       // The bottom navigation is there, with More as the place it's under.
@@ -157,7 +155,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const requests: string[] = [];
       page.on('request', (request) => {
         const path = new URL(request.url()).pathname;
-        if (path !== '/version.json' && path !== '/bank-holidays.json') requests.push(request.url());
+        if (path !== '/version.json' && path !== '/bank-holidays.json')
+          requests.push(request.url());
       });
       await search(page).fill('debt');
       const debts = searchHelp(entries, 'debt');
@@ -206,9 +205,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(found(page)).toHaveText(t.found(results.length, 'backup email'));
       await list(page).first().click();
       const first = articles.find((one) => one.slug === results[0]?.slug);
-      await expect(
-        page.getByRole('heading', { level: 1, name: first?.title ?? '' }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: first?.title ?? '' })).toBeVisible();
       await page.getByRole('link', { name: t.backToHelp }).click();
       await expect(list(page)).toHaveCount(articles.length);
       await page.goto(`/app/help/${MONEY_TIGHT_SLUG}/`);
