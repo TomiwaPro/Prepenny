@@ -216,3 +216,33 @@ test("deploy.yml puts GOV.UK's newest list on the site before the app goes onlin
   );
   assert.match(text, /git merge-base --is-ancestor "\$COMMIT" origin\/main/);
 });
+
+// Step 4e (D564): the Database workflow builds the reminders function's work
+// from the app's own code, puts the function online with no sign-in token
+// needed (the database's tick guards it), then tells the database its
+// address, sent as a parameter, never written into the query's text.
+test('database.yml builds the reminders function, puts it online and tells the database its address', () => {
+  const text = readFileSync(join(folder, 'database.yml'), 'utf8');
+  const changes = text.indexOf('- name: Change the real database');
+  const build = text.indexOf("- name: Build the reminders function's work");
+  const online = text.indexOf('- name: Put the reminders function online');
+  const address = text.indexOf('- name: Tell the database where the reminders function is');
+  assert.ok(changes >= 0 && build > changes, 'built after the database changes');
+  assert.ok(online > build, 'put online once built');
+  assert.ok(address > online, 'its address told once it is online');
+  const step = (at: number) => text.slice(at, text.indexOf('\n      - name:', at + 1));
+  assert.match(
+    step(build),
+    /pnpm install --frozen-lockfile\n\s+node apps\/web\/scripts\/build-reminders\.ts/,
+  );
+  assert.match(
+    step(online),
+    /supabase functions deploy reminders --project-ref "\$SUPABASE_PROJECT_REF" --no-verify-jwt --use-api/,
+  );
+  assert.match(step(address), /select app\.reminders_address\(\$1\)/);
+  assert.match(step(address), /parameters: \[\$address\]/);
+  assert.match(step(address), /exit 1/);
+  for (const at of [build, online, address]) {
+    assert.match(step(at), /if: steps\.supabase\.outputs\.ready == 'true'\n/);
+  }
+});

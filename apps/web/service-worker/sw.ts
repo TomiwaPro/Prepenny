@@ -8,6 +8,7 @@
 
 import { type PrecacheEntry, Serwist } from 'serwist';
 import { TAKE_CHARGE } from './messages.ts';
+import { reminderOf } from './reminder.ts';
 
 declare const self: ServiceWorkerGlobalScope & {
   readonly __SW_MANIFEST: (PrecacheEntry | string)[];
@@ -55,6 +56,46 @@ self.addEventListener('message', (event) => {
   ) {
     event.waitUntil(self.clients.claim());
   }
+});
+
+// Reminders (step 4e, D564): a reminder arrives sealed for this phone, and
+// the browser opens it before it gets here. It's shown as it came: its
+// words, worked out on PrePenny's server, and a tag, so a newer reminder of
+// the same kind replaces an older one. A tap opens PrePenny. Nothing is
+// kept, and nothing is sent anywhere.
+
+self.addEventListener('push', (event) => {
+  const reminder = reminderOf(() => event.data?.json());
+  event.waitUntil(
+    self.registration.showNotification(reminder.title, {
+      body: reminder.body,
+      tag: reminder.tag,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: reminder.url },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const data: unknown = event.notification.data;
+  const path =
+    typeof data === 'object' && data !== null && typeof (data as { url?: unknown }).url === 'string'
+      ? (data as { url: string }).url
+      : '/app/';
+  const target = new URL(path, self.location.origin);
+  event.waitUntil(
+    (async () => {
+      const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const app = open.find((client) => new URL(client.url).pathname.startsWith('/app'));
+      if (app !== undefined) {
+        await app.focus();
+        return;
+      }
+      await self.clients.openWindow(target.href);
+    })(),
+  );
 });
 
 serwist.addEventListeners();

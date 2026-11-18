@@ -124,7 +124,9 @@ select set_eq(
     -- Step 3i: when a change reached the account, for plan_changes (D492).
     'utc_exact',
     -- Step 4c: a newer bank holiday list for the plan (D536).
-    'use_bank_holidays'],
+    'use_bank_holidays',
+    -- Step 4e: the person's own reminders, and this phone's push address (D562).
+    'my_reminders', 'choose_reminders', 'add_push_address', 'remove_push_address'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -146,7 +148,9 @@ select set_eq(
     -- Step 3h: download my data, import a backup and delete my account.
     'my_account_data', 'replace_plan', 'delete_my_account',
     -- Step 4c: a newer bank holiday list for the plan (D536).
-    'use_bank_holidays'],
+    'use_bank_holidays',
+    -- Step 4e: the person's own reminders, and this phone's push address (D562).
+    'my_reminders', 'choose_reminders', 'add_push_address', 'remove_push_address'],
   'The Data API''s part holds only the steps the phone calls'
 );
 

@@ -128,6 +128,30 @@ On your phone, device A, in your usual browser:
 7. Open https://prepenny.co.uk/app/. If "PrePenny has been updated. Tap to reload." shows, tap it. Home shows your plan. Tap **Coming up**, **Debts** and **More**: each opens with your figures.
 8. Turn on **Airplane mode**. Close PrePenny and open it again: Home shows your plan, with a note that starts "You're offline." Turn **Airplane mode** off.
 
+## Step 4e: reminders (15 minutes, then one evening)
+
+Reminders on your phone, device A, as Jess, with a shortfall you'll get within 15 minutes, and the evening one that evening. On an iPhone, do this in PrePenny opened from your Home Screen (step 4d), not in Safari. Do it between 8am and about 6pm, so nothing waits for quiet hours.
+
+1. **iPhone only:** in Safari, open https://prepenny.co.uk/app/more/ and tap **Reminders**. It says "On an iPhone, reminders only work in PrePenny opened from your Home Screen..." with **Show me how**. Close Safari and open PrePenny from your Home Screen.
+2. On device A, signed in as `yourname+jess4@gmail.com` (sign in from **More** if you aren't), tap **More**, then **Reminders**. It starts "Notifications on this phone on payday, before money goes out and when you'd be short, so you know before it happens." Every box is unticked, and **This phone** says "Turn on a reminder above, and this phone gets it."
+3. Tick **When you'd be short**. Your phone asks to allow notifications from PrePenny: tap **Allow**. The box stays ticked, "Saved." shows, and **This phone** says "This phone gets your reminders."
+4. Tick **The evening before money goes out** too.
+5. Tap **Home**, then **Add a payment**: name `Test short`, amount `5000`, **Next payment** tomorrow, from **Jess current account**. Tap **Add payment**.
+6. Lock your phone. Within 15 minutes a notification from PrePenny says "You'll be £... short on [tomorrow's date]." Tap it: PrePenny opens on Home (after your PIN, if the app lock is on).
+7. That evening at 7pm, UK time, a notification says "Test short goes out tomorrow. You'll be £... short on [tomorrow's date]."
+8. Back in **Reminders**, tick **Hide amounts in notifications**: from now on notifications say "Test short goes out tomorrow." with no amount. Then on Home, tap the **Test short** row, and **Remove this one**.
+
+Signing out stops them, device A:
+
+9. Add **Test short** again for tomorrow, as in step 5, then tap **More**, **Sign out**, **Sign out**. Nothing more arrives from PrePenny on this phone, not in 15 minutes and not at 7pm. Sign in again with `yourname+jess4@gmail.com`; in **Reminders** your choices are still ticked, and **This phone** says "This phone doesn't get your reminders yet." with **Get reminders on this phone**. Untick every box: **This phone** says "Turn on a reminder above, and this phone gets it." Remove **Test short**.
+
+On GitHub and Supabase:
+
+10. Open https://github.com/TomiwaPro/Prepenny/actions, tap **Database**, then its newest run from `main`, then **Change the real database**. The step **Tell the database where the reminders function is** ends "The database knows where the reminders function is, and has started it once."
+11. On supabase.com, open the project, then **Integrations**, **Cron**: `prepenny-reminders` runs every 15 minutes and its runs succeed; `prepenny-bank-holidays` runs on Mondays. Under **Edge Functions**, `reminders` is listed.
+
+If a notification never arrives, note which step, your phone, and whether **This phone** said "This phone gets your reminders."
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.

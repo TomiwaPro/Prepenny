@@ -1110,6 +1110,52 @@ export function mirrorRowOf(
   };
 }
 
+/** What plan_changes gives back (step 3c): the plan's own row and every row the person may read. */
+export interface PlanChangesRows {
+  readonly plan: Readonly<Record<string, unknown>>;
+  readonly rows: readonly {
+    readonly table: Table;
+    readonly row: Readonly<Record<string, unknown>>;
+    readonly edit_made_at?: string | null;
+    readonly edit_saved_at?: string | null;
+    readonly edit_by?: string | null;
+    readonly edit_kind?: string | null;
+  }[];
+}
+
+/**
+ * The rows as the phone keeps them, from what plan_changes gave back. The
+ * reminders function (step 4e) uses the same, so its plan is exactly the
+ * person's own phone's (D564).
+ */
+export function rowsOfChanges(changes: PlanChangesRows): MirrorRow[] {
+  const {
+    edit_made_at: planMadeAt,
+    edit_saved_at: planSavedAt,
+    edit_by: planBy,
+    edit_kind: planKind,
+    ...plan
+  } = changes.plan;
+  return [
+    mirrorRowOf('plans', plan, {
+      madeAt: planMadeAt,
+      savedAt: planSavedAt,
+      by: planBy,
+      kind: planKind,
+    }),
+    ...changes.rows.map(
+      ({
+        table,
+        row,
+        edit_made_at: madeAt,
+        edit_saved_at: savedAt,
+        edit_by: by,
+        edit_kind: kind,
+      }) => mirrorRowOf(table, row, { madeAt, savedAt, by, kind }),
+    ),
+  ];
+}
+
 /** The rows of a saved edit as the phone now knows the server has them: what it sent, at the versions save_edit gave back. */
 export function savedRows(
   sent: readonly DbWrite[],

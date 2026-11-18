@@ -777,6 +777,26 @@ What changed (D557 to D559): Next.js, which turns PrePenny's screens into the si
 
 **To check it worked, after merging:** **Actions**, then **Deploy**: a green tick once part N, step 1 is done. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4d-2".
 
+### R. Step 4e: reminders
+
+What changed (D560 to D573): **More** has **Reminders**: payday at 9am, the evening before money goes out at 7pm, a shortfall when it first appears and again at 9am the day before, and the weekly summary on Sundays at 6pm, each off until it's turned on, with **Hide amounts in notifications**, and nothing between 9pm and 8am. They need an account, and on an iPhone PrePenny opened from the Home Screen (part P). Every 15 minutes the database's own scheduled job starts a new function, `reminders`, which works each one out from the plan as the person's own phone reads it and sends it to the phone, sealed so Apple's, Google's and Mozilla's push services can't read it. And the database now fetches PrePenny's own bank holiday list itself each Monday, and plans take only a list it fetched (D545).
+
+**What you need to set up: nothing.** Checked on 17 Nov 2026, against Supabase's and Apple's own documentation (D573):
+
+- **GitHub:** no new secret or variable. The Database workflow builds the reminders function, puts it online and tells the database its address, with the same key and the same permissions it already has: "Edge Functions: Read-write", as for the get-back-in function, and "Database: Read-write", as for the GraphQL check. The key check at the start of the run still lists exactly those eleven.
+- **Supabase:** nothing to switch on by hand. The database change switches on Supabase Cron (pg_cron) and pg_net with SQL, as Supabase's own guide shows, and both are on the free plan. PrePenny's signing key for notifications is made by the function the first time it runs and kept in Supabase's Vault: there's no key for you to make or copy. `PLAN.md` had said you would add one GitHub secret; that's no longer needed (D566).
+- **Apple, Google, Mozilla:** no developer account. Apple's own documentation: "You don't need to join the Apple Developer Program to send web push notifications."
+- **Resend:** nothing. Reminders are never emails (D560).
+- **Cloudflare:** nothing new.
+
+**To check it worked, after merging:**
+
+1. **Actions**, then **Database**: a green tick. Tap the run, then **Change the real database**: the step **Tell the database where the reminders function is** ends "The database knows where the reminders function is, and has started it once."
+2. On supabase.com, open the project, then **Edge Functions**: `get-back-in` and `reminders` are listed. Then **Integrations**, **Cron**: two jobs, `prepenny-reminders` (every 15 minutes) and `prepenny-bank-holidays` (Mondays). Their runs say "succeeded".
+3. What to check by hand on your phone is in `docs/TRY-PHASE-4.md`, section "Step 4e".
+
+**If something goes wrong with reminders:** if the Database run's step **Tell the database where the reminders function is** fails, run the workflow again by hand (**Actions**, **Database**, **Run workflow** on `main`). If reminders stop arriving for everyone, look at **Integrations**, **Cron**, `prepenny-reminders`: a run that failed says why, with no amounts or names in it. Ask Claude Code to look, with what it says.
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.
@@ -786,6 +806,8 @@ Since step 4c (D537), phones also fetch the newest list from PrePenny's own site
 - **To update it now,** without waiting for Monday: **Actions**, then **Bank holidays**, then **Run workflow**, keeping **Branch: main**.
 - **If the Monday runs stop:** GitHub switches off a public repository's scheduled workflows after 60 days with no change to it (PLAN.md item 85). To switch it back on: **Actions**, then **Bank holidays** in the list on the left, then **Enable workflow**. Until then, every update put online still gets the newest list.
 - **A yellow warning "Built-in bank holidays"** on a Deploy run means GOV.UK couldn't be reached at that moment: the site keeps the list built into that version, and the next Monday tries again. Nothing else needs doing.
+
+Since step 4e (D545, D569), the database fetches that same list from PrePenny's site itself every Monday at 7:41am UTC, after the workflow above, and gives every plan the newest it fetched. A list a phone sends is taken only if the database fetched it too, so nobody can put a made-up list into a shared plan. On supabase.com, **Integrations**, **Cron** lists the job as `prepenny-bank-holidays`.
 
 ## Tax figures
 

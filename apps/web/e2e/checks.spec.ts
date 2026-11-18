@@ -174,6 +174,12 @@ const SCREENS = [
     heading: strings.homeScreen.heading,
     purpose: strings.homeScreen.purpose,
   },
+  // Reminders, under More (step 4e), as a laptop sees them, signed out.
+  {
+    path: '/app/reminders/',
+    heading: strings.reminders.heading,
+    purpose: strings.reminders.purpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

@@ -3,7 +3,7 @@
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
 D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. D446 to D452 are the owner's answers to its questions and instructions about the public repository, and D453 was decided while building them, the same day. D454 to D486 come from steps 3g and 3h, on 12 Nov 2026; each section says which are the owner's. D487 to D503 come from step 3i, Phase 3 checks, on 12 and 13 Nov 2026: D488 to D494 from its outside review. D508 and D509 are the owner's answers to step 3i's two questions, on 13 Nov 2026. D510 comes from the checks of the Phase 4 plan's pull request, on 13 and 14 Nov 2026. D511 to D513 are the owner's approval of Phase 4's steps and answers to its first two questions, on 14 Nov 2026. D514 to D524 come from step 4a, on 14 Nov 2026: D514 and D523 are the owner's. D525 and D526 are the owner's answer to question 24 and new rule for what to check by hand, on 14 Nov 2026, with the instructions for step 4b, and D527 to D531 were decided while building step 4b, the same day, and D532 comes from its outside review. D533 and D535 come from GitHub's runs of step 4b, and D534 is the owner's answer to question 25, on 15 Nov 2026. D536 to D544 come from step 4c, on 15 Nov 2026: D539 is the owner's. D545 and D546 are the owner's answers to questions 26 and 5, given with the instructions for step 4d on 16 Nov 2026, D547 to D554 come from building step 4d, and D555 to D557 are the owner's answers to step 4d's questions, on 17 Nov 2026.
-D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. D560 to D565 are the owner's answers to questions 6, 7, 29 and 30 and instructions for step 4e, reminders, on 17 Nov 2026, and D566 to D573 were decided while building it, and D574 comes from its outside review, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -6817,3 +6817,206 @@ Decided 17 Nov 2026 in step 4d-2, from the owner's instruction. Builds PLAN.md i
 Tests: `e2e/live-order.spec.ts` serves the build through the worker and Cloudflare's own file server, as Wrangler ships them, with the front page's rule moved before the general one, as the live site applies them (`e2e/live-order.ts`, port 4175). The front page must be sent exactly the policy written for it, run every script of its own, and open Sam's example from **Look at an example plan**, at 320px and 360px, in light and dark, with axe. With the worker's fix taken out, it's sent two policies, the live site's two, and all four runs fail. `test/unit/worker.test.ts` applies the rules as Cloudflare's code does, in the file's order and in the live site's: the front page keeps only its own, every other page and the not-found page keep theirs, and the old address still moves (D428); with the fix taken out, two of its eight tests fail. `test/unit/check-live-site.test.ts` has the live check's new words; with the old words it fails. **On Cloudflare's own service**, from the building computer through its Atlanta data centre, on 17 Nov 2026: step 4d's preview, without the fix, sent the front page two policies, as the live site does, refused its own script, and a tap on **Look at an example plan** did nothing; this step's preview sent exactly one, matching the page's own five scripts, refused nothing, and the same tap opened Sam's example with £267.54.
 
 Why: the owner's instruction, to find the root cause and fix it so "/" gets exactly its own policy. The worker already runs for every page, so the fix doesn't depend on which order Cloudflare applies the rules in.
+
+
+## The owner's answers and instructions for step 4e
+
+D560 to D563 are the owner's answers to `PLAN.md` questions 6 and 7 and the owner's instructions for step 4e, reminders, given on 17 Nov 2026, and D564 and D565 the owner's answers to step 4e's questions 29 and 30 the same day. D545 (the database fetches PrePenny's own bank holiday list) was answered earlier and is built in the same step.
+
+### D560. Which reminders, and when
+
+Agreed 17 Nov 2026, the owner's answer to `PLAN.md` question 6. Builds brief 4.11. To be built in step 4e.
+
+The owner's words: "every reminder is off until the person turns it on, in More. The reminders: payday at 9am ("Payday: update your balance"); the evening before money goes out, at 7pm ("Rent goes out tomorrow. You'll have £4.53 left until Friday."); a shortfall when it first appears and again the day before; a weekly summary on Sundays at 6pm, only if chosen. Quiet hours 9pm to 8am. Phone notifications only, no reminder emails. Times are UK time, right through the clock changes."
+
+- **Off until turned on, each one.** Each reminder has its own switch under More, and every one is off at the start. Nothing is sent until the person turns one on. This differs from the recommendation, where turning reminders on switched all but the weekly summary on at once.
+- **Payday, at 9am:** "Payday: update your balance."
+- **The evening before money goes out, at 7pm:** "Rent goes out tomorrow. You'll have £4.53 left until Friday." One a day at most, naming the biggest, and with more than one, "Rent and 2 more go out tomorrow. You'll have...", as in the recommendation the owner answered.
+- **A shortfall,** when it first appears and again the day before, one warning a day at most: "You'll be £40 short on Sun 1 Nov."
+- **The weekly summary,** only if chosen, on Sundays at 6pm: "This week: 5 payments going out, £1,336.07 in all. Lowest point ahead: £4.53 on Sun 1 Nov." (Sam's week from Mon 26 Oct.)
+- **Quiet hours, 9pm to 8am:** anything due then waits until 8am.
+- **The times are as the owner gave them.** The recommendation offered changing each time; the answer gives the times, so step 4e has no setting to change them. One can be added later.
+- **On the phone only,** never reminder emails: PrePenny's emails never hold amounts or payment names (ARCHITECTURE.md 1.3), and Resend's free plan sends 100 emails a day.
+- **UK time, through the clock changes:** 9am is 9am on a UK clock in winter (GMT) and in summer (BST), including the days the clocks go forward and back.
+
+Why: the owner's answer.
+
+### D561. Amounts in notifications
+
+Agreed 17 Nov 2026, the owner's answer to `PLAN.md` question 7, as recommended. Builds D54. To be built in step 4e.
+
+The owner's words: "notifications show amounts, with "Hide amounts in notifications" on the same screen where reminders are turned on."
+
+- Amounts are shown, as in D560's examples.
+- **Hide amounts in notifications** is on the same screen as the reminders' switches, so it's chosen at the start. With amounts hidden, the evening one says "Rent goes out tomorrow." and nothing else; the others leave their amounts out in the same way, set out when built.
+
+Why: the owner's answer. A notification can show on a locked phone, where someone else could see it (D54).
+
+### D562. Reminders need an account, and on an iPhone the home-screen app
+
+Agreed 17 Nov 2026, the owner's instruction for step 4e. Builds D22.
+
+The owner's words: "They need an account. On an iPhone they need PrePenny added to the home screen (step 4d): say so plainly, and link to the steps."
+
+- **An account:** a web app can't wake itself up, so reminders are sent by PrePenny's server to the phone, which needs to know whose phone it is. Someone not signed in is told so, with **Sign up or sign in**.
+- **On an iPhone,** reminders only work in PrePenny opened from the Home Screen (D22, step 4d). In Safari, the reminders screen says so plainly and links to the steps under More, **Home screen** (D548).
+
+Why: the owner's instruction.
+
+### D563. What step 4e must prove
+
+Agreed 17 Nov 2026, the owner's instructions for step 4e.
+
+- **Sealed from the push services.** "Notification contents must be encrypted end to end so those services can't read them": Apple's, Google's and Mozilla's push services, which carry a web app's notifications to the phone.
+- **Security tests must prove:** nobody can send a notification to someone else, subscribe someone else's phone, or read anyone's reminder settings; a partner never gets a reminder about the other's private accounts; and turning reminders off or signing out stops them straight away.
+- **Nothing about money, and no email address,** goes into a log or an error.
+- **Asked first:** before building, decide where each reminder's words and amounts are worked out, how they stay right when a partner changes something or the phone isn't opened for days, and what anything outside PrePenny can see. "If your design means the server working out people's money figures in a way it doesn't today, stop and ask me first, with a plain example and your recommendation." The design does, so it was `PLAN.md` question 29, with question 30 on the figures in the words: D564 and D565.
+- **Tests:** Playwright at 320px and 360px, light and dark, with axe, and server tests: turning each reminder on and off, quiet hours, hiding amounts, the iPhone home-screen message, and the right words and times, including across a clock change.
+
+Why: the owner's instructions.
+
+### D564. Reminders are worked out on the server, when each one is due
+
+Agreed 17 Nov 2026, the owner's answer to `PLAN.md` question 29, as recommended ("On the server").
+
+- **When each one is due,** PrePenny's server works the reminder out from the plan in the account, with the same engine as the app, so it takes in a partner's changes and changes from the person's other phones, and the phone needn't have been opened. A change made on a phone with no signal counts once it has been sent.
+- **Only what that person can see:** their own private accounts and the shared ones, never their partner's private ones, read exactly as their own phone reads the plan.
+- **New for the server:** it adds up balances, as the app does, but only for people who have turned a reminder on, and only to write their reminders.
+- **Nothing about money is kept or logged.** The figures exist only while it works, and inside the sealed reminder. It keeps only which reminders it has sent (the kind and the day, and for a shortfall its account and date, never an amount), so none goes twice.
+- **Sealed from the push services** with the Web Push standard's encryption, so only that phone can open it. They see when one is sent and to which of their phones, its size (every reminder is made the same size), and PrePenny's public key and its address, hello@prepenny.co.uk.
+
+Example from the question: Tom moves the shared rent from Fri 27 Nov to Thu 26 Nov at lunchtime on Wednesday, and Jess doesn't open PrePenny all week. At 7pm on Wednesday, Jess's phone shows "Rent goes out tomorrow. You'll have £34.12 left until Mon 30 Nov."
+
+Why: the owner's answer. Worked out on the phone, reminders would be only as up to date as the last time that phone opened PrePenny.
+
+### D565. The figures in the words
+
+Agreed 17 Nov 2026, the owner's answers to `PLAN.md` question 30, each as recommended.
+
+- **"You'll have £4.53 left until Friday":** the lowest the account goes, at the end of any day from tomorrow to the day before the next main payday, in the account the named payment leaves from: the same "lowest" that "Spend no more than" uses (D3). "Friday" is that payday: the day's name when it's within a week, otherwise the date, "until Mon 30 Nov". For Sam on Sat 31 Oct: rent leaves on Sun 1 Nov, the lowest from then to Thu 5 Nov is £4.53, and the payday is Fri 6 Nov. When that lowest is short, it says so instead: "Rent goes out tomorrow. You'll be £40.00 short on Sun 1 Nov."
+- **The weekly summary** counts the payments going out from Monday to Sunday in every account the person can see, as Coming up lists them, spending money and budgets included, but not money moved between their own accounts. "Lowest point ahead" is Home's: the account the main pay comes into, looking 12 months ahead. For Sam's week from Mon 26 Oct: 5 payments, £1,336.07 in all (not the £500 moved from savings), and £4.53 on Sun 1 Nov.
+- **A shortfall's second warning,** "again the day before", comes at 9am that day, so there's the day to do something about it. A shortfall counts as new when its account or its date is new; the same short day with a different amount isn't new, but the day-before warning gives the amount as it is then.
+
+Why: the owner's answers. Each is a money rule, so it was asked first (CLAUDE.md).
+
+
+## Made during step 4e
+
+D566 to D573 were decided on 17 Nov 2026 while building step 4e, reminders (brief 4.11, D560 to D565), and bank holiday lists only from PrePenny itself (D545).
+
+### D566. How a reminder is worked out and sent
+
+Decided 17 Nov 2026 in step 4e. Builds D564.
+
+- **Every 15 minutes, the database's own scheduled job** (Supabase Cron, `prepenny-reminders`) starts PrePenny's reminders function, a small function Supabase runs (`supabase/functions/reminders`), showing it a tick only the database knows (`app.reminder_server.tick`, made by the database itself). Every one of the function's steps in the database refuses without that tick, and only Supabase's own secret key can call them at all. Nothing runs in quiet hours, 9pm to 8am.
+- **Who's looked at:** someone with a reminder on, a phone that gets them, in a plan, whose plan has changed since the function last looked (by the plan's change counts, so a partner's change counts), or whose next reminder time has come since: 8am, 9am, 6pm on Sundays and 7pm, on a UK clock. 50 at a time, those looked at longest ago first, so one run stays inside a function's 2 seconds (D573).
+- **Their plan, exactly as their own phone reads it:** the database runs the very step the phone uses, `plan_changes`, as that person's own sign-in session on a phone that gets reminders (`app.plan_as`). So their private accounts and the shared ones, never their partner's private ones, and nothing at all for a sign-in that has ended or hasn't passed two-step sign-in. The function turns the rows into the engine's records with the phone's own code (`rowsOfChanges`, `recordsFromRows`), and works the reminders out with the app's own engine and words (`apps/web/lib/reminders.ts`), bundled into the function (`apps/web/scripts/build-reminders.ts`).
+- **Each reminder once, checked again at that very moment** (`claim_reminder`): still turned on, amounts still shown or hidden as when its words were worked out, and the phones that get it now. So turning a reminder off, or signing out, stops it straight away, even if its words were worked out a moment before (D563). A reminder no phone took is let go, to be sent at the next look while its time lasts.
+- **Kept about it:** which reminders were sent (kind and day) for 60 days, which shortfalls the person knows about (account and date), and when the function last looked. Never an amount, a name or a note. The function logs nothing; an error is counted, never described.
+- **Each phone's push address,** made by its browser with its push service, is kept for that phone's sign-in session only (`app.push_addresses`). Only the browsers' push services are allowed (Google's, Mozilla's, Apple's and Microsoft's addresses), so PrePenny's server can't be made to send anywhere else. A push service saying an address is gone (404 or 410) forgets it; so does the scheduled job once its sign-in has ended.
+- **PrePenny's signing key** (VAPID, RFC 8292) is made by the function the first time it runs, its private half kept in Supabase's Vault and its public half given to phones. Nothing for the owner to make or add: `PLAN.md` had said one GitHub secret, which this replaces.
+- **The function's address** is the project's own, a secret in this public repository, so the Database workflow tells the database after putting the function online, as a parameter (D494), and the database starts it once then, so the key exists before anyone turns a reminder on.
+- **How long a push service keeps a reminder** for a phone that's off: until 9pm that evening (UK), so none arrives in quiet hours; a minute at least.
+
+Why: D564, with each piece as small as it can be, and every rule about who reads what left to the step the phone already uses.
+
+### D567. What counts in the words
+
+Decided 17 Nov 2026 in step 4e. Builds D560, D561 and D565.
+
+- **Money going out** is what Coming up lists going out: payments, pay-later bills and budgets, but not money moved between the person's own accounts (a transfer, money set aside, or a private transfer whose two halves they both see), and not anything ticked as gone already. Tom sees "To Jess" from the joint account as money going out; Jess, who sees both halves, doesn't.
+- **A budget spread across the days** leaves a little every day, so the evening one doesn't name it every evening; what it leaves is in the figure. The weekly summary counts it once for the week, as Coming up folds it into one line (D41).
+- **The evening one names the biggest,** then "and 2 more". Its figure is for the account the biggest leaves from; when that isn't the account the main pay comes into, it names it: "Jess own will have £65.00 left." With no main payday ahead, "You'll have £67.54 left.", the end of tomorrow. When the lowest is short, the first short day, as Home says a shortfall (D82): "You'll be £40.00 short on Sun 1 Nov."
+- **Shortfalls** are looked for 12 months ahead, as Home does, in every account the person can see; one in another account is named: "Savings will be £20.00 short on Wed 28 Oct."
+- **Payday** comes only while the main pay due today isn't ticked, and the balance hasn't been updated today already.
+- **Hidden amounts:** "Rent goes out tomorrow.", "Rent and 2 more go out tomorrow.", "You'll be short on Sun 1 Nov.", "This week: 5 payments going out. Lowest point ahead: Sun 1 Nov."; payday has no amount anyway.
+- **Each notification** is titled "PrePenny", and a newer one of the same kind replaces an older one on the phone. A tap opens PrePenny's Home, behind the app lock when it's on.
+- Dates keep their parts together, as on every screen (D168's non-breaking spaces).
+
+Why: the owner's answers left these smaller choices; each follows Coming up and Home, so a reminder never says something the app wouldn't.
+
+### D568. The Reminders screen
+
+Decided 17 Nov 2026 in step 4e. Builds D560 to D562.
+
+- **Under More,** a Reminders card opens `/app/reminders/`: "Notifications on this phone on payday, before money goes out and when you'd be short, so you know before it happens."
+- **What's needed first, in this order:** on an iPhone in Safari, "On an iPhone, reminders only work in PrePenny opened from your Home Screen..." with **Show me how**, the steps of step 4d (signing in in Safari wouldn't help, as the Home Screen app keeps its own sign-in, D548); signed out, "Reminders need an account..." with **Sign up or sign in**; a browser that can't show notifications from a website, says so.
+- **Each reminder** is a tick box with when it comes and an example in the words it will use, under "Which reminders do you want?", every one off at the start. **Hide amounts in notifications** is below them, then the quiet hours line, then **This phone**: whether this phone gets them, with **Get reminders on this phone** for a second phone of the person's.
+- **The first one on** asks the phone to allow notifications, from the tap itself, as phones ask. A tap shows at once and is saved; if it can't be, it goes back, and the line under says why.
+- **With every one off,** every phone of the person's is forgotten, and this browser forgets its address too.
+- **Signing out** forgets this phone's address on PrePenny's server first, only if it has one, so other sign-outs aren't slowed, and the browser forgets it whenever PrePenny clears the phone, even with no signal.
+
+Why: DESIGN.md's rule that every control says what it does, and D562's "say so plainly, and link to the steps".
+
+### D569. Bank holiday lists only from PrePenny itself, built
+
+Decided 17 Nov 2026 in step 4e. Builds D545.
+
+- **The database fetches** https://prepenny.co.uk/bank-holidays.json every Monday at 7:41am UTC (after the Bank holidays workflow's 6:23am, D537), and once as step 4e goes live. The answer is taken at the next 15-minute run: only GOV.UK's shape within the limits every phone reads (D543), with a version of its download day and checksum, from 2019 to today.
+- **Every plan gets the newest list fetched,** including a plan with none yet, one with an older one, and one whose list the database never fetched (a list sent before step 4e, made up or not, D543's accepted case, now closed), with a nudge so the phones bring it down.
+- **A list a phone sends** is taken only when the database fetched that same list, and then the database's own copy is kept, never what the phone sent: "not-fetched" otherwise. The phone tries again when PrePenny next opens (D543), and the weekly fetch gives the plan its list anyway.
+- **Step 4c's tests** play the database's fetch as they play the site for the phones: `supabase/tests/database/34-bank-holidays.test.sql` marks each list a phone sends as fetched first, its shape checks moved to the fetch (`36-bank-holidays-fetched.test.sql`), and `e2e/shared-bank-holidays.spec.ts` marks the new list fetched before the first phone gets it.
+
+Why: the owner's answer (D545).
+
+### D570. What anything outside PrePenny can see
+
+Decided 17 Nov 2026 in step 4e. Builds D563.
+
+- **Apple's, Google's, Mozilla's and Microsoft's push services** carry each reminder to the phone sealed for that phone alone, by the Web Push standard's encryption (RFC 8291, aes128gcm), with a new key and salt for every message. PrePenny's sealing matches the standard's own worked example byte for byte. They see: the push address they made for that phone, when a reminder is sent, its size (every one is padded to the same 2,048 bytes, so 2,150 sent), how long to keep it and that it's of normal urgency, and PrePenny's signature with its public key and its contact address, hello@prepenny.co.uk, for a token that names only the push service's own address, lasts 12 hours and is made once every 11 hours (D573, D574). Never the words, an amount, a name, the person or their email address.
+- **They also know** which of their phones gets notifications from prepenny.co.uk, and when: that can't be avoided with notifications on the web.
+- **Supabase** runs the function in PrePenny's own project, where the plan already is, and keeps nothing more than D566 lists. The scheduled job's requests hold the tick, never anything of a person's.
+- **On the phone,** a notification can show on a locked screen, which is why amounts can be hidden (D561).
+
+Why: the owner's instruction (D563).
+
+### D571. How step 4e is tested
+
+Decided 17 Nov 2026 in step 4e.
+
+- **The words and times** (`apps/web/test/unit/reminders.test.ts`, 26 tests) on Sam's example: "Rent goes out tomorrow. You'll have £4.53 left until Friday." on Sat 31 Oct, "Family loan and 1 more go out tomorrow. You'll have £12.54 left until Friday.", "until Fri 6 Nov" a week away, the weekly "This week: 5 payments going out, £1,336.07 in all. Lowest point ahead: £4.53 on Sun 1 Nov." at 6pm GMT on the day the clocks go back and not at 5pm, at 6pm BST on the day they go forward, payday at 9am GMT and 9am BST, quiet hours, a shortfall when it first appears and at 9am the day before, and every hidden version.
+- **The sealing** (`web-push.test.ts`): RFC 8291's own worked example byte for byte, the same size whatever the words, another phone's keys can't open it, and the signature a push service checks.
+- **The function's work** (`reminders-run.test.ts`): Sam's plan through the rows the server reads, sealed for two phones that open it, once only, a gone address forgotten, a reminder nobody took let go, nowhere but a push service, and nothing logged, ever.
+- **The database** (`35-reminders.test.sql`, 80 checks; `36-bank-holidays-fetched.test.sql`, 30): who may read and change what, sending only with the tick, the plan the server reads equal to what each person's own phone reads, nothing of Jess's private accounts in Tom's, turning off and signing out stopping a reminder at that moment, two-step sign-in, the signing key kept once in Vault, and the UK clock through both clock changes.
+- **End to end** (`e2e/reminders.spec.ts`, at 320px and 360px, light and dark, with axe): the phone's browser gets a push address at a stand-in push service on the building computer, and the tests start the real function with a test clock; what arrives is opened with the phone's own key. Each reminder on and off; the weekly summary at 6pm GMT, not 5pm, on Sun 25 Oct 2026; the evening one; hidden amounts; a shortfall that appears in quiet hours arriving at 8am; turning one off; signing out; Jess and Tom, where Tom's never names Jess's own account; and the iPhone and signed-out messages. The security test has a step 4e part through the real Data API and function.
+- **What only the owner's phone can show:** a real push service delivering it, and how the phone shows it (`docs/TRY-PHASE-4.md`, step 4e). Chrome's headless shell, which the tests use, always says notifications are blocked, so the stand-in phone answers "allowed" itself, as after a person taps Allow.
+- **Test-only settings** (`supabase/seed.sql`, never on the real project): the scheduled jobs off, a test clock, the stand-in push service's address allowed, and a run that looks at one test's person only.
+
+Why: the owner's instructions for the tests (D563).
+
+### D572. Found while building step 4e
+
+Decided 17 Nov 2026 in step 4e.
+
+- **Supabase's Data API refuses a change with no "where"**, even of a table's only row, which the database tests can't see as they don't go through it: the signing key and the function's address now name their row. Found by trying the function on the local Supabase.
+- **A step that gives nothing back answers with nothing at all** (204), which the function read as JSON and counted as a problem: it now reads an empty answer as nothing. Found by the first end-to-end run, which is how every looked-at person was a problem until then.
+- **A tick box that waited for the save** looked as if the tap hadn't worked: it now shows at once and goes back if the save fails (D568).
+
+Why: each found by the step's own tests, and fixed at its cause.
+
+### D573. Checked against Supabase's and Apple's own documentation
+
+Decided 17 Nov 2026 in step 4e. Adds to D566 and D570.
+
+supabase.com couldn't be opened from the building computer, so Supabase's documentation was read from its own source (github.com/supabase/supabase, `apps/docs/content`), on 17 Nov 2026; Apple's from the data its documentation page is drawn from (developer.apple.com, "Sending web push notifications in web apps and browsers").
+
+- **Supabase:** "The hosted Supabase Platform supports the `pg_cron` extension ... In combination with the `pg_net` extension, this allows us to invoke Edge Functions periodically on a set schedule." Supabase Cron is switched on with SQL ("create extension pg_cron with schema pg_catalog; grant usage on schema cron to postgres; grant all privileges on all tables in schema cron to postgres;"), now exactly so in the migration, and its jobs are listed under **Integrations**, **Cron**. pg_net is switched on the same way, and keeps each answer 6 hours. Vault's `vault.create_secret()` and `vault.decrypted_secrets` are as used. Every function is given `SUPABASE_URL` and `SUPABASE_SECRET_KEYS` (and the older `SUPABASE_SERVICE_ROLE_KEY`). A function has 2 seconds of the computer's time for each request, and 150 seconds in all on the free plan. pg_net's caution, "Any role that can log in to your database can read the secret key while the request waits", applies to the tick, which only the database's own roles can read anyway.
+- **Apple:** "You don't need to join the Apple Developer Program to send web push notifications." Web push works for "Home Screen web apps in iOS 16.4 or later". The signature's subject must be "a URL or mailto:", its audience "the origin of the push service", and it may last a day at most (PrePenny's: hello@prepenny.co.uk, the push service's own address, 12 hours). "The payload size is over the limit of 4 KB" is refused (PrePenny's are 2,150 bytes). "Safari doesn't support invisible push notifications ... If you don't, Safari revokes the push notification permission for your site": PrePenny's offline helper shows every one that arrives.
+- **Two changes from Apple's page:** its push addresses can be at any `*.push.apple.com` ("allow access for https://*.push.apple.com"), not only `web.push.apple.com`, so that's what's allowed now; and "Don't refresh your JWT more frequently than once per hour", so PrePenny's signature for each push service is now kept in the database (`app.push_tokens`, for the reminders function alone) and used for 11 hours before a new one is made, as it lasts 12 (D574). A new signing key clears them.
+- **Plans:** both fit Supabase's free plan, and the 2-second limit is why the function looks at 50 people a run at most (PLAN.md item 93).
+
+Why: the owner's instruction to check what's needed against each service's own documentation, and a strict outside review before stopping (CLAUDE.md).
+
+### D574. From the outside review of step 4e
+
+Decided 17 Nov 2026 in step 4e. An outside review read the step's changes and the code they touch. It found no way for anyone to read another person's private records, send to someone else, or take another person's phone: `app.plan_as` puts the sign-in claims back on every path, and only the reminders function, with the tick, reaches it; every new step has an empty search path and no SQL put together from text; and the sealing matches RFC 8291 and 8292. It found these, all fixed:
+
+- **The end-to-end path could no longer work (serious).** The hourly signature of D573 refused every address that wasn't `https`, so the tests' stand-in push service, on a local Supabase, got none, and every reminder there was a problem. It hadn't been run since that change. Now the stand-in's address is allowed on a local Supabase only, as for push addresses, and the end-to-end tests ran again on the final code.
+- **A reminder could be lost after it was taken.** Anything going wrong once a reminder was taken (making a signature, a phone key that can't be read, the database not answering) skipped the phones after it and never let the reminder go, so the next run thought it sent. Now each phone is tried on its own, and a reminder no phone took is always let go.
+- **A reminder let go wasn't looked at again in time.** The run still marked the person as looked at, so the next look was at the next reminder time: an evening reminder let go at 7pm was lost. Now, when anything was let go or went wrong, the person is looked at again at the next run. And a run that began before someone changed their choices, or added a phone, no longer marks them as looked at (each change counts up, `app.reminder_choices.version`), so turning a reminder on at 7:05pm still gets that evening's.
+- **The signature was made a little more often than once an hour** (55 minutes, with runs every 15): it's now kept 11 hours, and lasts 12.
+- **Signing out could wait on the reminders part:** loading it now has a time limit and can never stop signing out (D314).
+- **Tests that couldn't fail:** the security test's "nothing reached her phone" now first shows that a reminder does reach it with the real tick; the function's test of known shortfalls now has a shortfall; and its test of letting go checks the next run looks again.
+- **Accepted, with reasons:** anyone can start the function without the tick, which costs one run and one refusal from the database, and gives nothing back (as with the get-back-in function); a browser that changes its push address by itself (`pushsubscriptionchange`) isn't followed until the person opens Reminders, which says the phone doesn't get them, as following it from the offline helper would need the sign-in there (PLAN.md item 96).
+
+Why: a strict outside review before every stop (CLAUDE.md).

@@ -14,10 +14,10 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
  * devices, two-step sign-in, email addresses and versions (step 3e), and
  * getting back in with a 24-hour wait (step 3e hardening), and living together
  * (step 3g), and download, import and delete (step 3h), and a shared plan's
- * bank holidays on two phones (step 4c).
+ * bank holidays on two phones (step 4c), and reminders (step 4e).
  */
 const SIGN_IN_TESTS =
-  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data|security|brief-8-7|journeys-signed-in|shared-budgets|shared-bank-holidays)\.spec\.ts$/;
+  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data|security|brief-8-7|journeys-signed-in|shared-budgets|shared-bank-holidays|reminders)\.spec\.ts$/;
 const port = 4173;
 /** The second copy, for the move from the old address (D428). */
 const OLD_ADDRESS_PORT = 4174;
