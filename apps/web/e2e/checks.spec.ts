@@ -9,6 +9,8 @@
 // reduced motion on, nothing moves.
 
 import { expect, type Locator, type Page, type Request } from '@playwright/test';
+import { helpArticle } from '../lib/help-articles.ts';
+import { MONEY_TIGHT_SLUG } from '../lib/help-routes.ts';
 import { strings } from '../strings/en-GB.ts';
 import { axeOnceStill } from './axe.ts';
 import { AXE_TAGS, layoutProblems, openPeriod, period } from './coming-up.ts';
@@ -179,6 +181,14 @@ const SCREENS = [
     path: '/app/reminders/',
     heading: strings.reminders.heading,
     purpose: strings.reminders.purpose,
+  },
+  // The help centre, under More (step 4g), and an article, with its first
+  // paragraph as the sentence saying what it's for.
+  { path: '/app/help/', heading: strings.help.heading, purpose: strings.help.purpose },
+  {
+    path: `/app/help/${MONEY_TIGHT_SLUG}/`,
+    heading: helpArticle(MONEY_TIGHT_SLUG).title,
+    purpose: helpArticle(MONEY_TIGHT_SLUG).summary,
   },
   {
     path: '/app/no-such-page/',
