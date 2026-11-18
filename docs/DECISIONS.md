@@ -7020,3 +7020,30 @@ Decided 17 Nov 2026 in step 4e. An outside review read the step's changes and th
 - **Accepted, with reasons:** anyone can start the function without the tick, which costs one run and one refusal from the database, and gives nothing back (as with the get-back-in function); a browser that changes its push address by itself (`pushsubscriptionchange`) isn't followed until the person opens Reminders, which says the phone doesn't get them, as following it from the offline helper would need the sign-in there (PLAN.md item 96).
 
 Why: a strict outside review before every stop (CLAUDE.md).
+
+## The owner's answer and instructions for step 4f
+
+D575 is the owner's answer to `PLAN.md` question 8, given on 18 Nov 2026 with the instructions for step 4f, notifications in a shared plan.
+
+### D575. Notifications in a shared plan
+
+Agreed 18 Nov 2026, the owner's answer to `PLAN.md` question 8. Builds brief 4.14 ("Notifications: optional, for example "Tom added Car MOT, −£54.85 on Fri 13 Nov", plus the shared warnings"). To be built in step 4f, on step 4e's reminders.
+
+The owner's words:
+
+- "Off until each person turns them on, in More, beside reminders."
+- "When a partner changes something shared: "Tom added Car MOT, −£54.85". Changes made close together come as one: "Tom made 3 changes, including Car MOT, −£54.85.""
+- "Shared warnings, for example when a shared account will be short."
+- "Quiet hours and "Hide amounts in notifications" apply, as for reminders."
+- "Nobody is ever told about their own changes, or about anything they can't see in the plan."
+- "Wording follows VOICE.md. Show me every notification's exact words in your report."
+
+And what step 4f must prove: "a notification never mentions anything private to the other person, including a change that was private then shared, or shared then made private; nobody can trigger a notification to someone else's phone; turning it off, leaving the plan or signing out stops them straight away. Nothing about money, and no email address, goes into a log or an error." Tests: Playwright at 320px and 360px, light and dark, with axe, and server tests: turning them on and off, grouping, quiet hours, hidden amounts, and two people on two phones.
+
+- **Off until turned on, by each person,** on the Reminders screen under More, beside step 4e's reminders.
+- **A partner's change:** the sentence Activity already uses for it (D456), "Tom added Car MOT, −£54.85 on Fri 13 Nov.", with its date, as brief 4.14 and the recommendation the owner answered give it. **Changes made close together come as one:** "Tom made 3 changes, including Car MOT, −£54.85."
+- **Shared warnings,** such as a shared account going short, as the recommendation said: they follow each person's own shortfall reminder (D580).
+- **Quiet hours and Hide amounts in notifications** apply as for reminders (D560, D561).
+- **Never about one's own changes,** nor anything the person can't see in the plan.
+
+Why: the owner's answer.
