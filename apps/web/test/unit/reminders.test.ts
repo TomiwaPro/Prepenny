@@ -288,3 +288,32 @@ describe('a shortfall, when it first appears and the day before (D560, D565)', (
     );
   });
 });
+
+describe('shared warnings, in a shared plan (step 4f, D580)', () => {
+  const shared = new Set(['current']);
+
+  it("a shared account's shortfall always names it, even when the main pay comes into it", () => {
+    expect(
+      textsOf('2026-10-27T10:00:00Z', { records: samShort, sharedAccounts: shared }).shortfall,
+    ).toBe('Current account will be £35.47 short on Sun 1 Nov.');
+    expect(
+      due('2026-10-27T10:00:00Z', {
+        records: samShort,
+        sharedAccounts: shared,
+        choices: { ...ALL, hideAmounts: true },
+      }).due.find((one) => one.kind === 'shortfall')?.text,
+    ).toBe('Current account will be short on Sun 1 Nov.');
+  });
+
+  it('and so does the evening one when it says short', () => {
+    expect(
+      textsOf('2026-10-31T19:00:00Z', { records: samShort, sharedAccounts: shared }).evening,
+    ).toBe('Rent goes out tomorrow. Current account will be £35.47 short on Sun 1 Nov.');
+  });
+
+  it("the partner choice alone is none of step 4e's reminders", () => {
+    expect(
+      due('2026-10-31T19:00:00Z', { choices: { ...NO_REMINDERS, partner: true } }).due,
+    ).toEqual([]);
+  });
+});
