@@ -792,10 +792,26 @@ What changed (D560 to D573): **More** has **Reminders**: payday at 9am, the even
 **To check it worked, after merging:**
 
 1. **Actions**, then **Database**: a green tick. Tap the run, then **Change the real database**: the step **Tell the database where the reminders function is** ends "The database knows where the reminders function is, and has started it once."
-2. On supabase.com, open the project, then **Edge Functions**: `get-back-in` and `reminders` are listed. Then **Integrations**, **Cron**: two jobs, `prepenny-reminders` (every 15 minutes) and `prepenny-bank-holidays` (Mondays). Their runs say "succeeded".
+2. On supabase.com, open the project, then **Edge Functions**: `get-back-in` and `reminders` are listed. Then **Integrations**, **Cron**: two jobs, `prepenny-reminders` (every 15 minutes; every minute since step 4f, part S) and `prepenny-bank-holidays` (Mondays). Their runs say "succeeded".
 3. What to check by hand on your phone is in `docs/TRY-PHASE-4.md`, section "Step 4e".
 
 **If something goes wrong with reminders:** if the Database run's step **Tell the database where the reminders function is** fails, run the workflow again by hand (**Actions**, **Database**, **Run workflow** on `main`). If reminders stop arriving for everyone, look at **Integrations**, **Cron**, `prepenny-reminders`: a run that failed says why, with no amounts or names in it. Ask Claude Code to look, with what it says.
+
+### S. Step 4f: notifications in a shared plan
+
+What changed (D575 to D582): in a shared plan, **Reminders** under **More** has **When Tom changes something**, off until each person turns it on. A few minutes after a partner changes something you both see, a notification says what, in Activity's own words, "Tom added Car MOT, −£54.85 on Fri 13 Nov.", with changes made close together as one: "Tom made 3 changes, including Car MOT, −£54.85." Nobody is told about their own changes, or anything only the other person sees. Quiet hours and **Hide amounts in notifications** apply. Shared warnings come with **When you'd be short**, which in a shared plan names the shared account, so both read the same: "Joint account will be £30.00 short on Sun 1 Nov." The reminders function does this too, and the database's scheduled job now looks every minute, rather than every 15, starting the function only when someone may be due something.
+
+**What you need to set up: nothing.** Checked on 18 Nov 2026, against Supabase's own documentation:
+
+- **GitHub:** no new secret or variable, and no workflow changed. The Database workflow already puts the reminders function online after every merge (part R), with the key it has.
+- **Supabase:** nothing to switch on by hand. The database change moves the job `prepenny-reminders` to every minute; Supabase's guide to Cron says "Attempting to create a second Job with the same name (and case) will overwrite the first Job", which is how it's changed. Every minute starts the function at most 43,200 times a month, and only when someone may be due something; Supabase's free plan includes 500,000 function starts a month (its "Function Invocations" quota).
+- **Apple, Google, Mozilla, Resend, Cloudflare:** nothing new. Notifications in a shared plan go the same way as reminders, and are never emails.
+
+**To check it worked, after merging:**
+
+1. **Actions**, then **Database**: a green tick.
+2. On supabase.com, open the project, then **Integrations**, **Cron**: `prepenny-reminders` now runs every minute (`* * * * *`), and its runs say "succeeded".
+3. What to check by hand with two people is in `docs/TRY-PHASE-4.md`, section "Step 4f".
 
 ## Bank holidays
 
