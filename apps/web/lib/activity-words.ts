@@ -15,7 +15,7 @@
 // series, a spend its budget) come from the plan on this phone through
 // `nameOf`, which also only holds what this person can read.
 
-import { paymentByNumber } from '@prepenny/engine';
+import { type PlanRecords, paymentByNumber } from '@prepenny/engine';
 import { strings } from '../strings/en-GB.ts';
 import { formatDay } from './dates.ts';
 import { holidaysFor } from './holidays.ts';
@@ -75,6 +75,46 @@ export interface ActivityContext {
   readonly nameOf: (table: string, id: string) => string | null;
   /** Whether a series is money coming in, on this phone now: "arrived" rather than "paid". */
   readonly comesIn: (seriesId: string) => boolean | null;
+}
+
+/**
+ * Activity's context from the plan as this person reads it: on their phone
+ * (the Activity screen), or as the server reads it for them (step 4f's
+ * notifications, D579). Names only what the plan holds for this person.
+ */
+export function contextFromRecords(
+  records: PlanRecords | undefined,
+  me: string,
+  nicknames: Readonly<Record<string, string>>,
+  today: string,
+): ActivityContext {
+  return {
+    me,
+    nicknames,
+    today,
+    nameOf: (table, id) => {
+      const list =
+        table === 'series'
+          ? records?.series
+          : table === 'accounts'
+            ? records?.accounts
+            : table === 'budgets'
+              ? records?.budgets
+              : table === 'debts'
+                ? records?.debts
+                : table === 'goals'
+                  ? records?.goals
+                  : undefined;
+      const name = (list as readonly { id: string; name?: string }[] | undefined)?.find(
+        (one) => one.id === id,
+      )?.name;
+      return name === undefined || name === '' ? null : name;
+    },
+    comesIn: (seriesId) => {
+      const series = records?.series.find((one) => one.id === seriesId);
+      return series === undefined ? null : series.direction === 'in';
+    },
+  };
 }
 
 const text = (value: unknown): string | null =>
@@ -144,13 +184,20 @@ function copyOf(record: ActivityRecord): Copy | null {
   return record.after ?? record.before;
 }
 
+/** How a sentence is said: in a notification with "Hide amounts in notifications" on, with no amount (step 4f, D561). */
+export interface WordsOptions {
+  readonly hideAmounts?: boolean;
+}
+
 class Reader {
   readonly edit: ActivityEdit;
   readonly context: ActivityContext;
+  readonly hide: boolean;
 
-  constructor(edit: ActivityEdit, context: ActivityContext) {
+  constructor(edit: ActivityEdit, context: ActivityContext, options: WordsOptions = {}) {
     this.edit = edit;
     this.context = context;
+    this.hide = options.hideAmounts === true;
   }
 
   of(table: string): ActivityRecord[] {
@@ -249,6 +296,7 @@ class Reader {
       }
       const amount = pence(after.amount);
       if (amount !== null && amount !== pence(before?.amount)) {
+        if (this.hide) return w.changedOne(name, date);
         const from = pence(before?.amount) ?? paymentAmountOf(record.context, after.payment_number);
         return from === null || from === amount
           ? w.changedOneTo(name, date, formatMoney(amount))
@@ -270,7 +318,7 @@ class Reader {
       const old = series.find((one) => one.id === text(made.after?.split_from));
       const oldAmount =
         paymentAmountOf(old?.before, first) ?? pence(old?.before?.amount ?? old?.after?.amount);
-      if (amount === null || amount === oldAmount) return w.changedLater(name, from);
+      if (amount === null || amount === oldAmount || this.hide) return w.changedLater(name, from);
       return oldAmount === null
         ? w.changedLaterTo(name, formatMoney(amount), from)
         : w.changedLaterFromTo(name, formatMoney(oldAmount), formatMoney(amount), from);
@@ -281,7 +329,7 @@ class Reader {
       const first = whole.after.first_number ?? 0;
       const amount = paymentAmountOf(whole.after, first) ?? pence(whole.after.amount);
       const oldAmount = paymentAmountOf(whole.before, first) ?? pence(whole.before?.amount);
-      if (amount === null || amount === oldAmount) return w.changed(name);
+      if (amount === null || amount === oldAmount || this.hide) return w.changed(name);
       return oldAmount === null
         ? w.changedAllTo(name, formatMoney(amount))
         : w.changedAllFromTo(name, formatMoney(oldAmount), formatMoney(amount));
@@ -304,7 +352,9 @@ class Reader {
     const name = text(copy.name) ?? '';
     const schedule = copy.schedule as { kind?: unknown } | null | undefined;
     const once = schedule?.kind === 'once';
-    return (once ? w.addedOnce : w.addedFrom)(name, this.signed(copy), this.day(copy.start_date));
+    const date = this.day(copy.start_date);
+    if (this.hide) return (once ? w.addedOnceHidden : w.addedFromHidden)(name, date);
+    return (once ? w.addedOnce : w.addedFrom)(name, this.signed(copy), date);
   }
 
   deletePayment(): string | null {
@@ -320,6 +370,9 @@ class Reader {
     const account = this.context.nameOf('accounts', text(copy.account_id) ?? '') ?? '';
     const amount = formatMoney(pence(copy.balance) ?? 0);
     const ticked = this.of('ticks').filter((one) => !removed(one.after)).length;
+    if (this.hide) {
+      return ticked === 0 ? w.balanceHidden(account) : w.balanceTickedHidden(account, ticked);
+    }
     return ticked === 0 ? w.balance(account, amount) : w.balanceTicked(account, amount, ticked);
   }
 
@@ -329,6 +382,10 @@ class Reader {
     const copy = copyOf(record) ?? {};
     const budget = this.context.nameOf('budgets', text(copy.budget_id) ?? '') ?? '';
     const amount = formatMoney(pence(copy.amount) ?? 0);
+    if (this.hide) {
+      if (kind === 'remove-spend') return w.removedSpendHidden(budget);
+      return kind === 'change-spend' ? w.changedSpendHidden(budget) : w.spentHidden(budget);
+    }
     if (kind === 'remove-spend') {
       return w.removedSpend(formatMoney(pence(record.before?.amount) ?? 0), budget);
     }
@@ -348,6 +405,112 @@ class Reader {
     return name === null ? null : w[kind](name);
   }
 
+  /** A payment's money as a notification names it: −£560.00 going out, +£500.00 coming in. */
+  money(amount: number, seriesId: unknown): string {
+    const id = text(seriesId);
+    const copy =
+      id === null
+        ? undefined
+        : this.edit.records.find((one) => one.table === 'series' && one.id === id);
+    const direction = copy === undefined ? undefined : copyOf(copy)?.direction;
+    if (direction === 'out') return formatMoney(-amount);
+    if (direction === 'in') return formatMoney(amount, { sign: 'always' });
+    if (direction === 'transfer') return formatMoney(amount);
+    const comes = id === null ? null : this.context.comesIn(id);
+    if (comes === true) return formatMoney(amount, { sign: 'always' });
+    if (comes === false) return formatMoney(-amount);
+    return formatMoney(amount);
+  }
+
+  /**
+   * The payment a change is about, by name, with its amount when the change
+   * set one (step 4f): "Car MOT", with −£54.85, for a notification that
+   * says "Tom made 3 changes, including Car MOT, −£54.85." Null for a change
+   * that isn't about one payment.
+   */
+  headline(): Headline | null {
+    const named = (
+      name: string | null,
+      amount: number | null = null,
+      money: string | null = null,
+    ) =>
+      name === null || name === '' ? null : { name, amount, money: amount === null ? null : money };
+    switch (this.edit.kind) {
+      case 'add-payment': {
+        const made =
+          this.of('series').find(
+            (one) => one.before === null && one.after !== null && one.after.locked_to == null,
+          ) ?? this.of('series').find((one) => one.before === null);
+        const copy = made?.after ?? null;
+        if (copy === null) return null;
+        const amount = pence(copy.amount);
+        return named(text(copy.name), amount, amount === null ? null : this.signed(copy));
+      }
+      case 'just-this-one':
+      case 'move':
+      case 'move-to-next-payday':
+      case 'remove-this-one': {
+        const record = this.of('payment_changes')[0];
+        if (record === undefined) return null;
+        const copy = copyOf(record) ?? {};
+        const series = copy.series_id ?? copy.budget_id;
+        const name = this.seriesName(series);
+        const after = record.after;
+        const amount = after === null || removed(after) ? null : pence(after.amount);
+        if (amount === null || amount === pence(record.before?.amount)) return named(name);
+        return named(name, amount, this.money(amount, series));
+      }
+      case 'this-and-later': {
+        const series = this.of('series');
+        const made = series.find((one) => one.before === null && !removed(one.after));
+        const whole = series.find((one) => one.before !== null && !removed(one.after));
+        const copy = made?.after ?? whole?.after ?? null;
+        if (copy === null) return null;
+        const first = copy.first_number ?? 0;
+        const amount = paymentAmountOf(copy, first) ?? pence(copy.amount);
+        const old =
+          made === undefined
+            ? whole?.before
+            : series.find((one) => one.id === text(made.after?.split_from))?.before;
+        const oldAmount = paymentAmountOf(old, first) ?? pence(old?.amount);
+        if (amount === null || amount === oldAmount) return named(text(copy.name));
+        return named(text(copy.name), amount, this.signed({ ...copy, amount }));
+      }
+      case 'remove-this-and-later':
+      case 'delete-payment': {
+        const record = this.of('series')[0];
+        return named(record === undefined ? null : text(copyOf(record)?.name));
+      }
+      case 'tick':
+      case 'untick': {
+        const records = this.of('ticks');
+        if (records.length !== 1 || records[0] === undefined) return null;
+        const copy = copyOf(records[0]) ?? {};
+        return named(this.seriesName(copy.series_id ?? copy.budget_id));
+      }
+      case 'spend':
+      case 'change-spend': {
+        const record = this.of('spends')[0];
+        if (record === undefined) return null;
+        const copy = copyOf(record) ?? {};
+        const budget = this.context.nameOf('budgets', text(copy.budget_id) ?? '');
+        const amount = pence(copy.amount);
+        return named(budget, amount, amount === null ? null : formatMoney(-amount));
+      }
+      case 'add-budget':
+      case 'change-budget': {
+        const record = this.of('budgets')[0];
+        if (record === undefined) return null;
+        const name = text(copyOf(record)?.name) ?? this.context.nameOf('budgets', record.id);
+        const amount = pence(record.after?.amount);
+        if (amount === null || amount === pence(record.before?.amount)) return named(name);
+        return named(name, amount, formatMoney(-amount));
+      }
+      default:
+        return null;
+    }
+  }
+
   shift(): string {
     const details = this.of('pay_adjustment_details')[0];
     const copy = details === undefined ? null : copyOf(details);
@@ -358,9 +521,27 @@ class Reader {
   }
 }
 
+/** The payment a change is about, and its amount as a notification shows it (step 4f). */
+export interface Headline {
+  readonly name: string;
+  /** The amount in pence, for finding the biggest, or null when the change set none. */
+  readonly amount: number | null;
+  /** The amount as shown: "−£54.85". */
+  readonly money: string | null;
+}
+
+/** The payment a change is about, with its amount when it set one: "Car MOT", −£54.85 (step 4f). */
+export function headlineOf(edit: ActivityEdit, context: ActivityContext): Headline | null {
+  return new Reader(edit, context).headline();
+}
+
 /** What a change did, after who made it: "changed Rent on Tue 1 Dec to £560.00". */
-export function whatItDid(edit: ActivityEdit, context: ActivityContext): string {
-  const read = new Reader(edit, context);
+export function whatItDid(
+  edit: ActivityEdit,
+  context: ActivityContext,
+  options: WordsOptions = {},
+): string {
+  const read = new Reader(edit, context, options);
   const summary = edit.summary ?? {};
   const found = ((): string | null => {
     switch (edit.kind) {
@@ -433,7 +614,13 @@ export function whatItDid(edit: ActivityEdit, context: ActivityContext): string 
         const budget = read.of('budgets')[0];
         const from = pence(budget?.before?.amount);
         const to = pence(budget?.after?.amount);
-        if (edit.kind === 'change-budget' && from !== null && to !== null && from !== to) {
+        if (
+          edit.kind === 'change-budget' &&
+          from !== null &&
+          to !== null &&
+          from !== to &&
+          !read.hide
+        ) {
           const name = text(copyOf(budget as ActivityRecord)?.name) ?? '';
           return w.budgetFromTo(name, formatMoney(from), formatMoney(to));
         }
@@ -518,10 +705,14 @@ export function whatItDid(edit: ActivityEdit, context: ActivityContext): string 
 }
 
 /** The whole sentence: "Tom changed Rent on Tue 1 Dec to £560.00." */
-export function activityWords(edit: ActivityEdit, context: ActivityContext): string {
+export function activityWords(
+  edit: ActivityEdit,
+  context: ActivityContext,
+  options: WordsOptions = {},
+): string {
   // Someone who left and then deleted their account (D482).
   if (edit.kind === 'leave' && edit.by === SOMEONE_WHO_LEFT) return t.someoneLeft;
-  return t.sentence(whoStarts(edit.by, context), whatItDid(edit, context));
+  return t.sentence(whoStarts(edit.by, context), whatItDid(edit, context, options));
 }
 
 /** When a change is shown as made: when it reached the account (D492), or what the phone said for an older server. */

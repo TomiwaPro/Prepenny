@@ -5,6 +5,10 @@
 // "Hide amounts in notifications" on the same screen (D561); quiet hours;
 // and whether this phone gets them.
 //
+// In a shared plan (step 4f, D575, D580): "When Tom changes something",
+// off until it's turned on, beside the reminders; and the shortfall one
+// says it covers the accounts shared with Tom too.
+//
 // Reminders need an account, and on an iPhone, PrePenny opened from the
 // Home Screen: the screen says so plainly, with a link to the steps (D562).
 // Turning the first one on asks the phone to allow notifications, from the
@@ -12,6 +16,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useState } from 'react';
+import { hasPartner, partnerOf, useSharedPlan } from '../data/shared-plan.ts';
 import { useAccount } from '../lib/account.ts';
 import { useHomeScreen } from '../lib/install.ts';
 import {
@@ -29,6 +34,7 @@ import { signInConfig } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
 import choiceStyles from './ChoiceList.module.css';
 import formStyles from './Form.module.css';
+import { usePlanActions } from './PlanProvider.tsx';
 import { ScreenHeader } from './ScreenParts.tsx';
 import styles from './Screens.module.css';
 
@@ -39,15 +45,51 @@ type Loaded =
   | { readonly kind: 'failed'; readonly offline: boolean }
   | { readonly kind: 'ready'; readonly state: RemindersState; readonly here: string | null };
 
-const KINDS = [
-  { key: 'payday', label: t.payday, line: t.paydayLine },
-  { key: 'evening', label: t.evening, line: t.eveningLine },
-  { key: 'shortfall', label: t.shortfall, line: t.shortfallLine },
-  { key: 'weekly', label: t.weekly, line: t.weeklyLine },
-] as const;
+type Kind = 'payday' | 'evening' | 'shortfall' | 'weekly' | 'partner';
+
+/** Each choice, with what it does and when; in a shared plan, with the partner's name (step 4f). */
+function kindsFor(
+  partner: { readonly who: string; readonly Who: string } | null,
+  partnerOn: boolean,
+) {
+  const kinds: { key: Kind; label: string; line: string }[] = [
+    { key: 'payday', label: t.payday, line: t.paydayLine },
+    { key: 'evening', label: t.evening, line: t.eveningLine },
+    {
+      key: 'shortfall',
+      label: t.shortfall,
+      line: partner === null ? t.shortfallLine : t.shortfallLineShared(partner.who),
+    },
+    { key: 'weekly', label: t.weekly, line: t.weeklyLine },
+  ];
+  // Shown in a shared plan, and while it's on, so it can always be turned off.
+  if (partner !== null || partnerOn) {
+    const who = partner ?? {
+      who: strings.together.yourPartner,
+      Who: strings.together.YourPartner,
+    };
+    kinds.push({
+      key: 'partner',
+      label: t.partner(who.who),
+      line: t.partnerLine(who.who, who.Who),
+    });
+  }
+  return kinds;
+}
 
 export function RemindersScreen() {
   const account = useAccount();
+  const { loaded: plan } = usePlanActions();
+  const planId = plan !== null && !plan.plan.isExample ? plan.plan.id : null;
+  const shared = useSharedPlan(planId, plan?.version ?? 0);
+  const other = hasPartner(shared) ? partnerOf(shared) : null;
+  const partner =
+    other === null
+      ? null
+      : {
+          who: other.name ?? strings.together.yourPartner,
+          Who: other.name ?? strings.together.YourPartner,
+        };
   const { asApp } = useHomeScreen();
   const [can, setCan] = useState<ReturnType<typeof phoneCan> | null>(null);
   const [loaded, setLoaded] = useState<Loaded>({ kind: 'loading' });
@@ -75,7 +117,7 @@ export function RemindersScreen() {
   const header = (
     <ScreenHeader
       heading={t.heading}
-      purpose={t.purpose}
+      purpose={partner === null ? t.purpose : t.purposeShared(partner.who)}
       back={{ label: t.back, href: '/app/more/' }}
     />
   );
@@ -174,7 +216,9 @@ export function RemindersScreen() {
     shortfall: state.shortfall,
     weekly: state.weekly,
     hideAmounts: state.hideAmounts,
+    partner: state.partner,
   };
+  const kinds = kindsFor(partner, state.partner);
 
   return (
     <>
@@ -182,7 +226,7 @@ export function RemindersScreen() {
       <section className={styles.card} data-testid="reminders">
         <fieldset className={choiceStyles.choice}>
           <legend className={choiceStyles.legend}>{t.choose}</legend>
-          {KINDS.map((kind) => {
+          {kinds.map((kind) => {
             const labelId = `${base}-${kind.key}`;
             const lineId = `${base}-${kind.key}-line`;
             return (

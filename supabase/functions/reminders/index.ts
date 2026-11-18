@@ -1,12 +1,13 @@
 // PrePenny's reminders (step 4e, brief 4.11, D560 to D566).
 //
-// Started every 15 minutes by the database's scheduled job, with the tick
-// only the database knows (supabase/migrations, 20261120100000_reminders.sql).
+// Started by the database's scheduled job, every minute that someone may be
+// due something (every 15 minutes before step 4f, D578), with the tick only
+// the database knows (supabase/migrations, 20261120100000_reminders.sql).
 // The work itself is apps/web/server/reminders.ts, built into ./_built/run.js
 // by apps/web/scripts/build-reminders.ts: it reads each due person's plan
 // exactly as their own phone reads it, works out their reminders with the
 // app's own engine and words, and sends each, sealed for that phone alone,
-// to its push service.
+// to its push service; and, in a shared plan, a partner's changes (step 4f).
 //
 // It holds no key of its own: Supabase gives every function the project's
 // secret key, used only for the database's steps, and PrePenny's signing

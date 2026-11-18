@@ -12,6 +12,9 @@
 //   out, £1,336.07 in all. Lowest point ahead: £4.53 on Sun 1 Nov." (D565)
 // - Nothing between 9pm and 8am: what's due then waits until 8am (D560).
 // - With amounts hidden, no amount at all (D561).
+// - In a shared plan (step 4f, D580), a shortfall in a shared account always
+//   names it, so both people read the same warning: "Joint account will be
+//   £30.00 short on Sun 1 Nov."
 //
 // Times are UK time, through the clock changes (D560): the moment is read on
 // a UK clock with the phone's own time zone rules (Intl), never by adding an
@@ -46,6 +49,8 @@ export interface ReminderChoices {
   readonly shortfall: boolean;
   readonly weekly: boolean;
   readonly hideAmounts: boolean;
+  /** A partner's changes, in a shared plan (step 4f, D575): worked out in lib/partner-changes.ts. */
+  readonly partner?: boolean;
 }
 
 export const NO_REMINDERS: ReminderChoices = {
@@ -54,7 +59,12 @@ export const NO_REMINDERS: ReminderChoices = {
   shortfall: false,
   weekly: false,
   hideAmounts: false,
+  partner: false,
 };
+
+/** Whether any of step 4e's reminders is on. */
+export const anyReminderOn = (choices: ReminderChoices) =>
+  choices.payday || choices.evening || choices.shortfall || choices.weekly;
 
 /** The UK's time zone: GMT in winter, BST in summer. */
 export const UK_TIME_ZONE = 'Europe/London';
@@ -137,6 +147,11 @@ export interface RemindersInput {
   readonly choices: ReminderChoices;
   /** The shortfalls the person has been told about already: accounts and dates only. */
   readonly knownShortfalls: readonly ShortfallMark[];
+  /**
+   * The accounts everyone in the plan sees (step 4f, D580): a shortfall in
+   * one always names it, even when it's the account the main pay comes into.
+   */
+  readonly sharedAccounts?: ReadonlySet<string>;
 }
 
 export interface RemindersNow {
@@ -186,11 +201,14 @@ export function workOutReminders(input: RemindersInput): RemindersNow {
   const clock = ukClock(input.now);
   const today = clock.date;
   const open = records.accounts.filter((one) => one.closed !== true);
-  if (open.length === 0 || !Object.values({ ...choices, hideAmounts: false }).some(Boolean)) {
+  if (open.length === 0 || !anyReminderOn(choices)) {
     return { due: [], stillKnown: [] };
   }
   const plan = workOutHomePlan(records, today);
   const homeId = homeAccountId(records);
+  const shared = input.sharedAccounts ?? new Set<string>();
+  /** Whether a warning about this account says "You'll be": Home's account, unless it's shared. */
+  const saysYou = (accountId: string) => accountId === homeId && !shared.has(accountId);
   const hide = choices.hideAmounts;
   const words = strings.reminders.notification;
   const money = (pence: number) => formatMoney(pence);
@@ -263,7 +281,7 @@ export function workOutReminders(input: RemindersInput): RemindersNow {
     )[0];
     if (first !== undefined) {
       const date = day(first.date);
-      const home = first.accountId === homeId;
+      const home = saysYou(first.accountId);
       const text = hide
         ? home
           ? words.shortHidden(date)
@@ -335,7 +353,7 @@ export function workOutReminders(input: RemindersInput): RemindersNow {
     const name = account.account.name ?? '';
     if (short !== undefined) {
       const amount = money(account.floor - short.balance);
-      return home
+      return saysYou(accountId)
         ? words.short(amount, day(short.date))
         : words.accountShort(name, amount, day(short.date));
     }

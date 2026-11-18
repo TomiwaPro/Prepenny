@@ -7020,3 +7020,138 @@ Decided 17 Nov 2026 in step 4e. An outside review read the step's changes and th
 - **Accepted, with reasons:** anyone can start the function without the tick, which costs one run and one refusal from the database, and gives nothing back (as with the get-back-in function); a browser that changes its push address by itself (`pushsubscriptionchange`) isn't followed until the person opens Reminders, which says the phone doesn't get them, as following it from the offline helper would need the sign-in there (PLAN.md item 96).
 
 Why: a strict outside review before every stop (CLAUDE.md).
+
+## The owner's answer and instructions for step 4f
+
+D575 is the owner's answer to `PLAN.md` question 8, given on 18 Nov 2026 with the instructions for step 4f, notifications in a shared plan.
+
+### D575. Notifications in a shared plan
+
+Agreed 18 Nov 2026, the owner's answer to `PLAN.md` question 8. Builds brief 4.14 ("Notifications: optional, for example "Tom added Car MOT, −£54.85 on Fri 13 Nov", plus the shared warnings"). To be built in step 4f, on step 4e's reminders.
+
+The owner's words:
+
+- "Off until each person turns them on, in More, beside reminders."
+- "When a partner changes something shared: "Tom added Car MOT, −£54.85". Changes made close together come as one: "Tom made 3 changes, including Car MOT, −£54.85.""
+- "Shared warnings, for example when a shared account will be short."
+- "Quiet hours and "Hide amounts in notifications" apply, as for reminders."
+- "Nobody is ever told about their own changes, or about anything they can't see in the plan."
+- "Wording follows VOICE.md. Show me every notification's exact words in your report."
+
+And what step 4f must prove: "a notification never mentions anything private to the other person, including a change that was private then shared, or shared then made private; nobody can trigger a notification to someone else's phone; turning it off, leaving the plan or signing out stops them straight away. Nothing about money, and no email address, goes into a log or an error." Tests: Playwright at 320px and 360px, light and dark, with axe, and server tests: turning them on and off, grouping, quiet hours, hidden amounts, and two people on two phones.
+
+- **Off until turned on, by each person,** on the Reminders screen under More, beside step 4e's reminders.
+- **A partner's change:** the sentence Activity already uses for it (D456), "Tom added Car MOT, −£54.85 on Fri 13 Nov.", with its date, as brief 4.14 and the recommendation the owner answered give it. **Changes made close together come as one:** "Tom made 3 changes, including Car MOT, −£54.85."
+- **Shared warnings,** such as a shared account going short, as the recommendation said: they follow each person's own shortfall reminder (D580).
+- **Quiet hours and Hide amounts in notifications** apply as for reminders (D560, D561).
+- **Never about one's own changes,** nor anything the person can't see in the plan.
+
+Why: the owner's answer.
+
+## Made during step 4f
+
+D576 to D582 were decided on 18 Nov 2026 while building step 4f, notifications in a shared plan (brief 4.14, D575), on step 4e's reminders (D560 to D574).
+
+### D576. Which of a partner's changes are told, and when
+
+Decided 18 Nov 2026 in step 4f. Builds D575.
+
+- **Only what the person's own Activity shows them.** PrePenny's reminders function reads the person's Activity exactly as their own phone reads it: the database runs the very step the Activity screen uses, `plan_activity`, as that person's own sign-in session on a phone that gets notifications (`app.activity_as`, as `app.plan_as` runs `plan_changes` for reminders, D566). So a notification holds only changes they could read when each was made and can still read now (D458): nothing private to the other person, nothing changed while an account was private and later shared, and nothing of something shared and later made private again, except "Jess made a shared account private, so you no longer see it.", which names nothing, as Activity says.
+- **Never their own changes,** from this phone or another of theirs: Activity marks each change "mine", and those are left out.
+- **From when they turned it on,** in the plan they're in; in a plan they join later, from when they joined it; and when their first phone that gets notifications is added (after signing in again, say), from then: nothing from before is told. Each person has a "told up to" moment and its plan (`told_plan`, `told_to`), never anything about what the changes were.
+- **Changes close together come as one:** a notification waits until the partner has made no change for 2 minutes, and comes 10 minutes after their first at most, while they're still going. Only changes that reached the account at least a minute before go in, so one still being saved is never passed over. The scheduled job looks every minute (D578), so it comes 2 to 3 minutes after the last change.
+- **Quiet hours,** 9pm to 8am, UK time: nothing is sent then, and changes made then come together at 8am.
+- **A change undone straight away:** a change and its undo, both made in Activity by the same person in one group, cancel out, and nothing is told about either. An undo of an older change is told ("Tom undid a change to Rent.").
+- **Nothing the person can see** among a partner's changes since they were last told (all private to the partner, say): passed over, so they aren't looked at again.
+- Up to 500 changes are read back at a time, far more than anyone makes in minutes.
+
+Why: the owner's words, "Nobody is ever told about their own changes, or about anything they can't see in the plan", are exactly Activity's rule, which the database tests already prove (D458, D466), so the notification reuses it rather than a copy of it. The waiting times are the smallest that make "changes made close together come as one" work for someone making several changes in a row, and are as stated in `apps/web/lib/partner-changes.ts`.
+
+### D577. Checked again at the very moment it's sent
+
+Decided 18 Nov 2026 in step 4f. Builds D575's security tests, as D566 does for reminders.
+
+- When a group of changes is due, the function takes it once only (`claim_partner_changes`), and at that moment the database checks again, with the plan held so that no change in it can be saved while it checks (every change saves an edit naming its plan, so one being saved finishes first): the choice is still on; amounts are still shown or hidden as when the words were worked out; the person is still in that plan; they haven't been told already; nothing at all has changed in the plan since their Activity was read (the plan's mark: how many changes, and which, with who may read each and which were undone); it isn't quiet hours; and the phones that get notifications now.
+- So turning it off, leaving the plan, signing out, or the other person making something private, even a moment after the words were worked out, means nothing is sent. Anything changed is looked at again a minute later, with the new words.
+- A group no phone took is let go (`unclaim_partner_changes`), to be tried at the next run, as for reminders (D574).
+- **Nobody can make a notification go to someone else's phone:** the function's steps are for Supabase's own key with the database's tick only (D566); a person's own steps change only their own choices and their own phone's address; and what's sent is worked out from what the database gives that person, never from anything a phone sends.
+
+Why: the owner's instruction that turning it off, leaving or signing out stops them straight away, and that a notification never mentions anything shared then made private.
+
+### D578. The scheduled job looks every minute, and starts the function only when someone may be due something
+
+Decided 18 Nov 2026 in step 4f. Changes D566's "every 15 minutes".
+
+- `prepenny-reminders` runs every minute. Each time it first checks, in the database, whether anyone may be due something now: the same question the function asks (`app.due_for_reminders`), now also someone with a partner's change they haven't been told about. Most minutes nobody is, and the function isn't started. Nothing in quiet hours, as before.
+- So a partner's changes come 2 to 3 minutes after the last one (D576), rather than up to 15 minutes later; a shortfall a partner's change makes is warned about within a minute or two; and step 4e's reminders come within a minute of their time, rather than up to 15 minutes after it.
+- Cost: nothing more. Supabase's own documentation: the free plan includes 500,000 function starts ("Function Invocations") a month; every minute is 43,200 at most. Supabase Cron allows a job every second; "Attempting to create a second Job with the same name (and case) will overwrite the first Job", which is how the database change moves the job.
+
+Why: "changes made close together come as one" needs a look every minute or two; 15 minutes would have made every partner's change a quarter of an hour late.
+
+### D579. The words of a partner's changes
+
+Decided 18 Nov 2026 in step 4f. Builds D575 and D561.
+
+- **One change** is Activity's own sentence (D456, D474), the one the person reads in Activity: "Tom added Car MOT, −£54.85 on Fri 13 Nov.", "Tom changed Rent on Tue 1 Dec from £550.00 to £560.00.", "Tom marked Rent on Sun 1 Nov as paid.", "Tom spent £12.50 on Food.", "Jess shared Joint.", "Jess made a shared account private, so you no longer see it.", "Tom left the plan.", and every other kind Activity has, with "Your partner" when they haven't given a name.
+- **Several changes** come as one: "Tom made 3 changes, including Car MOT, −£54.85." The payment named is the one with the biggest amount a change set (added, a new amount for one payment or for this and all later ones, a spend, a budget), the newest of two the same, with its sign as on Coming up ("−£54.85" going out, "+£640.00" coming in). With no amount among them, the newest payment named ("Tom made 2 changes, including Rent."); with none, "Tom made 2 changes."
+- **Hide amounts in notifications** (D561): no amount anywhere. "Tom added Car MOT on Fri 13 Nov.", "Tom changed Rent on Tue 1 Dec.", "Tom changed Rent from Fri 1 Jan 2027.", "Tom changed Rent.", "Tom updated the Joint balance, and ticked 3 payments.", "Tom added a spend on Food.", "Tom changed a spend on Food.", "Tom removed a spend on Food.", "Tom changed the budget Food.", "Tom made 3 changes, including Car MOT."; the others have no amount anyway.
+- **Each is titled "PrePenny",** tagged so a newer one replaces an older one on the phone, and a tap opens Activity when PrePenny isn't open, or brings PrePenny forward when it is, as reminders do.
+- Dates keep their parts together, as on every screen (D168).
+
+Why: brief 4.14's example, "Tom added Car MOT, −£54.85 on Fri 13 Nov", is Activity's sentence word for word, so every change has words already, checked against VOICE.md. Naming the biggest follows the evening reminder, which names the biggest payment (D567).
+
+### D580. Shared warnings follow each person's own shortfall reminder, and name the shared account
+
+Decided 18 Nov 2026 in step 4f. Builds D575's "Shared warnings, for example when a shared account will be short", as the recommendation the owner answered said.
+
+- **They come with "When you'd be short",** not a choice of their own: that reminder already looks at every account the person can see, shared ones included (D567), so each person who has it on is told when a shared account will be short. Two tick boxes for the same warning would either send it twice or leave people unsure which they'd turned on.
+- **A shared account is always named,** even when it's the account the person's main pay comes into, so both read the same words: "Joint account will be £30.00 short on Sun 1 Nov.", with amounts hidden "Joint account will be short on Sun 1 Nov.", and the evening one "Rent goes out tomorrow. Joint account will be £30.00 short on Sun 1 Nov." An account of the person's own that the main pay comes into still says "You'll be £30.00 short on Sun 1 Nov."
+- **Within minutes of a partner's change** that makes it short, with the job every minute (D578).
+- One warning a day at most, the earliest, as before (D565).
+
+Why: the owner's answer to question 8 kept the recommendation's shared warnings, and VOICE.md's "One warning at a time".
+
+### D581. The Reminders screen in a shared plan
+
+Decided 18 Nov 2026 in step 4f. Builds D575 and D568.
+
+- **"When Tom changes something",** a tick box among the reminders, off until it's turned on, with what it does under it: "A few minutes after Tom changes something you both see, with changes made close together as one: "Tom added Car MOT, −£54.85 on Fri 13 Nov." or "Tom made 3 changes, including Car MOT, −£54.85." Never about your own changes, or anything only one of you sees." With no name yet, "When your partner changes something".
+- It shows in a shared plan, and whenever it's on, so it can always be turned off. The screen's first sentence says so too: "...and when Tom changes something you both see." The shortfall one says "in your own accounts or the ones you share with Tom", with "A shared account's warning goes to each of you who has this on."
+- Turning it on works as each reminder does (D568): the first one on asks the phone to allow notifications, and with every one off, the person's phones are forgotten.
+- The example's minus sign is kept with its amount, so it never ends a line on its own.
+
+Why: DESIGN.md's rule that every control says in words what it does (D213), and D575's "in More, beside reminders".
+
+### D582. How step 4f is tested
+
+Decided 18 Nov 2026 in step 4f.
+
+- **The words and the waiting** (`apps/web/test/unit/partner-changes.test.ts`, 16 tests): one change in Activity's words; changes close together, naming the biggest, its sign, the newest of two the same, none with an amount, more than one person; every kind with an amount said without it; never one's own; to the microsecond; a change and its undo cancelling out; 2 minutes after the last, 10 minutes after the first at most, and only what was saved a minute ago.
+- **Shared warnings** (`reminders.test.ts`, 3 new): a shared account named, hidden, and in the evening one.
+- **The function's part** (`partner-run.test.ts`, 11 tests, with D583's) with a stand-in database and phones that open what they're sent: sent once it's due, opening Activity; waiting, then one; hidden amounts; one's own passed over; a change and its undo; something changed meanwhile; no phone took it; reading back 50 at a time; off; and nothing logged, even when a step fails with words in its error.
+- **The database** (`supabase/tests/database/37-shared-plan-notifications.test.sql`, 75 checks, with D583's): who may use each step; off until turned on, and a phone from before step 4f keeping it; never one's own; only what both see; taken once, checked again, let go; private then shared; shared then private, with words worked out just before; turning it off, signing out, a second phone, and leaving; and a new plan. Each new rule was broken on purpose to see its checks fail: Activity read as someone else (12 failed), the plan's mark (46), leaving (1), turning it off (1), and one's own changes (2).
+- **End to end** (`apps/web/e2e/shared-notifications.spec.ts`, at 320px and 360px, in light and dark, with axe): Jess and Tom on two phones, each with a push address at the stand-in push service, and the real function started with a test clock. Shared warnings reaching both in the same words; the choice off until each turns it on; one change in Activity's words, sealed and never twice; three close together as one; Jess's own change going to Tom and never to her; a change at 9:15pm arriving at 8am; hidden amounts; turning it off; and signing out. The screen is checked at 200% text. Each change's time is when it reached the account, so the test places its changes on a day of its own, tomorrow, at UK times (`e2e/partner-times.ts`), and the function is started at moments on that day.
+- **The security test's step 4f part** (`e2e/security.spec.ts`, once, at 360px, through the real Data API and function): Tom and someone signed out can't use any of the function's steps or start it without the tick, Tom's choices are his own and Jess's phone address can't be his; "Surprise for Tom", added while Jess's account was hers alone, never reaches Tom, then or once it's shared; "Holiday fund", added while it was shared and then made private before it was due, never reaches him; and turning it off and leaving stop them at once. With Activity's privacy rule broken on purpose in the local database, the test fails at once: Tom's phone would have been sent "Jess made 2 changes, including Surprise for Tom, −£43.21."
+- **Step 4e's two checks of `my_reminders`' exact answer** (`35-reminders.test.sql`) now include the new choice, off. No expected figure changed.
+
+Why: the owner's list of what the tests must show (D575).
+
+## From the outside review of step 4f
+
+### D583. What the outside review of step 4f changed
+
+Decided 18 Nov 2026 in step 4f. An outside review read the step's changes and the code they touch, and ran read-only queries on the local database. It found no way for a notification to name anything private to the other person, and no way for anyone to make one go to someone else's phone: the words come only from `plan_activity` run as the person's own session; a change made while an account was private stays out, as its change stays private, and one made while shared then made private stays out, as it can't be read now; the plan's mark is taken before Activity is read and checked again with the plan held; every new step is for the function alone, with the tick, and an empty search path; the locks are always taken in one order; and nothing is logged. It found these, all fixed:
+
+- **Someone who left a plan and joined it again** would have been told about every change made while they were away, as "told up to" was still from before they left, in the same plan. Now changes before the moment they joined the plan they're in never count, whichever plan it is (`app.partner_since`).
+- **A change undone and then put back** within one group: the undo that was itself undone still cancelled the change, so the change, which stands, was never told. Now an undo that's been undone cancels nothing.
+- **Two runs at the same moment** (with the job every minute and a run allowed 2 minutes, two can overlap): passing over could, in a narrow moment, overwrite a group the other run had just taken, so a notification could come twice or not at all. Now passing over holds the person's row first and checks "told up to" again after, as taking a group does.
+- **The words reached each phone one after another,** up to 20 seconds apart each: now they're sealed for every phone straight after the group is taken, and sent to them all at once.
+- A comment in the function still said "every 15 minutes".
+
+Accepted, with reasons:
+
+- **Activity is read 50 changes at a time from the newest,** with no lower bound, as the Activity screen reads it; only while a group waits (10 minutes at most), and 500 back at most. More than 500 changes since the last notification, all within minutes, isn't something people do; if it ever happened, the oldest would be passed over, never anything private told.
+- **A tap on a notification while PrePenny is open** brings it forward without moving to Activity, as reminders do (D567): moving could lose something being typed in a sheet.
+- **A phone still on the version from before step 4f** can't see the new choice; such a phone updates itself (D386).
+
+Tests: the database checks have a check for joining a plan again (it fails with the old rule), and every check now gives the people in the plan a time they joined, so they pass on any day; the words' tests have the undo of an undo (it fails without the fix); the function's tests have two phones getting it at once. 75 database checks in the step's file, 1,457 in all, on a freshly reset local database.

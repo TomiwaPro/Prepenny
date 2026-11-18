@@ -152,6 +152,38 @@ On GitHub and Supabase:
 
 If a notification never arrives, note which step, your phone, and whether **This phone** said "This phone gets your reminders."
 
+## Step 4f: notifications in a shared plan (15 minutes)
+
+Jess, on your phone (device A), is told about Tom's changes. Tom makes them on device B. A private or incognito window can't get notifications, so only device A gets them. Do it between 8am and about 8pm, so nothing waits for quiet hours. In step 4a Jess left the plan, so first Tom invites her back. On an iPhone, use PrePenny opened from your Home Screen on device A, as in step 4e.
+
+Jess and Tom share a plan again:
+
+1. On device B, open a private or incognito window, go to https://prepenny.co.uk/app/, tap **More**, then **Sign up or sign in**, and sign in with `yourname+tom4@gmail.com`.
+2. On device B, tap **More**, then **Share with my partner**. Under **Invite your partner**, type `Tom`, keep **Can edit** and **A link I send myself**, tap **Make the invite link**, then **Copy the link**, and send it to yourself so you can open it on device A.
+3. On device A, signed in as `yourname+jess4@gmail.com`, open the link. It says your plan comes with you. Type `Jess` and tap **Ask to join**. On device B, within a few seconds, "Jess wants to join your plan": tap **Allow**, then **Got it**. On device A, Home opens (if it says **Finish joining**, tap it).
+
+Jess turns it on:
+
+4. On device A, tap **More**, then **Reminders**. The first sentence ends "and when Tom changes something you both see." There's a box **When Tom changes something**, not ticked, with what it does under it. Tick it. If your phone asks to allow notifications, tap **Allow**. "Saved." shows, and **This phone** says "This phone gets your reminders."
+
+One change, then three close together:
+
+5. On device B, tap **Add a payment**: name `Car MOT`, amount `54.85`, **Next payment** a day next week, from **Joint account**. Tap **Add payment**.
+6. Lock device A. About 2 to 3 minutes later, a notification from PrePenny says "Tom added Car MOT, −£54.85 on [the day you chose]." Tap it: PrePenny opens (on Activity, if PrePenny wasn't open).
+7. On device B, add three payments one after another, each from **Joint account**: `Window cleaner` `12`, `Gym` `25` and `Phone` `30`. About 2 to 3 minutes after the last, one notification on device A says "Tom made 3 changes, including Phone, −£30.00."
+8. On device A, add a payment yourself: `Dentist`, `65`, from **Joint account**. Nothing arrives on device A about it: nobody is told about their own changes.
+
+Hidden amounts and shared warnings:
+
+9. On device A, in **Reminders**, tick **Hide amounts in notifications**. On device B, add `Parking`, `8`, from **Joint account**. On device A: "Tom added Parking on [the day you chose]." with no amount.
+10. On device A, in **Reminders**, tick **When you'd be short**. Its line says it covers "the ones you share with Tom". On device B, add `Boiler`, `5000`, **Next payment** tomorrow, from **Joint account**. Within about 3 minutes, on device A: "Joint account will be short on [tomorrow's date]." (no amount, as they're hidden), and soon after, "Tom added Boiler on [tomorrow's date]."
+
+Turning it off:
+
+11. On device A, in **Reminders**, untick **When Tom changes something**, **When you'd be short** and **Hide amounts in notifications**. On device B, add `Lunch`, `9`, from **Joint account**. Nothing arrives on device A, not in 5 minutes and not later.
+
+If a notification never arrives, note which step, your phone, and whether **This phone** said "This phone gets your reminders." The last section deletes both test accounts, with everything in them.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.

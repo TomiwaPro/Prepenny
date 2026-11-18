@@ -28,6 +28,8 @@ export interface RemindersState {
   readonly shortfall: boolean;
   readonly weekly: boolean;
   readonly hideAmounts: boolean;
+  /** A partner's changes, in a shared plan (step 4f, D575). */
+  readonly partner: boolean;
   /** The push address PrePenny's server has for this phone's sign-in, or null. */
   readonly thisPhone: string | null;
   /** PrePenny's public key, for this phone's browser, or null until the server has one. */
@@ -36,7 +38,7 @@ export interface RemindersState {
 
 export type Choices = Pick<
   RemindersState,
-  'payday' | 'evening' | 'shortfall' | 'weekly' | 'hideAmounts'
+  'payday' | 'evening' | 'shortfall' | 'weekly' | 'hideAmounts' | 'partner'
 >;
 
 export type Problem = 'offline' | 'server' | 'not-allowed' | 'in-use' | 'bad-address';
@@ -72,6 +74,8 @@ interface ServerState {
   readonly shortfall: boolean;
   readonly weekly: boolean;
   readonly hide_amounts: boolean;
+  /** From step 4f; missing from a database from before it. */
+  readonly partner?: boolean;
   readonly this_phone: string | null;
   readonly public_key: string | null;
 }
@@ -82,12 +86,13 @@ const stateOf = (server: ServerState): RemindersState => ({
   shortfall: server.shortfall,
   weekly: server.weekly,
   hideAmounts: server.hide_amounts,
+  partner: server.partner === true,
   thisPhone: server.this_phone,
   publicKey: server.public_key,
 });
 
 export const anyOn = (choices: Choices) =>
-  choices.payday || choices.evening || choices.shortfall || choices.weekly;
+  choices.payday || choices.evening || choices.shortfall || choices.weekly || choices.partner;
 
 /** The person's own choices, and whether this phone gets them. */
 export async function myReminders(): Promise<Done<RemindersState>> {
@@ -95,7 +100,7 @@ export async function myReminders(): Promise<Done<RemindersState>> {
   return answer.ok ? { ok: true, value: stateOf(answer.value) } : answer;
 }
 
-/** Saves the person's choices (D560, D561). With every one off, the server forgets their phones. */
+/** Saves the person's choices (D560, D561, D575). With every one off, the server forgets their phones. */
 export async function chooseReminders(choices: Choices): Promise<Done<RemindersState>> {
   const answer = await call<ServerState>('choose_reminders', {
     payday: choices.payday,
@@ -103,6 +108,7 @@ export async function chooseReminders(choices: Choices): Promise<Done<RemindersS
     shortfall: choices.shortfall,
     weekly: choices.weekly,
     hide_amounts: choices.hideAmounts,
+    partner: choices.partner,
   });
   if (!answer.ok) return answer;
   if (!anyOn(choices)) await unsubscribeHere();

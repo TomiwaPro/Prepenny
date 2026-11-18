@@ -10,14 +10,32 @@
 // 3. take each one once only, checked again at that moment (claim_reminder),
 //    seal it for each of their phones (lib/web-push.ts) and send it to that
 //    phone's push service, signed with PrePenny's key;
-// 4. note that it has looked, and the shortfalls they know about now.
+// 4. with the partner choice on, in a shared plan (step 4f, D575 to D579):
+//    read their own Activity exactly as their phone reads it
+//    (partner_activity), and once a partner's changes are due, take them
+//    once only (claim_partner_changes) and send them as one notification;
+// 5. note that it has looked, and the shortfalls they know about now.
 //
 // Nothing is ever written to a log or kept: the figures and words exist
 // only in memory here and inside the sealed message (D564, CLAUDE.md). What
 // it gives back is counts only.
 
+import type { PlanRecords } from '@prepenny/engine';
 import {
-  type DueReminder,
+  type ActivityEdit,
+  activityEditsFrom,
+  activityPeopleFrom,
+  contextFromRecords,
+  shownAt,
+} from '../lib/activity-words.ts';
+import {
+  dueGroup,
+  exactMoment,
+  partnerWords,
+  waitingChanges,
+  withoutUndone,
+} from '../lib/partner-changes.ts';
+import {
   REMINDER_HOURS,
   type ReminderChoices,
   type ShortfallMark,
@@ -68,7 +86,32 @@ interface Work {
     readonly version: number;
     readonly choices: ReminderChoices;
     readonly known: readonly ShortfallMark[];
+    /** With the partner choice on (step 4f): their plan, and from when changes are still to be told. */
+    readonly partner?: Partner | null;
   }[];
+}
+
+interface Partner {
+  readonly plan: string;
+  /** Changes saved after this are still to be told. */
+  readonly since: string;
+  /** The newest change someone else made since then, saved a minute ago or more: passed over if they can see none. */
+  readonly settledTo: string | null;
+}
+
+/** One page of the person's Activity, as partner_activity gives it. */
+interface ActivityPage {
+  readonly edits: unknown;
+  readonly more?: boolean;
+  readonly people?: unknown;
+  readonly plan?: string;
+  readonly mark?: string;
+}
+
+/** A notification as it's sent: its kind, for its tag, and its words. */
+interface Message {
+  readonly kind: string;
+  readonly text: string;
 }
 
 interface Claim {
@@ -92,13 +135,16 @@ export function keepFor(now: string): number {
   return Math.max(60, left);
 }
 
-/** What the phone's offline helper shows (service-worker/sw.ts): the words, and where a tap goes. */
-export function messageOf(due: DueReminder): string {
+/**
+ * What the phone's offline helper shows (service-worker/sw.ts): the words,
+ * and where a tap goes: Home, or Activity for a partner's changes.
+ */
+export function messageOf(due: Message): string {
   return JSON.stringify({
     title: strings.reminders.notification.title,
     body: due.text,
     tag: `prepenny-${due.kind}`,
-    url: '/app/',
+    url: due.kind === 'partner' ? '/app/activity/' : '/app/',
   });
 }
 
@@ -157,12 +203,20 @@ export async function runReminders(
       })) as PlanChangesRows | null;
       if (changes === null) continue;
       counts.looked += 1;
-      const { records } = recordsFromRows(rowsOfChanges(changes), one.person);
+      const rows = rowsOfChanges(changes);
+      const { records } = recordsFromRows(rows, one.person);
+      // The accounts everyone in the plan sees: a shortfall in one names it (D580).
+      const sharedAccounts = new Set(
+        rows
+          .filter((row) => row.table === 'accounts' && row.privateTo === null && !row.deleted)
+          .map((row) => row.id),
+      );
       const found = workOutReminders({
         records,
         now: work.now,
         choices: one.choices,
         knownShortfalls: one.known,
+        sharedAccounts,
       });
       known = [...found.stillKnown];
       for (const due of found.due) {
@@ -218,6 +272,67 @@ export async function runReminders(
         counts.sent += 1;
         if (due.shortfall !== undefined) known.push(due.shortfall);
       }
+      // A partner's changes (step 4f).
+      if (one.choices.partner === true && one.partner !== undefined && one.partner !== null) {
+        const told = await tellPartnerChanges(server, {
+          person: one.person,
+          session: one.session,
+          partner: one.partner,
+          hideAmounts: one.choices.hideAmounts,
+          records,
+          now: work.now,
+          at,
+          // Sealed for every phone first, then sent to them all at once, so
+          // the moment the group was taken and the moment it reaches each
+          // phone are as close together as they can be (D583).
+          send: async (phones, message) => {
+            const ready: {
+              phone: PushTarget;
+              authorization: string;
+              body: Uint8Array<ArrayBuffer>;
+            }[] = [];
+            for (const phone of phones) {
+              if (!allowed(phone.endpoint)) continue;
+              try {
+                ready.push({
+                  phone,
+                  authorization: await signature(phone.endpoint),
+                  body: await sealForPhone(messageOf(message), phone),
+                });
+              } catch {
+                counts.problems += 1;
+              }
+            }
+            const statuses = await Promise.all(
+              ready.map(async (one) => {
+                try {
+                  return await server.push(
+                    one.phone.endpoint,
+                    pushHeaders(one.authorization, work.now),
+                    one.body,
+                  );
+                } catch {
+                  counts.problems += 1;
+                  return 0;
+                }
+              }),
+            );
+            let delivered = 0;
+            for (const [index, status] of statuses.entries()) {
+              if (status >= 200 && status < 300) delivered += 1;
+              else if (status === 404 || status === 410) {
+                const gone = ready[index]?.phone.endpoint;
+                if (gone !== undefined)
+                  await server.step('forget_push_address', { endpoint: gone });
+              }
+            }
+            return delivered;
+          },
+        });
+        if (told === 'sent') counts.sent += 1;
+        else if (told === 'not-sent') counts.notSent += 1;
+        if (told === 'again' || told === 'not-sent') again = true;
+      }
     } catch {
       // Never the error's words, which could name something: a count only.
       counts.problems += 1;
@@ -241,23 +356,120 @@ export async function runReminders(
   return counts;
 }
 
+/**
+ * A partner's changes for one person (step 4f, D576 to D579): their own
+ * Activity, 50 changes at a time back to `since`; the changes someone else
+ * made since then; and once they're due, the words, taken once only and
+ * sent. Says what happened: 'sent'; 'not-sent' when no phone took it, to be
+ * tried at the next run; 'again' when they're not due yet, or something
+ * changed while it looked; 'nothing' when there's nothing to tell.
+ */
+async function tellPartnerChanges(
+  server: ReminderServer,
+  one: {
+    readonly person: string;
+    readonly session: string;
+    readonly partner: Partner;
+    readonly hideAmounts: boolean;
+    readonly records: PlanRecords;
+    readonly now: string;
+    readonly at: string | null;
+    readonly send: (phones: readonly PushTarget[], message: Message) => Promise<number>;
+  },
+): Promise<'sent' | 'not-sent' | 'again' | 'nothing'> {
+  const { person, session, partner } = one;
+  const since = exactMoment(partner.since);
+  const edits: ActivityEdit[] = [];
+  let people: Record<string, string> = {};
+  let mark: string | null = null;
+  let olderThan: string | null = null;
+  // Back to `since`, 50 at a time; 500 at most, which is far more than anyone changes in minutes.
+  for (let page = 0; page < 10; page += 1) {
+    const answer = (await server.step('partner_activity', {
+      person,
+      session,
+      older_than: olderThan,
+    })) as ActivityPage | null;
+    if (answer === null) return 'nothing';
+    // They've moved to another plan since the database said which: look again.
+    if (answer.plan !== partner.plan || typeof answer.mark !== 'string') return 'again';
+    mark ??= answer.mark;
+    people = { ...activityPeopleFrom(answer), ...people };
+    const found = activityEditsFrom(answer);
+    edits.push(...found);
+    const oldest = found.at(-1);
+    if (answer.more !== true || oldest === undefined) break;
+    if (exactMoment(shownAt(oldest)) <= since) break;
+    olderThan = shownAt(oldest);
+  }
+  if (mark === null) return 'nothing';
+
+  const waiting = waitingChanges(edits, since);
+  const passOver = async (through: string | null) => {
+    if (through !== null && exactMoment(through) > since) {
+      await server.step('partner_seen', { person, plan: partner.plan, since, through });
+    }
+  };
+  if (waiting.length === 0) {
+    // Nothing among the changes since then is anything they can see.
+    await passOver(partner.settledTo);
+    return 'nothing';
+  }
+  const { due, group, through } = dueGroup(waiting, one.now);
+  if (!due || through === null) return 'again';
+  const told = withoutUndone(group);
+  const context = contextFromRecords(one.records, person, people, ukClock(one.now).date);
+  const text = partnerWords(told, context, one.hideAmounts);
+  if (text === null) {
+    // Each was undone again straight away: nothing left to tell.
+    await passOver(through);
+    return 'nothing';
+  }
+  const claim = (await server.step('claim_partner_changes', {
+    person,
+    plan: partner.plan,
+    since,
+    through: exactMoment(through),
+    hide_amounts: one.hideAmounts,
+    mark,
+    at_time: one.at,
+  })) as Claim;
+  if (!claim.sent) return claim.why === 'changed' || claim.why === 'quiet' ? 'again' : 'nothing';
+  let delivered = 0;
+  try {
+    delivered = await one.send(claim.phones ?? [], { kind: 'partner', text });
+  } finally {
+    if (delivered === 0) {
+      // No phone took it: let go, so it goes at the next run.
+      await server.step('unclaim_partner_changes', {
+        person,
+        plan: partner.plan,
+        since,
+        through: exactMoment(through),
+      });
+    }
+  }
+  return delivered === 0 ? 'not-sent' : 'sent';
+}
+
 async function deliver(
   server: ReminderServer,
   authorization: string,
   phone: PushTarget,
-  due: DueReminder,
+  due: Message,
   now: string,
 ): Promise<number> {
   const body = await sealForPhone(messageOf(due), phone);
-  return server.push(
-    phone.endpoint,
-    {
-      Authorization: authorization,
-      'Content-Encoding': 'aes128gcm',
-      'Content-Type': 'application/octet-stream',
-      TTL: String(keepFor(now)),
-      Urgency: 'normal',
-    },
-    body,
-  );
+  return server.push(phone.endpoint, pushHeaders(authorization, now), body);
+}
+
+/** What each push service is told with a sealed message (RFC 8030, 8291, 8292). */
+function pushHeaders(authorization: string, now: string): Record<string, string> {
+  return {
+    Authorization: authorization,
+    'Content-Encoding': 'aes128gcm',
+    'Content-Type': 'application/octet-stream',
+    TTL: String(keepFor(now)),
+    Urgency: 'normal',
+  };
 }
