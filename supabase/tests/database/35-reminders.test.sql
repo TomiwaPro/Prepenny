@@ -131,7 +131,7 @@ select is(pg_temp.refusal($$ select public.claim_reminder('', tests.id('jess'), 
 select tests.as_person('jess');
 select is(public.my_reminders() - 'public_key',
   jsonb_build_object('payday', false, 'evening', false, 'shortfall', false, 'weekly', false,
-    'hide_amounts', false, 'this_phone', null),
+    'hide_amounts', false, 'partner', false, 'this_phone', null),
   'Every reminder is off until Jess turns it on (D560)');
 select is(public.choose_reminders(true, true, true, false, false) ->> 'evening', 'true',
   'Jess turns on payday, the evening one and shortfalls');
@@ -139,7 +139,7 @@ select is(public.choose_reminders(true, true, true, false, false) ->> 'evening',
 select tests.as_person('tom');
 select is(public.my_reminders() - 'public_key',
   jsonb_build_object('payday', false, 'evening', false, 'shortfall', false, 'weekly', false,
-    'hide_amounts', false, 'this_phone', null),
+    'hide_amounts', false, 'partner', false, 'this_phone', null),
   'Tom reads only his own choices, never Jess''s');
 select tests.as_person('alex');
 select is(public.my_reminders() ->> 'evening', 'false', 'and so does Alex, in no plan');
