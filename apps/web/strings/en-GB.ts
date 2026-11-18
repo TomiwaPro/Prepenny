@@ -1870,8 +1870,9 @@ export const strings = {
     purposeShared: (who: string) =>
       `Notifications on this phone on payday, before money goes out and when you'd be short, so you know before it happens, and when ${who} changes something you both see.`,
     partner: (who: string) => `When ${who} changes something`,
+    // "\u2060" keeps the minus sign with its amount, and "\u00a0" a date's parts together, at any width (D168).
     partnerLine: (who: string, Who: string) =>
-      `A few minutes after ${who} changes something you both see, with changes made close together as one: "${Who} added Car MOT, −£54.85 on Fri 13 Nov." or "${Who} made 3 changes, including Car MOT, −£54.85." Never about your own changes, or anything only one of you sees.`,
+      `A few minutes after ${who} changes something you both see, with changes made close together as one: "${Who} added Car MOT, −\u2060£54.85 on Fri\u00a013\u00a0Nov." or "${Who} made 3 changes, including Car MOT, −\u2060£54.85." Never about your own changes, or anything only one of you sees.`,
     shortfallLineShared: (who: string) =>
       `When a shortfall first appears, in your own accounts or the ones you share with ${who}, and again at 9am the day before, one a day at most: "Joint account will be £30.00 short on Sun 1 Nov." A shared account's warning goes to each of you who has this on.`,
     hideAmounts: 'Hide amounts in notifications',

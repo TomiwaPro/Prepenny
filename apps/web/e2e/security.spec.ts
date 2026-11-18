@@ -27,7 +27,12 @@
 //    administrator routes.
 //
 // And since step 4e, her reminders: nobody can send her one, take her
-// phone's push address, or read her reminder choices (D563).
+// phone's push address, or read her reminder choices (D563). Since step 4f,
+// a partner's notifications: none ever names anything private to the other,
+// including a change made while an account was private and then shared, or
+// one made while it was shared and then made private; nobody can make one
+// go to someone else's phone; and turning it off or leaving stops them at
+// once (D575).
 //
 // Each must give nothing of Jess's private records and change nothing of
 // them, nor of her account. Alex and someone signed out get nothing of the
@@ -42,8 +47,16 @@ import { strings } from '../strings/en-GB.ts';
 import { goToComingUp } from './coming-up.ts';
 import { expect } from './fixtures.ts';
 import { inGraphQLTurn } from './graphql-turn.ts';
-import { addAccount, allSentOn, jessAndTom, planOf } from './jess-and-tom.ts';
+import {
+  addAccount,
+  allSentOn,
+  jessAndTom,
+  openShare,
+  planOf,
+  shareAccount,
+} from './jess-and-tom.ts';
 import { addPayment, openRow, updateBalance } from './journeys.ts';
+import { onTheServer, placeChanges, serverNow, uk } from './partner-times.ts';
 import {
   fillBudget,
   inviteLink,
@@ -60,6 +73,7 @@ import {
   signingKeyReady,
   standInPushService,
   startReminders,
+  wordsFor,
 } from './push-service.ts';
 import { radio } from './setup.ts';
 import { makeAPlan, newEmail } from './sign-in-helpers.ts';
@@ -1091,6 +1105,223 @@ test("step 4e: nobody can send Jess a reminder, take her phone's push address, o
     expect(started.status).toBe(200);
     expect(service.arrived).toHaveLength(1);
     expect(service.arrived[0]?.path).toBe(new URL(jessAddress).pathname);
+    await tom.context.close();
+  } finally {
+    await service.close();
+  }
+});
+
+test("step 4f: a partner's notifications never name anything private to the other, can't be sent to anyone else's phone, and stop at once when turned off or on leaving", async ({
+  page,
+  browser,
+}, info) => {
+  test.skip(
+    info.project.name !== 'sign-in-360',
+    'About the server, not the screen: run once, at 360px.',
+  );
+  test.setTimeout(420_000);
+  await signingKeyReady();
+  const service = await standInPushService();
+  const r = strings.reminders;
+  const g = strings.together;
+  // The test's day: tomorrow, from 10am UK time (e2e/partner-times.ts).
+  const at = (minutes: number) => uk(1, 10, minutes);
+  const run = async (person: string, moment: Date) => {
+    const started = await startReminders(person, moment.toISOString());
+    expect(started.status).toBe(200);
+    expect(((await started.json()) as { problems: number }).problems).toBe(0);
+  };
+  const turnOn = async (phone: Page, partner: string, on = true) => {
+    await openMore(phone);
+    await phone.getByTestId('reminders-card').getByRole('link', { name: r.more.link }).click();
+    const tick = phone.getByRole('checkbox', { name: r.partner(partner), exact: true });
+    if (on) await tick.check();
+    else await tick.uncheck();
+    await expect(phone.getByTestId('reminders-said')).toHaveText(r.saved);
+  };
+  try {
+    const jessKeys = await phoneKeys();
+    const jessAddress = service.address('jess-4f-security');
+    await givePushAddress(page.context(), jessAddress, jessKeys);
+    const tom = await jessAndTom(page, browser, info, 'light');
+    const tomKeys = await phoneKeys();
+    const tomAddress = service.address('tom-4f-security');
+    await givePushAddress(tom.context, tomAddress, tomKeys);
+    await tom.page.reload();
+    await expect(tom.page.getByTestId('balance')).toBeVisible();
+    const jess = await personOn(page);
+    const tomPerson = await personOn(tom.page);
+    const toTom = async () =>
+      (await wordsFor(service, tomAddress, tomKeys)).map((one) =>
+        one.body.replaceAll('\u00a0', ' '),
+      );
+    await turnOn(page, 'Tom');
+    await turnOn(tom.page, 'Jess');
+    const from = serverNow();
+
+    // Nobody can make one go to someone else's phone: the function's steps
+    // are refused to Tom and to someone signed out, whatever they send.
+    const session = sql(
+      `select session_id from app.push_addresses where person_id = ${quoted(jess)}`,
+    );
+    const plan = await planOf(page);
+    const jessSecrets = [jessAddress, jessKeys.p256dh, jessKeys.auth, session];
+    const tomWho: Who = { name: 'Tom', token: await tokenOn(tom.page) };
+    const nobody: Who = { name: 'someone signed out', token: null };
+    const moment = '2026-11-25T10:00:00.000000Z';
+    for (const who of [tomWho, nobody]) {
+      for (const [step, args] of [
+        ['partner_activity', { tick: 'a guess', person: jess, session }],
+        [
+          'claim_partner_changes',
+          {
+            tick: 'a guess',
+            person: jess,
+            plan,
+            since: '2026-11-24T10:00:00.000000Z',
+            through: moment,
+            hide_amounts: false,
+            mark: 'x',
+          },
+        ],
+        [
+          'unclaim_partner_changes',
+          { tick: 'a guess', person: jess, plan, since: moment, through: moment },
+        ],
+        ['partner_seen', { tick: 'a guess', person: jess, plan, since: moment, through: moment }],
+      ] as const) {
+        const answer = await send(who, 'POST', `/rest/v1/rpc/${step}`, args);
+        expect(answer.status, `${who.name}: ${step}`).toBeGreaterThanOrEqual(400);
+        givesNothing(answer, jessSecrets, `${who.name}: ${step}`);
+      }
+      const started = await fetch(`${LOCAL_SUPABASE.url}/functions/v1/reminders`, {
+        method: 'POST',
+        headers: {
+          ...(who.token === null ? {} : { Authorization: `Bearer ${who.token}` }),
+          'x-prepenny-wait': 'yes',
+          'x-prepenny-tick': 'a guess',
+          'x-prepenny-test-person': jess,
+        },
+      });
+      expect(started.status, `${who.name}: the reminders function`).toBe(403);
+    }
+    // Tom's choices are his own, and her phone's address can't be his.
+    const before = sql(
+      `select concat_ws(',', partner, told_to, told_plan) from app.reminder_choices where person_id = ${quoted(jess)}`,
+    );
+    const chosen = await send(tomWho, 'POST', '/rest/v1/rpc/choose_reminders', {
+      payday: false,
+      evening: false,
+      shortfall: false,
+      weekly: false,
+      hide_amounts: false,
+      partner: true,
+    });
+    expect(chosen.status).toBe(200);
+    givesNothing(chosen, jessSecrets, 'Tom: choose_reminders');
+    const taken = await send(tomWho, 'POST', '/rest/v1/rpc/add_push_address', {
+      endpoint: jessAddress,
+      p256dh: jessKeys.p256dh,
+      auth_secret: jessKeys.auth,
+    });
+    expect(taken.text).toContain('in-use');
+    expect(
+      sql(
+        `select concat_ws(',', partner, told_to, told_plan) from app.reminder_choices where person_id = ${quoted(jess)}`,
+      ),
+    ).toBe(before);
+    expect(service.arrived).toEqual([]);
+
+    // Private, then shared: "Surprise for Tom" on Jess's own account while
+    // it's hers alone. Nothing of it goes to Tom, then or once it's shared.
+    await addAccount(page, 'Jess own', '100');
+    await addPayment(page, {
+      name: 'Surprise for Tom',
+      amount: '43.21',
+      date: '2026-11-14',
+      account: 'Jess own',
+    });
+    await onTheServer(jess, 'Surprise for Tom');
+    placeChanges(jess, from, at(0));
+    await run(tomPerson, at(3));
+    expect(await toTom()).toEqual([]);
+    await allSentOn(page);
+    await shareAccount(page, 'Jess own');
+    placeChanges(jess, from, at(10));
+    await run(tomPerson, at(13));
+    expect(await toTom()).toEqual(['Jess shared Jess own.']);
+    // And so the checks of nothing can fail: a shared change reaches his phone.
+    expect(service.arrived).toHaveLength(1);
+
+    // Shared, then private: "Holiday fund" added while Jess own is shared,
+    // then made private again before the notification is due.
+    await addPayment(page, {
+      name: 'Holiday fund',
+      amount: '77.77',
+      date: '2026-11-15',
+      account: 'Jess own',
+    });
+    await onTheServer(jess, 'Holiday fund');
+    placeChanges(jess, from, at(20));
+    await allSentOn(page);
+    await page.goto('/app/share/accounts/');
+    await page.getByRole('button', { name: g.makePrivate('Jess own') }).click();
+    await page
+      .getByRole('dialog', { name: g.privateTitle('Jess own') })
+      .getByRole('button', { name: g.privateYes })
+      .click();
+    await expect(page.getByTestId('share-said')).toHaveText(g.privateDone('Jess own'), {
+      timeout: 20_000,
+    });
+    placeChanges(jess, from, at(21));
+    await run(tomPerson, at(24));
+    expect((await toTom()).at(-1)).toBe(
+      'Jess made a shared account private, so you no longer see it.',
+    );
+
+    // Turned off: nothing about a change after it.
+    await turnOn(tom.page, 'Jess', false);
+    await addPayment(page, {
+      name: 'Window cleaner',
+      amount: '12',
+      date: '2026-11-16',
+      account: 'Current account',
+    });
+    await onTheServer(jess, 'Window cleaner');
+    placeChanges(jess, from, at(30));
+    await run(tomPerson, at(33));
+    expect(await toTom()).toHaveLength(2);
+
+    // On again, then Jess makes a change and Tom leaves before it's sent: nothing.
+    await turnOn(tom.page, 'Jess');
+    await addPayment(page, {
+      name: 'Plumber',
+      amount: '80',
+      date: '2026-11-17',
+      account: 'Current account',
+    });
+    await onTheServer(jess, 'Plumber');
+    placeChanges(jess, from, at(40));
+    await openShare(tom.page);
+    await tom.page.getByTestId('leave').getByRole('link', { name: g.leave.link }).click();
+    await radio(tom.page, g.leave.copyNo).check();
+    await tom.page.getByRole('button', { name: g.leave.leave }).click();
+    await tom.page
+      .getByRole('dialog', { name: g.leave.confirmTitle })
+      .getByRole('button', { name: g.leave.confirmYes })
+      .click();
+    await expect(tom.page).toHaveURL(/\/app\/$/, { timeout: 30_000 });
+    await run(tomPerson, at(43));
+    expect(await toTom()).toHaveLength(2);
+
+    // Nothing Tom was ever sent names anything private to Jess.
+    for (const words of await toTom()) {
+      expect(words).not.toMatch(/Surprise|Holiday|43\.21|77\.77|Plumber|Window/);
+    }
+    // And what reached his push service was sealed: none of it in the clear.
+    for (const one of service.arrived) {
+      expect(Buffer.from(one.body).toString('latin1')).not.toMatch(/Jess|shared|private/);
+    }
     await tom.context.close();
   } finally {
     await service.close();
