@@ -4,17 +4,18 @@ Two people can plan money together, each on their own phone. You choose which ac
 
 ## Inviting your partner
 
-You both need an account. Go to **More**, then **Share with my partner**, then **Invite your partner**:
+You both need an account, and the person who made the plan invites. Go to **More**, then **Share with my partner**. Under **Invite your partner**:
 
+- Type your name, as your partner will see it.
 - Choose **Can edit** or **Can view only**. You can change it later.
 - Make the invite link and send it to your partner, or have PrePenny email it. It lasts 7 days and works once.
 - When someone asks to join, PrePenny asks you first, with the email address they signed in with. Tap **Allow** only if it's your partner. Nobody joins without you.
 
 ## What your partner sees
 
-Your partner sees each account you share: its balance and every payment in it. Choose them with **Choose shared accounts**. Your savings goals, debts and job details stay private unless you share them, and you can make a shared account private again later.
+Your partner sees each account you share: its balance and every payment in it. Choose them with **Choose shared accounts**. Your savings goals and debts stay private unless you share them, and your job details always do. Whoever shared an account can make it private again later.
 
-A change either of you makes appears on the other's phone within seconds. Each payment's sheet says who changed it last, and **Activity** lists every change by both of you.
+A change either of you makes shows on the other's phone within seconds while PrePenny is open there with a signal, or the next time it opens. Each payment's sheet says who changed it last, and **Activity** lists every change you can see, by either of you. Changes to what only one of you sees show only to them.
 
 ## Leaving
 

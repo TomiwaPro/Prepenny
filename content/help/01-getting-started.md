@@ -10,7 +10,7 @@ Tap **Make my plan**. There are 6 screens, in 3 parts:
 2. **Money out**: home and bills, debts, then spending money.
 3. **Your plan**: what PrePenny worked out from what you typed.
 
-Only your account is needed. Every other screen has **Skip this step**, and you can add or change anything later.
+Only your account is needed. The screens after it, up to your plan, each have **Skip this step**, and you can add or change anything later.
 
 ## What to have ready
 
@@ -18,7 +18,7 @@ Only your account is needed. Every other screen has **Skip this step**, and you 
 - When you're next paid, and about how much.
 - Your rent or mortgage, bills and debt payments, with their amounts and dates.
 
-Not sure of an amount? Type your best guess and tick **This is an estimate**. You can put the real amount in when it arrives.
+Not sure of your pay, a bill or a debt payment? Type your best guess and tick **This is an estimate**. You can put the real amount in when it arrives.
 
 ## After setup
 

@@ -10,7 +10,7 @@ Every payment on **Coming up** has what's left after it under its amount, such a
 
 ## The lowest point ahead
 
-**Lowest point ahead** on Home is the lowest your balance will be at the end of any day, looking 12 months ahead, with the payment that takes it there. It's the one number to watch.
+**Lowest point ahead** on Home is the lowest your balance will be at the end of any day, looking 12 months ahead, with the payment that takes it there. It's the one number to watch. Home shows the account your main pay goes into; **Coming up** shows each account's own, with **Switch account**.
 
 ## Tight and Short
 
@@ -21,7 +21,7 @@ A word always goes with the colour, so you never have to tell them apart by colo
 
 ## Left to spend
 
-**Left to spend until** your next payday is the spending money you planned up to then, such as food and travel, less what you've recorded with **I spent**. If spending all of it would take your balance under the amount you want to keep, a line under it says how much to keep it to, such as "Spend no more than £16.54 to keep at least £20 until Fri 30 Oct."
+With a main pay, **Left to spend until** your next payday is the spending money you planned up to then, such as food and travel, less what you've recorded with **I spent**. If spending all of it would take your balance under the amount you want to keep, a line under it says how much to keep it to, such as "Spend no more than £16.54 to keep at least £20 until Fri 30 Oct."
 
 ## Not ticked yet
 

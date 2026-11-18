@@ -4,7 +4,7 @@ You can delete your account and every bit of your plan at any time, from **More*
 
 ## Keep a copy first, if you want one
 
-**Download my data**, in the same place, saves your plan as a spreadsheet and as a backup file. **Import a backup** can bring a backup file back later, in place of your plan.
+**Download my data**, in the same place, saves your plan as a spreadsheet and as a backup file. **Import a backup** can bring a backup file back later, in place of your plan, while you're not in a shared plan.
 
 ## Deleting your account
 

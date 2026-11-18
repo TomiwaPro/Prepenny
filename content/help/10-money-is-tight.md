@@ -43,4 +43,4 @@ Checked: on survivingeconomicabuse.org on Wed 18 Nov 2026. https://survivingecon
 
 ## In PrePenny
 
-Your plan shows when you'd be short, and by how much. You can tap a payment to move it to your next payday, change it or skip it, and see your new lowest point straight away. Every change can be undone. **What if**, under More, lets you try changes before you make them.
+Your plan shows when you'd be short, and by how much. You can tap a payment to move it to a later payday, change it or skip it, and see your new lowest point straight away. Every change can be undone straight away. **What if**, under More, lets you try changes before you make them.

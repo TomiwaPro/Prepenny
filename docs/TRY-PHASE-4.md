@@ -202,7 +202,7 @@ Home's card when money is tight, on device A:
 7. On **Home**, under **Lowest point ahead**, a card in the same soft colour as other notes says "Free, confidential help is available.", with **See where to get help** and **Not now**. No red, and the lowest point hasn't moved down.
 8. Tap **See where to get help**: Help when money is tight opens. Go back to **Home**.
 9. Tap **Not now**. A line in its place says "Where to get help is in More, under Help, whenever you want it." Tap **Coming up**, then **Home**: the card has gone, and stays gone for 30 days on this phone. (The tests check the 30 days.)
-10. Tap the `Test big bill` row under **Next due** (or on **Coming up**), then, under **Remove it**, **Remove this and all later ones**. The card doesn't come back.
+10. Tap the `Test big bill` row under **Next due** (or on **Coming up**), then **Remove**, then **Remove this and all later ones**. The card doesn't come back.
 
 If something looks different, note the step number and what you saw. The last section deletes the test accounts, with the test bill in them.
 
