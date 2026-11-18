@@ -30,7 +30,17 @@
   gap: var(--space-2);
 }
 
-.buttons > button {
+/*
+ * "See where to get help" on Home's help card (step 4g) is a link that
+ * looks like its outlined button beside it.
+ */
+.buttons > button,
+.buttons > a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
   flex: 1 1 8rem;
   min-height: var(--tap);
   padding: var(--space-2) var(--space-3);

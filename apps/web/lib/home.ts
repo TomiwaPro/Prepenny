@@ -13,6 +13,7 @@ import {
   workOutPayments,
 } from '@prepenny/engine';
 import { holidaysOf } from './holidays.ts';
+import { shortDaysRunning } from './money-tight.ts';
 import { HOME_MONTHS_AHEAD, planLookAhead, settingsOf, workOutPlanTo } from './plan-input.ts';
 import { type RowView, rowMaker } from './rows.ts';
 
@@ -70,6 +71,11 @@ export interface HomeView {
   } | null;
   /** The next three rows from today on that aren't ticked (D168, D179). */
   readonly nextDue: readonly RowView[];
+  /**
+   * The first short day in each of the next three pay periods, when every
+   * one of them has one: Home then offers free help (step 4g, D585).
+   */
+  readonly shortRunning: readonly string[] | null;
 }
 
 /** Lowest point ahead, with its warning (brief 5.5, D8, D82). */
@@ -239,5 +245,6 @@ export function workOutHome(records: PlanRecords, today: string): HomeView {
       .filter((row) => !row.atStart && !row.ticked && row.date >= today)
       .slice(0, 3)
       .map((row) => makeRow(row, null)),
+    shortRunning: shortDaysRunning(plan, records),
   };
 }
