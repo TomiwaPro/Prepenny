@@ -60,25 +60,17 @@
 }
 
 /*
- * A link in an article, such as a phone number, is a tap target of at least
- * 44 by 44px like every other (DESIGN.md), so a line with one in it is a
- * little taller.
+ * A link in an article, such as a phone number, is a tap target at least
+ * 44px tall like every other (DESIGN.md): padding above and below that
+ * the words around it don't move for. Every link's words are wider than
+ * 44px, such as "call the police on 999".
  */
 .article a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--tap);
-  min-width: var(--tap);
-  vertical-align: middle;
+  padding-block: calc((var(--tap) - 1em) / 2);
   color: var(--accent-text);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-
-.article strong {
-  font-weight: 700;
 }
 
 /* The search box, with its words above it and what it does under it. */

@@ -37,7 +37,7 @@ Checked: MoneyHelper couldn't be checked on Wed 18 Nov 2026. Every page of www.m
 
 ## If someone else controls your money
 
-[Surviving Economic Abuse](https://survivingeconomicabuse.org/i-need-help/) has information and support for anyone whose partner or ex-partner controls their money. If you're in danger now, call the police on [999](tel:999).
+[Surviving Economic Abuse](https://survivingeconomicabuse.org/i-need-help/) has information and support for anyone whose partner or ex-partner controls their money. If you're in danger now, [call the police on 999](tel:999).
 
 Checked: on survivingeconomicabuse.org on Wed 18 Nov 2026. https://survivingeconomicabuse.org/i-need-help/ is its "I need help" page, and says "If you are in immediate danger, call the police on 999."
 

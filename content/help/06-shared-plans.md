@@ -24,7 +24,7 @@ Either of you can leave at any time, from **Share with my partner**, then **Leav
 
 Money can be used to control someone: their money, and the things money buys, such as food, transport and a place to live. Surviving Economic Abuse has information and support for anyone this is happening to: [survivingeconomicabuse.org](https://survivingeconomicabuse.org/i-need-help/).
 
-If you're in danger now, call the police on [999](tel:999).
+If you're in danger now, [call the police on 999](tel:999).
 
 Free helplines, from Surviving Economic Abuse's website:
 
