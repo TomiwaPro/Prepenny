@@ -1861,6 +1861,19 @@ export const strings = {
     weekly: 'Weekly summary',
     weeklyLine:
       'On Sundays at 6pm: "This week: 5 payments going out, £1,336.07 in all. Lowest point ahead: £4.53 on Sun 1 Nov."',
+    /**
+     * In a shared plan (step 4f, brief 4.14, D575): the partner's changes,
+     * off until it's turned on, and shortfalls in shared accounts with the
+     * shortfall reminder. `who` is "Tom" or "your partner", `Who` the same
+     * at the start of a sentence.
+     */
+    purposeShared: (who: string) =>
+      `Notifications on this phone on payday, before money goes out and when you'd be short, so you know before it happens, and when ${who} changes something you both see.`,
+    partner: (who: string) => `When ${who} changes something`,
+    partnerLine: (who: string, Who: string) =>
+      `A few minutes after ${who} changes something you both see, with changes made close together as one: "${Who} added Car MOT, −£54.85 on Fri 13 Nov." or "${Who} made 3 changes, including Car MOT, −£54.85." Never about your own changes, or anything only one of you sees.`,
+    shortfallLineShared: (who: string) =>
+      `When a shortfall first appears, in your own accounts or the ones you share with ${who}, and again at 9am the day before, one a day at most: "Joint account will be £30.00 short on Sun 1 Nov." A shared account's warning goes to each of you who has this on.`,
     hideAmounts: 'Hide amounts in notifications',
     hideAmountsLine:
       'Notifications can show on a locked phone, where someone else could see them. With this on, they leave out every amount: "Rent goes out tomorrow."',
@@ -1921,6 +1934,21 @@ export const strings = {
           : `This week: ${count} ${count === 1 ? 'payment' : 'payments'} going out.`,
       lowest: (amount: string, date: string) => `Lowest point ahead: ${amount} on ${date}.`,
       lowestHidden: (date: string) => `Lowest point ahead: ${date}.`,
+      /**
+       * A partner's changes (step 4f, D579): one change is Activity's own
+       * sentence, "Tom added Car MOT, −£54.85 on Fri 13 Nov."; changes made
+       * close together come as one.
+       */
+      madeChanges: (who: string, count: number) => `${who} made ${count} changes.`,
+      madeChangesIncluding: (who: string, count: number, thing: string) =>
+        `${who} made ${count} changes, including ${thing}.`,
+      /** "Car MOT, −£54.85". */
+      thing: (name: string, money: string) => `${name}, ${money}`,
+      /** More than one person, for when plans have more than two: "Tom and Sam". */
+      people: (names: readonly string[]) =>
+        names.length <= 1
+          ? (names[0] ?? '')
+          : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`,
     },
   },
 
@@ -2791,12 +2819,20 @@ export const strings = {
         `added ${name}, ${amount} on ${date}`,
       addedFrom: (name: string, amount: string, date: string) =>
         `added ${name}, ${amount} from ${date}`,
+      /** With "Hide amounts in notifications" on (step 4f, D561): the same, with no amount. */
+      addedOnceHidden: (name: string, date: string) => `added ${name} on ${date}`,
+      addedFromHidden: (name: string, date: string) => `added ${name} from ${date}`,
       removed: (name: string) => `removed ${name}`,
       balance: (account: string, amount: string) => `updated the ${account} balance to ${amount}`,
       balanceTicked: (account: string, amount: string, count: number) =>
         count === 1
           ? `updated the ${account} balance to ${amount}, and ticked 1 payment`
           : `updated the ${account} balance to ${amount}, and ticked ${count} payments`,
+      balanceHidden: (account: string) => `updated the ${account} balance`,
+      balanceTickedHidden: (account: string, count: number) =>
+        count === 1
+          ? `updated the ${account} balance, and ticked 1 payment`
+          : `updated the ${account} balance, and ticked ${count} payments`,
       spent: (amount: string, budget: string) => `spent ${amount} on ${budget}`,
       changedSpend: (budget: string, amount: string) => `changed a spend on ${budget} to ${amount}`,
       changedSpendFromTo: (budget: string, from: string, to: string) =>
@@ -2804,6 +2840,9 @@ export const strings = {
       budgetFromTo: (name: string, from: string, to: string) =>
         `changed the budget ${name} from ${from} to ${to}`,
       removedSpend: (amount: string, budget: string) => `removed a spend of ${amount} on ${budget}`,
+      spentHidden: (budget: string) => `added a spend on ${budget}`,
+      changedSpendHidden: (budget: string) => `changed a spend on ${budget}`,
+      removedSpendHidden: (budget: string) => `removed a spend on ${budget}`,
       added: (thing: string) => `added ${thing}`,
       changed: (thing: string) => `changed ${thing}`,
       closed: (thing: string) => `closed ${thing}`,

@@ -22,6 +22,7 @@ import {
   activityEditsFrom,
   activityPeopleFrom,
   activityWords,
+  contextFromRecords,
   shownAt,
 } from '../lib/activity-words.ts';
 import { formatDay, formatTime } from '../lib/dates.ts';
@@ -159,33 +160,12 @@ export function ActivityScreen() {
 
   const records = loaded?.records;
   const today = localToday();
-  const context: ActivityContext = {
-    me: shared?.personId ?? (account.status === 'signed-in' ? account.id : ''),
-    nicknames: { ...found.people, ...(shared?.nicknames ?? {}) },
+  const context: ActivityContext = contextFromRecords(
+    records,
+    shared?.personId ?? (account.status === 'signed-in' ? account.id : ''),
+    { ...found.people, ...(shared?.nicknames ?? {}) },
     today,
-    nameOf: (table, id) => {
-      const list =
-        table === 'series'
-          ? records?.series
-          : table === 'accounts'
-            ? records?.accounts
-            : table === 'budgets'
-              ? records?.budgets
-              : table === 'debts'
-                ? records?.debts
-                : table === 'goals'
-                  ? records?.goals
-                  : undefined;
-      const name = (list as readonly { id: string; name?: string }[] | undefined)?.find(
-        (one) => one.id === id,
-      )?.name;
-      return name === undefined || name === '' ? null : name;
-    },
-    comesIn: (seriesId) => {
-      const series = records?.series.find((one) => one.id === seriesId);
-      return series === undefined ? null : series.direction === 'in';
-    },
-  };
+  );
 
   async function undo(edit: ActivityEdit) {
     if (undoing !== null || planId === null) return;
