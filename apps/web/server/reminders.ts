@@ -282,24 +282,48 @@ export async function runReminders(
           records,
           now: work.now,
           at,
+          // Sealed for every phone first, then sent to them all at once, so
+          // the moment the group was taken and the moment it reaches each
+          // phone are as close together as they can be (D583).
           send: async (phones, message) => {
-            let delivered = 0;
+            const ready: {
+              phone: PushTarget;
+              authorization: string;
+              body: Uint8Array<ArrayBuffer>;
+            }[] = [];
             for (const phone of phones) {
               if (!allowed(phone.endpoint)) continue;
               try {
-                const status = await deliver(
-                  server,
-                  await signature(phone.endpoint),
+                ready.push({
                   phone,
-                  message,
-                  work.now,
-                );
-                if (status >= 200 && status < 300) delivered += 1;
-                else if (status === 404 || status === 410) {
-                  await server.step('forget_push_address', { endpoint: phone.endpoint });
-                }
+                  authorization: await signature(phone.endpoint),
+                  body: await sealForPhone(messageOf(message), phone),
+                });
               } catch {
                 counts.problems += 1;
+              }
+            }
+            const statuses = await Promise.all(
+              ready.map(async (one) => {
+                try {
+                  return await server.push(
+                    one.phone.endpoint,
+                    pushHeaders(one.authorization, work.now),
+                    one.body,
+                  );
+                } catch {
+                  counts.problems += 1;
+                  return 0;
+                }
+              }),
+            );
+            let delivered = 0;
+            for (const [index, status] of statuses.entries()) {
+              if (status >= 200 && status < 300) delivered += 1;
+              else if (status === 404 || status === 410) {
+                const gone = ready[index]?.phone.endpoint;
+                if (gone !== undefined)
+                  await server.step('forget_push_address', { endpoint: gone });
               }
             }
             return delivered;
@@ -436,15 +460,16 @@ async function deliver(
   now: string,
 ): Promise<number> {
   const body = await sealForPhone(messageOf(due), phone);
-  return server.push(
-    phone.endpoint,
-    {
-      Authorization: authorization,
-      'Content-Encoding': 'aes128gcm',
-      'Content-Type': 'application/octet-stream',
-      TTL: String(keepFor(now)),
-      Urgency: 'normal',
-    },
-    body,
-  );
+  return server.push(phone.endpoint, pushHeaders(authorization, now), body);
+}
+
+/** What each push service is told with a sealed message (RFC 8030, 8291, 8292). */
+function pushHeaders(authorization: string, now: string): Record<string, string> {
+  return {
+    Authorization: authorization,
+    'Content-Encoding': 'aes128gcm',
+    'Content-Type': 'application/octet-stream',
+    TTL: String(keepFor(now)),
+    Urgency: 'normal',
+  };
 }

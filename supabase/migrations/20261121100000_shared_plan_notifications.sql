@@ -48,12 +48,12 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- From when someone else's changes are still to be told: when the person
--- was last told, in the plan they're in now; in a plan they've joined
--- since, from when they joined it. Null in no plan, or never turned on.
+-- was last told, and never before they joined the plan they're in now,
+-- even one they were in before, left and joined again (D583). Null in no
+-- plan, or never turned on.
 create function app.partner_since(person uuid) returns timestamptz
 language sql stable security definer set search_path = '' as $$
   select case when c.told_to is null or m.plan_id is null then null
-    when c.told_plan = m.plan_id then c.told_to
     else greatest(c.told_to, m.joined_at) end
   from app.reminder_choices c
   left join app.plan_now(person) m on true
@@ -346,7 +346,9 @@ $$;
 
 -- Nothing among the changes since then is anything the person can see (or
 -- each was undone again straight away): passed over, up to `through`, so
--- they aren't looked at again. Only if nothing moved since they were read.
+-- they aren't looked at again. Only while they're still told up to the
+-- moment the function read from: the row is held first, so a group taken
+-- by another run at the same moment is seen, and never overwritten (D583).
 create function public.partner_seen(tick text, person uuid, plan uuid, since text, through text)
 returns void
 language plpgsql volatile security definer set search_path = '' as $$
@@ -354,15 +356,20 @@ language plpgsql volatile security definer set search_path = '' as $$
 declare
   from_moment timestamptz := app.moment_of(since);
   to_moment timestamptz := app.moment_of(through);
+  choices app.reminder_choices;
 begin
   perform app.check_tick(tick);
   if from_moment is null or to_moment is null or to_moment <= from_moment then
     perform app.refuse('bad-claim');
   end if;
+  select * into choices from app.reminder_choices c where c.person_id = person for update;
+  if not found or not choices.partner
+      or app.partner_since(person) is distinct from from_moment
+      or not exists (select 1 from app.plan_now(person) m where m.plan_id = plan) then
+    return;
+  end if;
   update app.reminder_choices c set told_plan = plan, told_to = to_moment
-    where c.person_id = person and c.partner
-      and app.partner_since(person) = from_moment
-      and exists (select 1 from app.plan_now(person) m where m.plan_id = plan);
+    where c.person_id = person;
 end;
 $$;
 

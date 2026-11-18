@@ -7135,3 +7135,23 @@ Decided 18 Nov 2026 in step 4f.
 - **Step 4e's two checks of `my_reminders`' exact answer** (`35-reminders.test.sql`) now include the new choice, off. No expected figure changed.
 
 Why: the owner's list of what the tests must show (D575).
+
+## From the outside review of step 4f
+
+### D583. What the outside review of step 4f changed
+
+Decided 18 Nov 2026 in step 4f. An outside review read the step's changes and the code they touch, and ran read-only queries on the local database. It found no way for a notification to name anything private to the other person, and no way for anyone to make one go to someone else's phone: the words come only from `plan_activity` run as the person's own session; a change made while an account was private stays out, as its change stays private, and one made while shared then made private stays out, as it can't be read now; the plan's mark is taken before Activity is read and checked again with the plan held; every new step is for the function alone, with the tick, and an empty search path; the locks are always taken in one order; and nothing is logged. It found these, all fixed:
+
+- **Someone who left a plan and joined it again** would have been told about every change made while they were away, as "told up to" was still from before they left, in the same plan. Now changes before the moment they joined the plan they're in never count, whichever plan it is (`app.partner_since`).
+- **A change undone and then put back** within one group: the undo that was itself undone still cancelled the change, so the change, which stands, was never told. Now an undo that's been undone cancels nothing.
+- **Two runs at the same moment** (with the job every minute and a run allowed 2 minutes, two can overlap): passing over could, in a narrow moment, overwrite a group the other run had just taken, so a notification could come twice or not at all. Now passing over holds the person's row first and checks "told up to" again after, as taking a group does.
+- **The words reached each phone one after another,** up to 20 seconds apart each: now they're sealed for every phone straight after the group is taken, and sent to them all at once.
+- A comment in the function still said "every 15 minutes".
+
+Accepted, with reasons:
+
+- **Activity is read 50 changes at a time from the newest,** with no lower bound, as the Activity screen reads it; only while a group waits (10 minutes at most), and 500 back at most. More than 500 changes since the last notification, all within minutes, isn't something people do; if it ever happened, the oldest would be passed over, never anything private told.
+- **A tap on a notification while PrePenny is open** brings it forward without moving to Activity, as reminders do (D567): moving could lose something being typed in a sheet.
+- **A phone still on the version from before step 4f** can't see the new choice; such a phone updates itself (D386).
+
+Tests: the database checks have a check for joining a plan again (it fails with the old rule), and every check now gives the people in the plan a time they joined, so they pass on any day; the words' tests have the undo of an undo (it fails without the fix); the function's tests have two phones getting it at once. 75 database checks in the step's file, 1,457 in all, on a freshly reset local database.

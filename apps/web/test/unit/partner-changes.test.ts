@@ -327,6 +327,11 @@ describe('only what someone else changed, since the person was last told (D576)'
     const undo = edit({ kind: 'undo', undoes: change.id });
     const older = edit({ kind: 'undo', undoes: 'from-yesterday' });
     expect(withoutUndone([undo, change, older])).toEqual([older]);
+    // A change, its undo, and the undo of that: the change stands, and is told.
+    const added = carMot();
+    const undoOfIt = edit({ kind: 'undo', undoes: added.id });
+    const redo = edit({ kind: 'undo', undoes: undoOfIt.id });
+    expect(withoutUndone([redo, undoOfIt, added])).toEqual([added]);
     // Someone else's undo of it isn't Tom taking it back.
     expect(
       withoutUndone([edit({ kind: 'undo', by: SAM, undoes: change.id }), change]),

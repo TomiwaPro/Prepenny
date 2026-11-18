@@ -101,8 +101,9 @@ export function dueGroup(waiting: readonly ActivityEdit[], now: string): Partner
 export function withoutUndone(group: readonly ActivityEdit[]): ActivityEdit[] {
   const ids = new Map(group.map((edit) => [edit.id, edit]));
   const gone = new Set<string>();
+  // Newest first: an undo that was itself undone in the group cancels nothing.
   for (const edit of group) {
-    if (edit.kind !== 'undo' || edit.undoes === null) continue;
+    if (edit.kind !== 'undo' || edit.undoes === null || gone.has(edit.id)) continue;
     const undone = ids.get(edit.undoes);
     if (undone !== undefined && undone.by === edit.by && !gone.has(undone.id)) {
       gone.add(undone.id);

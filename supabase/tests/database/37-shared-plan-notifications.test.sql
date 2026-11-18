@@ -16,7 +16,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(74);
+select plan(75);
 
 select tests.make_jess_alone();
 
@@ -123,6 +123,8 @@ select public.answer_join((select (public.hello() -> 'join_requests' -> 0 ->> 'i
 select public.share_accounts(tests.id('plan'), array[tests.id('joint')], gen_random_uuid(), '2026-11-07T11:00:00Z');
 select tests.as_test();
 update public.edits set saved_at = pg_temp.at(-120) where plan_id = tests.id('plan');
+-- Both joined well before the test's day, whatever day it runs.
+update public.plan_members set joined_at = pg_temp.at(-180) where plan_id = tests.id('plan');
 
 -- ---------------------------------------------------------------------------
 -- 1. Nobody but the reminders function, with the tick, uses the server's steps.
@@ -190,7 +192,15 @@ select is(public.choose_reminders(false, false, false, false, false, true) ->> '
 select ok(public.add_push_address('https://fcm.googleapis.com/fcm/send/tom', 'B' || repeat('B', 86),
     repeat('T', 22)) is not null, 'and his phone gets it');
 select tests.as_test();
--- Both told up to two hours before the day's first change.
+-- Told up to long before she joined the plan she's in, as when she left it
+-- and joined it again: only changes from when she joined count (D583).
+update app.reminder_choices set told_to = pg_temp.at(-500), told_plan = tests.id('plan')
+  where person_id = tests.id('jess');
+select tests.as_supabase_admin();
+select is(pg_temp.since('jess'), pg_temp.exact(-180),
+  'Someone who joined a plan again is told nothing from before they joined it');
+select tests.as_test();
+-- Both told up to an hour before the day's first change.
 update app.reminder_choices set told_to = pg_temp.at(-60), told_plan = tests.id('plan')
   where person_id in (tests.id('jess'), tests.id('tom'));
 
@@ -264,7 +274,8 @@ select is(pg_temp.refusal($$ select public.claim_partner_changes(pg_temp.tick(),
 -- Passed over: only up to a moment, only if nothing moved since it was read.
 select tests.as_supabase_admin();
 select public.partner_seen(pg_temp.tick(), tests.id('tom'), tests.id('plan'), pg_temp.exact(-30), pg_temp.exact(1));
-select is(pg_temp.since('tom'), pg_temp.exact(-60), 'Passing over needs the moment it was read from');
+select is(pg_temp.since('tom'), pg_temp.exact(-60),
+  'Passing over needs the moment it was read from, so a group another run has just taken is never undone');
 select public.partner_seen(pg_temp.tick(), tests.id('tom'), tests.id('plan'), pg_temp.exact(-60), pg_temp.exact(1));
 select is(pg_temp.since('tom'), pg_temp.exact(1), 'and then moves on past what he can''t see');
 

@@ -197,6 +197,19 @@ describe("a partner's changes (step 4f)", () => {
     expect(run.asked.at(-1)?.args).toMatchObject({ person: JESS, mark: 'm' });
   });
 
+  it('sealed for each of her phones, sent to them all at once', async () => {
+    const phones = [
+      await phone('https://fcm.googleapis.com/fcm/send/jess'),
+      await phone('https://web.push.apple.com/jess-iphone'),
+    ];
+    const run = standIn({ now: '2026-11-12T10:02:00Z', edits: [change({})], phones });
+    expect(await runReminders(run.server, null)).toMatchObject({ sent: 1, problems: 0 });
+    expect(run.opened.map((one) => one.message.body)).toEqual([
+      'Tom added Car MOT, −£54.85 on Fri\u00a013\u00a0Nov.',
+      'Tom added Car MOT, −£54.85 on Fri\u00a013\u00a0Nov.',
+    ]);
+  });
+
   it('changes close together wait for 2 minutes of nothing, then come as one', async () => {
     const phones = [await phone('https://fcm.googleapis.com/fcm/send/jess')];
     const edits = [
