@@ -7597,6 +7597,7 @@ Decided 19 Nov 2026 in step 4i.
 - **The form shows only once PrePenny's code has started** (D487). Found by the every-screen checks: the line saying what the phone adds was drawn ahead of time without the phone's type, and the page disagreed with itself when it started (a React error the console check caught).
 - **The sheet's form is made the first time it opens,** then kept while PrePenny is open. Found by the full run of the end-to-end tests: made on every screen, closed, it put a form on every page, which the help centre's test of "nothing typed is sent" rightly caught.
 - **Both links at the end of a screen are 44 by 44px to tap** (DESIGN.md), "Help" too, whose word alone is narrower. Found by the full run's tap target checks.
+- **The picture and plan copy readers are "stable", not "immutable"**, as they call steps that are only stable. Found by GitHub's database lint on the draft pull request, as D544 was in step 4c. And the step's database test starts from empty support tables inside its own transaction, so what the end-to-end tests leave in a local database can't change it (PLAN.md item 41).
 - **"Write another message"** after Contact us and Suggest a feature starts a fresh form; the sheet starts afresh the next time it opens.
 - **More's Help card** has **Contact us** ("Write to PrePenny support") and **Suggest a feature** ("Ideas for what PrePenny could do"), after **Take the tour**.
 - **Contact us's box** says "If you can't sign in, say which email address you signed up with. Never send a card number or a password."
