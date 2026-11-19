@@ -330,7 +330,7 @@ $$;
 -- data and 4,096 PNG chunks, so a file made to be slow to read is refused
 -- quickly.
 create function app.picture_facts(data bytea) returns jsonb
-language plpgsql immutable set search_path = '' as $$
+language plpgsql stable set search_path = '' as $$
 declare
   n integer := coalesce(octet_length(data), 0);
   at integer;
@@ -346,7 +346,6 @@ declare
   table_end integer;
   counted integer;
   rest bytea;
-  forbidden integer;
   tables integer;
 begin
   -- The words Exif and XMP start with, which no picture needs.
@@ -516,7 +515,7 @@ $$;
 -- read from its contents: JSON, saying it's PrePenny's backup, version 1,
 -- with a plan in it.
 create function app.plan_copy_ok(data bytea) returns boolean
-language plpgsql immutable set search_path = '' as $$
+language plpgsql stable set search_path = '' as $$
 declare
   copy jsonb;
 begin

@@ -26,8 +26,17 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(132);
 
--- The real caps, not the local end-to-end tests' (seed.sql, D606).
+-- The real caps, not the local end-to-end tests' (seed.sql, D606), and
+-- support as on a fresh database, whatever the end-to-end tests left on this
+-- one (PLAN.md item 41): all undone when the test ends.
 update app.support_test set scale = 1 where only_one;
+delete from app.support_messages;
+delete from app.support_codes;
+delete from app.support_sends;
+delete from app.code_tries where purpose = 'support';
+delete from app.code_locks where purpose = 'support';
+update app.support_told set told_at = null where only_one;
+delete from net.http_request_queue;
 
 select tests.make_person('jess');
 select tests.make_person('tom');
