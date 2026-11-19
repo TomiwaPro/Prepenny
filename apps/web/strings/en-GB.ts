@@ -1790,8 +1790,8 @@ export const strings = {
   },
 
   /**
-   * On Home when the plan is short in each of the next three pay periods
-   * (step 4g, D584, the owner's answer to PLAN.md question 9).
+   * On Home when three pay periods in a row are short, from the one we're
+   * in now or the next (step 4g, D584, D592, the owner's answers).
    */
   moneyHelp: {
     title: 'Free, confidential help is available.',

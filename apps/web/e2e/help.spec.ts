@@ -1,6 +1,6 @@
 // Step 4g: the help centre (brief 4.16, 7.1, D587 to D589) and Home's card
-// offering free help when money is tight (D584 to D586), at 320px and
-// 360px, in light and dark, with axe.
+// offering free help when money is tight (D584 to D586, D592), at 320px
+// and 360px, in light and dark, with axe.
 //
 // 1. More has Help; the help centre lists every article, and each opens,
 //    reads, and goes back.
@@ -10,12 +10,13 @@
 // 3. Searching and reading work with no signal.
 // 4. The website's help is for anyone, with no plan: its links to other
 //    organisations open beside PrePenny, and its phone numbers can be tapped.
-// 5. Home shows the card under the lowest point when the plan is short in
-//    each of the next three pay periods, calm, never pushing the lowest
+// 5. Home shows the card under the lowest point when three pay periods in a
+//    row are short, from the next one (Dee), calm, never pushing the lowest
 //    point down, and "See where to get help" opens Help when money is tight.
 // 6. "Not now" hides it for 30 days, on this phone.
-// 7. It never shows when the plan isn't short in all three,
-// 8. nor on Sam's example.
+// 7. It shows when the three start with the pay period we're in now (Jo).
+// 8. It never shows when only two pay periods running are short,
+// 9. nor on Sam's example.
 
 import { expect, type Page } from '@playwright/test';
 import { helpArticles } from '../lib/help-articles.ts';
@@ -27,7 +28,7 @@ import { strings } from '../strings/en-GB.ts';
 import { settingScript, test } from './fixtures.ts';
 import { noSidewaysScroll } from './journeys.ts';
 import {
-  shortNowAndNextTwo,
+  joShortFromNow,
   shortThreeRunning,
   shortTwoOfThree,
   TIGHT_TODAY,
@@ -266,7 +267,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Home's card when money is tight, in ${colorScheme}`, () => {
     test.use({ colorScheme });
 
-    test('5. Short in each of the next three pay periods: a calm card under the lowest point', async ({
+    test('5. Short in three pay periods in a row, from the next one: a calm card under the lowest point', async ({
       page,
     }) => {
       await openHome(page, { plan: shortThreeRunning, today: TIGHT_TODAY });
@@ -357,27 +358,34 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await openHome(page, { today: '2026-12-17' });
       await expect(card(page)).toHaveCount(0);
 
-      // Back on Fri 18 Dec, 30 days later, as the plan is still short in each of
-      // the next three pay periods: Tue 29 Dec, Fri 29 Jan and Sun 28 Feb.
+      // Back on Fri 18 Dec, 30 days later, as the plan is still short three pay
+      // periods in a row: now, on Tue 29 Dec and on Fri 29 Jan.
       await openHome(page, { today: '2026-12-18' });
       await expect(card(page)).toBeVisible();
     });
 
-    test("7. Never when the plan isn't short in all three", async ({ page }) => {
-      // Short on Sun 29 Nov and Tue 29 Dec, but not in the pay period from Thu 28 Jan.
+    test('7. Short now and in the next two pay periods: the card shows (Jo)', async ({ page }) => {
+      // Short on Fri 20 Nov, now, then up to the 25 Dec and 25 Jan paydays,
+      // but not in February's: three in a row from the pay period we're in (D592).
+      await openHome(page, { plan: joShortFromNow, today: TIGHT_TODAY });
+      await expect(page.getByTestId('lowest-point')).toContainText('£50.00 short on Fri 20 Nov.');
+      await expect(card(page)).toBeVisible();
+      await expect(card(page).getByRole('heading', { level: 2 })).toHaveText(
+        strings.moneyHelp.title,
+      );
+      await noSidewaysScroll(page);
+      await noAxeProblems(page);
+    });
+
+    test('8. Never when only two pay periods running are short', async ({ page }) => {
+      // Short on Sun 29 Nov and Tue 29 Dec, but not now, nor in the pay period from Thu 28 Jan.
       await openHome(page, { plan: shortTwoOfThree, today: TIGHT_TODAY });
       await expect(page.getByTestId('lowest-point')).toContainText('£30.00 short on Sun 29 Nov.');
-      await expect(card(page)).toHaveCount(0);
-
-      // Short now and in the next two, but the pay period today is in started
-      // before today, and the third isn't short (D585).
-      await openHome(page, { plan: shortNowAndNextTwo, today: TIGHT_TODAY });
-      await expect(page.getByTestId('lowest-point')).toContainText('£280.00 short on Fri 20 Nov.');
       await expect(card(page)).toHaveCount(0);
       await noAxeProblems(page);
     });
 
-    test("8. Never on Sam's example", async ({ page }) => {
+    test("9. Never on Sam's example", async ({ page }) => {
       await page.goto('/app/');
       await expect(page.getByTestId('lowest-point')).toBeVisible();
       await settled(page);

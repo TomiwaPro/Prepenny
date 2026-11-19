@@ -1,11 +1,11 @@
 // Step 4g: when Home offers "Free, confidential help is available." (D584,
-// D585), and how long "Not now" hides it (D586).
+// D585, and the owner's change, D592), and how long "Not now" hides it (D586).
 
 import { type PlanRecords, parsePounds as pounds, type Series } from '@prepenny/engine';
 import { describe, expect, it } from 'vitest';
 import { examplePlan } from '../../data/example-plan.ts';
 import {
-  shortNowAndNextTwo,
+  joShortFromNow,
   shortThreeRunning,
   shortTwoOfThree,
   TIGHT_TODAY,
@@ -34,8 +34,8 @@ const withSeries = (plan: PlanRecords, ...more: Series[]): PlanRecords => ({
   series: [...plan.series, ...more],
 });
 
-describe('Short in each of the next three pay periods (D585)', () => {
-  it("is the owner's example: short on Sun 29 Nov, Tue 29 Dec and Fri 29 Jan", () => {
+describe("Short in three pay periods in a row, from the one we're in now or the next (D592)", () => {
+  it("is the owner's example: Dee, short on Sun 29 Nov, Tue 29 Dec and Fri 29 Jan, though not now", () => {
     expect(workOutHome(shortThreeRunning, TIGHT_TODAY).shortRunning).toEqual([
       '2026-11-29',
       '2026-12-29',
@@ -43,30 +43,56 @@ describe('Short in each of the next three pay periods (D585)', () => {
     ]);
   });
 
-  it('is nothing when one of the three has no short day', () => {
+  it('is nothing when only two pay periods running are short', () => {
     expect(workOutHome(shortTwoOfThree, TIGHT_TODAY).shortRunning).toBeNull();
   });
 
-  it("doesn't count the pay period today is in, when it started before today", () => {
-    const home = workOutHome(shortNowAndNextTwo, TIGHT_TODAY);
+  it("is the owner's example: Jo, short now, and up to the 25 Dec and 25 Jan paydays, but not in February's", () => {
+    const home = workOutHome(joShortFromNow, TIGHT_TODAY);
     expect(home.lowest.short?.date).toBe('2026-11-20');
-    expect(home.shortRunning).toBeNull();
+    expect(home.shortRunning).toEqual(['2026-11-20', '2026-12-01', '2027-01-01']);
   });
 
-  it('counts the pay period that starts today, on payday', () => {
-    // On payday, Fri 27 Nov, its pay period is the first of the three, so
-    // £1,000.00 coming in on Fri 26 Feb, in the fourth, changes nothing.
+  it('shows from now when the next three are short too', () => {
+    // The tax refund a month later: short in the pay period from Mon 25 Jan
+    // too (−£50.00 on Mon 1 Feb), so both runs are short; the one from now is given.
+    const later: PlanRecords = {
+      ...joShortFromNow,
+      series: joShortFromNow.series.map((one) =>
+        one.id === 'tax-refund' ? { ...one, start: '2027-02-25' } : one,
+      ),
+    };
+    expect(workOutHome(later, TIGHT_TODAY).shortRunning).toEqual([
+      '2026-11-20',
+      '2026-12-01',
+      '2027-01-01',
+    ]);
+  });
+
+  it('is nothing when the pay period after next has no short day, even short now', () => {
+    // £100.00 more on Fri 25 Dec: £1,050.00 − £1,000.00 = £50.00 on Fri 1 Jan.
+    const gap = withSeries(joShortFromNow, once('gift', 'in', '100.00', '2026-12-25'));
+    expect(workOutHome(gap, TIGHT_TODAY).lowest.short?.date).toBe('2026-11-20');
+    expect(workOutHome(gap, TIGHT_TODAY).shortRunning).toBeNull();
+  });
+
+  it("counts the pay period we're in from today on, payday included", () => {
+    // £1,000.00 coming in on Fri 26 Feb, in the fourth, changes nothing: on
+    // payday, Fri 27 Nov, and the day after, the three from now are short.
     const rescuedInFeb = withSeries(
       shortThreeRunning,
       once('bonus', 'in', '1000.00', '2027-02-26'),
     );
-    expect(workOutHome(rescuedInFeb, '2026-11-27').shortRunning).toEqual([
-      '2026-11-29',
-      '2026-12-29',
-      '2027-01-29',
-    ]);
-    // A day later, the three are from Thu 24 Dec, and the fourth isn't short.
-    expect(workOutHome(rescuedInFeb, '2026-11-28').shortRunning).toBeNull();
+    for (const today of ['2026-11-27', '2026-11-28']) {
+      expect(workOutHome(rescuedInFeb, today).shortRunning).toEqual([
+        '2026-11-29',
+        '2026-12-29',
+        '2027-01-29',
+      ]);
+    }
+    // On Wed 30 Dec, the pay periods from Thu 24 Dec (still −£180.00) and
+    // Thu 28 Jan are short, but February's, from Fri 26 Feb, isn't.
+    expect(workOutHome(rescuedInFeb, '2026-12-30').shortRunning).toBeNull();
   });
 
   it('gives the first short day of each pay period', () => {
@@ -136,12 +162,12 @@ describe('Short in each of the next three pay periods (D585)', () => {
       ...shortThreeRunning,
       settings: { nation: 'england-and-wales', mainPayFamilyId: null },
     };
-    // December, January and February: still −£30.00 on Tue 1 Dec, −£180.00 on
-    // Fri 1 Jan and −£330.00 on Mon 1 Feb.
+    // November from today, December and January: −£30.00 on Sun 29 Nov,
+    // still −£30.00 on Tue 1 Dec, and −£180.00 on Fri 1 Jan.
     expect(workOutHome(noMainPay, TIGHT_TODAY).shortRunning).toEqual([
+      '2026-11-29',
       '2026-12-01',
       '2027-01-01',
-      '2027-02-01',
     ]);
   });
 });

@@ -72,8 +72,9 @@ export interface HomeView {
   /** The next three rows from today on that aren't ticked (D168, D179). */
   readonly nextDue: readonly RowView[];
   /**
-   * The first short day in each of the next three pay periods, when every
-   * one of them has one: Home then offers free help (step 4g, D585).
+   * The first short day in each of three pay periods in a row, from the one
+   * we're in now or the next, when there are three: Home then offers free
+   * help (step 4g, D592).
    */
   readonly shortRunning: readonly string[] | null;
 }

@@ -1,9 +1,10 @@
 'use client';
 
-// On Home, when the plan has a short day in each of the next three pay
-// periods: "Free, confidential help is available.", with "See where to get
-// help" and "Not now", which hides it for 30 days (step 4g, D584 to D586,
-// the owner's answer to PLAN.md question 9, brief 4.16). Calm: the sunk
+// On Home, when three pay periods in a row each have a short day, starting
+// with the one we're in now or the next one: "Free, confidential help is
+// available.", with "See where to get help" and "Not now", which hides it
+// for 30 days (step 4g, D584 to D586, D592, the owner's answers to PLAN.md
+// question 9 and to step 4g, brief 4.16). Calm: the sunk
 // colour, like the bank holiday note, never Short's red, and no blame. It
 // sits under the lowest point, so it never pushes the lowest point down
 // (D442, D451). Never on Sam's example, which isn't anyone's own money.
