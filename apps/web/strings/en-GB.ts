@@ -1804,6 +1804,108 @@ export const strings = {
   },
 
   /**
+   * The "?" beside what can confuse (step 4h, brief 4.16, D596): each opens
+   * a short sheet with the person's own figures and a link to its help
+   * article. The button shows the mark and "Why" (D216); screen readers hear
+   * the sheet's title.
+   */
+  why: {
+    mark: '?',
+    button: 'Why',
+    /** Before the link to the article, at the end of each sheet. */
+    readMore: 'More in Help:',
+    lowest: {
+      title: (day: string) => `Why your lowest point is on ${day}`,
+      intro: (account: string) =>
+        `Your lowest point is the least you'll have in ${account} at the end of any day, looking 12 months ahead.`,
+      on: (day: string, after: string, amount: string) =>
+        `On ${day}, after ${after}, you'll have ${amount}. No other day in those 12 months ends lower.`,
+      onNothingYet: (day: string, amount: string) =>
+        `At the end of ${day}, you'll have ${amount}. No other day in those 12 months ends lower.`,
+      payAfter: (day: string) => `Your next payday after that is ${day}.`,
+      tight: (warning: string) =>
+        `It says Tight because that's under ${warning}, the amount you chose in Warn me when it goes under.`,
+      short: "It says Short because you'd run out of money: that's below £0.00.",
+      shortOverdraft: (limit: string) =>
+        `It says Short because you'd run out of money: that's past your ${limit} overdraft.`,
+      raise:
+        'To raise it, tap a payment on Coming up to move it, change it or skip it. What if, under More, lets you try a change first.',
+    },
+    notTicked: {
+      title: 'Why payments not ticked yet still count',
+      intro:
+        "PrePenny can't see your bank, so a payment from before today stays here until you tick it.",
+      count: (account: string, count: number) =>
+        count === 1
+          ? `1 payment for ${account} isn't ticked yet.`
+          : `${count} payments for ${account} aren't ticked yet.`,
+      before: (day: string) =>
+        `You last checked your balance on ${day}. A payment dated then or before that had already gone is in your bank's figure, so until it's ticked, PrePenny counts it twice.`,
+      howToTick: 'To tick one, tap it, then Mark as paid, or Mark as arrived for money coming in.',
+    },
+    ticking: {
+      title: "Why you tick what's already gone",
+      intro: "Your bank's figure already has every payment that has gone.",
+      typed: (amount: string, account: string) =>
+        `You've typed ${amount}, what your bank shows now for ${account}.`,
+      out: (name: string, amount: string) =>
+        `If ${name}, ${amount}, has already gone out, tick it. Otherwise PrePenny takes it off again.`,
+      in: (name: string, amount: string) =>
+        `If ${name}, ${amount}, has already come in, tick it. Otherwise PrePenny adds it again.`,
+    },
+  },
+
+  /**
+   * The 60-second tour of Home (step 4h, D597, the owner's answer): offered
+   * once after setup by a card under the lowest point, and any time from
+   * More, under Help.
+   */
+  tour: {
+    /** The owner's words for the card. */
+    card: 'New to PrePenny? Take a 60-second tour.',
+    showMe: 'Show me',
+    noThanks: 'No thanks',
+    /** In the card's place once it's gone for good, until Home opens again. */
+    inMore: 'The tour is in More, under Help, whenever you want it.',
+    /** The tour's name, for screen readers. */
+    name: 'Tour of Home',
+    step: (step: number, of: number) => `Step ${step} of ${of}`,
+    back: 'Back',
+    next: 'Next',
+    /** The last step's Next, which finishes the tour. */
+    done: 'Done',
+    end: 'End tour',
+    /** Under More, Help. */
+    moreLabel: 'Take the tour',
+    moreLine: '60 seconds around Home, step by step',
+    balance: {
+      title: 'Your account',
+      text: (account: string) =>
+        `This is ${account}. PrePenny starts from what your bank showed when you last checked, and works forward from there.`,
+      leftToSpend:
+        "Left to spend is the spending money you planned until the date beside it, less what you've written down with I spent.",
+    },
+    lowest: {
+      title: 'Lowest point ahead',
+      text: (amount: string, day: string) =>
+        `The least you'll have at the end of any day in the next 12 months: ${amount} on ${day}. Tight or Short says when it's under the amount you want to keep, or when you'd run out.`,
+      why: 'Why, beside it, says what takes it there.',
+    },
+    nextDue: {
+      title: 'Next due',
+      text: "The next three things due, with what you'll have left after each. Tap one to change it, move it or skip it.",
+    },
+    actions: {
+      title: 'Update balance',
+      text: 'When you check your bank, tap Update balance, so your plan starts from the right amount. The other buttons add a payment, write down what you spent, or add overtime or a missed shift.',
+    },
+    nav: {
+      title: 'Everything else',
+      text: "Coming up has every payment ahead, with what you'll have left after each. Debts shows when each one is paid off. More has your accounts, settings and Help, where you can take this tour again.",
+    },
+  },
+
+  /**
    * Adding PrePenny to the home screen (step 4d, D546 to D551): the
    * suggestion on Home on the second day, before setup on an iPhone, and the
    * steps under More, in each phone's own button names.

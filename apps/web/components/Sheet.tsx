@@ -49,7 +49,11 @@ export function Sheet({
       className={styles.sheet}
       aria-labelledby={titleId}
       aria-describedby={intro === null ? undefined : introId}
-      onClose={onClose}
+      onClose={(event) => {
+        // Only its own: React passes a sheet's "close" up to a sheet it's
+        // inside, which would close that one too (step 4h, D596).
+        if (event.target === event.currentTarget) onClose();
+      }}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
