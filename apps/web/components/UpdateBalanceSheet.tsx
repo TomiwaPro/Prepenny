@@ -21,6 +21,7 @@ import { newId, timeNow } from '../lib/ids.ts';
 import { formatMoney } from '../lib/money.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import type { RowView } from '../lib/rows.ts';
+import { tickingWhy, type WhyWords } from '../lib/why.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
 import { CheckOption, describedBy, Field, MoneyInput, Problem } from './Fields.tsx';
@@ -30,6 +31,7 @@ import { Sheet } from './Sheet.tsx';
 import { StatusPill } from './StatusPill.tsx';
 import { type ShownActions, useActionsView } from './useActionsView.ts';
 import { useOpenCount } from './useOpenCount.ts';
+import { WhyButton, WhySheet } from './Why.tsx';
 
 const t = strings.updateBalance;
 
@@ -117,6 +119,8 @@ function UpdateBalanceForm({
   // The rows to tick, as they were when step 3 opened, so the list doesn't
   // change under the person's thumb.
   const [toTick, setToTick] = useState<readonly RowView[]>([]);
+  // Why ticking matters, in a sheet over this one (step 4h, D596).
+  const [why, setWhy] = useState(false);
   const amountRef = useRef<HTMLInputElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const firstStep = useRef(true);
@@ -298,6 +302,14 @@ function UpdateBalanceForm({
         {toTick.length === 0 ? null : (
           <>
             <p className={styles.hint}>{t.tickIntro}</p>
+            {balance === null ? null : (
+              <TickingWhy
+                open={why}
+                onOpen={() => setWhy(true)}
+                onClose={() => setWhy(false)}
+                words={tickingWhy(balance, account.name, toTick)}
+              />
+            )}
             <ul className={styles.tickList} data-testid="to-tick">
               {toTick.map((row) => (
                 <TickRow
@@ -374,6 +386,26 @@ function UpdateBalanceForm({
       <button type="button" className={styles.main} onClick={onClose}>
         {strings.sheet.done}
       </button>
+    </div>
+  );
+}
+
+/** The "?" under the ticking step's line, and its sheet over this one (step 4h, D596). */
+function TickingWhy({
+  open,
+  onOpen,
+  onClose,
+  words,
+}: {
+  readonly open: boolean;
+  readonly onOpen: () => void;
+  readonly onClose: () => void;
+  readonly words: WhyWords;
+}) {
+  return (
+    <div className={styles.why}>
+      <WhyButton title={words.title} testId="ticking-why" onOpen={onOpen} />
+      <WhySheet open={open} {...words} onClose={onClose} />
     </div>
   );
 }

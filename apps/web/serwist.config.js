@@ -30,6 +30,8 @@ export default {
   globDirectory: 'out',
   globPatterns: ['**/*.{html,js,css,woff2,png,svg,webmanifest,json,txt}'],
   // version.json says which version is live now, so it's always fetched fresh (lib/version.ts),
+  // while offline-version.json, the same, is kept with the pages: it says which
+  // version this helper holds (step 4h, D594),
   // and so is the bank holiday list, which can change without a new version (step 4c, D537).
   // An iPhone fetches its one opening screen only when PrePenny is added to its
   // Home Screen, so the 26 aren't downloaded to every phone (step 4d, D550).

@@ -22,6 +22,10 @@
 /version.json
   Cache-Control: no-store
 
+# The same, kept by the offline helper with the pages (step 4h): never by a browser.
+/offline-version.json
+  Cache-Control: no-store
+
 # The bank holiday list phones fetch each week (step 4c): never kept by a browser.
 /bank-holidays.json
   Cache-Control: no-store

@@ -1,87 +1,38 @@
 'use client';
 
 // "PrePenny has been updated. Tap to reload." (D202): a small note at the
-// bottom when a new version of PrePenny has arrived on the phone. The
-// offline helper takes over as soon as a new version is on the phone, so
-// the screen open now is the old version until it's loaded again. Tapping
-// the note loads the new version straight away.
+// bottom as soon as PrePenny knows a newer version is live (lib/update.ts).
+// PrePenny loads the new version by itself at the first safe moment, once
+// it's on the phone; a tap loads it straight away. A tap before it's on the
+// phone, which can take minutes on a weak signal, says it's being fetched,
+// and it opens by itself once it is (step 4h, D594).
 
-import { useSyncExternalStore } from 'react';
-import { useUpdateWanted } from '../lib/update.ts';
+import { loadNewVersion, useUpdateState } from '../lib/update.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './UpdateNote.module.css';
 
-let updated = false;
-const listeners = new Set<() => void>();
-let watching = false;
-
-/** Listens once for a new version taking over this page, and checks for one when PrePenny comes back on screen. */
-function watch() {
-  if (watching || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
-  watching = true;
-  const helpers = navigator.serviceWorker;
-  // The very first offline helper takes over a page that had none: that's
-  // not a new version, so only a change after that one counts.
-  let hadOne = helpers.controller !== null;
-  helpers.addEventListener('controllerchange', () => {
-    if (hadOne && !updated) {
-      updated = true;
-      for (const listener of listeners) listener();
-    }
-    hadOne = true;
-  });
-  // A phone can keep PrePenny open for days, so it looks for a new version
-  // each time PrePenny comes back on screen.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
-    helpers
-      .getRegistration()
-      .then((registration) => registration?.update())
-      .catch(() => {
-        // No signal: it looks again next time.
-      });
-  });
-}
-
-function subscribe(listener: () => void) {
-  watch();
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-/** True once a new version of PrePenny has taken over this page. */
-export function useUpdated(): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    () => updated,
-    () => false,
-  );
-}
-
 /**
  * The note, inside a live region that's always there, so screen readers hear
- * it appear. Since step 3e it also shows while a signed-in phone waits for a
- * safe moment to load the new version itself (lib/update.ts): a tap loads it
- * at once.
+ * it appear, and hear it change after a tap.
  */
 export function UpdateNote() {
-  const updated = useUpdated();
-  const wanted = useUpdateWanted();
-  const ready = updated || wanted;
+  const state = useUpdateState();
   return (
     <div role="status">
-      {ready ? (
+      {state === 'found' ? (
         <button
           type="button"
           className={styles.note}
           data-testid="update-note"
           data-update-note
-          onClick={() => window.location.reload()}
+          onClick={loadNewVersion}
         >
           {strings.banners.updated}
         </button>
+      ) : state === 'getting' ? (
+        <p className={styles.note} data-testid="update-note" data-update-note>
+          {strings.banners.gettingNewVersion}
+        </p>
       ) : null}
     </div>
   );

@@ -24,8 +24,10 @@ jobs:
     # Each part took 21 to 34 minutes on step 3e's pull request, once the
     # sign-in tests were shared between them (D389). Step 3i adds about 28
     # minutes across the three (the security test alone is about 8), so each
-    # has 60 minutes, which leaves room for a slow day (D499).
-    timeout-minutes: 60
+    # had 60 minutes (D499). On step 4h's pull request, with the second build
+    # and the updating, "?" and tour tests, they took 47, 52 and 58 minutes,
+    # so each has 80, which leaves room for a slow day again (D600).
+    timeout-minutes: 80
     strategy:
       fail-fast: false
       matrix:
@@ -73,9 +75,12 @@ jobs:
 
       - name: Build the app
         # With the local Supabase's address (apps/web/lib/sign-in-config.ts),
-        # which only part 3 starts. The other tests never contact it.
+        # which only part 3 starts. The other tests never contact it. First a
+        # second build of the same code with a name of its own, the new
+        # version in the updating tests, kept in apps/web/e2e/.updating/new
+        # (step 4h, D594); then the build every test uses.
         id: build
-        run: pnpm build:local
+        run: pnpm build:update-test && pnpm build:local
 
       - name: Find the test browser's version
         id: playwright

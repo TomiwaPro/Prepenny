@@ -1,0 +1,105 @@
+/*
+ * The tour of Home (step 4h, D597): a small panel over Home, with a brass
+ * edge like the update note and no shadow (DESIGN.md), above the bottom
+ * navigation, or at the top when the part it's about is low on the screen.
+ * Home stays in sight around it, not dimmed, with the part each step is
+ * about ringed in the focus colour, which passes 3:1 against every
+ * background (DESIGN.md).
+ */
+.tour {
+  position: fixed;
+  inset: auto var(--gutter) calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-2))
+    var(--gutter);
+  margin: 0 auto;
+  width: auto;
+  max-width: var(--column);
+  max-height: calc(100dvh - var(--nav-height) - var(--space-6));
+  overflow: auto;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) 14px;
+  background: var(--card);
+  color: var(--ink);
+}
+
+.tour[data-place="top"] {
+  inset: calc(env(safe-area-inset-top) + var(--space-2)) var(--gutter) auto var(--gutter);
+}
+
+.tour::backdrop {
+  background: transparent;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.step:focus {
+  outline: none;
+}
+
+.step:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.count {
+  font-size: var(--size-label);
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.title {
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+.text {
+  font-size: var(--size-body);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.buttons > button {
+  flex: 1 1 4.5rem;
+  min-height: var(--button-height);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-inner);
+  background: var(--card);
+  color: var(--accent-text);
+  font-size: var(--size-second);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.buttons > button:disabled {
+  color: var(--ink-muted);
+}
+
+.buttons > .main {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+
+/* A gentle rise as it opens; none when the phone asks for reduced motion (brief Part 6). */
+@media (prefers-reduced-motion: no-preference) {
+  .tour[open] {
+    animation: rise 180ms ease-out;
+  }
+
+  @keyframes rise {
+    from {
+      transform: translateY(12px);
+      opacity: 0.6;
+    }
+  }
+}

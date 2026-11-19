@@ -127,6 +127,14 @@ section.card {
   font-weight: 700;
 }
 
+/* "Not ticked yet" with its "?" beside it (step 4h, D596). */
+.headingWithWhy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .card .rows {
   margin-top: var(--space-2);
 }

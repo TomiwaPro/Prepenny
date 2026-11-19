@@ -46,6 +46,7 @@ import { ChoiceList } from './ChoiceList.tsx';
 import styles from './ComingUpScreen.module.css';
 import { EditSheet } from './EditSheet.tsx';
 import { Icon } from './icons.tsx';
+import { NotTickedWhy } from './NotTickedWhy.tsx';
 import { isSamsExample, usePlanActions } from './PlanProvider.tsx';
 import { RowItem } from './RowItem.tsx';
 import { Sheet } from './Sheet.tsx';
@@ -805,9 +806,13 @@ export function ComingUpScreen({ practice = false }: { readonly practice?: boole
             {view.mainPayEnded ? <p className={styles.card}>{strings.home.mainPayEnded}</p> : null}
             {account.notTickedYet.length > 0 ? (
               <section className={styles.card} data-testid="not-ticked-yet">
-                <Heading level={2} className={styles.sectionHeading}>
-                  {t.notTickedYet}
-                </Heading>
+                <div className={styles.headingWithWhy}>
+                  <Heading level={2} className={styles.sectionHeading}>
+                    {t.notTickedYet}
+                  </Heading>
+                  {/* Why they still count, in this account's figures (step 4h, D596). */}
+                  <NotTickedWhy account={account} today={today} />
+                </div>
                 <p className={styles.second}>{t.notTickedYetIntro}</p>
                 <ul className={styles.rows}>
                   {account.notTickedYet.map((row) => (

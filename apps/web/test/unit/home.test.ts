@@ -42,6 +42,8 @@ describe('Home for Sam’s example plan', () => {
       status: 'tight',
       underWarningFrom: '2026-10-26',
       short: null,
+      floor: 0,
+      payAfter: '2026-11-06',
     });
   });
 

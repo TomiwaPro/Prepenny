@@ -7302,3 +7302,123 @@ The owner's words: "the owner opened https://www.moneyhelper.org.uk/en/money-tro
 - **The opening line** no longer calls everything below a charity: "If your plan shows you'll be short, you don't have to sort it out on your own. The charities below give free, confidential advice about debt and money, and MoneyHelper can help you find free debt advice too."
 
 Why: the owner's answer. Brief 4.16 names MoneyHelper, and the owner could open what the building computer couldn't.
+
+## Made during step 4h
+
+D594 and D595 were decided on 19 Nov 2026 in step 4h's first part: an open PrePenny that didn't update itself.
+
+### D594. Why an open PrePenny didn't update itself, and the fix
+
+Decided 19 Nov 2026 in step 4h, from the owner's report. Changes how D202 and D386 work; their words and rules stand.
+
+**What the owner saw.** On Thu 19 Nov 2026, on an Android phone in Chrome, signed in, on a weak 5G signal: a PrePenny tab open from before step 4g went live at 07:21 still showed the old More screen at 08:32 ("Help is still being built."). No "PrePenny has been updated. Tap to reload." note, and it didn't load the new version by itself. Refreshing by hand showed the new version.
+
+**What was checked, and ruled out.**
+
+- **The live site's headers,** read at prepenny.co.uk on 19 Nov 2026: `/version.json` is sent with `Cache-Control: no-store` and says the build that's live (`b498ae820a00`, step 4g's merge); `/sw.js` with `Cache-Control: no-cache`. Cloudflare's `cf-cache-status: HIT` on `/version.json` is Workers' own store of the deployed files, which changes with each deploy, so it isn't an old copy. Nothing there was wrong.
+- **The offline helper** installs and takes over as it should (`skipWaiting`, `clientsClaim`), fetching 10 files at a time. But every new version changes every page (each page lists its scripts by name, and the names change with each build), so a phone must download **193 files, 3.45 MB** of the 267 before the new helper takes over. On a fast connection that's about 1 second; at 1.6 Mbit/s with a 0.3-second round trip, about 45 seconds; at 0.5 Mbit/s, about 75 seconds.
+- **Reproduced on this computer** with two real builds, a real offline helper, Android Chrome, the old build open on More, signed in, the tab hidden and frozen, the new build put live, a slowed link, and the tab shown again. On a fast link everything worked. On a weak one it didn't.
+
+**The cause: three faults in the app, together.**
+
+1. **It loaded the page afresh before the new version was on the phone.** Once a signed-in phone knew a newer version was live, it waited at most 30 seconds for the new offline helper to take over, then loaded the page afresh anyway. On a weak signal the helper was still downloading, so the old helper served the fresh load from its copy: **the old version again.** The fresh page had no note (the note lived only in the page that was replaced), and a 2-minute "at most once" rule stopped it trying again. Measured at 0.5 Mbit/s: the note showed at 3 seconds; at 32 seconds the page loaded afresh into the old version with no note; the new helper took over at 77 seconds and the note came back; the new version opened only at 155 seconds. At a weaker signal the cycle repeats: mostly the old version, mostly with no note. That's what the owner saw, and why refreshing by hand later, once the helper had finished, showed the new version.
+2. **Signed out, it never asked which version was live.** Only a signed-in phone's look at the account asked `/version.json`, after renewing the sign-in and the server's `hello`, in the same one-at-a-time line as sending and bringing down the plan. Signed out, a phone heard of a new version only when the new helper had finished downloading, showed the note only then, and never loaded it by itself.
+3. **The note showed only at the end** when signed out, and, signed in, could wait behind a sign-in renewal and other looks at the account, each allowed 30 seconds.
+
+**The fix** (`apps/web/lib/update.ts`, `lib/version.ts`, `components/UpdateNote.tsx`):
+
+- **One look for a new version, signed in or not, on every screen of the app and setup:** when PrePenny opens, each time it comes back on screen or gets a signal, when a new offline helper takes charge, and every minute while it's on screen. It asks two things at once: which version is live (`/version.json`, fresh), and which version a fresh load would give: the offline helper now answers `/offline-version.json` from the copy it keeps with the pages, written by the same build. With no helper in charge, a fresh load comes from the site, so that's the live one. Every look asks afresh, never using an earlier answer; looks made while a request is under way, as when a signed-in phone's look at the account starts at the same moment, share it.
+- **Found:** as soon as a newer version is live, the note shows: "PrePenny has been updated. Tap to reload." A signed-in phone sends nothing until it has loaded it (D386): every change waits on the phone.
+- **On the phone:** the offline helper fetches it, however long that takes. Nothing is loaded meanwhile. If the download stops, as when the signal drops, the next look asks again, and the helper keeps the files it already has.
+- **Loaded:** once the helper in charge holds the version that's live, the page loads afresh at the first safe moment (no sheet open, nothing typed and not sent, as D386), on whatever screen is open, signed in or not. The new version then sends any change that was waiting.
+- **Never loops:** it loads afresh only for a version the phone holds, and only once for each version in a tab (kept for that tab only, as before). If a version is taken back, the note goes.
+- **With no signal:** nothing changes, and PrePenny works from the phone as before. A version already on the phone, as when the helper finished just before the signal dropped, is loaded at the next safe moment.
+- **A tap on the note** loads it straight away when it's on the phone. Before then, the note's words change to "Getting the new version. It opens by itself once it's on this phone.", read out by screen readers, and it opens by itself once it's there: the tap was the person asking, so something typed before it doesn't hold it up, but a sheet open, or anything typed after the tap, does.
+- **No earlier answer is ever used:** found by this step's own tests, an answer kept for 5 seconds, to save a request, was wrong twice: "no answer" from a look with no signal hid the signal coming back within those seconds, and, with the signed-in test on a busy computer, the old version's answer from just before the tab was hidden was used when it came back 4 seconds later, so the old version sent a waiting change. Only a request still under way is shared now.
+
+**What someone sees now** when PrePenny updates while open: within seconds of coming back on screen with a signal, the note at the bottom. A few seconds later on a good signal, or as long as the download takes on a weak one (about a minute at 0.5 Mbit/s), the screen loads afresh by itself into the new version, on the same screen, unless a sheet is open or something's half typed: then as soon as it isn't.
+
+**The update after this one.** A phone runs the code of the version it has open, so phones with step 4g open update to step 4h the old way. Every update after step 4h works as above. `docs/TRY-PHASE-4.md`, step 4h, "Updating to a new version", says how to check it on a phone after a later merge.
+
+Test: `apps/web/e2e/updating.spec.ts` (signed out) and `updating-signed-in.spec.ts` (signed in), D595; both fail with the old code: signed out, no note comes; signed in, the page loads afresh into the old version at 30 seconds. `apps/web/test/unit/update.test.ts` (9 tests).
+
+Why: the owner's report and instruction: with signal, within a few seconds of PrePenny coming back on screen, the note shows, and the new version loads by itself at the first safe moment, signed in or not, on any screen; never looping, never losing a waiting change, and still working with no signal.
+
+### D595. How step 4h's updating is tested
+
+Decided 19 Nov 2026 in step 4h.
+
+- **Two real builds:** `pnpm build:update-test` builds the same code again, named `update-test` (`PREPENNY_BUILD_NAME`, read only by `scripts/build-worker.ts`, never set when PrePenny is built to go online), into `apps/web/e2e/.updating/new`; then `pnpm build:local` builds `out/` as before, the old version. GitHub's end-to-end workflow runs both, about half a minute more for each of its three parts.
+- **One address, two versions:** each test serves the old build with Wrangler, as Cloudflare serves it, on an address of its own (port 4180 and up, one for each test running at once, each with its own name and debugger port so copies starting together don't clash), then stops it and serves the new build at the same address, as a deploy does.
+- **The phone:** Android Chrome. Headless Chrome never hides a tab, so the test tells the page it's hidden (the event PrePenny listens for), then freezes it for real, as Android does; then wakes it and tells it it's showing.
+- **A weak signal:** the offline helper's own downloads are held for 35 seconds, longer than the old 30-second limit, then let through.
+- **Signed out** (test 1, at 320px and 360px, in light and dark, with axe): back on screen with no signal, nothing changes and More works; the signal returns, the note shows within 5 seconds; a tap changes the note to "Getting the new version. It opens by itself once it's on this phone."; for 35 seconds the page isn't loaded afresh; then the new version opens by itself, on More, loading once; nothing more loads in the next 5 seconds; with no signal, a fresh load opens the new version from the phone.
+- **Signed in** (test 2, against the local Supabase): a change made with no signal waits; back on screen, the note within 5 seconds; for 35 seconds nothing is sent and nothing loads; a sheet is open when the new version arrives, and nothing loads until it's closed; then the new version opens on More, loading once, and sends the change, which the server then has.
+- **A tap when the new version is on the phone** loads it at once, even with a box typed in: `e2e/actions.spec.ts`, which played a new helper taking over with a made-up event; that event now rightly shows nothing, as the phone looks and finds nothing newer.
+- **The tests' own "older version" setting** (D201, used by `versions.spec.ts` test 7) now plays the offline helper's version too, until the phone asks it for the new one. Without it, a phone playing an old version with no signal found the real version on its helper and, rightly, loaded it at once, before the test's change was made. Still only in a browser driven by test software.
+
+Why: the owner's list: two real builds and a real offline helper, Android Chrome, the old build open on More, the new build put live, the tab hidden then shown, signed in and signed out.
+
+## Step 4h, part 2: help where it's needed, and the tour
+
+D596 to D599 were decided on 19 Nov 2026 in step 4h (brief 4.16, D227, `PLAN.md` item 12, D175). D597 holds the owner's answer on the tour.
+
+### D596. Three "?" buttons, each beside something that really confuses
+
+Decided 19 Nov 2026 in step 4h, from the owner's instruction: "Only beside what really confuses people, starting with Home's lowest point. A few well-placed ones beat one on everything."
+
+- **Home, beside "Lowest point ahead":** "Why your lowest point is on Sun 1 Nov". The brief's own example ("Why is my lowest point on Sunday?"): people expect it just before payday, not after a big bill. The sheet says the day, the payment it's after and what's left ("On Sun 1 Nov, after Rent, you'll have £4.53. No other day in those 12 months ends lower."), the next payday after it, why it says Tight or Short (naming the warning level or the overdraft), and how to raise it.
+- **Coming up, beside "Not ticked yet":** "Why payments not ticked yet still count". People who paid something already don't see why it's still there. The sheet counts this account's, names the day the balance was last checked, says a payment dated then or before that had already gone is counted twice until it's ticked, and how to tick one (**Mark as paid**, or **Mark as arrived**).
+- **Update balance, on its ticking step:** "Why you tick what's already gone". The step people skip without knowing why. The sheet names what they typed and the first payment to tick: "If Spending money until payday, £30.00, has already gone out, tick it. Otherwise PrePenny takes it off again."
+- **Considered, and not added:** Left to spend and "About £237.54 now" on Home also confuse, but any "?" there would push the lowest point down on a 320 by 568 phone (D442), and the help centre's article "Every payment shows what you'll have left after it" covers both. Coming up keeps its "How to read this" (D212, D216).
+- **Every sentence matches what the app does:** each is beside its rule in `apps/web/lib/why.ts` (brief 5.5, D11, D46, D85, D178), and `test/unit/why.test.ts` checks the figures against the engine's own days and rows, such as no day in 12 months ending lower than the lowest point.
+- **The button** shows the "?" mark and "Why" (D216: every control says in words what it does), in a slim outlined pill that sits in a line of words without making it taller, so it never moves Home's lowest point (D442); it's still 44 by 44px to tap, with padding the words around it don't move for, as the help articles' links (D587). Screen readers hear the sheet's title, such as "Why your lowest point is on Sun 1 Nov", which contains the "Why" they see (WCAG 2.5.3).
+- **The sheet** is PrePenny's usual sheet: the statement as its title, one plain sentence under it (D213), the person's figures in short sentences, then "More in Help:" and its article, a plain link (D588): "Every payment shows what you'll have left after it" for the first two, "Updating your balance keeps your plan true to your bank" for the third. On Update balance it opens over that sheet; Escape or **Close** closes only the one on top, and nothing typed or ticked is lost.
+- **Found while building it:** a sheet inside another closed both when the inner one closed, as React passes a dialog's close up to the one around it. Every sheet now acts only on its own close (`components/Sheet.tsx`).
+
+Why: the owner's instruction, and brief 4.16's "a small "?" beside anything that might confuse people".
+
+### D597. The tour: offered once after setup, never forced, and replayed from More
+
+The owner's answer, given with step 4h's instructions on 19 Nov 2026: "offer it, don't force it". Builds D227's "60-second tour after setup".
+
+- **The card,** in the owner's words: "New to PrePenny? Take a 60-second tour.", with **Show me** and **No thanks**. VOICE.md avoids questions as headlines; these are the owner's words for an offer, as D213 allowed "What happened?" for a choice. It's on Home once setup is done, on a plan of one's own (not Sam's example), under the lowest point and under the free-help card (D586), never above them, so a 320 by 568 phone still shows the account and the lowest point first (D442). It looks like the home-screen suggestion (D547): the sunk colour, the line, then the two buttons side by side.
+- **For good:** **No thanks**, or finishing the tour, takes the card away for good on this phone, with "The tour is in More, under Help, whenever you want it." in its place until Home opens again, taking focus so it isn't lost (WCAG 2.4.3). **End tour** part-way leaves the card. Someone who set up before step 4h sees the card once too, as Home can't tell when setup finished.
+- **The tour:** five short steps around Home itself, in the person's own figures where it can: **Your account**, **Lowest point ahead**, **Next due**, **Update balance** (the four buttons) and **Everything else** (the bottom bar). Every step has "Step 2 of 5", **Back**, **Next** and **End tour**; **Back** can't be used on the first step, and on the last **Next** says **Done**, as it finishes the tour (D213: every control says what it does). Each step rings its part of Home in the focus colour, brings it into view and puts the panel above the bottom bar, or at the top when the part is low on the screen.
+- **For everyone:** the panel is a dialog: at each step the step's words take focus, so a screen reader reads them, and screen readers hear its name as "Tour of Home", the step number and the step's title; Tab moves between its buttons; Escape ends it. At 320px the three buttons fit on one row. With reduced motion nothing moves: no rise as it opens, and each part comes into view at once.
+- **Replayed any time:** **More**, **Help**, **Take the tour** ("60 seconds around Home, step by step") opens Home at `/app/#tour`, which the offline helper serves with no signal, and the address then loses "#tour". On Sam's example too.
+- **Never over the app lock**, and Home's update waits while it's open (D594: an open dialog isn't a safe moment).
+
+Why: the owner's answer. Someone new is offered a minute's look round, once, and can always find it again.
+
+### D598. Nothing records the tour or the "?" buttons
+
+Decided 19 Nov 2026 in step 4h, from the owner's instruction: "Nothing records whether anyone took the tour or opened a "?", on the phone or the server, beyond what's needed to hide the card."
+
+- **The only thing kept** is on this phone, in its small store, like the home-screen suggestion (D547): `prepenny-tour` set to `card-gone`, the same after **No thanks** as after finishing, so it doesn't say which. Nothing for a "?" at all. On a phone that can't keep it, the card stays gone for as long as PrePenny is open.
+- **Nothing is sent:** no request is made for either, PrePenny has no analytics, and Cloudflare keeps no logs for it (D588). Signing out removes the small store with everything else (D308), so the card can show again after signing in, and another phone of the same person offers it again.
+
+Test: `apps/web/e2e/tour.spec.ts` tests 1 and 2 (what's kept after "No thanks" and after finishing, the same), `why.spec.ts` tests 1 and 3 (nothing kept, nothing sent but PrePenny's own page files).
+
+Why: the owner's instruction, and PrePenny's privacy principle (brief Part 3).
+
+### D599. How step 4h's part 2 is tested, and what the tests found
+
+Decided 19 Nov 2026 in step 4h.
+
+- **The "?" buttons** (`apps/web/e2e/why.spec.ts`, at 320px and 360px, in light and dark, with axe): Home's, with its name, its 44px, and the lowest point card exactly where it is without it; each sheet word for word, its link 44px tall and opening its article; Short; Coming up's with five payments not ticked; Update balance's over its sheet; the keyboard (Enter, Escape, focus back on the "?"); nothing kept or sent.
+- **The tour** (`apps/web/e2e/tour.spec.ts`, the same): the card after setup, under the lowest point; **No thanks**; every step's words, buttons, ring and place clear of the panel; **Back**, **End tour** and finishing; the keyboard and the names a screen reader hears; reduced motion; replaying from More; and under the free-help card, never on Sam's example.
+- **Unit tests** (`test/unit/why.test.ts`): each sheet's sentences and the tour's steps for real plans, checked against the engine, and each linked article by its own title.
+- **Found by the tests and fixed:** a sheet over a sheet closed both (D596); More's **Take the tour** link was built with a broken address, as More's page is made ahead of time and the address came from a part that only runs on the phone, so it now comes from `lib/help-routes.ts`; and after finishing the tour from More, focus stayed on the closed panel, and now goes to Home's heading.
+
+Why: the owner's list of what the tests must show.
+
+### D600. Each end-to-end part has 80 minutes
+
+Decided 19 Nov 2026 in step 4h, from GitHub's run on its pull request.
+
+- With step 4h's second build and its updating, "?" and tour tests (about 50 more runs, the updating ones each holding the offline helper's downloads for 35 seconds), the three parts took 47, 52 and 58 minutes of the 60 each had (D499). All passed, but the same run after merging, or on a slow day, could be cut off.
+- Each part now has 80 minutes (`.github/workflows/end-to-end.yml`). No test is left out or shortened. README.md says the checks take about an hour now, and about an hour from merging to live.
+- GitHub's standard machines cost nothing for a public repository (D452), so the extra time costs nothing.
+
+Why: a check cut off by its own time limit says nothing about PrePenny, and would hold up merging and going live.

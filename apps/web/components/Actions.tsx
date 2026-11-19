@@ -53,7 +53,7 @@ export function Actions() {
   // opened in its place mustn't close the new one too.
   const closeIf = (id: ActionId) => () => setOpen((now) => (now === id ? null : now));
   return (
-    <section className={styles.actions} aria-label={strings.actions.label}>
+    <section className={styles.actions} aria-label={strings.actions.label} data-tour="actions">
       <div className={styles.grid}>
         {actions.map((one) => (
           <button

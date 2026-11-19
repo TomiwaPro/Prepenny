@@ -90,6 +90,10 @@ export interface LowestView {
   readonly underWarningFrom: string | null;
   /** The first shortfall: "£95.47 short on Sun 1 Nov" (D82). */
   readonly short: { readonly amount: Pence; readonly date: string } | null;
+  /** Under this is Short: £0.00, or minus the overdraft limit (brief 5.5). */
+  readonly floor: Pence;
+  /** The first main payday after the lowest point, for its "?" sheet (step 4h); null with no main pay. */
+  readonly payAfter: string | null;
 }
 
 /**
@@ -117,7 +121,7 @@ export function workOutHomePlan(records: PlanRecords, today: string): Plan {
 }
 
 /** An account's lowest point ahead and its first warning (brief 5.5). */
-export function lowestOf(account: AccountPlan): LowestView {
+export function lowestOf(account: AccountPlan, mainPaydays: readonly string[] = []): LowestView {
   const lowest = account.lowestPoint;
   const short = account.shortfalls[0];
   return {
@@ -127,6 +131,9 @@ export function lowestOf(account: AccountPlan): LowestView {
     status: lowest.status,
     underWarningFrom: account.firstUnderWarning?.date ?? null,
     short: short === undefined ? null : { amount: short.amount, date: short.date },
+    // Minus the overdraft limit: with none, 0 rather than −0.
+    floor: account.floor === 0 ? 0 : account.floor,
+    payAfter: mainPaydays.find((day) => day > lowest.date) ?? null,
   };
 }
 
@@ -240,7 +247,7 @@ export function workOutHome(records: PlanRecords, today: string): HomeView {
     },
     leftToSpend: leftToSpendOf(account),
     mainPayEnded: plan.mainPayEnded,
-    lowest: lowestOf(account),
+    lowest: lowestOf(account, plan.mainPay === 'none' ? [] : plan.mainPaydays),
     cover: coverOf(records, plan, accountId),
     nextDue: account.rows
       .filter((row) => !row.atStart && !row.ticked && row.date >= today)

@@ -47,6 +47,7 @@ pnpm typecheck
 pnpm test
 supabase start
 supabase test db
+pnpm build:update-test
 pnpm build:local
 pnpm --filter @prepenny/web exec playwright install chromium
 pnpm e2e
@@ -66,9 +67,9 @@ You don't need to type any commands. Everything is done on github.com, on a phon
 
 1. **Open the pull request.** Go to https://github.com/TomiwaPro/Prepenny and tap **Pull requests**, then the update's name.
 2. **Try the preview.** A few minutes after the pull request is marked ready, a comment appears on it from **github-actions** with a preview link, such as `https://pr-19-prepenny.prepenny.workers.dev/app/`. Open it on your phone and try the update. It's a separate copy, and says "Test version: don't use real details." at the top: nothing you do there touches the live app or the real database. **What a preview can do for now** (D411): everything kept on the phone, such as the welcome, setup, the example plan, and every screen and change. **What it can't:** signing in is off on previews until the preview database is set up, with Supabase's paid plan before launch, so signing in, saving the plan in an account and keeping two devices in step are tried on the live app after merging, with a spare email address. If no link appears after 15 minutes, see "If something goes wrong" below.
-3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are five: "Lint, type checks, tests and the database", "Build and end-to-end tests" parts 1, 2 and 3, and "Put the app online". "Get the preview database ready, and try the preview" shows as skipped until the preview database is set up (D411), and is a sixth tick after that. A yellow dot means it's still running (about 20 minutes). A red cross means a check failed: don't merge, and see "If something goes wrong". If it still says **Draft**, Claude Code hasn't finished the step yet.
+3. **Check the ticks.** Scroll to the bottom of the pull request. Wait until every check has a green tick. There are five: "Lint, type checks, tests and the database", "Build and end-to-end tests" parts 1, 2 and 3, and "Put the app online". "Get the preview database ready, and try the preview" shows as skipped until the preview database is set up (D411), and is a sixth tick after that. A yellow dot means it's still running (about an hour since step 4h). A red cross means a check failed: don't merge, and see "If something goes wrong". If it still says **Draft**, Claude Code hasn't finished the step yet.
 4. **Merge it.** When you're happy with the preview and every tick is green, tap **Merge pull request**, then **Confirm merge**. GitHub may say **Squash and merge** or **Create a merge commit** instead; either is fine.
-5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about 20 minutes after merging in all, then checks every live page is exactly PrePenny's own (step 4b); the Database workflow sends any database changes to the real database; and **Dependabot's list** tells GitHub which building blocks PrePenny now uses. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
+5. **Wait for it to go live.** Merging starts the checks again, on `main` this time. When they pass, the Deploy workflow puts the update on the live app, about an hour after merging in all, then checks every live page is exactly PrePenny's own (step 4b); the Database workflow sends any database changes to the real database; and **Dependabot's list** tells GitHub which building blocks PrePenny now uses. To watch it, tap **Actions**: the newest **Check** run, then the newest **Deploy** run, each get a green tick when they're done.
 6. **See it on your phone.** Open the live app. If PrePenny was already open, a note at the bottom says "PrePenny has been updated. Tap to reload." Tap it. People's plans stay as they were: they're saved on their own phones, and an update never changes them.
 
 ### If something goes wrong
@@ -830,6 +831,23 @@ What changed (D584 to D593): **More** has **Help**, with **Help centre** and **H
 2. On supabase.com, open the project, then **Integrations**, **Cron**: a third job, `prepenny-job-history`, runs at 3:23am UTC each day. After its first run, `prepenny-reminders`' history goes back 7 days, no further.
 3. Open https://prepenny.co.uk/help/: the help centre, with 10 articles.
 4. What to check by hand on your phone is in `docs/TRY-PHASE-4.md`, section "Step 4g".
+
+### U. Step 4h: updating open phones, help where it's needed, and the tour
+
+What changed (D594 to D599): an open PrePenny now finds a new version within seconds of coming back on screen, signed in or not, shows "PrePenny has been updated. Tap to reload.", and loads it by itself once it's on the phone, at the first safe moment. Three "?" buttons say why, in the person's own figures: beside **Lowest point ahead** on Home, **Not ticked yet** on Coming up, and Update balance's ticking step. Home offers a 60-second tour once after setup, which **More**, **Help**, **Take the tour** replays.
+
+**What you need to set up: nothing.** Checked on 19 Nov 2026:
+
+- **GitHub:** no new secret or variable. The end-to-end workflow builds the app twice now (`pnpm build:update-test`, then `pnpm build:local`, about half a minute more in each of its three parts), for the updating tests. The Deploy and Database workflows don't change.
+- **Supabase:** nothing. No database change in this step.
+- **Cloudflare:** nothing. The new `/offline-version.json` is served as a plain file, like `/version.json`, so it doesn't run PrePenny's few lines or count towards the free allowance (`apps/web/wrangler.jsonc`), and its one header rule makes 60 of the 100 Cloudflare reads, which the build checks.
+- **Resend, Apple, Google:** nothing.
+
+**To check it worked, after merging:**
+
+1. **Actions**, then **Deploy**: a green tick.
+2. Open https://prepenny.co.uk/offline-version.json: it says the same `build` as https://prepenny.co.uk/version.json.
+3. What to check by hand on your phone, including updating to a new version after a later merge, is in `docs/TRY-PHASE-4.md`, section "Step 4h".
 
 ## Bank holidays
 

@@ -81,6 +81,8 @@ describe('Pay periods (owner test 1)', () => {
       status: 'tight',
       underWarningFrom: '2026-10-26',
       short: null,
+      floor: 0,
+      payAfter: null,
     });
     expect(current(view).notTickedYet).toEqual([]);
   });

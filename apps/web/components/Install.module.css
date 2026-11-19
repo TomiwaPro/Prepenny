@@ -53,6 +53,12 @@
   line-height: 1.25;
 }
 
+/* Two short answers, such as the tour card's "Show me" and "No thanks"
+   (step 4h): side by side on the narrowest phone. */
+.short > button {
+  flex-basis: 6rem;
+}
+
 /* What's said once the suggestion is answered, in its place. */
 .said {
   padding: var(--space-3) 14px;

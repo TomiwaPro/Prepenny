@@ -1,0 +1,81 @@
+/*
+ * The "?" beside what can confuse (step 4h, D596): the mark in a small round
+ * tile, then "Why", in a slim outlined pill, like "? How to read this" on
+ * Coming up (D216), only small enough to sit in a line of words without
+ * making it taller, so it never pushes Home's lowest point down (D442).
+ */
+.button {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44 by 44px to tap (DESIGN.md), taking only the pill's own room in its
+     line, as the help articles' links do (D587): 11px all round, given
+     back by margins the words around it don't move for. */
+  min-height: var(--tap);
+  padding: 0 11px;
+  margin: calc((var(--tap) - 1.375rem) / -2) -11px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--accent-text);
+  font-size: var(--size-small);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* The focus outline hugs the pill, 2px outside it (DESIGN.md). */
+.button:focus-visible {
+  outline-offset: -9px;
+}
+
+/* The pill people see: the mark in a small round tile, then "Why". */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 1.375rem;
+  padding: 1px var(--space-2) 1px 2px;
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+}
+
+.mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  font-weight: 700;
+}
+
+/* In the sheet: the figures, then the article. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--size-body);
+}
+
+.readMore {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+/* The article's link: underlined, 44px tall, with padding the words around it don't move for (D587). */
+.readMore a {
+  display: inline-block;
+  margin-block: -12px;
+  padding-block: 12px;
+  color: var(--accent-text);
+  font-size: var(--size-body);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

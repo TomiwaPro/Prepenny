@@ -180,7 +180,13 @@ test("the old address's files are still served, so a phone's offline helper ther
   expect((await sendAs(PREVIEW, '/app/', 'navigate')).status).toBe(200);
   // The app's own files never run the few lines, even asked for like a page:
   // they don't count towards Cloudflare's free allowance (D428).
-  for (const path of ['/version.json', '/sw.js', '/icons/icon.svg', '/manifest.webmanifest']) {
+  for (const path of [
+    '/version.json',
+    '/offline-version.json',
+    '/sw.js',
+    '/icons/icon.svg',
+    '/manifest.webmanifest',
+  ]) {
     expect((await sendAs(OLD, path, 'navigate')).status, path).toBe(200);
   }
 });

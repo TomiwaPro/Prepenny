@@ -448,3 +448,8 @@ a.outlined {
   font-size: var(--size-label);
   font-weight: 600;
 }
+
+/* The ticking step's "?" (step 4h, D596), under its line, at its start. */
+.why {
+  display: flex;
+}

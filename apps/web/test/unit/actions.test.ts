@@ -77,6 +77,8 @@ describe('Update balance (D46, D197)', () => {
       // Fri 30 Oct ends at £600.00, so it's first under £20 on Sun 1 Nov.
       underWarningFrom: '2026-11-01',
       short: null,
+      floor: 0,
+      payAfter: null,
     });
     expect(after?.toTick).toEqual([]);
     const undone = runEdit(made.records, FRIDAY, { kind: 'undo', edit: made.edit }).records;

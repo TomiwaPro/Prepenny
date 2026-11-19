@@ -11,9 +11,12 @@ apps/web/playwright-report/
 apps/web/.wrangler/
 apps/web/e2e/.wrangler/
 apps/web/e2e/.live-order/
+# The updating test's second build, and its copies of the site (step 4h).
+apps/web/e2e/.updating/
 *.tsbuildinfo
 apps/web/public/engine-worker*.js
 apps/web/public/version.json
+apps/web/public/offline-version.json
 apps/web/public/bank-holidays.json
 apps/web/.env*.local
 # The Supabase command line's own working files (step 3a).

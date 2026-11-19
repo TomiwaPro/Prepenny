@@ -18,3 +18,7 @@ export const HELP_ROUTES = {
 
 /** In the app, or on the website. */
 export type HelpPlace = keyof typeof HELP_ROUTES;
+
+/** In Home's address, from More, Help: start the tour of Home (step 4h, D597). After a "#", so the offline helper serves Home for it with no signal. */
+export const TOUR_HASH = '#tour';
+export const TOUR_ROUTE = `/app/${TOUR_HASH}`;
