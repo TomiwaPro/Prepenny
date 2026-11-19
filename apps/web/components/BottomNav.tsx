@@ -40,7 +40,7 @@ const withSlash = (path: string) => (path.endsWith('/') ? path : `${path}/`);
 export function BottomNav() {
   const here = withSlash(usePathname() ?? '/app/');
   return (
-    <nav className={styles.nav} aria-label={strings.nav.label}>
+    <nav className={styles.nav} aria-label={strings.nav.label} data-tour="nav">
       <ul className={styles.list}>
         {places.map((place) => (
           <li key={place.href}>

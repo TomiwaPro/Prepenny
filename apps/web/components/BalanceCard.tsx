@@ -48,7 +48,7 @@ export interface BalanceCardProps {
 export function BalanceCard({ account, balance, checked, now, raised }: BalanceCardProps) {
   const headingId = useId();
   return (
-    <section className={styles.card} aria-labelledby={headingId}>
+    <section className={styles.card} aria-labelledby={headingId} data-tour="balance">
       <div className={styles.top}>
         <h2 id={headingId} className={styles.account}>
           {account}

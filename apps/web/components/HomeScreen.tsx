@@ -15,6 +15,7 @@ import { formatDay, formatDayAndYear } from '../lib/dates.ts';
 import type { HomeView } from '../lib/home.ts';
 import { formatMoney } from '../lib/money.ts';
 import type { RowView } from '../lib/rows.ts';
+import { lowestWhy } from '../lib/why.ts';
 import { strings } from '../strings/en-GB.ts';
 import { AccountSheet } from './AccountSheet.tsx';
 import { Actions } from './Actions.tsx';
@@ -31,7 +32,10 @@ import { PaymentList } from './PaymentList.tsx';
 import { isSamsExample, usePlan } from './PlanProvider.tsx';
 import { RowItem } from './RowItem.tsx';
 import { TotalsCard } from './TotalsCard.tsx';
+import { HOME_HEADING_ID, Tour } from './Tour.tsx';
+import { TourCard } from './TourCard.tsx';
 import { useEditSheet } from './useEditSheet.ts';
+import { WhyButton, WhySheet } from './Why.tsx';
 
 const t = strings.home;
 
@@ -96,6 +100,8 @@ function Figures({
   const day = (date: string) => formatDay(date, home.today);
   const warning = formatMoney(home.account.warningLevel, { wholePounds: true });
   const { lowest, cover } = home;
+  const [why, setWhy] = useState(false);
+  const lowestSheet = lowestWhy(home);
   let context: string | null = null;
   if (lowest.short !== null) {
     context = t.shortOn(formatMoney(lowest.short.amount), day(lowest.short.date));
@@ -124,9 +130,15 @@ function Figures({
           lowest.after === null ? day(lowest.date) : t.lowestOnAfter(day(lowest.date), lowest.after)
         }
         context={context}
+        help={
+          <WhyButton title={lowestSheet.title} testId="lowest-why" onOpen={() => setWhy(true)} />
+        }
       />
+      <WhySheet open={why} {...lowestSheet} onClose={() => setWhy(false)} />
       {/* Free help when the plan is short three pay periods running (D584), under the lowest point. */}
       <MoneyHelp today={home.today} shortRunning={home.shortRunning} />
+      {/* The tour, offered once after setup, under the lowest point and the help card (D597). */}
+      <TourCard />
       {/* In the example, the banner is here, so the account and the lowest point show first (D451). */}
       <ExampleNote />
       {/* A new bank holiday that moved a payment, once (D539), in the same place. */}
@@ -177,7 +189,9 @@ export function HomeScreen() {
     <>
       <header className={styles.header}>
         <p className={styles.wordmark}>{strings.app.name}</p>
-        <h1 className="visually-hidden">{t.heading}</h1>
+        <h1 id={HOME_HEADING_ID} className="visually-hidden" tabIndex={-1}>
+          {t.heading}
+        </h1>
         <p className={styles.purpose}>{t.purpose}</p>
       </header>
       <div className={styles.figures} aria-busy={state.status === 'loading'}>
@@ -204,6 +218,8 @@ export function HomeScreen() {
             {t.addAccount}
           </button>
           <EditSheet row={sheet.editing} today={state.home.today} onClose={sheet.close} />
+          {/* The 60-second tour of Home, from the card or from More (D597). */}
+          <Tour home={state.home} />
         </>
       ) : null}
       <AccountSheet
