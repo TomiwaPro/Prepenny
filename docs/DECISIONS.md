@@ -7412,3 +7412,13 @@ Decided 19 Nov 2026 in step 4h.
 - **Found by the tests and fixed:** a sheet over a sheet closed both (D596); More's **Take the tour** link was built with a broken address, as More's page is made ahead of time and the address came from a part that only runs on the phone, so it now comes from `lib/help-routes.ts`; and after finishing the tour from More, focus stayed on the closed panel, and now goes to Home's heading.
 
 Why: the owner's list of what the tests must show.
+
+### D600. Each end-to-end part has 80 minutes
+
+Decided 19 Nov 2026 in step 4h, from GitHub's run on its pull request.
+
+- With step 4h's second build and its updating, "?" and tour tests (about 50 more runs, the updating ones each holding the offline helper's downloads for 35 seconds), the three parts took 47, 52 and 58 minutes of the 60 each had (D499). All passed, but the same run after merging, or on a slow day, could be cut off.
+- Each part now has 80 minutes (`.github/workflows/end-to-end.yml`). No test is left out or shortened. README.md says the checks take about an hour now, and about an hour from merging to live.
+- GitHub's standard machines cost nothing for a public repository (D452), so the extra time costs nothing.
+
+Why: a check cut off by its own time limit says nothing about PrePenny, and would hold up merging and going live.
