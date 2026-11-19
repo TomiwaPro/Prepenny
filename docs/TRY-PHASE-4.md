@@ -191,14 +191,14 @@ The help centre in the app and on the website, its search with no signal, and Ho
 The help centre:
 
 1. On device A, tap **More**. Near the end there's a **Help** card with **Help centre** and **Help when money is tight**. Tap **Help centre**. It lists 10 articles, each with a line under its title.
-2. Tap **Help when money is tight**. StepChange, National Debtline and Citizens Advice each have their number and website, and Surviving Economic Abuse is near the end. Tap **0800 138 1111**: your phone offers to call it. Don't call: go back. Tap **stepchange.org**: StepChange's site opens beside PrePenny. Close it and go back to PrePenny.
+2. Tap **Help when money is tight**. StepChange, National Debtline and Citizens Advice each have their number and website, MoneyHelper has its debt advice locator, and Surviving Economic Abuse is near the end. Tap **0800 138 1111**: your phone offers to call it. Don't call: go back. Tap **stepchange.org**: StepChange's site opens beside PrePenny. Close it and go back to PrePenny.
 3. Tap **Back to Help**. In **Search help**, type `debt`. It says how many articles have "debt", and lists them, **Each debt shows what's left and when it's paid off** first. Type `zebra`: "No article has "zebra". Try another word, such as balance or debt." Tap **Clear search**: all 10 are back.
 4. Turn on airplane mode. Pull down to reload the page. Search for `backup email`, and open the article it finds: it opens. Turn airplane mode off.
 5. On device B, in the private window, open https://prepenny.co.uk/help/sign-in-problems/. The same article, with **PrePenny** and **Open PrePenny** at the top and no bottom bar, as on any website.
 
 Home's card when money is tight, on device A:
 
-6. Tap **Add a payment**: name `Test big bill`, amount `3000`, **Next payment** tomorrow, **How often** **Every month, or every few months**, **From** **Jess current account**. Tap **Add payment**. Your plan is now short in each of your next three pay periods.
+6. Tap **Add a payment**: name `Test big bill`, amount `3000`, **Next payment** tomorrow, **How often** **Every month, or every few months**, **From** **Jess current account**. Tap **Add payment**. Your plan is now short in three pay periods in a row, starting with the one you're in now.
 7. On **Home**, under **Lowest point ahead**, a card in the same soft colour as other notes says "Free, confidential help is available.", with **See where to get help** and **Not now**. No red, and the lowest point hasn't moved down.
 8. Tap **See where to get help**: Help when money is tight opens. Go back to **Home**.
 9. Tap **Not now**. A line in its place says "Where to get help is in More, under Help, whenever you want it." Tap **Coming up**, then **Home**: the card has gone, and stays gone for 30 days on this phone. (The tests check the 30 days.)

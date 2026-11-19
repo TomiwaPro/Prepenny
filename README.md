@@ -815,7 +815,7 @@ What changed (D575 to D582): in a shared plan, **Reminders** under **More** has 
 
 ### T. Step 4g: the help centre
 
-What changed (D584 to D591): **More** has **Help**, with **Help centre** and **Help when money is tight**, and the same articles are on the website at https://prepenny.co.uk/help/ for anyone. The articles are the Markdown files in `content/help`: change one, merge it, and the next update shows it (`content/help/README.md` says how they're written). Search works on the phone, with no signal. Home shows "Free, confidential help is available." under the lowest point when the plan is short in each of the next three pay periods. And a new scheduled job, `prepenny-job-history`, clears PrePenny's own scheduled jobs' run history older than 7 days, once a day.
+What changed (D584 to D593): **More** has **Help**, with **Help centre** and **Help when money is tight**, and the same articles are on the website at https://prepenny.co.uk/help/ for anyone. The articles are the Markdown files in `content/help`: change one, merge it, and the next update shows it (`content/help/README.md` says how they're written). Search works on the phone, with no signal. Home shows "Free, confidential help is available." under the lowest point when three pay periods in a row each have a short day, starting with the one we're in now or the next one. And a new scheduled job, `prepenny-job-history`, clears PrePenny's own scheduled jobs' run history older than 7 days, once a day.
 
 **What you need to set up: nothing.** Checked on 18 Nov 2026:
 
