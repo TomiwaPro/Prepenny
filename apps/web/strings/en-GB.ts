@@ -1840,7 +1840,7 @@ export const strings = {
           ? `1 payment for ${account} isn't ticked yet.`
           : `${count} payments for ${account} aren't ticked yet.`,
       before: (day: string) =>
-        `You last checked your balance on ${day}. A payment dated then or before that had already gone is in your bank's figure, so until it's ticked, PrePenny counts it twice.`,
+        `You last checked your balance on ${day}. If a payment from that day or before had already gone, your bank's figure already includes it. Until you tick it, PrePenny counts it twice.`,
       howToTick: 'To tick one, tap it, then Mark as paid, or Mark as arrived for money coming in.',
     },
     ticking: {
@@ -1902,6 +1902,131 @@ export const strings = {
     nav: {
       title: 'Everything else',
       text: "Coming up has every payment ahead, with what you'll have left after each. Debts shows when each one is paid off. More has your accounts, settings and Help, where you can take this tour again.",
+    },
+  },
+
+  /**
+   * Contact us, Something looks wrong and Suggest a feature (step 4i, brief
+   * 4.16, D601 to D613). The consent message for a picture is the owner's
+   * words (D602).
+   */
+  support: {
+    /** The line at the end of every screen (D603). */
+    help: 'Help',
+    somethingWrong: 'Something looks wrong',
+    /** Signed out: the address the reply goes to, proved with a code (D605). */
+    emailLabel: 'Your email address',
+    emailHint: "So we can answer you. We'll send a 6-digit code to check it's yours.",
+    emailMissing: 'Type your email address, for example sam@example.com.',
+    /** What the phone adds by itself (D610). */
+    added: (version: string, phone: string) =>
+      `PrePenny adds its version (${version}) and your phone type (${phone}), and nothing about your money.`,
+    addedWithScreen: (version: string, phone: string) =>
+      `PrePenny adds its version (${version}), your phone type (${phone}) and which screen you're on, and nothing about your money.`,
+    tooLong: (count: string) => `Make it 2,000 characters or fewer. It's ${count} now.`,
+    send: 'Send',
+    sending: 'Sending your message.',
+    sendingCode: 'Sending your code.',
+    /** Signed out, after Send: the code step (D605). */
+    codeSent: (email: string) =>
+      `We've sent a 6-digit code to ${email}. Type it here to send your message. It lasts 10 minutes.`,
+    codeLabel: 'Code from the email',
+    codeMissing: 'Type the 6 numbers from the email, for example 123456.',
+    codeWrong: "That code doesn't match. Check the 6 numbers in the email from PrePenny.",
+    codeRanOut: 'This code has run out. Tap Send a new code.',
+    sendWithCode: 'Send my message',
+    newCode: 'Send a new code',
+    otherEmail: 'Use another email address',
+    /** Once it's sent. */
+    sentTitle: 'Sent',
+    sentAnswerBy: (day: string) =>
+      `Thanks. We aim to answer within 1 working day, so by the end of ${day}.`,
+    sentEmailed: (email: string) => `We've emailed ${email} to say so, and we'll reply there.`,
+    sentReplyTo: (email: string) => `We'll reply to ${email}.`,
+    sentIdea: 'Thanks. Your idea has been sent to PrePenny.',
+    writeAnother: 'Write another message',
+    /** Problems, each saying what to do. */
+    offline: "You're offline. Your message is still here: send it once you're back online.",
+    server:
+      "PrePenny couldn't send it just now. Try again in a minute, or email hello@prepenny.co.uk.",
+    off: "This version of PrePenny can't send messages. Email hello@prepenny.co.uk instead.",
+    tooMany:
+      "You've sent as many messages as PrePenny takes in a day. Try again tomorrow, or email hello@prepenny.co.uk.",
+    tooManyCodes:
+      'We can send 3 codes a day to one address. Try again tomorrow, or email hello@prepenny.co.uk.',
+    busy: 'PrePenny support has had a lot of messages today. Try again tomorrow, or email hello@prepenny.co.uk.',
+    emailOff: "Emails from PrePenny aren't switched on yet. Email hello@prepenny.co.uk instead.",
+    notAllowed: 'Your sign-in has ended. Sign in again, or email hello@prepenny.co.uk.',
+    wait: (seconds: number) =>
+      seconds === 1
+        ? 'You can ask for a new code in 1 second.'
+        : `You can ask for a new code in ${seconds} seconds.`,
+
+    /** Contact us, under More and on the website at /contact/ (D601). */
+    contact: {
+      heading: 'Contact us',
+      purpose: 'Write to PrePenny support. We aim to answer within 1 working day.',
+      wordsLabel: 'Your message',
+      wordsHint:
+        "If you can't sign in, say which email address you signed up with. Never send a card number or a password.",
+      wordsMissing: 'Type your message, for example what you were trying to do.',
+      or: 'You can also email hello@prepenny.co.uk from any address.',
+      moreLine: 'Write to PrePenny support',
+      /** On the sign-in page and the website's help, for someone who can't sign in. */
+      cantSignIn: "Can't sign in? Contact us",
+    },
+
+    /** Suggest a feature, under More (brief 4.16). */
+    idea: {
+      heading: 'Suggest a feature',
+      purpose: "Tell PrePenny what you'd like it to do next.",
+      wordsLabel: 'Your idea',
+      wordsHint: 'For example: remind me the day before my phone bill goes out.',
+      wordsMissing: "Type your idea, for example what you'd like PrePenny to do.",
+      moreLine: 'Ideas for what PrePenny could do',
+    },
+
+    /** Something looks wrong, a sheet from the end of every screen (D602, D603). */
+    problem: {
+      title: 'Something looks wrong',
+      intro: "Tell PrePenny support what looks wrong on this screen, and we'll look into it.",
+      wordsLabel: 'What looks wrong?',
+      wordsHint: "For example: Rent shows £550.00, but it's £560.00 now.",
+      wordsMissing: 'Type what looks wrong, for example what you expected to see.',
+      attachLegend: 'Add a picture or your plan?',
+      none: 'No, just my words',
+      picture: 'A screenshot',
+      pictureHint: 'A picture of your screen, from your photos',
+      plan: 'A copy of my plan',
+      planHint: 'The backup file from Download my data',
+      /** The owner's words (D602). */
+      pictureConsent:
+        "This picture may show your balances and payments. Only PrePenny support sees it, and it's deleted after 30 days.",
+      pictureHow:
+        "Take a screenshot with your phone's buttons first, then choose it here. Before it's sent, PrePenny takes out its hidden details, such as where it was taken.",
+      choosePicture: 'Choose a picture',
+      chooseAnotherPicture: 'Choose another picture',
+      pictureChosen: (width: number, height: number, size: string) =>
+        `Picture chosen: ${width} by ${height}, ${size}. Its hidden details have been taken out.`,
+      planConsent:
+        "This file has your whole plan: every account, balance, payment and note. Only PrePenny support sees it, and it's deleted after 30 days.",
+      planHow:
+        'Download it first: in More, tap Download my data, then Download the backup. Then choose it here.',
+      choosePlan: 'Choose the backup file',
+      chooseAnotherPlan: 'Choose another file',
+      planChosen: (size: string) => `Backup file chosen, ${size}.`,
+      reading: 'Getting the picture ready.',
+      notAPicture: 'Choose a JPEG or PNG picture, such as a screenshot.',
+      unreadable: "PrePenny couldn't open that picture. Try another screenshot.",
+      pictureTooBig:
+        'That picture is too big to send, even made smaller. Try a screenshot instead.',
+      notAPlan: "That isn't a PrePenny backup file. Choose the backup file from Download my data.",
+      planTooBig: "That file is bigger than 5 MB, so it can't be sent. Send your words without it.",
+      pictureMissing: 'Choose a picture, or choose No, just my words.',
+      planMissing: 'Choose the backup file, or choose No, just my words.',
+      fileRefused:
+        "PrePenny couldn't send that file. Choose another, or send your words without it.",
+      filesFull: "PrePenny can't take pictures or files right now. Send your words without it.",
     },
   },
 

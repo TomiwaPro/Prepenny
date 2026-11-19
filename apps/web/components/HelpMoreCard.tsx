@@ -19,6 +19,17 @@ const links = [
   },
   // The tour of Home, any time (step 4h, D597): Home starts it from the address.
   { href: TOUR_ROUTE, label: strings.tour.moreLabel, line: strings.tour.moreLine },
+  // Step 4i (D601): writing to support, and ideas.
+  {
+    href: '/app/contact/',
+    label: strings.support.contact.heading,
+    line: strings.support.contact.moreLine,
+  },
+  {
+    href: '/app/suggest/',
+    label: strings.support.idea.heading,
+    line: strings.support.idea.moreLine,
+  },
 ] as const;
 
 export function HelpMoreCard() {

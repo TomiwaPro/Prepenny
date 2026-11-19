@@ -6,8 +6,16 @@
 import type { ReactNode } from 'react';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Help.module.css';
+import supportStyles from './Support.module.css';
 
-export function HelpSite({ children }: { readonly children: ReactNode }) {
+export function HelpSite({
+  children,
+  contact = true,
+}: {
+  readonly children: ReactNode;
+  /** "Can't sign in? Contact us" at the end (step 4i, D601), but not on Contact us itself. */
+  readonly contact?: boolean;
+}) {
   return (
     <div className={styles.site}>
       <div className={styles.siteTop}>
@@ -20,6 +28,13 @@ export function HelpSite({ children }: { readonly children: ReactNode }) {
         </a>
       </div>
       <main className={styles.main}>{children}</main>
+      {contact ? (
+        <footer className={supportStyles.footer}>
+          <a className={supportStyles.footerLink} href="/contact/">
+            {strings.support.contact.cantSignIn}
+          </a>
+        </footer>
+      ) : null}
     </div>
   );
 }

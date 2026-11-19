@@ -269,6 +269,10 @@ export function GetBackInScreen() {
               </button>
             </form>
             <p className={styles.line}>{t.noBackup}</p>
+            {/* Step 4i (D601): the form, for someone with no backup email. */}
+            <a className={styles.backupLink} href="/contact/">
+              {strings.support.contact.cantSignIn}
+            </a>
           </>
         ) : step === 'code' ? (
           <form className={styles.card} onSubmit={check} noValidate>
