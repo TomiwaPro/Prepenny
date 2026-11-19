@@ -53,21 +53,30 @@ describe('Asking which version is live', () => {
     forgetLiveVersion();
   });
 
-  it('shares one request between looks a few seconds apart, and asks afresh after', async () => {
+  it('shares one request while it is under way, and asks afresh once it is answered, however soon', async () => {
     const asked: string[] = [];
-    vi.stubGlobal('fetch', async (input: string) => {
-      asked.push(input);
-      return new Response(JSON.stringify(NEW), { status: 200 });
-    });
-    const now = 1_000_000;
-    const first = liveVersion(now);
-    const second = liveVersion(now + 4_000);
+    let answer = (_: Response) => {};
+    vi.stubGlobal(
+      'fetch',
+      (input: string) =>
+        new Promise<Response>((resolve) => {
+          asked.push(input);
+          answer = resolve;
+        }),
+    );
+    const first = liveVersion(1_000_000);
+    const second = liveVersion(1_000_100);
+    expect(asked).toEqual(['/version.json']);
+    answer(new Response(JSON.stringify(NEW), { status: 200 }));
     expect(await first).toEqual(NEW);
     expect(await second).toEqual(NEW);
-    expect(asked).toEqual(['/version.json']);
-    expect(lastAskedAt()).toBe(now);
-    expect(await liveVersion(now + 5_000)).toEqual(NEW);
+    expect(lastAskedAt()).toBe(1_000_000);
+    // A moment later, as when the phone comes back on screen: asked afresh,
+    // never the earlier answer (the fault step 4h's own test found).
+    const third = liveVersion(1_000_200);
     expect(asked).toHaveLength(2);
+    answer(new Response(JSON.stringify(NEWER), { status: 200 }));
+    expect(await third).toEqual(NEWER);
   });
 
   it("doesn't share no answer: a look a moment later, with the signal back, asks afresh", async () => {

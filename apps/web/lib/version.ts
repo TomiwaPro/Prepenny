@@ -42,28 +42,29 @@ async function readVersion(response: Response): Promise<Version | null> {
   return { database: value.database, build: value.build };
 }
 
-/** How long one answer about the live version is shared between looks, so two made together ask once. */
-const SHARED_FOR_MS = 5_000;
-let asking: { readonly at: number; readonly answer: Promise<Version | null> } | null = null;
+/** The request under way, which looks made meanwhile share. */
+let asking: Promise<Version | null> | null = null;
+/** When the live version was last asked for. */
+let askedAt = 0;
 
 /**
  * The version live on PrePenny's site now, or null when it can't be asked,
- * as with no signal. Never from the browser's or the offline helper's copy.
- * Looks made within a few seconds of each other, as when PrePenny comes back
- * on screen and both the update check and a signed-in phone's look at the
- * account ask, share one request and its answer (step 4h). No answer is
- * never shared once it's known: the next look, as when the signal comes back
- * a moment later, asks afresh.
+ * as with no signal. Never from the browser's or the offline helper's copy,
+ * and never an earlier answer: each look asks afresh, so a phone coming back
+ * on screen, or getting its signal back, always hears what's live now. Looks
+ * made while a request is under way, as when the update check and a
+ * signed-in phone's look at the account both start at once, share it
+ * (step 4h).
  */
 export function liveVersion(now = Date.now()): Promise<Version | null> {
-  if (asking !== null && now - asking.at < SHARED_FOR_MS && asking.at <= now) return asking.answer;
-  const ask = { at: now, answer: askLiveVersion() };
+  if (asking !== null) return asking;
+  askedAt = now;
+  const ask = askLiveVersion();
   asking = ask;
-  // No answer isn't shared once it's known.
-  void ask.answer.then((live) => {
-    if (live === null && asking === ask) asking = null;
+  void ask.finally(() => {
+    if (asking === ask) asking = null;
   });
-  return ask.answer;
+  return ask;
 }
 
 async function askLiveVersion(): Promise<Version | null> {
@@ -77,7 +78,7 @@ async function askLiveVersion(): Promise<Version | null> {
 
 /** When the live version was last asked for, or 0 if never. */
 export function lastAskedAt(): number {
-  return asking?.at ?? 0;
+  return askedAt;
 }
 
 /**
@@ -114,9 +115,10 @@ export function noteAskedForNewVersion(): void {
   askedForNewVersion = true;
 }
 
-/** Forgets the shared answer, for tests. */
+/** Forgets the request under way, for tests. */
 export function forgetLiveVersion(): void {
   asking = null;
+  askedAt = 0;
 }
 
 /** True when the live site has a different version of PrePenny from this one. */
