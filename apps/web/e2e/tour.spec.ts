@@ -257,6 +257,35 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeFocused();
       },
     );
+
+    fresh(
+      '5b. A quick Tab while a step comes into view is never pulled back to its words (D616)',
+      async ({ page }) => {
+        await makeAPlan(page);
+        // The step's part of Home takes as long as it can to come into view
+        // (no scroll, so the tour waits its longest), as on a slow phone.
+        await page.evaluate(() => {
+          window.scrollTo = () => {};
+        });
+        await card(page).getByRole('button', { name: t.showMe }).focus();
+        await page.keyboard.press('Enter');
+        await expect(tour(page)).toBeVisible();
+        // Straight away, as someone who knows where they're going would.
+        await page.keyboard.press('Tab');
+        await page.keyboard.press('Tab');
+        const where = () =>
+          page.evaluate(() => {
+            const now = document.activeElement;
+            return now === null ? '' : `${now.tagName} ${now.textContent ?? ''}`;
+          });
+        const tabbedTo = await where();
+        expect(tabbedTo).toMatch(/^BUTTON /);
+        // Once the tour has waited for the part to come into view, focus is
+        // still where the keyboard put it.
+        await page.waitForTimeout(1200);
+        expect(await where()).toBe(tabbedTo);
+      },
+    );
   });
 
   test.describe(`The tour card's place, in ${colorScheme} mode`, () => {

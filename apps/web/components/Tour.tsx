@@ -100,6 +100,10 @@ export function Tour({ home }: { readonly home: HomeView }) {
     target?.setAttribute('data-tour-here', '');
     let stopped = false;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Where focus is as the step starts: the step's words take it once the
+    // part is in view, but only if it's still there, so a quick Tab or
+    // Shift+Tab made meanwhile is never pulled back (D616).
+    const from = document.activeElement;
     void (async () => {
       if (target !== null && !nav) {
         const top = target.getBoundingClientRect().top + window.scrollY - ABOVE;
@@ -108,7 +112,8 @@ export function Tour({ home }: { readonly home: HomeView }) {
       }
       if (stopped) return;
       setPlace(placeFor(target, dialog.current, nav));
-      words.current?.focus();
+      const now = document.activeElement;
+      if (now === from || now === null || now === document.body) words.current?.focus();
     })();
     return () => {
       stopped = true;
@@ -127,7 +132,8 @@ export function Tour({ home }: { readonly home: HomeView }) {
       aria-labelledby={`${nameId} ${countId} ${titleId}`}
       aria-describedby={textId}
       onClose={(event) => {
-        if (event.target !== event.currentTarget) return;
+        // A close that arrives once it's open again is an earlier one, late (D616).
+        if (event.target !== event.currentTarget || event.currentTarget.open) return;
         closeTour();
         // Back to where it was started from; when that has gone, as Home's
         // card goes once the tour is finished, or it started from More, to

@@ -245,5 +245,36 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(update).toBeVisible();
       await expect(first).toBeChecked();
     });
+
+    test('5. A sheet opened again the moment it closed stays open (D616)', async ({ page }) => {
+      await page.goto('/app/');
+      const card = page.getByTestId('lowest-point');
+      await expect(card).toContainText('£4.53');
+      const title = w.lowest.title(day('Sun 1 Nov'));
+      const button = card.getByRole('button', { name: title });
+      const sheet = page.getByRole('dialog', { name: title });
+      await button.click();
+      await expect(sheet).toBeVisible();
+      // Close, then open again before the browser has said it closed: its
+      // "close" comes a moment after it does.
+      await page.evaluate(
+        async ({ close, title }) => {
+          const open = document.querySelector('dialog[open]');
+          const closeButton = [...(open?.querySelectorAll('button') ?? [])].find(
+            (one) => one.textContent === close,
+          );
+          closeButton?.click();
+          // React draws the change and the dialog closes; its "close" is still to come.
+          for (let turn = 0; turn < 5; turn += 1) await Promise.resolve();
+          document.querySelector<HTMLButtonElement>(`button[aria-label="${title}"]`)?.click();
+          for (let turn = 0; turn < 5; turn += 1) await Promise.resolve();
+        },
+        { close: strings.sheet.close, title },
+      );
+      await page.waitForTimeout(500);
+      await expect(sheet).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(sheet).toBeHidden();
+    });
   });
 }
