@@ -190,6 +190,23 @@ const SCREENS = [
     heading: helpArticle(MONEY_TIGHT_SLUG).title,
     purpose: helpArticle(MONEY_TIGHT_SLUG).summary,
   },
+  // Contact us and Suggest a feature, under More, and Contact us on the
+  // website, for anyone (step 4i, D601).
+  {
+    path: '/app/contact/',
+    heading: strings.support.contact.heading,
+    purpose: strings.support.contact.purpose,
+  },
+  {
+    path: '/app/suggest/',
+    heading: strings.support.idea.heading,
+    purpose: strings.support.idea.purpose,
+  },
+  {
+    path: '/contact/',
+    heading: strings.support.contact.heading,
+    purpose: strings.support.contact.purpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,
@@ -409,6 +426,22 @@ const SHEETS: readonly {
     heading: 'What if',
     title,
     open: (page: Page) => page.getByRole('button', { name, exact: true }).click(),
+  })),
+  // Something looks wrong, from the end of a screen (step 4i, D603), with
+  // the consent message for a picture showing.
+  ...(
+    [
+      ['/app/', 'Home'],
+      ['/app/coming-up/', 'Coming up'],
+    ] as const
+  ).map(([path, heading]) => ({
+    path,
+    heading,
+    title: strings.support.problem.title,
+    open: async (page: Page) => {
+      await page.getByRole('button', { name: strings.support.somethingWrong, exact: true }).click();
+      await page.getByRole('radio', { name: strings.support.problem.picture }).check();
+    },
   })),
 ];
 
