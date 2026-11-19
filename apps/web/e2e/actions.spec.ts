@@ -11,6 +11,7 @@ import type { Locator, Page } from '@playwright/test';
 import { type Budget, type PlanRecords, parsePounds, type Spend } from '@prepenny/engine';
 import { examplePlan } from '../data/example-plan.ts';
 import { TEST_SETTING_KEY, type TestSetting } from '../lib/test-setting.ts';
+import { strings } from '../strings/en-GB.ts';
 import { axeOnceStill } from './axe.ts';
 import {
   goToComingUp,
@@ -576,20 +577,33 @@ test('the Coming up page shows the months up to a lowest point that comes later 
   await expect(lowest.getByRole('button')).toContainText(/Open Fri\s25\sJun\s2027 below/);
 });
 
-test('when a new version arrives, a note says so, and tapping it loads it (D202)', async ({
+// The whole journey, with two real builds and a real offline helper, is
+// e2e/updating.spec.ts and updating-signed-in.spec.ts (step 4h). This one
+// plays an older version with the tests' own setting (D201).
+test('when a newer version is live, a note says so, and tapping it loads it at once, even with a box typed in (D202, D594)', async ({
   page,
 }) => {
-  await openHome(page);
+  await page.goto('/app/help/');
   await helperInCharge(page);
-  await page.reload();
-  await expect(page.getByTestId('balance')).toBeVisible();
+  // Something typed in the help centre's search: not a moment to load afresh by itself.
+  const search = page.getByRole('searchbox', { name: strings.help.search });
+  await search.fill('debt');
   await expect(page.getByTestId('update-note')).toHaveCount(0);
-  // A new version taking over the page, as the offline helper does when one arrives.
-  await page.evaluate(() => navigator.serviceWorker.dispatchEvent(new Event('controllerchange')));
+  // This phone now plays an older version, and PrePenny comes back on screen.
+  await page.evaluate(settingScript, [
+    TEST_SETTING_KEY,
+    { version: { database: '20261121100000', build: 'older' } },
+  ] as const);
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   const note = page.getByRole('button', { name: 'PrePenny has been updated. Tap to reload.' });
   await expect(note).toBeVisible();
   await noAxeProblems(page);
+  // It waits while the box has something typed.
+  await page.waitForTimeout(2000);
+  await expect(search).toHaveValue('debt');
+  await expect(note).toBeVisible();
+  // A tap loads it straight away.
   await Promise.all([page.waitForEvent('load'), note.click()]);
-  await expect(page.getByTestId('balance')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: strings.help.heading })).toBeVisible();
   await expect(page.getByTestId('update-note')).toHaveCount(0);
 });

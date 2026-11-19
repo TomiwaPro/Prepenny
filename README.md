@@ -47,6 +47,7 @@ pnpm typecheck
 pnpm test
 supabase start
 supabase test db
+pnpm build:update-test
 pnpm build:local
 pnpm --filter @prepenny/web exec playwright install chromium
 pnpm e2e

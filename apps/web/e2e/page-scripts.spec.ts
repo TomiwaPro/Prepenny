@@ -244,7 +244,12 @@ test('every page is sent with a policy listing exactly its own scripts, and the 
   );
   // Every other file has the general policy: no script written into a page
   // but the not-found page's.
-  for (const other of ['/sw.js', '/version.json', '/manifest.webmanifest']) {
+  for (const other of [
+    '/sw.js',
+    '/version.json',
+    '/offline-version.json',
+    '/manifest.webmanifest',
+  ]) {
     const response = await request.get(other);
     expect(scriptSrc(response.headers()['content-security-policy'] ?? ''), other).toEqual(
       ["'self'", ...notFound].sort(),

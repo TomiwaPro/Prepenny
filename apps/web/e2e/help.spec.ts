@@ -149,14 +149,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const address = page.url();
       // Once the page has loaded and the offline helper has kept its files,
       // searching asks for nothing at all, apart from PrePenny's own look for
-      // a new version, once a minute, and its weekly bank holiday list.
+      // a new version, once a minute (with the copy the offline helper
+      // answers from the phone, step 4h), and its weekly bank holiday list.
       await helperInCharge(page);
       await page.waitForLoadState('networkidle');
       const kept = await keptOnPhone(page);
       const requests: string[] = [];
       page.on('request', (request) => {
         const path = new URL(request.url()).pathname;
-        if (path !== '/version.json' && path !== '/bank-holidays.json')
+        if (!['/version.json', '/offline-version.json', '/bank-holidays.json'].includes(path))
           requests.push(request.url());
       });
       await search(page).fill('debt');

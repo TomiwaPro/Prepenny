@@ -73,9 +73,12 @@ jobs:
 
       - name: Build the app
         # With the local Supabase's address (apps/web/lib/sign-in-config.ts),
-        # which only part 3 starts. The other tests never contact it.
+        # which only part 3 starts. The other tests never contact it. First a
+        # second build of the same code with a name of its own, the new
+        # version in the updating tests, kept in apps/web/e2e/.updating/new
+        # (step 4h, D594); then the build every test uses.
         id: build
-        run: pnpm build:local
+        run: pnpm build:update-test && pnpm build:local
 
       - name: Find the test browser's version
         id: playwright
