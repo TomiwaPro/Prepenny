@@ -91,6 +91,8 @@
 .footerLink {
   display: inline-flex;
   align-items: center;
+  /* 44 by 44px to tap even for "Help", the words where they'd be without it (DESIGN.md). */
+  min-width: var(--tap);
   min-height: var(--tap);
   padding: 0;
   border: 0;

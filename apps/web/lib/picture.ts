@@ -194,6 +194,15 @@ function encoded(
  * afresh with its hidden details taken out, and no bigger than 2 MB.
  */
 export async function preparePicture(file: Blob): Promise<Chosen<Picture>> {
+  try {
+    return await readPicture(file);
+  } catch {
+    // A photo that isn't on the phone yet, or a file taken away while it was read.
+    return { ok: false, problem: 'unreadable' };
+  }
+}
+
+async function readPicture(file: Blob): Promise<Chosen<Picture>> {
   const start = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   const type = pictureType(start);
   if (type === null) return { ok: false, problem: 'not-a-picture' };
@@ -254,7 +263,12 @@ export async function preparePicture(file: Blob): Promise<Chosen<Picture>> {
  */
 export async function preparePlanCopy(file: Blob): Promise<Chosen<PlanCopy>> {
   if (file.size > PLAN_MOST_BYTES) return { ok: false, problem: 'too-big' };
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch {
+    return { ok: false, problem: 'not-a-plan' };
+  }
   return isPlanCopy(bytes)
     ? { ok: true, file: { kind: 'plan', bytes } }
     : { ok: false, problem: 'not-a-plan' };

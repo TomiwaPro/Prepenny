@@ -8,7 +8,8 @@
 //   goes to the address they sign in with.
 // - Signed out, the person first asks for a 6-digit code at their address,
 //   and the message goes only with that code (D605). Nothing they typed is
-//   sent before then.
+//   sent before then. Those two requests carry no sign-in, so someone whose
+//   sign-in has ended, or isn't finished, can write too (D615).
 // - The phone adds the app's version and the phone's type ("Android, Chrome
 //   131"), never the browser's whole description, and never any money data:
 //   the words typed, the screen's name and a picture or plan copy the person
@@ -17,10 +18,10 @@
 //   console or anywhere else (CLAUDE.md), and nothing typed is kept on the
 //   phone: a draft lives in memory only, until PrePenny is closed.
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { anyClient, signedInClient } from './account.ts';
+import { signedInClient } from './account.ts';
 import { base64Of, type Picture, type PlanCopy } from './picture.ts';
 import { signInConfig } from './sign-in-config.ts';
+import { fetchWithTimeLimit } from './time-limit.ts';
 import { appVersion } from './version.ts';
 
 export type SupportKind = 'contact' | 'problem' | 'idea';
@@ -140,13 +141,61 @@ export function screenName(path: string): string {
   return name === '' ? 'home' : name;
 }
 
-async function clientFor(signedIn: boolean): Promise<SupabaseClient | null> {
-  if (signInConfig() === null) return null;
-  try {
-    return signedIn ? await signedInClient() : await anyClient();
-  } catch {
-    return null;
-  }
+/**
+ * Text as the database can take it: without the "null" character and without
+ * half of a pair that makes one character, either of which makes the Data
+ * API refuse the request and write what was typed into its log (D615). What
+ * the person sees typed is unchanged.
+ */
+export function cleanText(typed: string): string {
+  return typed
+    .split(String.fromCharCode(0))
+    .join('')
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '\uFFFD');
+}
+
+/**
+ * One of the two steps, as someone signed out: with PrePenny's public key
+ * only, never a sign-in kept on this phone, so someone whose sign-in has
+ * ended, or is waiting for its second step, can still write (D615). Nothing
+ * of Supabase's own code is loaded for it.
+ */
+async function callSignedOut(
+  name: string,
+  args: Record<string, unknown>,
+): Promise<{ readonly data: unknown; readonly error: { readonly message: string } | null }> {
+  const config = signInConfig();
+  if (config === null) throw new Error('off');
+  const response = await fetchWithTimeLimit()(`${config.url}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: {
+      apikey: config.key,
+      'Content-Type': 'application/json',
+      'x-prepenny-version': appVersion().database,
+    },
+    body: JSON.stringify(args),
+  });
+  const answer = (await response.json().catch(() => null)) as unknown;
+  if (response.ok) return { data: answer, error: null };
+  const message =
+    answer !== null &&
+    typeof answer === 'object' &&
+    typeof (answer as { message?: unknown }).message === 'string'
+      ? (answer as { message: string }).message
+      : '';
+  return { data: null, error: { message } };
+}
+
+/** One of the two steps, signed in or out. */
+async function call(
+  name: string,
+  args: Record<string, unknown>,
+  signedIn: boolean,
+): Promise<{ readonly data: unknown; readonly error: unknown }> {
+  if (!signedIn) return callSignedOut(name, args);
+  const client = await signedInClient();
+  if (client === null) throw new Error('signed-out');
+  return client.rpc(name, args);
 }
 
 export type Asked =
@@ -156,10 +205,8 @@ export type Asked =
 /** Asks for a 6-digit code at the address someone signed out typed (D605). */
 export async function askForCode(email: string): Promise<Asked> {
   if (signInConfig() === null) return { ok: false, problem: 'off' };
-  const client = await clientFor(false);
-  if (client === null) return { ok: false, problem: offline() ? 'offline' : 'server' };
   try {
-    const { data, error } = await client.rpc('support_code', { email });
+    const { data, error } = await call('support_code', { email: cleanText(email) }, false);
     if (error !== null) return { ok: false, problem: problemOf(error) };
     const answer = data as { sent?: unknown; wait?: unknown } | null;
     if (answer?.sent === true) return { ok: true };
@@ -198,22 +245,24 @@ export async function sendToSupport(
   signedOut: { readonly email: string; readonly code: string } | null,
 ): Promise<Sent> {
   if (signInConfig() === null) return { ok: false, problem: 'off' };
-  const client = await clientFor(signedOut === null);
-  if (client === null) return { ok: false, problem: offline() ? 'offline' : 'server' };
   const file = message.kind === 'problem' ? (message.file ?? null) : null;
   try {
-    const { data, error } = await client.rpc('send_support', {
-      kind: message.kind,
-      words: message.words,
-      screen: message.kind === 'problem' ? (message.screen ?? null) : null,
-      app_version: thisVersion(),
-      phone_type: thisPhone(),
-      file_kind: file?.kind ?? null,
-      file_data: file === null ? null : base64Of(file.bytes),
-      consent: file === null ? null : true,
-      email: signedOut?.email ?? null,
-      code: signedOut?.code ?? null,
-    });
+    const { data, error } = await call(
+      'send_support',
+      {
+        kind: message.kind,
+        words: cleanText(message.words),
+        screen: message.kind === 'problem' ? (message.screen ?? null) : null,
+        app_version: thisVersion(),
+        phone_type: thisPhone(),
+        file_kind: file?.kind ?? null,
+        file_data: file === null ? null : base64Of(file.bytes),
+        consent: file === null ? null : true,
+        email: signedOut === null ? null : cleanText(signedOut.email),
+        code: signedOut?.code ?? null,
+      },
+      signedOut === null,
+    );
     if (error !== null) return { ok: false, problem: problemOf(error) };
     const answer = data as {
       sent?: unknown;

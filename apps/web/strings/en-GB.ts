@@ -1953,10 +1953,11 @@ export const strings = {
     tooMany:
       "You've sent as many messages as PrePenny takes in a day. Try again tomorrow, or email hello@prepenny.co.uk.",
     tooManyCodes:
-      'We can send 3 codes a day to one address. Try again tomorrow, or email hello@prepenny.co.uk.',
+      "PrePenny can't send another code today. Try again tomorrow, or email hello@prepenny.co.uk.",
     busy: 'PrePenny support has had a lot of messages today. Try again tomorrow, or email hello@prepenny.co.uk.',
     emailOff: "Emails from PrePenny aren't switched on yet. Email hello@prepenny.co.uk instead.",
-    notAllowed: 'Your sign-in has ended. Sign in again, or email hello@prepenny.co.uk.',
+    notAllowed:
+      "Your sign-in has ended, or isn't finished. Type your email address, and we'll send a code to check it's yours.",
     wait: (seconds: number) =>
       seconds === 1
         ? 'You can ask for a new code in 1 second.'

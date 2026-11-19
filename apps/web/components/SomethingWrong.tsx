@@ -43,6 +43,8 @@ export function useAttachment(): NonNullable<SupportFormProps['attachment']> {
   const planInput = useRef<HTMLInputElement>(null);
   const chooseButton = useRef<HTMLButtonElement>(null);
   const choiceArea = useRef<HTMLDivElement>(null);
+  // Each file chosen, or reset, counts up: an answer for an earlier one is ignored.
+  const latest = useRef(0);
 
   const missing =
     choice === 'picture' && picture === null
@@ -60,10 +62,16 @@ export function useAttachment(): NonNullable<SupportFormProps['attachment']> {
     // So choosing the same picture again still counts as a choice.
     event.target.value = '';
     if (file === undefined) return;
+    const mine = ++latest.current;
     setError(undefined);
     setReading(true);
-    const ready = await preparePicture(file);
-    setReading(false);
+    let ready: Awaited<ReturnType<typeof preparePicture>>;
+    try {
+      ready = await preparePicture(file);
+    } finally {
+      if (mine === latest.current) setReading(false);
+    }
+    if (mine !== latest.current) return;
     if (ready.ok) {
       setPicture(ready.file);
       return;
@@ -83,8 +91,10 @@ export function useAttachment(): NonNullable<SupportFormProps['attachment']> {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (file === undefined) return;
+    const mine = ++latest.current;
     setError(undefined);
     const ready = await preparePlanCopy(file);
+    if (mine !== latest.current) return;
     if (ready.ok) {
       setPlan(ready.file);
       return;
@@ -185,6 +195,8 @@ export function useAttachment(): NonNullable<SupportFormProps['attachment']> {
       chooseButton.current?.focus();
     },
     reset: () => {
+      latest.current += 1;
+      setReading(false);
       setChoice('none');
       setPicture(null);
       setPlan(null);
@@ -207,6 +219,9 @@ export function SupportFooter({
   readonly screen?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // The form is made the first time it opens, then kept while PrePenny is
+  // open, so a screen nobody reports on has no form in it.
+  const [opened, setOpened] = useState(false);
   const [round, setRound] = useState(0);
   const [sent, setSent] = useState(false);
   const attachment = useAttachment();
@@ -236,21 +251,26 @@ export function SupportFooter({
         type="button"
         className={styles.footerLink}
         aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpened(true);
+          setOpen(true);
+        }}
       >
         {strings.support.somethingWrong}
       </button>
       <Sheet open={open} title={t.title} intro={t.intro} onClose={close}>
-        <SupportForm
-          key={round}
-          kind="problem"
-          wordsLabel={t.wordsLabel}
-          wordsHint={t.wordsHint}
-          wordsMissing={t.wordsMissing}
-          screen={nameNow}
-          attachment={attachment}
-          onSent={() => setSent(true)}
-        />
+        {opened ? (
+          <SupportForm
+            key={round}
+            kind="problem"
+            wordsLabel={t.wordsLabel}
+            wordsHint={t.wordsHint}
+            wordsMissing={t.wordsMissing}
+            screen={nameNow}
+            attachment={attachment}
+            onSent={() => setSent(true)}
+          />
+        ) : null}
       </Sheet>
     </footer>
   );

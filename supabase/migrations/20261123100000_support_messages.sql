@@ -15,7 +15,12 @@
 --    with none of their words and no address, at most once every 4 hours.
 -- 4. Caps per address and per connection stop floods, and caps for everyone
 --    together keep support's emails well under Resend's free plan's 100 a
---    day, so they can never use up what sign-in codes need (D606).
+--    day, so they can never use up what sign-in codes need (D606, D615).
+--    The outside review (D615) added: a file is read before waiting for any
+--    other request, and bounded; codes and replies have their own
+--    allowances; Cloudflare's own header names the connection; someone
+--    whose sign-in doesn't hold can write with an address and its code; and
+--    the picture check is stricter.
 -- 5. Pictures are JPEG or PNG only, checked by their contents, with no
 --    hidden details (the phone removes them; this checks), 2 MB at most;
 --    plan copies are a PrePenny backup file, 5 MB at most (D607). Both are
@@ -146,14 +151,14 @@ create function app.support_messages_a_connection() returns integer
 language sql immutable set search_path = '' as $$ select 10 $$;
 create function app.support_messages_a_day() returns integer
 language sql immutable set search_path = '' as $$ select 100 $$;
--- Support's emails to senders in any 24 hours: codes while there have been
--- fewer than 15, automatic replies while fewer than 10, so replies never
--- take what codes need. With at most 6 notices a day, that's 21 at most of
--- Resend's 100 a day, leaving 79 for sign-in codes and the account's emails.
+-- Support's emails to senders in any 24 hours, each with its own allowance,
+-- so a flood of one never stops the other (D615): 10 codes and 5 automatic
+-- replies. With at most 6 notices a day, that's 21 at most of Resend's 100
+-- a day, leaving 79 for sign-in codes and the account's emails.
 create function app.support_codes_emails_a_day() returns integer
-language sql immutable set search_path = '' as $$ select 15 $$;
-create function app.support_replies_emails_a_day() returns integer
 language sql immutable set search_path = '' as $$ select 10 $$;
+create function app.support_replies_emails_a_day() returns integer
+language sql immutable set search_path = '' as $$ select 5 $$;
 -- hello@prepenny.co.uk is told at most once in this long.
 create function app.support_told_every() returns interval
 language sql immutable set search_path = '' as $$ select interval '4 hours' $$;
@@ -179,6 +184,25 @@ language sql immutable set search_path = '' as $$ select interval '30 days' $$;
 create function app.support_messages_kept() returns interval
 language sql immutable set search_path = '' as $$ select interval '12 months' $$;
 
+-- For the local test database only (supabase/seed.sql), never the real
+-- project: the end-to-end tests all run on one computer, through one
+-- connection, many times a day, so there the caps for one connection and for
+-- everyone together are multiplied by this. 39-support-messages.test.sql
+-- puts it back to 1 and checks the real numbers. Only the database's
+-- administrator can change it, as for the reminders' test clock (step 4e).
+create table app.support_test (
+  only_one boolean primary key default true check (only_one),
+  scale integer not null default 1 check (scale between 1 and 1000)
+);
+insert into app.support_test default values;
+alter table app.support_test enable row level security;
+revoke all on app.support_test from public, anon, authenticated, service_role;
+
+create function app.support_scale() returns integer
+language sql stable security definer set search_path = '' as $$
+  select coalesce((select t.scale from app.support_test t), 1)
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Who's sending, and from where.
 
@@ -190,22 +214,28 @@ language sql volatile set search_path = '' as $$
 $$;
 
 -- The connection a request came from, scrambled with the database's own
--- secret so no IP address is kept: the first address in X-Forwarded-For, as
--- Supabase's own documentation shows ("takes the client IP before the first
--- comma", Securing your API, read 19 Nov 2026). Someone can disguise it, so
--- the caps for everyone together are what keep the emails and storage
--- safe (D606).
+-- secret so no IP address is kept: Cloudflare's CF-Connecting-IP when
+-- Supabase passes it on, which Cloudflare writes itself, or else the first
+-- address in X-Forwarded-For, as Supabase's own documentation shows
+-- ("takes the client IP before the first comma", Securing your API, read
+-- 19 Nov 2026). Someone can disguise the second, so the caps for everyone
+-- together are what keep the emails and storage safe (D606, D615).
 create function app.support_connection() returns text
 language plpgsql stable security definer set search_path = '' as $$
 declare
+  headers jsonb;
   seen text;
 begin
   begin
-    seen := current_setting('request.headers', true)::jsonb ->> 'x-forwarded-for';
+    headers := current_setting('request.headers', true)::jsonb;
   exception when others then
-    seen := null;
+    headers := null;
   end;
-  return app.address_key('connection:' || btrim(split_part(coalesce(seen, ''), ',', 1)));
+  seen := nullif(btrim(coalesce(headers ->> 'cf-connecting-ip', '')), '');
+  if seen is null then
+    seen := btrim(split_part(coalesce(headers ->> 'x-forwarded-for', ''), ',', 1));
+  end if;
+  return app.address_key('connection:' || seen);
 end;
 $$;
 
@@ -285,13 +315,20 @@ $$;
 -- Pictures and plan copies (D607).
 
 -- What a picture is, read from its contents, never its name: its type and
--- size, or a problem. Every part before the picture itself is looked at:
--- a PNG may have only the chunks a picture needs (no text, no eXIf, no
--- time), and a JPEG only its tables, its size, its picture data and a
--- plain JFIF header with no thumbnail (no Exif, no XMP, no comments, no
--- other application data). The phone takes all of those out before
--- sending (apps/web/lib/picture.ts), so this only refuses a picture that
--- didn't come from PrePenny's own screen.
+-- size, or a problem. The phone takes every hidden detail out before
+-- sending (apps/web/lib/picture.ts); this checks again, every way it can
+-- without decoding the picture itself, so a picture that didn't come from
+-- PrePenny's own screen is refused (D607, D615):
+-- - a PNG may have only the chunks a picture needs, each exactly its
+--   standard size (no text, no eXIf, no time, nothing after its end);
+-- - a JPEG only its tables, each exactly as long as what's in it, its size,
+--   its picture data and a plain JFIF header with no thumbnail (no Exif,
+--   no XMP, no comments, no other application data), anywhere in the file,
+--   and exactly one end, at the end;
+-- - neither may hold the words that start Exif or XMP anywhere at all.
+-- Bounded: at most 7 fill bytes in a row, 64 parts before a JPEG's picture
+-- data and 4,096 PNG chunks, so a file made to be slow to read is refused
+-- quickly.
 create function app.picture_facts(data bytea) returns jsonb
 language plpgsql immutable set search_path = '' as $$
 declare
@@ -303,11 +340,27 @@ declare
   w bigint;
   h bigint;
   seen_data boolean := false;
+  parts integer := 0;
+  fill integer := 0;
+  inside integer;
+  table_end integer;
+  counted integer;
+  rest bytea;
+  forbidden integer;
+  tables integer;
 begin
+  -- The words Exif and XMP start with, which no picture needs.
+  if position('\x457869660000'::bytea in data) > 0
+      or position(convert_to('<x:xmpmeta', 'UTF8') in data) > 0
+      or position(convert_to('http://ns.adobe.com/xap', 'UTF8') in data) > 0 then
+    return jsonb_build_object('problem', 'details');
+  end if;
+
   if n >= 8 and substring(data from 1 for 8) = '\x89504e470d0a1a0a'::bytea then
     at := 8;
     loop
-      if at + 12 > n then
+      parts := parts + 1;
+      if parts > 4096 or at + 12 > n then
         return jsonb_build_object('problem', 'broken');
       end if;
       len := get_byte(data, at)::bigint * 16777216 + get_byte(data, at + 1) * 65536
@@ -326,7 +379,14 @@ begin
           + get_byte(data, at + 14) * 256 + get_byte(data, at + 15);
       elsif kind = 'IDAT' then
         seen_data := true;
-      elsif kind not in ('PLTE', 'tRNS', 'sRGB', 'gAMA', 'cHRM', 'pHYs', 'IEND') then
+      elsif kind = 'PLTE' then
+        if len = 0 or len > 768 or len % 3 <> 0 then
+          return jsonb_build_object('problem', 'details');
+        end if;
+      elsif (kind = 'tRNS' and len > 256) or (kind = 'sRGB' and len <> 1) or (kind = 'gAMA' and len <> 4)
+          or (kind = 'cHRM' and len <> 32) or (kind = 'pHYs' and len <> 9) or (kind = 'IEND' and len <> 0) then
+        return jsonb_build_object('problem', 'details');
+      elsif kind not in ('tRNS', 'sRGB', 'gAMA', 'cHRM', 'pHYs', 'IEND') then
         return jsonb_build_object('problem', 'details');
       end if;
       at := at + 12 + len::integer;
@@ -347,8 +407,17 @@ begin
       end if;
       marker := get_byte(data, at + 1);
       if marker = 255 then
+        fill := fill + 1;
+        if fill > 7 then
+          return jsonb_build_object('problem', 'broken');
+        end if;
         at := at + 1;
         continue;
+      end if;
+      fill := 0;
+      parts := parts + 1;
+      if parts > 64 then
+        return jsonb_build_object('problem', 'broken');
       end if;
       if marker = 1 or marker between 208 and 215 then
         at := at + 2;
@@ -367,16 +436,52 @@ begin
             or get_byte(data, at + 16) <> 0 or get_byte(data, at + 17) <> 0 then
           return jsonb_build_object('problem', 'details');
         end if;
-      elsif marker in (219, 196, 204, 221) then
-        -- Quantisation and Huffman tables, arithmetic coding, restart interval.
-        null;
+      elsif marker = 219 then
+        -- Quantisation tables: each 65 bytes, or 129 for 16-bit values, and nothing else.
+        inside := at + 4;
+        table_end := at + 2 + len::integer;
+        tables := 0;
+        while inside < table_end and tables < 4 loop
+          inside := inside + case when get_byte(data, inside) >> 4 = 0 then 65 else 129 end;
+          tables := tables + 1;
+        end loop;
+        if inside <> table_end then
+          return jsonb_build_object('problem', 'details');
+        end if;
+      elsif marker = 196 then
+        -- Huffman tables: each 17 bytes and as many values as its counts say.
+        inside := at + 4;
+        table_end := at + 2 + len::integer;
+        tables := 0;
+        while inside + 17 <= table_end and tables < 8 loop
+          counted := 0;
+          for i in 1..16 loop
+            counted := counted + get_byte(data, inside + i);
+          end loop;
+          inside := inside + 17 + counted;
+          tables := tables + 1;
+        end loop;
+        if inside <> table_end then
+          return jsonb_build_object('problem', 'details');
+        end if;
+      elsif marker = 221 then
+        if len <> 4 then
+          return jsonb_build_object('problem', 'details');
+        end if;
+      elsif marker = 204 then
+        if (len - 2) % 2 <> 0 then
+          return jsonb_build_object('problem', 'details');
+        end if;
       elsif marker in (192, 193, 194, 195, 197, 198, 199, 201, 202, 203, 205, 206, 207) then
-        if len < 8 then
+        if len < 8 or len <> 8 + 3 * get_byte(data, at + 9) then
           return jsonb_build_object('problem', 'broken');
         end if;
         h := get_byte(data, at + 5) * 256 + get_byte(data, at + 6);
         w := get_byte(data, at + 7) * 256 + get_byte(data, at + 8);
       elsif marker = 218 then
+        if len < 6 or len <> 6 + 2 * get_byte(data, at + 4) then
+          return jsonb_build_object('problem', 'broken');
+        end if;
         exit;
       else
         return jsonb_build_object('problem', 'details');
@@ -387,6 +492,19 @@ begin
         or get_byte(data, n - 2) <> 255 or get_byte(data, n - 1) <> 217 then
       return jsonb_build_object('problem', 'broken');
     end if;
+    -- After the picture data starts, no application data, comment or start
+    -- of a picture, and the one end at the very end: in picture data a 255
+    -- byte is always followed by 0 or a restart, so these can only be markers.
+    rest := substring(data from at + 1);
+    if position('\xffd8'::bytea in rest) > 0 or position('\xfffe'::bytea in rest) > 0
+        or position('\xffd9'::bytea in rest) <> octet_length(rest) - 1 then
+      return jsonb_build_object('problem', 'details');
+    end if;
+    for forbidden in 224..239 loop
+      if position(('\xff'::bytea || set_byte('\x00'::bytea, 0, forbidden)) in rest) > 0 then
+        return jsonb_build_object('problem', 'details');
+      end if;
+    end loop;
     return jsonb_build_object('type', 'image/jpeg', 'width', w, 'height', h);
   end if;
 
@@ -454,7 +572,7 @@ $$;
 -- {sent: false, wait} within a minute of the last code to that address.
 -- Refused: "bad-email"; "too-many" after 3 codes to the address in a day,
 -- 10 wrong codes in a day for it, or 6 codes from the connection; "busy"
--- once support has sent 15 emails in 24 hours; "email-off" when PrePenny's
+-- once support has sent 10 codes in 24 hours; "email-off" when PrePenny's
 -- emails can't go.
 create function public.support_code(email text) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
@@ -477,12 +595,11 @@ begin
   if app.address_locked(address, 'support')
       or (select count(*) from app.support_codes c
         where c.email = address and c.sent_at > now() - interval '24 hours') >= app.codes_a_day()
-      or app.support_count('code', connection, 'connection') >= app.support_codes_a_connection() then
+      or app.support_count('code', connection, 'connection')
+        >= app.support_codes_a_connection() * app.support_scale() then
     perform app.refuse('too-many');
   end if;
-  if (select count(*) from app.support_sends s
-      where s.what in ('code', 'reply') and s.at > now() - interval '24 hours')
-      >= app.support_codes_emails_a_day() then
+  if app.support_count('code', null, 'everyone') >= app.support_codes_emails_a_day() * app.support_scale() then
     perform app.refuse('busy');
   end if;
   if not app.email_ready() then
@@ -538,7 +655,8 @@ $$;
 -- looks wrong ("problem") or Suggest a feature ("idea").
 --
 -- - Signed in, it's the person's own, from a sign-in that still holds.
---   Signed out, with the address and the code sent to it (support_code).
+--   Signed out, with the address and the code sent to it (support_code),
+--   as also for someone whose sign-in has ended or isn't finished.
 -- - The phone adds the app's version and the phone's type ("Android,
 --   Chrome 131"), each checked against its pattern, never the browser's
 --   whole description. Never any money data: the phone sends nothing else.
@@ -586,40 +704,9 @@ begin
     perform app.refuse('bad-message');
   end if;
 
-  perform app.support_one_at_a_time();
-
-  -- Who's sending.
-  if me is not null then
-    if not app.support_signed_in() then
-      perform app.refuse('not-allowed', '42501');
-    end if;
-    select lower(u.email) into reply_to from auth.users u where u.id = me;
-    sender := app.address_key('person:' || me::text);
-  else
-    address := app.email_address(email);
-    if address is null then
-      perform app.refuse('bad-email');
-    end if;
-    checked := app.check_support_code(address, code);
-    if checked = 'wrong' then
-      return jsonb_build_object('sent', false, 'why', 'code-wrong');
-    elsif checked = 'ran-out' then
-      return jsonb_build_object('sent', false, 'why', 'code-ran-out');
-    end if;
-    reply_to := address;
-    sender := app.address_key('email:' || address);
-  end if;
-
-  -- The caps on messages.
-  if app.support_count('message', sender, 'sender') >= app.support_messages_a_sender()
-      or app.support_count('message', connection, 'connection') >= app.support_messages_a_connection() then
-    perform app.refuse('too-many');
-  end if;
-  if app.support_count('message', null, 'everyone') >= app.support_messages_a_day() then
-    perform app.refuse('busy');
-  end if;
-
-  -- A picture or a plan copy, checked by its contents.
+  -- A picture or a plan copy, checked by its contents before waiting for
+  -- any other request, so a file made to be slow to read holds up nobody
+  -- else (D615).
   if file_kind is not null then
     if length(file_data) > (greatest(app.support_picture_most_bytes(), app.support_plan_most_bytes()) / 3 + 1) * 4 + 64 then
       perform app.refuse('file-too-big');
@@ -647,13 +734,57 @@ begin
       end if;
       content := 'application/json';
     end if;
+  end if;
+
+  perform app.support_one_at_a_time();
+
+  -- Who's sending. Someone whose sign-in has ended, or isn't finished (the
+  -- second step not passed yet), can write as someone signed out, with the
+  -- address and its code (D615).
+  if me is not null and not app.support_signed_in() and email is not null and code is not null then
+    me := null;
+  end if;
+  if me is not null then
+    if not app.support_signed_in() then
+      perform app.refuse('not-allowed', '42501');
+    end if;
+    select lower(u.email) into reply_to from auth.users u where u.id = me;
+    sender := app.address_key('person:' || me::text);
+  else
+    address := app.email_address(email);
+    if address is null then
+      perform app.refuse('bad-email');
+    end if;
+    checked := app.check_support_code(address, code);
+    if checked = 'wrong' then
+      return jsonb_build_object('sent', false, 'why', 'code-wrong');
+    elsif checked = 'ran-out' then
+      return jsonb_build_object('sent', false, 'why', 'code-ran-out');
+    end if;
+    reply_to := address;
+    sender := app.address_key('email:' || address);
+  end if;
+
+  -- The caps on messages.
+  if app.support_count('message', sender, 'sender') >= app.support_messages_a_sender()
+      or app.support_count('message', connection, 'connection')
+        >= app.support_messages_a_connection() * app.support_scale() then
+    perform app.refuse('too-many');
+  end if;
+  if app.support_count('message', null, 'everyone') >= app.support_messages_a_day() * app.support_scale() then
+    perform app.refuse('busy');
+  end if;
+
+  -- The caps on pictures and plan copies, checked above before the wait.
+  if file_kind is not null then
     if app.support_count('file', sender, 'sender') >= app.support_files_a_sender()
-        or app.support_count('file', connection, 'connection') >= app.support_files_a_connection() then
+        or app.support_count('file', connection, 'connection')
+          >= app.support_files_a_connection() * app.support_scale() then
       perform app.refuse('too-many');
     end if;
     if (select coalesce(sum(s.bytes), 0) from app.support_sends s
         where s.what = 'file' and s.at > now() - interval '24 hours') + octet_length(file)
-          > app.support_file_bytes_a_day()
+          > app.support_file_bytes_a_day() * app.support_scale()
         or (select coalesce(sum(f.bytes), 0) from app.support_files f) + octet_length(file)
           > app.support_file_bytes_kept() then
       perform app.refuse('files-full');
@@ -681,9 +812,8 @@ begin
   -- The automatic reply, once a day for a sender, while support's emails allow.
   if kind <> 'idea' and reply_to is not null and app.email_ready()
       and app.support_count('reply', sender, 'sender') = 0
-      and (select count(*) from app.support_sends s
-        where s.what in ('code', 'reply') and s.at > now() - interval '24 hours')
-        < app.support_replies_emails_a_day() then
+      and app.support_count('reply', null, 'everyone')
+        < app.support_replies_emails_a_day() * app.support_scale() then
     perform app.send_email(reply_to, 'PrePenny has your message',
       'We''ve got your message.', null,
       array['We aim to answer within 1 working day, so by the end of ' || app.day_words(answer) || '.',
@@ -771,6 +901,7 @@ revoke all on function
   app.support_picture_most_bytes(), app.support_plan_most_bytes(), app.support_files_a_sender(),
   app.support_files_a_connection(), app.support_file_bytes_a_day(), app.support_file_bytes_kept(),
   app.support_files_kept(), app.support_messages_kept(), app.support_one_at_a_time(),
+  app.support_scale(),
   app.support_connection(), app.support_signed_in(), app.support_count(text, text, text),
   app.day_words(date), app.support_answer_by(timestamptz), app.email_ready(),
   app.picture_facts(bytea), app.plan_copy_ok(bytea), app.tell_support(),

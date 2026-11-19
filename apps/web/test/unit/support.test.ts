@@ -12,7 +12,7 @@ import {
   sizeToDraw,
   sizeWords,
 } from '../../lib/picture.ts';
-import { phoneType, screenName } from '../../lib/support.ts';
+import { cleanText, phoneType, screenName } from '../../lib/support.ts';
 
 const bytes = (hex: string) =>
   Uint8Array.from(hex.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
@@ -22,7 +22,7 @@ const ascii = (words: string) => hexOf(new TextEncoder().encode(words));
 
 /** A PNG chunk, with a made-up check sum: only its place and name matter here. */
 const chunk = (name: string, dataHex: string) =>
-  (dataHex.length / 2).toString(16).padStart(8, '0') + ascii(name) + dataHex + '00000000';
+  `${(dataHex.length / 2).toString(16).padStart(8, '0') + ascii(name) + dataHex}00000000`;
 const PNG_START = '89504e470d0a1a0a';
 const IHDR = chunk('IHDR', '0000000100000001080600000000'.slice(0, 26));
 const IDAT = chunk('IDAT', '78da63f8cfc0f01f0005000201');
@@ -32,8 +32,8 @@ const IEND = '0000000049454e44ae426082';
 const segment = (marker: string, dataHex: string) =>
   `ff${marker}${(dataHex.length / 2 + 2).toString(16).padStart(4, '0')}${dataHex}`;
 const JFIF = segment('e0', '4a464946000101000001000100' + '00');
-const EXIF = segment('e1', ascii('Exif') + '0000' + ascii('GPS 51.5072N 0.1276W'));
-const XMP = segment('e1', ascii('http://ns.adobe.com/xap/1.0/') + '00' + ascii('<x:xmpmeta/>'));
+const EXIF = segment('e1', `${ascii('Exif')}0000${ascii('GPS 51.5072N 0.1276W')}`);
+const XMP = segment('e1', `${ascii('http://ns.adobe.com/xap/1.0/')}00${ascii('<x:xmpmeta/>')}`);
 const COMMENT = segment('fe', ascii('Taken at home'));
 const DQT = segment('db', `00${'01'.repeat(64)}`);
 const SOF = segment('c0', '080002000303012200021101031101');
@@ -129,11 +129,11 @@ describe("A picture's hidden details are taken out on the phone (D607)", () => {
   });
 
   it('takes text, eXIf, time and colour profiles out of a PNG', () => {
-    const text = chunk('tEXt', ascii('Comment') + '00' + ascii('Taken at home'));
-    const exif = chunk('eXIf', ascii('MM') + '002a' + ascii('GPS'));
+    const text = chunk('tEXt', `${ascii('Comment')}00${ascii('Taken at home')}`);
+    const exif = chunk('eXIf', `${ascii('MM')}002a${ascii('GPS')}`);
     const time = chunk('tIME', '07ea0b130a0000');
-    const international = chunk('iTXt', ascii('Location') + '0000000000' + ascii('London'));
-    const profile = chunk('iCCP', ascii('icc') + '0000' + '78da');
+    const international = chunk('iTXt', `${ascii('Location')}0000000000${ascii('London')}`);
+    const profile = chunk('iCCP', `${ascii('icc')}000078da`);
     const before = bytes(
       PNG_START + IHDR + text + exif + time + international + profile + IDAT + IEND,
     );
@@ -180,5 +180,18 @@ describe('A plan copy is the backup file from Download my data, by its contents 
     );
     expect(isPlanCopy(new TextEncoder().encode('app,kind\nPrePenny,backup'))).toBe(false);
     expect(isPlanCopy(bytes('ffd8ff'))).toBe(false);
+  });
+});
+
+describe('What was typed never reaches a log (D615)', () => {
+  it('takes out what would make the Data API refuse the request and write it into its log', () => {
+    const nul = String.fromCharCode(0);
+    expect(cleanText(`Rent${nul} looks wrong`)).toBe('Rent looks wrong');
+    // Half of a pair that makes one character, alone, at the end and in the middle.
+    expect(cleanText('ends with \uD83D')).toBe('ends with \uFFFD');
+    expect(cleanText('a \uDE00 b')).toBe('a \uFFFD b');
+    // Whole characters stay as they are.
+    expect(cleanText('£4.53 😀 café')).toBe('£4.53 😀 café');
+    expect(cleanText(`x${nul}\uD800`)).toBe('x\uFFFD');
   });
 });

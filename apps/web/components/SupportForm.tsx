@@ -20,6 +20,7 @@ import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } fr
 import { useAccount } from '../lib/account.ts';
 import { formatDay } from '../lib/dates.ts';
 import type { Picture, PlanCopy } from '../lib/picture.ts';
+import { useStarted } from '../lib/started.ts';
 import {
   askForCode,
   MOST_CHARACTERS,
@@ -118,7 +119,14 @@ export function SupportForm({
 }: SupportFormProps) {
   const id = useId();
   const account = useAccount();
-  const signedOut = account.status === 'signed-out';
+  // Its form only once its code has started on the phone (D487): before
+  // then a tap would send the form itself, and the phone's type and the
+  // version, which only the phone knows, can't be drawn (D610).
+  const started = useStarted();
+  // A sign-in that has ended, or isn't finished, writes as someone signed out (D615).
+  const [asSignedOut, setAsSignedOut] = useState(false);
+  const signedOut = account.status === 'signed-out' || asSignedOut;
+  const [focusEmail, setFocusEmail] = useState(false);
   const [step, setStep] = useState<Step>('write');
   const [words, setWords] = useState('');
   const [wordsError, setWordsError] = useState<string | undefined>();
@@ -152,8 +160,15 @@ export function SupportForm({
       sentTitle.current?.focus();
       onSent?.();
     }
-    if (step === 'write') wordsBox.current?.focus();
+    if (step === 'write') (focusEmail ? emailBox : wordsBox).current?.focus();
   }, [step]);
+
+  // Once the address box shows for someone whose sign-in has ended, it takes focus.
+  useEffect(() => {
+    if (!focusEmail || step !== 'write') return;
+    emailBox.current?.focus();
+    setFocusEmail(false);
+  }, [focusEmail, step]);
 
   const said = words.trim();
   const message = () => ({
@@ -230,6 +245,13 @@ export function SupportForm({
     const done = await sendToSupport(message(), null);
     setBusy(null);
     if (!done.ok) {
+      if (done.problem === 'not-allowed' || done.problem === 'bad-email') {
+        // The sign-in has ended, or isn't finished: the address and a code instead.
+        setAsSignedOut(true);
+        setProblem(t.notAllowed);
+        setFocusEmail(true);
+        return;
+      }
       showProblem(done.problem);
       return;
     }
@@ -306,6 +328,8 @@ export function SupportForm({
     </div>
   );
 
+  if (!started) return null;
+
   if (step === 'sent' && sent !== null) {
     const today = localToday();
     return (
@@ -364,6 +388,7 @@ export function SupportForm({
           className={formStyles.outlined}
           onClick={() => {
             setProblem(null);
+            setFocusEmail(true);
             setStep('write');
           }}
         >

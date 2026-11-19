@@ -24,7 +24,10 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(117);
+select plan(132);
+
+-- The real caps, not the local end-to-end tests' (seed.sql, D606).
+update app.support_test set scale = 1 where only_one;
 
 select tests.make_person('jess');
 select tests.make_person('tom');
@@ -56,6 +59,19 @@ begin
 end;
 $$;
 grant execute on function pg_temp.from_connection(text) to authenticated, anon;
+
+-- A request as Cloudflare passes it on: its own CF-Connecting-IP, and an
+-- X-Forwarded-For that starts with whatever the sender wrote.
+create function pg_temp.from_cloudflare(address text, made_up text) returns void language plpgsql security definer as $$
+begin
+  perform set_config('request.path', '/rpc/support_code', true);
+  perform set_config('request.headers', json_build_object(
+    'x-prepenny-version', app.database_version(),
+    'cf-connecting-ip', address,
+    'x-forwarded-for', made_up || ', ' || address || ', 10.0.0.1')::text, true);
+end;
+$$;
+grant execute on function pg_temp.from_cloudflare(text, text) to authenticated, anon;
 
 -- Sends a message as whoever is acting, with no file.
 create function pg_temp.send(kind text, words text, email text default null, code text default null)
@@ -134,10 +150,13 @@ select throws_ok($$ select * from app.support_messages $$, '42501', null,
 select throws_ok($$ select * from app.support_files $$, '42501', null, 'or any picture or plan copy');
 select throws_ok($$ select * from app.support_codes $$, '42501', null, 'or any code');
 select throws_ok($$ select * from app.support_sends $$, '42501', null, 'or the caps'' counts');
+select throws_ok($$ update app.support_test set scale = 1000 $$, '42501', null,
+  'or change the local tests'' multiplier for the shared caps');
 select tests.as_nobody();
 select throws_ok($$ select * from app.support_messages $$, '42501', null,
   'Someone signed out can''t read any message');
 select throws_ok($$ select * from app.support_files $$, '42501', null, 'or any picture or plan copy');
+select throws_ok($$ update app.support_test set scale = 1000 $$, '42501', null, 'or the multiplier');
 select tests.as_test();
 select is_empty($$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'app' and p.proname ~ '(support|picture|plan_copy|tidy|day_words|email_ready)'
@@ -225,7 +244,17 @@ select tests.as_person('tom');
 select pg_temp.from_connection('203.0.113.2');
 select is(pg_temp.refusal($$ select pg_temp.send('contact', 'Hello') $$), 'not-allowed',
   'A phone whose sign-in has ended is refused');
+-- but can write as someone signed out, with an address and its code (D615).
+select is(public.support_code('tom.elsewhere@example.test') ->> 'sent', 'true',
+  'and can ask for a code at an address')
+;
+select is(pg_temp.send('contact', 'My sign-in ended', 'tom.elsewhere@example.test',
+    pg_temp.code_sent_to('tom.elsewhere@example.test')) ->> 'sent', 'true',
+  'and send with it, as someone signed out');
 select tests.as_test();
+select is((select count(*) from app.support_messages
+    where email = 'tom.elsewhere@example.test' and person_id is null), 1::bigint,
+  'kept with the address the code proved, not as his');
 insert into auth.sessions (id, user_id) values (tests.id('tom-session'), tests.id('tom'));
 
 -- Any version of the app can write, so a phone that can't update can still ask for help.
@@ -246,7 +275,7 @@ select is(pg_temp.send('contact', 'I lost my email', 'sam@example.test', '123456
 select is(pg_temp.refusal($$ select pg_temp.send('contact', 'Hi', null, null) $$), 'bad-email',
   'and one with no address');
 select tests.as_test();
-select is((select count(*) from app.support_messages where email is not null), 0::bigint,
+select is((select count(*) from app.support_messages where email = 'sam@example.test'), 0::bigint,
   'Nothing is kept');
 select is(pg_temp.emails_to('sam@example.test'), 0::bigint, 'and nothing is emailed to the address typed');
 
@@ -378,15 +407,16 @@ select pg_temp.from_connection('192.0.2.60');
 select is(pg_temp.refusal($$ select pg_temp.send('contact', 'Hello') $$), 'busy',
   'Past 100 messages a day from everyone, more are refused for that day');
 
--- Support's emails: replies stop at 10 a day, so codes keep 5 more; codes stop at 15.
+-- Support's emails: 5 automatic replies and 10 codes a day, each its own,
+-- so a flood of one never stops the other (D615).
 select pg_temp.next_day();
 select tests.as_test();
 insert into app.support_sends (what, sender_key, connection_key)
-  select 'reply', 'someone-' || n, 'somewhere-' || n from generate_series(1, 10) n;
+  select 'reply', 'someone-' || n, 'somewhere-' || n from generate_series(1, 5) n;
 select tests.as_person('alex');
 select pg_temp.from_connection('192.0.2.61');
 select is(pg_temp.send('contact', 'Hello') ->> 'replied', 'false',
-  'Once support has sent 10 emails in a day, a message is still kept, with no automatic reply');
+  'Once support has sent 5 automatic replies in a day, a message is still kept, with no reply');
 select tests.as_test();
 select is(pg_temp.emails_to('alex@example.test'), 0::bigint, 'none is sent');
 select tests.as_nobody();
@@ -394,13 +424,29 @@ select pg_temp.from_connection('192.0.2.62');
 select is(public.support_code('pat@example.test') ->> 'sent', 'true', 'but codes still go');
 select tests.as_test();
 insert into app.support_sends (what, sender_key, connection_key)
-  select 'code', 'someone-' || n, 'somewhere-' || n from generate_series(1, 4) n;
+  select 'code', 'someone-' || n, 'somewhere-' || n from generate_series(1, 9) n;
 select tests.as_nobody();
 select pg_temp.from_connection('192.0.2.63');
 select is(pg_temp.refusal($$ select public.support_code('kim@example.test') $$), 'busy',
-  'until 15 in a day, which keeps at least 79 of Resend''s 100 a day for signing in');
+  'until 10 codes in a day, which with the replies and notices keeps at least 79 of Resend''s 100 for signing in');
 select tests.as_test();
 select is(pg_temp.emails_to('kim@example.test'), 0::bigint, 'none is sent');
+select pg_temp.next_day();
+insert into app.support_sends (what, sender_key, connection_key)
+  select 'code', 'someone-' || n, 'somewhere-' || n from generate_series(1, 10) n;
+select tests.as_person('tom');
+select pg_temp.from_connection('192.0.2.64');
+select is(pg_temp.send('contact', 'After a flood of codes') ->> 'replied', 'true',
+  'A flood of codes never stops the automatic replies');
+
+-- One connection, as Cloudflare names it, whatever X-Forwarded-For says.
+select pg_temp.next_day();
+select tests.as_nobody();
+select pg_temp.from_cloudflare('203.0.113.77', 'fake-' || n || '.example') ,
+  public.support_code('cf' || n || '@example.test') from generate_series(1, 6) n;
+select pg_temp.from_cloudflare('203.0.113.77', 'another-fake.example');
+select is(pg_temp.refusal($$ select public.support_code('cf7@example.test') $$), 'too-many',
+  'Where Cloudflare names the connection, a made-up X-Forwarded-For doesn''t get past its cap');
 
 -- ---------------------------------------------------------------------------
 -- 5. Pictures and plan copies.
@@ -425,6 +471,36 @@ select is(app.picture_facts(substring(pg_temp.jpeg() from 1 for 60)) ->> 'proble
   'broken', 'A JPEG cut short is refused');
 select is(app.picture_facts(substring(pg_temp.png() from 1 for 40)) ->> 'problem',
   'broken', 'and a PNG cut short');
+-- Stricter, from the outside review (D615): nothing hidden after the picture
+-- data starts, in a table, or in a chunk; and no file made to be slow to read.
+select is(app.picture_facts(decode(replace(encode(pg_temp.jpeg(), 'hex'), 'a1b2c3ffd9', 'a1b2c3ffe10006aabbccddffd9'), 'hex')) ->> 'problem',
+  'details', 'A JPEG with application data after its picture data starts');
+select is(app.picture_facts(decode(replace(encode(pg_temp.jpeg(), 'hex'), 'a1b2c3ffd9',
+    'a1b2c3ffd9' || encode(convert_to('Taken at home', 'UTF8'), 'hex') || 'ffd9'), 'hex')) ->> 'problem',
+  'details', 'or words after a first end');
+select is(app.picture_facts(decode(replace(encode(pg_temp.jpeg(), 'hex'), 'ffdb004300' || repeat('01', 64),
+    'ffdb004d00' || repeat('01', 64) || encode(convert_to('Taken home', 'UTF8'), 'hex')), 'hex')) ->> 'problem',
+  'details', 'A quantisation table with words after it is refused');
+select is(app.picture_facts(pg_temp.png(decode('00000015704859730000000100000001'
+    || encode(convert_to('Taken@home!!', 'UTF8'), 'hex') || '00000000', 'hex'))) ->> 'problem',
+  'details', 'and a PNG chunk longer than its standard size, with words in it');
+select is(app.picture_facts(pg_temp.png(decode('00000009704859730000000100000001' || '0000000000', 'hex'))) ->> 'problem',
+  null, 'while a standard one is fine');
+select is(app.picture_facts('\xffd8'::bytea || decode(repeat('ff', 2 * 1024 * 1024), 'hex')) ->> 'problem',
+  'broken', 'A JPEG of nothing but fill bytes is refused');
+create function pg_temp.ms_to_read(data bytea) returns numeric language plpgsql as $$
+declare
+  started timestamptz := clock_timestamp();
+begin
+  perform app.picture_facts(data);
+  return extract(epoch from clock_timestamp() - started) * 1000;
+end;
+$$;
+select cmp_ok(pg_temp.ms_to_read('\xffd8'::bytea || decode(repeat('ff', 2 * 1024 * 1024), 'hex')), '<', 500::numeric,
+  'at once, so a file made to be slow to read holds nobody up (it took 1.7 seconds before the outside review)');
+select is(app.picture_facts(pg_temp.png(decode('0000000a49444154' || encode(convert_to('Exif', 'UTF8'), 'hex')
+    || '0000' || '4d4d002a' || '00000000', 'hex'))) ->> 'problem',
+  'details', 'Exif''s opening words anywhere in a picture are refused');
 select ok(app.plan_copy_ok(pg_temp.a_plan_copy()), 'A backup file from Download my data is a plan copy');
 select ok(not app.plan_copy_ok(convert_to('{"app":"Other","kind":"backup","version":1,"plan":{}}', 'UTF8')),
   'Another app''s file isn''t');
