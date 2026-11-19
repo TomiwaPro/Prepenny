@@ -13,3 +13,9 @@
   line-height: 1.35;
   text-align: left;
 }
+
+/* The words after a tap, while the new version comes onto the phone: the same
+   note, not a button. */
+p.note {
+  margin: 0;
+}

@@ -10,6 +10,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { refusalMessage } from '../lib/refusals.ts';
+import { useUpdateNoteShowing } from '../lib/update.ts';
 import { strings } from '../strings/en-GB.ts';
 import { AppLock } from './AppLock.tsx';
 import styles from './AppShell.module.css';
@@ -25,7 +26,7 @@ import { LeftNote } from './LeftNote.tsx';
 import { OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlanActions } from './PlanProvider.tsx';
 import { UndoBar } from './UndoBar.tsx';
-import { UpdateNote, useUpdated } from './UpdateNote.tsx';
+import { UpdateNote } from './UpdateNote.tsx';
 
 function Notes() {
   // On Home the example banner sits under the lowest point instead (D451).
@@ -121,7 +122,7 @@ function ChangeBar() {
 
 function Column({ children }: { readonly children: ReactNode }) {
   const { lastChange } = usePlanActions();
-  const updated = useUpdated();
+  const updated = useUpdateNoteShowing();
   return (
     <div
       className={`${styles.column} ${lastChange === null && !updated ? '' : styles.withBar} ${lastChange !== null && updated ? styles.withBoth : ''}`}

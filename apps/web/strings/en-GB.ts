@@ -451,6 +451,8 @@ export const strings = {
     /** Signed in, with a signal, when the server can't take changes for now (ARCHITECTURE.md 4.5). */
     cantSend: "Changes can't be sent right now. They're saved on this phone.",
     updated: 'PrePenny has been updated. Tap to reload.',
+    /** After a tap on the note, while the new version is still coming onto the phone (step 4h, D594). */
+    gettingNewVersion: "Getting the new version. It opens by itself once it's on this phone.",
   },
 
   /** On every page of a pull request's preview, never the live app (step 3e-2, D407). */

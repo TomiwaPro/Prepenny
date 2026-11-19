@@ -2,8 +2,9 @@
 // it is. Since step 3f-2 a few lines of our own run first for the app's
 // pages (cloudflare/worker.ts): a page opened at the old address moves to
 // prepenny.co.uk, and everything else is served from out/ as before (D428).
-// The app's files (under /_next/, the version a phone checks every minute, the
-// bank holiday list it checks each week (step 4c), the offline helper, icons,
+// The app's files (under /_next/, the version a phone checks every minute and
+// the copy of it the offline helper keeps (step 4h), the bank holiday list it
+// checks each week (step 4c), the offline helper, icons,
 // the iPhone's opening screens (step 4d), the engine's file and the app's
 // details) never run them, so they're served directly and don't count
 // towards Cloudflare's free daily allowance.
@@ -30,6 +31,7 @@
       "/*",
       "!/_next/*",
       "!/version.json",
+      "!/offline-version.json",
       "!/bank-holidays.json",
       "!/sw.js",
       "!/icons/*",

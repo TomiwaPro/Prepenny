@@ -22,7 +22,9 @@ export interface TestSetting {
    * The version this copy of PrePenny says it is, in place of its own
    * (step 3e, lib/version.ts), so a test can play a phone still on an older
    * version. Once that phone has updated itself and loaded afresh, it's its
-   * own version again: an updated phone is on the new version.
+   * own version again: an updated phone is on the new version. Its offline
+   * helper plays the same older version too, until the phone asks it for
+   * the new one (step 4h, lib/version.ts).
    */
   readonly version?: { readonly database: string; readonly build: string };
 }

@@ -14,6 +14,7 @@
       "/*",
       "!/_next/*",
       "!/version.json",
+      "!/offline-version.json",
       "!/bank-holidays.json",
       "!/sw.js",
       "!/icons/*",

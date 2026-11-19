@@ -6,7 +6,8 @@
 // newest migration in supabase/migrations, which the database checks on
 // every request, and the commit it was built from. Both go into the app
 // (.env.local) and into public/version.json, which the live site serves
-// fresh, so a phone can tell when a newer version is live. And the bank
+// fresh, so a phone can tell when a newer version is live, and
+// public/offline-version.json, which the offline helper keeps (step 4h). And the bank
 // holiday list phones fetch each week, public/bank-holidays.json (step 4c).
 //
 // It's built on its own, not by Next.js, because Turbopack's workers read
@@ -62,10 +63,21 @@ try {
 } catch {
   // Not built from a git checkout: the worker's fingerprint says which build it is.
 }
-writeFileSync(
-  join(publicFolder, 'version.json'),
-  `${JSON.stringify({ database, build: commit })}\n`,
-);
+// The updating test's second build of the same commit names itself, so it's a
+// newer version for a phone on the first (e2e/updating.ts, step 4h). Never
+// set when PrePenny is built to go online.
+const named = process.env.PREPENNY_BUILD_NAME;
+if (named !== undefined && named !== '') {
+  if (!/^[a-z0-9-]{1,40}$/.test(named))
+    throw new Error('PREPENNY_BUILD_NAME: a-z, 0-9 and - only.');
+  commit = named;
+}
+// The same again in offline-version.json, which the offline helper keeps with
+// every page of this build: a phone asks it which version a fresh load would
+// give, so it loads a new version only once it's on the phone (step 4h, D594).
+for (const file of ['version.json', 'offline-version.json']) {
+  writeFileSync(join(publicFolder, file), `${JSON.stringify({ database, build: commit })}\n`);
+}
 // The bank holiday list phones fetch each week (step 4c, D537): the built-in
 // copy, with its version. Putting the live app online swaps in GOV.UK's
 // newest list (scripts/newest-bank-holidays.ts), as the Bank holidays
