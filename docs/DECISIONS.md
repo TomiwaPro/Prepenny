@@ -7302,3 +7302,58 @@ The owner's words: "the owner opened https://www.moneyhelper.org.uk/en/money-tro
 - **The opening line** no longer calls everything below a charity: "If your plan shows you'll be short, you don't have to sort it out on your own. The charities below give free, confidential advice about debt and money, and MoneyHelper can help you find free debt advice too."
 
 Why: the owner's answer. Brief 4.16 names MoneyHelper, and the owner could open what the building computer couldn't.
+
+## Made during step 4h
+
+D594 and D595 were decided on 19 Nov 2026 in step 4h's first part: an open PrePenny that didn't update itself.
+
+### D594. Why an open PrePenny didn't update itself, and the fix
+
+Decided 19 Nov 2026 in step 4h, from the owner's report. Changes how D202 and D386 work; their words and rules stand.
+
+**What the owner saw.** On Thu 19 Nov 2026, on an Android phone in Chrome, signed in, on a weak 5G signal: a PrePenny tab open from before step 4g went live at 07:21 still showed the old More screen at 08:32 ("Help is still being built."). No "PrePenny has been updated. Tap to reload." note, and it didn't load the new version by itself. Refreshing by hand showed the new version.
+
+**What was checked, and ruled out.**
+
+- **The live site's headers,** read at prepenny.co.uk on 19 Nov 2026: `/version.json` is sent with `Cache-Control: no-store` and says the build that's live (`b498ae820a00`, step 4g's merge); `/sw.js` with `Cache-Control: no-cache`. Cloudflare's `cf-cache-status: HIT` on `/version.json` is Workers' own store of the deployed files, which changes with each deploy, so it isn't an old copy. Nothing there was wrong.
+- **The offline helper** installs and takes over as it should (`skipWaiting`, `clientsClaim`), fetching 10 files at a time. But every new version changes every page (each page lists its scripts by name, and the names change with each build), so a phone must download **193 files, 3.45 MB** of the 267 before the new helper takes over. On a fast connection that's about 1 second; at 1.6 Mbit/s with a 0.3-second round trip, about 45 seconds; at 0.5 Mbit/s, about 75 seconds.
+- **Reproduced on this computer** with two real builds, a real offline helper, Android Chrome, the old build open on More, signed in, the tab hidden and frozen, the new build put live, a slowed link, and the tab shown again. On a fast link everything worked. On a weak one it didn't.
+
+**The cause: three faults in the app, together.**
+
+1. **It loaded the page afresh before the new version was on the phone.** Once a signed-in phone knew a newer version was live, it waited at most 30 seconds for the new offline helper to take over, then loaded the page afresh anyway. On a weak signal the helper was still downloading, so the old helper served the fresh load from its copy: **the old version again.** The fresh page had no note (the note lived only in the page that was replaced), and a 2-minute "at most once" rule stopped it trying again. Measured at 0.5 Mbit/s: the note showed at 3 seconds; at 32 seconds the page loaded afresh into the old version with no note; the new helper took over at 77 seconds and the note came back; the new version opened only at 155 seconds. At a weaker signal the cycle repeats: mostly the old version, mostly with no note. That's what the owner saw, and why refreshing by hand later, once the helper had finished, showed the new version.
+2. **Signed out, it never asked which version was live.** Only a signed-in phone's look at the account asked `/version.json`, after renewing the sign-in and the server's `hello`, in the same one-at-a-time line as sending and bringing down the plan. Signed out, a phone heard of a new version only when the new helper had finished downloading, showed the note only then, and never loaded it by itself.
+3. **The note showed only at the end** when signed out, and, signed in, could wait behind a sign-in renewal and other looks at the account, each allowed 30 seconds.
+
+**The fix** (`apps/web/lib/update.ts`, `lib/version.ts`, `components/UpdateNote.tsx`):
+
+- **One look for a new version, signed in or not, on every screen of the app and setup:** when PrePenny opens, each time it comes back on screen or gets a signal, when a new offline helper takes charge, and every minute while it's on screen. It asks two things at once: which version is live (`/version.json`, fresh), and which version a fresh load would give: the offline helper now answers `/offline-version.json` from the copy it keeps with the pages, written by the same build. With no helper in charge, a fresh load comes from the site, so that's the live one. A signed-in phone's look at the account shares the same request, so it isn't asked twice.
+- **Found:** as soon as a newer version is live, the note shows: "PrePenny has been updated. Tap to reload." A signed-in phone sends nothing until it has loaded it (D386): every change waits on the phone.
+- **On the phone:** the offline helper fetches it, however long that takes. Nothing is loaded meanwhile. If the download stops, as when the signal drops, the next look asks again, and the helper keeps the files it already has.
+- **Loaded:** once the helper in charge holds the version that's live, the page loads afresh at the first safe moment (no sheet open, nothing typed and not sent, as D386), on whatever screen is open, signed in or not. The new version then sends any change that was waiting.
+- **Never loops:** it loads afresh only for a version the phone holds, and only once for each version in a tab (kept for that tab only, as before). If a version is taken back, the note goes.
+- **With no signal:** nothing changes, and PrePenny works from the phone as before. A version already on the phone, as when the helper finished just before the signal dropped, is loaded at the next safe moment.
+- **A tap on the note** loads it straight away when it's on the phone. Before then, the note's words change to "Getting the new version. It opens by itself once it's on this phone.", read out by screen readers, and it opens by itself once it's there: the tap was the person asking, so something typed before it doesn't hold it up, but a sheet open, or anything typed after the tap, does.
+- **"No answer" isn't kept,** even for a moment: found by this step's own test, a look made with no signal kept "no answer" for 5 seconds, so a signal back within those 5 seconds was missed until the next look.
+
+**What someone sees now** when PrePenny updates while open: within seconds of coming back on screen with a signal, the note at the bottom. A few seconds later on a good signal, or as long as the download takes on a weak one (about a minute at 0.5 Mbit/s), the screen loads afresh by itself into the new version, on the same screen, unless a sheet is open or something's half typed: then as soon as it isn't.
+
+**The update after this one.** A phone runs the code of the version it has open, so phones with step 4g open update to step 4h the old way. Every update after step 4h works as above. `docs/TRY-PHASE-4.md`, step 4h, "Updating to a new version", says how to check it on a phone after a later merge.
+
+Test: `apps/web/e2e/updating.spec.ts` (signed out) and `updating-signed-in.spec.ts` (signed in), D595; both fail with the old code: signed out, no note comes; signed in, the page loads afresh into the old version at 30 seconds. `apps/web/test/unit/update.test.ts` (9 tests).
+
+Why: the owner's report and instruction: with signal, within a few seconds of PrePenny coming back on screen, the note shows, and the new version loads by itself at the first safe moment, signed in or not, on any screen; never looping, never losing a waiting change, and still working with no signal.
+
+### D595. How step 4h's updating is tested
+
+Decided 19 Nov 2026 in step 4h.
+
+- **Two real builds:** `pnpm build:update-test` builds the same code again, named `update-test` (`PREPENNY_BUILD_NAME`, read only by `scripts/build-worker.ts`, never set when PrePenny is built to go online), into `apps/web/e2e/.updating/new`; then `pnpm build:local` builds `out/` as before, the old version. GitHub's end-to-end workflow runs both, about half a minute more for each of its three parts.
+- **One address, two versions:** each test serves the old build with Wrangler, as Cloudflare serves it, on an address of its own (port 4180 and up, one for each test running at once, each with its own name and debugger port so copies starting together don't clash), then stops it and serves the new build at the same address, as a deploy does.
+- **The phone:** Android Chrome. Headless Chrome never hides a tab, so the test tells the page it's hidden (the event PrePenny listens for), then freezes it for real, as Android does; then wakes it and tells it it's showing.
+- **A weak signal:** the offline helper's own downloads are held for 35 seconds, longer than the old 30-second limit, then let through.
+- **Signed out** (test 1, at 320px and 360px, in light and dark, with axe): back on screen with no signal, nothing changes and More works; the signal returns, the note shows within 5 seconds; a tap changes the note to "Getting the new version. It opens by itself once it's on this phone."; for 35 seconds the page isn't loaded afresh; then the new version opens by itself, on More, loading once; nothing more loads in the next 5 seconds; with no signal, a fresh load opens the new version from the phone.
+- **Signed in** (test 2, against the local Supabase): a change made with no signal waits; back on screen, the note within 5 seconds; for 35 seconds nothing is sent and nothing loads; a sheet is open when the new version arrives, and nothing loads until it's closed; then the new version opens on More, loading once, and sends the change, which the server then has.
+- **A tap when the new version is on the phone** loads it at once, even with a box typed in: `e2e/actions.spec.ts`, which played a new helper taking over with a made-up event; that event now rightly shows nothing, as the phone looks and finds nothing newer.
+
+Why: the owner's list: two real builds and a real offline helper, Android Chrome, the old build open on More, the new build put live, the tab hidden then shown, signed in and signed out.
