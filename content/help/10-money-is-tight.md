@@ -1,6 +1,6 @@
 # Help when money is tight
 
-If your plan shows you'll be short, you don't have to sort it out on your own. These charities give free, confidential advice about debt and money.
+If your plan shows you'll be short, you don't have to sort it out on your own. The charities below give free, confidential advice about debt and money, and MoneyHelper can help you find free debt advice too.
 
 ## StepChange
 
@@ -33,7 +33,11 @@ Free advice about debt, and much more.
 
 Checked: on citizensadvice.org.uk on Wed 18 Nov 2026. https://www.citizensadvice.org.uk/about-us/contact-us/ says "call our debt helpline - it's available 9am to 8pm Monday to Friday and 9.30am to 1pm Saturday", "Debt helpline: 0800 240 4420", "Relay UK - if you can't hear or speak on the phone, you can type what you want to say: 18001 then 0800 240 4420", "The debt helpline is not available on public holidays." and "Calls are free from mobiles and landlines." Its chat about debt, https://www.citizensadvice.org.uk/about-us/information/chat-with-us-online-about-debt/, is "between 9am and 8pm Monday to Friday and between 9.30am and 1pm Saturday". https://www.citizensadvice.org.uk/about-us/northern-ireland/ says "The advice on this website doesn't cover Northern Ireland" and "You can get debt help from Advice NI".
 
-Checked: MoneyHelper couldn't be checked on Wed 18 Nov 2026. Every page of www.moneyhelper.org.uk answered with a "Just a moment..." browser check, which the building computer can't pass. So it isn't listed here until its link and number are checked on its own website.
+## MoneyHelper
+
+MoneyHelper's [debt advice locator](https://www.moneyhelper.org.uk/en/money-troubles/dealing-with-debt/debt-advice-locator) helps you find free debt advice.
+
+Checked: by PrePenny's owner, on their phone, on Thu 19 Nov 2026: https://www.moneyhelper.org.uk/en/money-troubles/dealing-with-debt/debt-advice-locator shows MoneyHelper's debt advice locator. No phone number was checked, so none is given. StepChange's contact page, checked on Wed 18 Nov 2026, describes the locator as the way "to find out more about free sources of advice". The building computer couldn't open www.moneyhelper.org.uk on Wed 18 Nov 2026: every page answered with a "Just a moment..." browser check.
 
 ## If someone else controls your money
 

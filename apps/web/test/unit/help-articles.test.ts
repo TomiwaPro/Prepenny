@@ -98,6 +98,7 @@ describe('The help articles', () => {
       'nationaldebtline.org',
       'survivingeconomicabuse.org',
       'www.citizensadvice.org.uk',
+      'www.moneyhelper.org.uk',
       'www.stepchange.org',
     ]);
     expect([...hosts('shared-plans')]).toEqual(['survivingeconomicabuse.org']);
