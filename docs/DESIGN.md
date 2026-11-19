@@ -100,6 +100,9 @@ Every text pair passes 4.5:1 in both modes, and the text box border and focus ou
 - **Home screen suggestion** (D547): on Home under the lowest point, like the bank holiday note, in the sunk colour: its line in 16 / 600, one sentence in second-line size, then two outlined buttons side by side where they fit, one under the other where they don't. Home keeps its one navy button.
 - **Help card on Home** (D586): when money is tight, the same as the Home screen suggestion, under the lowest point, with its line only: "Free, confidential help is available.", then **See where to get help** and **Not now**. Never Short's red.
 - **Help articles** (D587): the title and its first paragraph at the top, as on every screen, then the rest in one card: section headings 17 / 700, body 15 to 16 / 400 with lists marked, and links underlined in Navy as text, each at least 44px tall with padding the words around it don't move for.
+- **The "?" beside what can confuse** (D596): a slim outlined pill in the line it's beside, the "?" in a small round sunk tile, then "Why" in 13 / 600, Navy as text. It never makes its line taller, so it never moves Home's lowest point (D442), and it's still 44 by 44px to tap, with padding the words around it don't move for. Its focus outline hugs the pill. Screen readers hear the title of the sheet it opens. Only three: beside **Lowest point ahead** on Home, **Not ticked yet** on Coming up, and Update balance's ticking step.
+- **The tour card on Home** (D597): as the Home screen suggestion, under the lowest point and the help card: its line ("New to PrePenny? Take a 60-second tour.") in 16 / 600, then **Show me** and **No thanks**, outlined, side by side even at 320px.
+- **The tour** (D597): a panel with a 1px brass edge on the card colour, no shadow, above the bottom bar or at the top, out of the way of the part of Home each step is about, which is ringed in the focus colour (3px, 3px outside it). "Step 2 of 5" in 12 / 700 muted, the step's title in 17 / 700, its words in 15 / 400, then **Back**, **Next** (navy, **Done** on the last step) and **End tour**, 48px tall, on one row at 320px. Home isn't dimmed behind it. It rises gently as it opens, and not at all with reduced motion.
 - **Setup's parts** (D356): the top of each setup screen says its part in words, "Part 2 of 3: Money out", with "Skip this step" beside it, over a bar of three equal parts with 4px between them, 8px tall and fully rounded. Each part fills in Navy as text as far as the screen showing; the empty part is the card edge colour. The bar is only a picture: the words say the same.
 
 ## Every screen says what it's for (D213)
@@ -110,7 +113,7 @@ A rule for every screen from now on, agreed by the owner on 4 Nov 2026.
 - Every control says in words what it does. Where a word alone isn't enough, a line beside or under it says what a tap does: "Open Fri 30 Oct below", "Tap one to see every payment in it."
 - No switch whose options look like separate buttons. A choice is a list with a round button beside each word, under a heading that asks or says what's being chosen, such as "What happened?" or "Group payments".
 - A line that opens and closes is a button that tells screen readers whether it's open.
-- The only control without a word is the small "?" for help (brief 4.16), and screen readers hear what it opens: "How to read this".
+- The only control without a word is the small "?" for help (brief 4.16), and screen readers hear what it opens: "How to read this". Since D216 and D596 it has words too: "? How to read this" on Coming up, and "? Why" beside what can confuse, which screen readers hear as the title of the sheet it opens, such as "Why your lowest point is on Sun 1 Nov".
 
 ## Never
 

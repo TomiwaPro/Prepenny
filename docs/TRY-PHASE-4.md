@@ -206,6 +206,40 @@ Home's card when money is tight, on device A:
 
 If something looks different, note the step number and what you saw. The last section deletes the test accounts, with the test bill in them.
 
+## Step 4h: help where it's needed, the tour, and updating (15 minutes, then 5 after a later merge)
+
+The "?" beside what can confuse, the tour of Home, and an open PrePenny updating itself. On device A, signed in as `yourname+jess4@gmail.com`, as at the end of step 4g.
+
+The "?" on Home:
+
+1. On device A, open **Home**. Beside **Lowest point ahead** there's a small "?" with **Why**. The lowest point's figure and date are where they were, and on a small phone **Lowest point ahead** is still on screen without scrolling.
+2. Tap **Why**. A sheet says "Why your lowest point is on" and the same date as Home, then that day's figure, the payment it's after and your next payday, as on Home. If Home says Tight or Short, the sheet says why. Tap **Every payment shows what you'll have left after it**: the help article opens. Go back to **Home**.
+
+The tour:
+
+3. Under the lowest point (and under the help card, if it's showing), a soft card says "New to PrePenny? Take a 60-second tour.", with **Show me** and **No thanks** side by side.
+4. Tap **Show me**. A panel says "Step 1 of 5", **Your account**, with **Back**, **Next** and **End tour**, and the account card has a ring round it. Tap **Next**: step 2, **Lowest point ahead**, with your own figure and date. Tap **Back**: step 1. Tap **End tour**: the panel goes, and the card is still there.
+5. Tap **Show me** again, and **Next** four times: **Next due**, **Update balance**, **Everything else** (the bottom bar is ringed, and the panel moves to the top). The last step's button says **Done**. Tap it. In the card's place: "The tour is in More, under Help, whenever you want it." Tap **Coming up**, then **Home**: the card has gone for good on this phone.
+6. Tap **More**. Under **Help** there's **Take the tour**, "60 seconds around Home, step by step". Tap it: Home opens with the tour at step 1. Tap **End tour**.
+7. Optional, with your phone's screen reader on (TalkBack on Android, VoiceOver on iPhone): on Home, move to the "?": it says "Why your lowest point is on" and the date. Open the tour from More: each step's words are read as it opens. Turn the screen reader off.
+
+The other two "?":
+
+8. Tap **Coming up**. If there's a **Not ticked yet** section (payments from before today that aren't ticked), tap **Why** beside it: "Why payments not ticked yet still count", with how many there are and the day you last checked your balance. Close it. If there's no such section, skip this.
+9. On **Home**, tap **Update balance**, type what your test account shows (any figure, such as `400`), and tap **Next** twice. If step 3 lists payments to tick, tap **Why** under its line: "Why you tick what's already gone", naming the figure you typed. Tap **Close**: you're back on step 3, nothing lost. Tap **Close** on Update balance too, so nothing is saved.
+
+Updating to a new version, after a later merge. This step changed how an open PrePenny updates, so it can only be seen on the update after this one, such as step 4i's. (Phones open on the version before step 4h update to step 4h the old way, once.)
+
+10. After step 4h is merged and live, open https://prepenny.co.uk/app/ on device A, in Chrome. Tap **More**: **Take the tour** under **Help** means this phone has step 4h.
+11. Leave PrePenny open on **More**. Switch to another app, or lock the phone.
+12. When the next step's pull request has been merged and its **Deploy** run on GitHub has a green tick (**Actions**, then **Deploy**), go back to PrePenny. With a signal, within a few seconds a note at the bottom says "PrePenny has been updated. Tap to reload."
+13. Don't tap it. Within a minute or so (longer on a weak signal), the screen loads afresh by itself, still on **More**, and the note has gone: More now has whatever that step added. It doesn't load again after that.
+14. To see it wait for a safe moment, the next time an update goes live: before switching away, open **Update balance** and type a figure. Going back, nothing reloads while the sheet is open, and what you typed stays. Tap **Close**: the new version loads straight away.
+15. To see it with no signal: turn on airplane mode before going back to PrePenny. Nothing changes, and PrePenny works as usual. Turn airplane mode off: within a few seconds, the note.
+16. Signed out, on device B: open https://prepenny.co.uk/app/ in the private window, tap **Look at an example plan**, then **More**, and leave the tab open. After the next merge goes live, switch back to that tab: the note, then the new version by itself, as on device A.
+
+If something looks different, note the step number and what you saw. Nothing new to clean up: the tour's card is gone only on device A, and signing out, or deleting the test account in the last section, clears it.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.

@@ -832,6 +832,23 @@ What changed (D584 to D593): **More** has **Help**, with **Help centre** and **H
 3. Open https://prepenny.co.uk/help/: the help centre, with 10 articles.
 4. What to check by hand on your phone is in `docs/TRY-PHASE-4.md`, section "Step 4g".
 
+### U. Step 4h: updating open phones, help where it's needed, and the tour
+
+What changed (D594 to D599): an open PrePenny now finds a new version within seconds of coming back on screen, signed in or not, shows "PrePenny has been updated. Tap to reload.", and loads it by itself once it's on the phone, at the first safe moment. Three "?" buttons say why, in the person's own figures: beside **Lowest point ahead** on Home, **Not ticked yet** on Coming up, and Update balance's ticking step. Home offers a 60-second tour once after setup, which **More**, **Help**, **Take the tour** replays.
+
+**What you need to set up: nothing.** Checked on 19 Nov 2026:
+
+- **GitHub:** no new secret or variable. The end-to-end workflow builds the app twice now (`pnpm build:update-test`, then `pnpm build:local`, about half a minute more in each of its three parts), for the updating tests. The Deploy and Database workflows don't change.
+- **Supabase:** nothing. No database change in this step.
+- **Cloudflare:** nothing. The new `/offline-version.json` is served as a plain file, like `/version.json`, so it doesn't run PrePenny's few lines or count towards the free allowance (`apps/web/wrangler.jsonc`), and its one header rule makes 60 of the 100 Cloudflare reads, which the build checks.
+- **Resend, Apple, Google:** nothing.
+
+**To check it worked, after merging:**
+
+1. **Actions**, then **Deploy**: a green tick.
+2. Open https://prepenny.co.uk/offline-version.json: it says the same `build` as https://prepenny.co.uk/version.json.
+3. What to check by hand on your phone, including updating to a new version after a later merge, is in `docs/TRY-PHASE-4.md`, section "Step 4h".
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.

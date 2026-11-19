@@ -7357,3 +7357,57 @@ Decided 19 Nov 2026 in step 4h.
 - **A tap when the new version is on the phone** loads it at once, even with a box typed in: `e2e/actions.spec.ts`, which played a new helper taking over with a made-up event; that event now rightly shows nothing, as the phone looks and finds nothing newer.
 
 Why: the owner's list: two real builds and a real offline helper, Android Chrome, the old build open on More, the new build put live, the tab hidden then shown, signed in and signed out.
+
+## Step 4h, part 2: help where it's needed, and the tour
+
+D596 to D599 were decided on 19 Nov 2026 in step 4h (brief 4.16, D227, `PLAN.md` item 12, D175). D597 holds the owner's answer on the tour.
+
+### D596. Three "?" buttons, each beside something that really confuses
+
+Decided 19 Nov 2026 in step 4h, from the owner's instruction: "Only beside what really confuses people, starting with Home's lowest point. A few well-placed ones beat one on everything."
+
+- **Home, beside "Lowest point ahead":** "Why your lowest point is on Sun 1 Nov". The brief's own example ("Why is my lowest point on Sunday?"): people expect it just before payday, not after a big bill. The sheet says the day, the payment it's after and what's left ("On Sun 1 Nov, after Rent, you'll have £4.53. No other day in those 12 months ends lower."), the next payday after it, why it says Tight or Short (naming the warning level or the overdraft), and how to raise it.
+- **Coming up, beside "Not ticked yet":** "Why payments not ticked yet still count". People who paid something already don't see why it's still there. The sheet counts this account's, names the day the balance was last checked, says a payment dated then or before that had already gone is counted twice until it's ticked, and how to tick one (**Mark as paid**, or **Mark as arrived**).
+- **Update balance, on its ticking step:** "Why you tick what's already gone". The step people skip without knowing why. The sheet names what they typed and the first payment to tick: "If Spending money until payday, £30.00, has already gone out, tick it. Otherwise PrePenny takes it off again."
+- **Considered, and not added:** Left to spend and "About £237.54 now" on Home also confuse, but any "?" there would push the lowest point down on a 320 by 568 phone (D442), and the help centre's article "Every payment shows what you'll have left after it" covers both. Coming up keeps its "How to read this" (D212, D216).
+- **Every sentence matches what the app does:** each is beside its rule in `apps/web/lib/why.ts` (brief 5.5, D11, D46, D85, D178), and `test/unit/why.test.ts` checks the figures against the engine's own days and rows, such as no day in 12 months ending lower than the lowest point.
+- **The button** shows the "?" mark and "Why" (D216: every control says in words what it does), in a slim outlined pill that sits in a line of words without making it taller, so it never moves Home's lowest point (D442); it's still 44 by 44px to tap, with padding the words around it don't move for, as the help articles' links (D587). Screen readers hear the sheet's title, such as "Why your lowest point is on Sun 1 Nov", which contains the "Why" they see (WCAG 2.5.3).
+- **The sheet** is PrePenny's usual sheet: the statement as its title, one plain sentence under it (D213), the person's figures in short sentences, then "More in Help:" and its article, a plain link (D588): "Every payment shows what you'll have left after it" for the first two, "Updating your balance keeps your plan true to your bank" for the third. On Update balance it opens over that sheet; Escape or **Close** closes only the one on top, and nothing typed or ticked is lost.
+- **Found while building it:** a sheet inside another closed both when the inner one closed, as React passes a dialog's close up to the one around it. Every sheet now acts only on its own close (`components/Sheet.tsx`).
+
+Why: the owner's instruction, and brief 4.16's "a small "?" beside anything that might confuse people".
+
+### D597. The tour: offered once after setup, never forced, and replayed from More
+
+The owner's answer, given with step 4h's instructions on 19 Nov 2026: "offer it, don't force it". Builds D227's "60-second tour after setup".
+
+- **The card,** in the owner's words: "New to PrePenny? Take a 60-second tour.", with **Show me** and **No thanks**. VOICE.md avoids questions as headlines; these are the owner's words for an offer, as D213 allowed "What happened?" for a choice. It's on Home once setup is done, on a plan of one's own (not Sam's example), under the lowest point and under the free-help card (D586), never above them, so a 320 by 568 phone still shows the account and the lowest point first (D442). It looks like the home-screen suggestion (D547): the sunk colour, the line, then the two buttons side by side.
+- **For good:** **No thanks**, or finishing the tour, takes the card away for good on this phone, with "The tour is in More, under Help, whenever you want it." in its place until Home opens again, taking focus so it isn't lost (WCAG 2.4.3). **End tour** part-way leaves the card. Someone who set up before step 4h sees the card once too, as Home can't tell when setup finished.
+- **The tour:** five short steps around Home itself, in the person's own figures where it can: **Your account**, **Lowest point ahead**, **Next due**, **Update balance** (the four buttons) and **Everything else** (the bottom bar). Every step has "Step 2 of 5", **Back**, **Next** and **End tour**; **Back** can't be used on the first step, and on the last **Next** says **Done**, as it finishes the tour (D213: every control says what it does). Each step rings its part of Home in the focus colour, brings it into view and puts the panel above the bottom bar, or at the top when the part is low on the screen.
+- **For everyone:** the panel is a dialog: at each step the step's words take focus, so a screen reader reads them, and screen readers hear its name as "Tour of Home", the step number and the step's title; Tab moves between its buttons; Escape ends it. At 320px the three buttons fit on one row. With reduced motion nothing moves: no rise as it opens, and each part comes into view at once.
+- **Replayed any time:** **More**, **Help**, **Take the tour** ("60 seconds around Home, step by step") opens Home at `/app/#tour`, which the offline helper serves with no signal, and the address then loses "#tour". On Sam's example too.
+- **Never over the app lock**, and Home's update waits while it's open (D594: an open dialog isn't a safe moment).
+
+Why: the owner's answer. Someone new is offered a minute's look round, once, and can always find it again.
+
+### D598. Nothing records the tour or the "?" buttons
+
+Decided 19 Nov 2026 in step 4h, from the owner's instruction: "Nothing records whether anyone took the tour or opened a "?", on the phone or the server, beyond what's needed to hide the card."
+
+- **The only thing kept** is on this phone, in its small store, like the home-screen suggestion (D547): `prepenny-tour` set to `card-gone`, the same after **No thanks** as after finishing, so it doesn't say which. Nothing for a "?" at all. On a phone that can't keep it, the card stays gone for as long as PrePenny is open.
+- **Nothing is sent:** no request is made for either, PrePenny has no analytics, and Cloudflare keeps no logs for it (D588). Signing out removes the small store with everything else (D308), so the card can show again after signing in, and another phone of the same person offers it again.
+
+Test: `apps/web/e2e/tour.spec.ts` tests 1 and 2 (what's kept after "No thanks" and after finishing, the same), `why.spec.ts` tests 1 and 3 (nothing kept, nothing sent but PrePenny's own page files).
+
+Why: the owner's instruction, and PrePenny's privacy principle (brief Part 3).
+
+### D599. How step 4h's part 2 is tested, and what the tests found
+
+Decided 19 Nov 2026 in step 4h.
+
+- **The "?" buttons** (`apps/web/e2e/why.spec.ts`, at 320px and 360px, in light and dark, with axe): Home's, with its name, its 44px, and the lowest point card exactly where it is without it; each sheet word for word, its link 44px tall and opening its article; Short; Coming up's with five payments not ticked; Update balance's over its sheet; the keyboard (Enter, Escape, focus back on the "?"); nothing kept or sent.
+- **The tour** (`apps/web/e2e/tour.spec.ts`, the same): the card after setup, under the lowest point; **No thanks**; every step's words, buttons, ring and place clear of the panel; **Back**, **End tour** and finishing; the keyboard and the names a screen reader hears; reduced motion; replaying from More; and under the free-help card, never on Sam's example.
+- **Unit tests** (`test/unit/why.test.ts`): each sheet's sentences and the tour's steps for real plans, checked against the engine, and each linked article by its own title.
+- **Found by the tests and fixed:** a sheet over a sheet closed both (D596); More's **Take the tour** link was built with a broken address, as More's page is made ahead of time and the address came from a part that only runs on the phone, so it now comes from `lib/help-routes.ts`; and after finishing the tour from More, focus stayed on the closed panel, and now goes to Home's heading.
+
+Why: the owner's list of what the tests must show.
