@@ -1834,7 +1834,7 @@ export const strings = {
     notTicked: {
       title: 'Why payments not ticked yet still count',
       intro:
-        "PrePenny can't see your bank, so a payment from before today stays here until you tick it.",
+        "PrePenny can't see your bank, so a payment from before today stays here until you tick it, move it or skip it.",
       count: (account: string, count: number) =>
         count === 1
           ? `1 payment for ${account} isn't ticked yet.`
