@@ -5,6 +5,8 @@
 //   (apps/web/data/example-plan.ts) must have no banned word from VOICE.md,
 //   no long dash (— or –), no exclamation mark and no emoji. The home-screen
 //   app's details (apps/web/app/manifest.ts) take their words from the strings file.
+// - The help centre's articles (content/help, step 4g) follow the same rules:
+//   every title, section, paragraph and list item people read.
 // - The banned words are read from VOICE.md itself, so the list here can never
 //   fall behind it.
 // - Screens and parts (apps/web/app and apps/web/components) must have no
@@ -19,6 +21,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import ts from 'typescript';
+import { readArticle, textsOf } from '../apps/web/lib/help-markdown.ts';
 
 export interface VoiceRule {
   /** As VOICE.md writes it, for the message. */
@@ -231,6 +234,19 @@ function main(): void {
       checked += 1;
       for (const problem of voiceProblems(found.text, rules)) {
         problems.push(`${where(file, found.line)} has ${problem}: "${found.text}"`);
+      }
+    }
+  }
+
+  // The help centre's articles (step 4g): the words people read, not the
+  // "Checked:" notes for whoever edits them.
+  const help = join(root, 'content', 'help');
+  for (const file of filesIn(help, /^\d{2}-.+\.md$/)) {
+    const article = readArticle(relative(help, file), readFileSync(file, 'utf8'));
+    for (const text of textsOf(article)) {
+      checked += 1;
+      for (const problem of voiceProblems(text, rules)) {
+        problems.push(`${relative(root, file)} has ${problem}: "${text}"`);
       }
     }
   }

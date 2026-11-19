@@ -3,7 +3,7 @@
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
 D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. D446 to D452 are the owner's answers to its questions and instructions about the public repository, and D453 was decided while building them, the same day. D454 to D486 come from steps 3g and 3h, on 12 Nov 2026; each section says which are the owner's. D487 to D503 come from step 3i, Phase 3 checks, on 12 and 13 Nov 2026: D488 to D494 from its outside review. D508 and D509 are the owner's answers to step 3i's two questions, on 13 Nov 2026. D510 comes from the checks of the Phase 4 plan's pull request, on 13 and 14 Nov 2026. D511 to D513 are the owner's approval of Phase 4's steps and answers to its first two questions, on 14 Nov 2026. D514 to D524 come from step 4a, on 14 Nov 2026: D514 and D523 are the owner's. D525 and D526 are the owner's answer to question 24 and new rule for what to check by hand, on 14 Nov 2026, with the instructions for step 4b, and D527 to D531 were decided while building step 4b, the same day, and D532 comes from its outside review. D533 and D535 come from GitHub's runs of step 4b, and D534 is the owner's answer to question 25, on 15 Nov 2026. D536 to D544 come from step 4c, on 15 Nov 2026: D539 is the owner's. D545 and D546 are the owner's answers to questions 26 and 5, given with the instructions for step 4d on 16 Nov 2026, D547 to D554 come from building step 4d, and D555 to D557 are the owner's answers to step 4d's questions, on 17 Nov 2026.
-D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. D560 to D565 are the owner's answers to questions 6, 7, 29 and 30 and instructions for step 4e, reminders, on 17 Nov 2026, and D566 to D573 were decided while building it, and D574 comes from its outside review, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. D560 to D565 are the owner's answers to questions 6, 7, 29 and 30 and instructions for step 4e, reminders, on 17 Nov 2026, and D566 to D573 were decided while building it, and D574 comes from its outside review, the same day. D575 is the owner's answer to question 8 with step 4f's instructions, on 18 Nov 2026, D576 to D582 were decided while building step 4f, and D583 comes from its outside review, the same day. D584 is the owner's answer to question 9 with step 4g's instructions, on 18 Nov 2026, and D585 to D591 were decided while building step 4g, the help centre, the same day. D592 and D593 are the owner's change to D585 and answer to question 31, on 19 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -7155,3 +7155,150 @@ Accepted, with reasons:
 - **A phone still on the version from before step 4f** can't see the new choice; such a phone updates itself (D386).
 
 Tests: the database checks have a check for joining a plan again (it fails with the old rule), and every check now gives the people in the plan a time they joined, so they pass on any day; the words' tests have the undo of an undo (it fails without the fix); the function's tests have two phones getting it at once. 75 database checks in the step's file, 1,457 in all, on a freshly reset local database.
+
+## The owner's answer and instructions for step 4g
+
+D584 is the owner's answer to `PLAN.md` question 9, given on 18 Nov 2026 with the instructions for step 4g, the help centre.
+
+### D584. Help when money is tight: a calm card on Home, looking ahead
+
+Agreed 18 Nov 2026, the owner's answer to `PLAN.md` question 9, as recommended. Builds brief 4.16 ("Suggest it gently when the plan shows a shortfall three paydays running") and ARCHITECTURE.md 4.5's "Gentle advice note". Built in step 4g.
+
+The owner's words: "looking ahead. When the plan has a short day in each of the next three pay periods (one payday to the next), Home shows a calm card under the lowest point: "Free, confidential help is available.", with "See where to get help" and "Not now", which hides it for 30 days. Example: Dee short on Sun 29 Nov, Tue 29 Dec and Fri 29 Jan. It never blames, never uses alarm colours, and never pushes Home's lowest point down."
+
+And for the articles: "Every link and phone number for StepChange, National Debtline, MoneyHelper, Citizens Advice and Surviving Economic Abuse must come from that organisation's own website, checked this session, with the date you checked noted beside it in the Markdown. If you can't reach a site, say so in your report. Never write a number or address from memory." "Search works with no signal. Nothing records which articles anyone opens or searches for, on the phone or the server."
+
+Why: the owner's answer. Looking ahead means the card comes while there's still time to act, rather than after three paydays have already gone wrong.
+
+## Made during step 4g
+
+D585 to D591 were decided on 18 Nov 2026 while building step 4g, the help centre (brief 4.16, 7.1, 4.14), with D584.
+
+### D585. What "short in each of the next three pay periods" means
+
+Its first point, which three pay periods, is replaced by D592: the owner's change of 19 Nov 2026, three in a row starting with the pay period we're in now or with the next one. The rest stands.
+
+Decided 18 Nov 2026 in step 4g. Builds D584.
+
+- **The next three pay periods** start on the next three main paydays from today on, each running to the day before the payday after it (D14), as Coming up groups them. The pay period today is in counts only when it starts today, on payday: one that started before today isn't one of the "next" three. That's the reading the owner's example needs: Dee's Universal Credit on the 28th, moved to the working day before, starts pay periods on Fri 27 Nov, Thu 24 Dec and Thu 28 Jan, and her short days, Sun 29 Nov, Tue 29 Dec and Fri 29 Jan, are one in each, whether today is Mon 2 Nov, as in her test plan, or Wed 18 Nov.
+- **A short day** is a day whose end-of-day balance is under the overdraft floor (brief 5.5): "Short" on Coming up, never "Tight". In any open account the person sees, as "the plan has a short day" says; each period's can be in a different account. A closed account never counts.
+- **With no main pay,** there are no paydays, so the periods are calendar months, as on Coming up (D84): the next three that start from today on.
+- **How far:** Home looks 12 months ahead (D178), so all three periods must start within that; the third can be cut off by the plan's end and counts by the part inside it. Someone paid once a term, like Ali, has three periods within a year.
+- **Never on Sam's example,** which isn't anyone's own money. A test plan in the example's place (D201) is treated as a person's own.
+- **Where it's worked out:** with the rest of Home, in the background worker (`shortDaysRunning` in `apps/web/lib/money-tight.ts`, `HomeView.shortRunning` in `lib/home.ts`), from the same plan Home's lowest point comes from, so the two never disagree. It holds the first short day of each period; the card shows none of them.
+
+Test: `apps/web/test/unit/money-tight.test.ts`: the owner's example; short in only two of the three; short now and in the next two, but not the third; the period starting today on payday; the first short day of each; an overdraft making it Tight rather than Short; a second account; Sam's example; and no main pay.
+
+Why: the owner's words, read the way the owner's own example works, so that the card points ahead to the paydays still to come.
+
+### D586. The card, "Not now", and the line after it
+
+Decided 18 Nov 2026 in step 4g. Builds D584.
+
+- **Words:** a heading, "Free, confidential help is available.", then **See where to get help**, which opens Help when money is tight in the app, and **Not now**. Nothing else: no amount, no date and no reason, so nothing reads as blame. Home's lowest point just above already says "£30.00 short on Sun 29 Nov.".
+- **Look:** as DESIGN.md's Home screen suggestion (D547): the sunk colour, its line in 16 / 600, two outlined buttons side by side where they fit and one under the other where they don't, never Short's red or pink, and Home keeps its one navy button.
+- **Where:** straight under the lowest point, before the example's banner, the bank holiday note and the home-screen suggestion, so a 320 by 568 phone still shows the account and the lowest point first (D442, D451).
+- **Not now** hides it for 30 days, that day included: tapped on Wed 18 Nov, it's hidden up to Thu 17 Dec and shows again on Fri 18 Dec if the plan is still short in each of the next three pay periods then. The day is kept on this phone only, in the browser's small store, like the home-screen suggestion (D547): it isn't sent anywhere, and signing out removes it with everything else (D308). Another phone of the same person asks again; in a shared plan, each person's phone asks them.
+- **After Not now,** one line takes its place, with focus on it so it isn't lost (WCAG 2.4.3): "Where to get help is in More, under Help, whenever you want it." It's gone the next time Home opens. **See where to get help** doesn't hide it: someone may want to come back to it.
+
+Test: `apps/web/e2e/help.spec.ts` tests 5 to 8.
+
+Why: the owner's words (D584), with the same calm pattern Home already uses for a suggestion, and a line so a screen reader user knows where it went.
+
+### D587. The help centre: Markdown articles, in the app and on the website
+
+Decided 18 Nov 2026 in step 4g. Builds brief 4.16 and 7.1 ("articles written as Markdown files in the repository, so they can be edited without code changes").
+
+- **The articles** are the files in `content/help`, named with two digits for their place and then their name, such as `04-updating-your-balance.md`. Changing one and merging it changes the help centre at the next update, with no code changed. `content/help/README.md` says how one is written. Billing's article comes with Phase 5's subscriptions.
+- **Titles are statements** (D58), such as "Updating your balance keeps your plan true to your bank"; Help when money is tight keeps the name D58 gave it. The first paragraph says what the article is about, and is the sentence under its title (D213), in lists and in searches.
+- **The Markdown** is read by PrePenny's own few lines (`apps/web/lib/help-markdown.ts`), not a library: titles, sections, paragraphs, lists, bold for names on screen, and links to other organisations' websites, PrePenny's own pages, phone numbers, hello@prepenny.co.uk and other articles. Anything else stops the build with the file and line, rather than showing half-read text. No building block was added.
+- **In the app:** More has a **Help** card with **Help centre** and **Help when money is tight**, in place of "Help is still being built.". `/app/help/` and `/app/help/<name>/` are inside the app, with its bottom navigation.
+- **On the website:** `/help/` and `/help/<name>/` are the same articles for anyone, signed in or not, such as someone who can't sign in, with PrePenny's name at the top and **Open PrePenny**.
+- **Links:** another organisation's website opens beside PrePenny (`target="_blank"`), without telling it which page sent the person there (`rel="noreferrer"`), and screen readers hear "Opens their website". A phone number can be tapped to call it. Every link is a tap target at least 44px tall, with padding the words around it don't move for, and every link's words are wider than 44px (DESIGN.md).
+- **Words:** every article follows VOICE.md, checked by `pnpm lint`'s voice check like every screen, and every figure and bold name is checked against the app's own words by `apps/web/test/unit/help-articles.test.ts`.
+
+Why: brief 7.1's Markdown files, so the owner can change an article; and help for people who can't sign in has to be on the website.
+
+### D588. Search with no signal, and nothing recorded
+
+Decided 18 Nov 2026 in step 4g. Builds D584's "Search works with no signal. Nothing records which articles anyone opens or searches for, on the phone or the server."
+
+- **Search runs on the phone,** over every article's words, which are built into the help centre's page. Each word searched for must be in an article, or another form of it ("updating" finds "update"), or a word people use for the same thing ("overdrawn" finds "short", "password" finds "sign in"); words too common to tell articles apart ("how", "my") are left out. Titles count most, then section headings, then the first paragraph, then anywhere. It says how many: "5 articles have "debt"." or "No article has "zebra". Try another word, such as balance or debt.", read out by screen readers. **Clear search** shows every article again; the browser's own clear mark, which has no words, is hidden (D213).
+- **With no signal:** the offline helper keeps every help page on the phone, like every other page, so searching and reading work with no signal after one visit.
+- **Nothing recorded:** the words typed aren't put in the page's address, so they never reach PrePenny's site or the browser's history; the box isn't a form; the browser is asked not to remember what's typed in it (`autocomplete="off"`); nothing is kept on the phone. PrePenny keeps no record of pages opened: its Cloudflare Worker has no logging switched on (`apps/web/wrangler.jsonc`), PrePenny has no analytics, and each page's security policy stops any script that isn't PrePenny's own, Cloudflare's included (D529). Once PrePenny has been opened on a phone, every help page is served from the phone itself, so opening an article sends nothing at all. A first visit to an article on the website asks Cloudflare for that page, as any website visit does.
+- **Plain links:** every link into and between help pages is a plain link, not Next.js's own, so nothing is fetched ahead of a tap, and Next.js's data for moving between pages isn't needed for help: it's left out of what the offline helper downloads (`serwist.config.js`), about 1.3 MB less. What every phone downloads to work offline grows by the 22 help pages, about 0.77 MB, to 6.34 MB.
+
+Test: `apps/web/e2e/help.spec.ts` tests 2 and 3 (nothing asked for while searching, nothing kept, the address unchanged; then searching and reading with no signal), and `apps/web/test/unit/help-articles.test.ts`.
+
+Why: the owner's words, and people's data allowance: many people PrePenny is for pay for every megabyte.
+
+### D589. Each organisation's link and number, checked on its own website
+
+Its point on MoneyHelper is replaced by D593: the owner checked MoneyHelper's debt advice locator on their phone, and it's in the article.
+
+Decided 18 Nov 2026 in step 4g. Builds D584.
+
+- Each was read on the organisation's own website on Wed 18 Nov 2026, and each article says where, in a "Checked:" note under it, quoting the page. GitHub shows the notes; PrePenny doesn't. `apps/web/test/unit/help-articles.test.ts` fails if a link to another organisation, or a phone number, has no dated note naming it in its article.
+- **StepChange:** 0800 138 1111, free from mobiles and landlines, Monday to Friday 8am to 8pm and Saturday 9am to 2pm, and online advice at any time, from https://www.stepchange.org/contact-us.aspx and https://www.stepchange.org/setting-expectations.aspx.
+- **National Debtline:** 0808 808 4000, free to call, Monday to Friday 9am to 8pm and Saturday 9:30am to 1pm, for England, Wales and Scotland, and webchat, from https://nationaldebtline.org/get-help/call/ and https://nationaldebtline.org/get-help/webchat/.
+- **Citizens Advice:** the debt helpline, 0800 240 4420, free from mobiles and landlines, Monday to Friday 9am to 8pm and Saturday 9:30am to 1pm, not on public holidays, with Relay UK, and chat about debt, from https://www.citizensadvice.org.uk/about-us/contact-us/; its page for Northern Ireland, https://www.citizensadvice.org.uk/about-us/northern-ireland/, which points to Advice NI.
+- **Surviving Economic Abuse:** its "I need help" page, https://survivingeconomicabuse.org/i-need-help/, with 999, and the free helplines on its own pages: the 24/7 National Domestic Abuse Helpline 0808 2000247, the Men's Advice Line 0808 801 0327 and Galop 0800 999 5428, in the shared plans article; Help when money is tight links to it too.
+- **MoneyHelper couldn't be checked.** Every page of www.moneyhelper.org.uk answered the building computer with a "Just a moment..." browser check. Getting round it wasn't tried. So MoneyHelper isn't in Help when money is tight until its link is checked on its own website, which the article's note says (PLAN.md question 31).
+- The building computer's network was opened to these sites for this step, in the cloud environment Claude Code runs in, with the owner's approval; it changes nothing in PrePenny.
+
+Why: the owner's rule, so every number someone in difficulty calls is the organisation's own, as it was on the day it was checked.
+
+### D590. PrePenny's own scheduled jobs keep 7 days of history
+
+Decided 18 Nov 2026 in step 4g, from step 4f's review.
+
+- Supabase Cron writes a row for every run of every job, and Supabase's own documentation says these are never cleared by themselves: "cron.job_run_details grows with every Job run and is never cleaned up automatically, even after a Job is unscheduled. Schedule a Job to delete old records, keeping only the last 7 days" (https://supabase.com/docs/guides/cron/quickstart, "Clean up job run history", read on 18 Nov 2026). With `prepenny-reminders` every minute (D578), that's 1,440 rows a day.
+- A new job, `prepenny-job-history`, runs once a day at 3:23am UTC and removes the runs of PrePenny's own jobs, those named "prepenny-...", its own included, that ended more than 7 days ago, or started then if no end was recorded. Any other job's history is left alone. The rows never held amounts, names or notes: only the command and how it went.
+- Only the job runs the step (`app.forget_old_job_runs`): nobody signed in or out, nor Supabase's own key, can.
+
+Test: `supabase/tests/database/38-job-history.test.sql`, 12 checks, each rule broken on purpose to see them fail: without the "PrePenny's own" rule (2 failed), keeping 1 day (2 failed) and going by the end time only (3 failed).
+
+Why: the owner's instruction, and Supabase's own advice.
+
+### D591. How step 4g is tested
+
+Decided 18 Nov 2026 in step 4g.
+
+- **Unit tests:** `money-tight.test.ts` (12, D585 and D586), `help-markdown.test.ts` (5: reading, refusing, order and links between articles) and `help-articles.test.ts` (10: the articles are the brief's topics; titles are statements; VOICE.md; every organisation's link and number has a dated note; the organisations linked; each figure and bold name is the app's own; and searches).
+- **End to end** (`apps/web/e2e/help.spec.ts`, at 320px and 360px, in light and dark, with axe): reading every article and going back; searching, with nothing asked for, kept or put in the address; searching and reading with no signal; the website's help for anyone, with links that open beside it, tappable phone numbers and 44px links; the card under the lowest point, in the sunk colour and never Short's, never moving the lowest point and with it still on screen on a 320 by 568 phone; "Not now" and its 30 days; and never when the plan isn't short in all three periods, or on Sam's example. The test plans are in `e2e/money-tight-plans.ts`: the owner's example, short on Sun 29 Nov, Tue 29 Dec and Fri 29 Jan, and two look-alikes that aren't short in all three.
+- **Every screen's checks** (`e2e/checks.spec.ts`) now include the help centre and Help when money is tight: axe, the plain sentence, the keyboard all the way round, 200% text with every tap target 44px, and nothing sent.
+- **The voice check** (`pnpm lint`) now reads every article.
+
+Why: the owner's list of what the tests must show.
+
+## The owner's answers to step 4g
+
+D592 and D593 are the owner's change to D585 and answer to `PLAN.md` question 31, given on 19 Nov 2026 for step 4g's pull request.
+
+### D592. The help card: three pay periods in a row, from the one we're in now or the next
+
+Agreed 19 Nov 2026, the owner's change. Replaces the first point of D585.
+
+The owner's words: "the card shows when three pay periods in a row each have a short day, starting with the pay period we're in now (from today to the day before the next payday) or with the next one. Example to test: today Wed 18 Nov, Jo paid on the 25th, short on Fri 20 Nov, in the 25 Dec period and in the 25 Jan period, but not in February's: the card shows. Dee's example must still show it, and "short in only two running" must still not."
+
+- **Three in a row,** each with a short day: either the pay period we're in now, from today to the day before the next main payday, and the two after it; or the three starting with the next one. In the pay period we're in, only today and later count. On payday, the pay period we're in starts today.
+- **Jo's example,** as built: paid on the 25th, Jo's pay periods run from the 25th to the 24th. On Wed 18 Nov, Jo is short on Fri 20 Nov, in the pay period we're in; on Tue 1 Dec, in the one up to the 25 Dec payday; and on Fri 1 Jan, in the one up to the 25 Jan payday; but not in February's, from Mon 25 Jan. That's three in a row from now, so the card shows. Counting only from the next payday, as D585 did, it wouldn't. If the owner meant the pay periods starting on 25 Dec and 25 Jan, the card shows too, and a test covers that reading.
+- **Dee's example** still shows it, from the next one: she isn't short now, and is short on Sun 29 Nov, Tue 29 Dec and Fri 29 Jan.
+- **Short in only two running** still doesn't, whether the two are the next ones (Dee with back pay in January) or now and the next (Jo with £100.00 more on Fri 25 Dec, so not short on Fri 1 Jan).
+- With no main pay, the periods are calendar months, this month from today on, then the next ones (D84). Everything else in D585 and D586 stands, and the card's words don't change.
+
+Test: `apps/web/test/unit/money-tight.test.ts`, 14 tests, with Jo's example, both readings of it, two running from now, and the pay period we're in on payday and the day after; `apps/web/e2e/help.spec.ts` test 7, Jo's example on Home at 320px and 360px in light and dark, with axe, and test 8, two running. The plan that was short now and in the next two, which D585 kept the card from, is gone from the tests: under this rule it shows the card, as Jo's does.
+
+Why: the owner's change. Someone already short now, and in the next two pay periods, is offered help a month sooner.
+
+### D593. MoneyHelper's debt advice locator, checked by the owner
+
+Agreed 19 Nov 2026, the owner's answer to `PLAN.md` question 31. Replaces D589's point on MoneyHelper.
+
+The owner's words: "the owner opened https://www.moneyhelper.org.uk/en/money-troubles/dealing-with-debt/debt-advice-locator on their phone on Thu 19 Nov 2026, and it shows MoneyHelper's debt advice locator. Add MoneyHelper to "Help when money is tight" with that link only, no phone number (none was checked). Its Checked: note says the owner checked it on their phone that day. MoneyHelper isn't a charity, so change the article's opening line so it's still true."
+
+- **Help when money is tight** has a MoneyHelper section, after Citizens Advice: "MoneyHelper's debt advice locator helps you find free debt advice.", linking to that page. No phone number. "Free debt advice" is how StepChange's own contact page, checked on Wed 18 Nov 2026, describes the locator: "to find out more about free sources of advice".
+- **Its "Checked:" note** says PrePenny's owner checked it on their phone on Thu 19 Nov 2026, and that the building computer couldn't open www.moneyhelper.org.uk the day before. The test that every other organisation's link has a dated note now covers it too, and the article links to MoneyHelper's own site.
+- **The opening line** no longer calls everything below a charity: "If your plan shows you'll be short, you don't have to sort it out on your own. The charities below give free, confidential advice about debt and money, and MoneyHelper can help you find free debt advice too."
+
+Why: the owner's answer. Brief 4.16 names MoneyHelper, and the owner could open what the building computer couldn't.

@@ -98,6 +98,8 @@ Every text pair passes 4.5:1 in both modes, and the text box border and focus ou
 - **Bottom navigation:** Home, Coming up, Debts, More (D208). Simple line icons (1.7 stroke, round ends) with a label under each, and the active item in a soft pill.
 - **Editing** opens in a bottom sheet on phones and a centred dialog on laptops.
 - **Home screen suggestion** (D547): on Home under the lowest point, like the bank holiday note, in the sunk colour: its line in 16 / 600, one sentence in second-line size, then two outlined buttons side by side where they fit, one under the other where they don't. Home keeps its one navy button.
+- **Help card on Home** (D586): when money is tight, the same as the Home screen suggestion, under the lowest point, with its line only: "Free, confidential help is available.", then **See where to get help** and **Not now**. Never Short's red.
+- **Help articles** (D587): the title and its first paragraph at the top, as on every screen, then the rest in one card: section headings 17 / 700, body 15 to 16 / 400 with lists marked, and links underlined in Navy as text, each at least 44px tall with padding the words around it don't move for.
 - **Setup's parts** (D356): the top of each setup screen says its part in words, "Part 2 of 3: Money out", with "Skip this step" beside it, over a bar of three equal parts with 4px between them, 8px tall and fully rounded. Each part fills in Navy as text as far as the screen showing; the empty part is the card edge colour. The bar is only a picture: the words say the same.
 
 ## Every screen says what it's for (D213)

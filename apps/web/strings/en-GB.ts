@@ -1727,7 +1727,6 @@ export const strings = {
     heading: 'More',
     purpose:
       'Your accounts, budgets, savings goals and pay, and settings for PrePenny on this phone.',
-    stillBeingBuilt: 'Help is still being built.',
     yourPlan: 'Your plan',
     accounts: 'Accounts',
     accountsLine: 'Balances, overdrafts and bank holidays',
@@ -1756,6 +1755,50 @@ export const strings = {
     startAgainConfirm: 'Start again',
     keepChanges: 'Keep my changes',
     startedAgain: 'The example is back to how it started.',
+  },
+
+  /**
+   * The help centre (step 4g, brief 4.16, D587, D588): short articles from
+   * content/help, in the app and on the website, searched on the phone.
+   */
+  help: {
+    heading: 'Help',
+    purpose:
+      'Short answers about how PrePenny works, and where to get free help when money is tight.',
+    backToMore: 'Back to More',
+    backToHelp: 'Back to Help',
+    search: 'Search help',
+    searchHint: 'For example: balance, debt or sign in. What you search for stays on this phone.',
+    clear: 'Clear search',
+    all: 'Every article',
+    /** As the person types: how many articles have every word. */
+    found: (count: number, words: string) =>
+      count === 1 ? `1 article has "${words}".` : `${count} articles have "${words}".`,
+    none: (words: string) =>
+      `No article has "${words}". Try another word, such as balance or debt.`,
+    /** Beside a link to another organisation's website, for screen readers. */
+    opensSite: 'Opens their website',
+    /** On the website's pages, above everything. */
+    siteHome: 'PrePenny',
+    openApp: 'Open PrePenny',
+    /** The Help card on More. */
+    moreHeading: 'Help',
+    centre: 'Help centre',
+    centreLine: 'Short answers about how PrePenny works',
+    moneyTight: 'Help when money is tight',
+    moneyTightLine: 'Free, confidential advice from debt charities',
+  },
+
+  /**
+   * On Home when three pay periods in a row are short, from the one we're
+   * in now or the next (step 4g, D584, D592, the owner's answers).
+   */
+  moneyHelp: {
+    title: 'Free, confidential help is available.',
+    see: 'See where to get help',
+    notNow: 'Not now',
+    /** In the card's place once "Not now" is tapped, until Home opens again. */
+    inMore: 'Where to get help is in More, under Help, whenever you want it.',
   },
 
   /**

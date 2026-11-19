@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AccountCard } from '../../../components/AccountCard.tsx';
 import { ColourChoice } from '../../../components/ColourChoice.tsx';
+import { HelpMoreCard } from '../../../components/HelpMoreCard.tsx';
 import { InstallMoreCard } from '../../../components/InstallMoreCard.tsx';
 import { MoreLinks } from '../../../components/MoreLinks.tsx';
 import { RemindersCard } from '../../../components/RemindersCard.tsx';
@@ -14,17 +15,14 @@ export const metadata: Metadata = { title: strings.more.heading };
 
 export default function MorePage() {
   return (
-    <SimplePage
-      heading={strings.more.heading}
-      purpose={strings.more.purpose}
-      line={strings.more.stillBeingBuilt}
-    >
+    <SimplePage heading={strings.more.heading} purpose={strings.more.purpose}>
       <MoreLinks />
       <AccountCard />
       <RemindersCard />
       <SecurityCard />
       <YourDataCard />
       <InstallMoreCard />
+      <HelpMoreCard />
       <ColourChoice />
       <StartAgain />
     </SimplePage>

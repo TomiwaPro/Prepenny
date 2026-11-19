@@ -5,7 +5,9 @@
 // bank showed and when (D430), or in Sam's example the day it's shown as on
 // (D440), Left to spend, the lowest point ahead, what this pay has to cover,
 // the next three due, the four actions and "+ Add an account" under them
-// (D431, D442). In the example, its banner is under the lowest point (D451). Every figure comes from the engine, worked out in the
+// (D431, D442). In the example, its banner is under the lowest point (D451),
+// and so is the card offering free help when money is tight (D584). Every
+// figure comes from the engine, worked out in the
 // background; every word from the strings file.
 
 import { type ReactNode, useState } from 'react';
@@ -24,6 +26,7 @@ import { HolidayNote } from './HolidayNote.tsx';
 import styles from './HomeScreen.module.css';
 import { HomeSkeleton } from './HomeSkeleton.tsx';
 import { InstallSuggestion } from './InstallSuggestion.tsx';
+import { MoneyHelp } from './MoneyHelp.tsx';
 import { PaymentList } from './PaymentList.tsx';
 import { isSamsExample, usePlan } from './PlanProvider.tsx';
 import { RowItem } from './RowItem.tsx';
@@ -122,6 +125,8 @@ function Figures({
         }
         context={context}
       />
+      {/* Free help when the plan is short three pay periods running (D584), under the lowest point. */}
+      <MoneyHelp today={home.today} shortRunning={home.shortRunning} />
       {/* In the example, the banner is here, so the account and the lowest point show first (D451). */}
       <ExampleNote />
       {/* A new bank holiday that moved a payment, once (D539), in the same place. */}

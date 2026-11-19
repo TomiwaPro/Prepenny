@@ -813,6 +813,24 @@ What changed (D575 to D582): in a shared plan, **Reminders** under **More** has 
 2. On supabase.com, open the project, then **Integrations**, **Cron**: `prepenny-reminders` now runs every minute (`* * * * *`), and its runs say "succeeded".
 3. What to check by hand with two people is in `docs/TRY-PHASE-4.md`, section "Step 4f".
 
+### T. Step 4g: the help centre
+
+What changed (D584 to D593): **More** has **Help**, with **Help centre** and **Help when money is tight**, and the same articles are on the website at https://prepenny.co.uk/help/ for anyone. The articles are the Markdown files in `content/help`: change one, merge it, and the next update shows it (`content/help/README.md` says how they're written). Search works on the phone, with no signal. Home shows "Free, confidential help is available." under the lowest point when three pay periods in a row each have a short day, starting with the one we're in now or the next one. And a new scheduled job, `prepenny-job-history`, clears PrePenny's own scheduled jobs' run history older than 7 days, once a day.
+
+**What you need to set up: nothing.** Checked on 18 Nov 2026:
+
+- **GitHub:** no new secret or variable, and no workflow changed. The new database test runs with the others, and the Database workflow sends the new database change to the live database after merging, as for every step. No workflow skips a change to `content/help`, so an article change alone is checked and goes live when merged.
+- **Supabase:** nothing to switch on by hand. The database change makes the new job with SQL, as Supabase's own Cron guide shows (https://supabase.com/docs/guides/cron/quickstart, "Clean up job run history", which says the history "is never cleaned up automatically"). It runs inside the database, so it doesn't count as a function start.
+- **Cloudflare:** nothing. The 22 help pages each get their own security policy rule, as every page does (D529): 57 pages in all, within the 100 rules Cloudflare reads, which the build checks.
+- **Resend, Apple, Google:** nothing.
+
+**To check it worked, after merging:**
+
+1. **Actions**, then **Database**: a green tick.
+2. On supabase.com, open the project, then **Integrations**, **Cron**: a third job, `prepenny-job-history`, runs at 3:23am UTC each day. After its first run, `prepenny-reminders`' history goes back 7 days, no further.
+3. Open https://prepenny.co.uk/help/: the help centre, with 10 articles.
+4. What to check by hand on your phone is in `docs/TRY-PHASE-4.md`, section "Step 4g".
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.

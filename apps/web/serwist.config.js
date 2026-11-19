@@ -33,7 +33,12 @@ export default {
   // and so is the bank holiday list, which can change without a new version (step 4c, D537).
   // An iPhone fetches its one opening screen only when PrePenny is added to its
   // Home Screen, so the 26 aren't downloaded to every phone (step 4d, D550).
+  // The help pages are reached by plain links only, so Next.js's data for
+  // moving between pages isn't needed for them: their pages are kept, and
+  // about 1.3 MB less is downloaded to every phone (step 4g, D588).
   globIgnores: [
+    'help/**/*.txt',
+    'app/help/**/*.txt',
     'sw.js',
     'version.json',
     'bank-holidays.json',
