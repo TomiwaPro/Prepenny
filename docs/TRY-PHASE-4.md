@@ -276,6 +276,43 @@ Reading them in Supabase:
 
 If something looks different, note the step number and what you saw. The last section deletes both test accounts, and deleting them deletes their messages too, those sent signed out from their addresses included.
 
+## Step 4j: support tools (20 minutes)
+
+The support screen, for you alone; a reply; Jess letting support see her plan; and support's actions on Tom. First, follow README.md part W: the `SUPPORT_EMAIL` secret, and two-step sign-in on your own account. Device A is your phone, signed in as `yourname+jess4@gmail.com`, in Tom's plan since step 4f. Device B is a private window. Device C is an ordinary browser window on a computer, where you sign in as yourself.
+
+The support screen is yours alone:
+
+1. On device A, open https://prepenny.co.uk/app/support/. It says "This screen is for PrePenny support only.", with **Back to More**, and nothing else.
+2. On device C, open https://prepenny.co.uk/app/support/ and sign in with your own address, then your authenticator app's code. **Support** opens: **Tax files** says "The pay calculator has the tax file for every tax year it needs now."; **Inbox** lists step 4i's test messages, newest first, each with its kind, when, who it's from and its first lines; then **Find an account** and **Usage**, with numbers only.
+
+A reply, from a ready reply:
+
+3. Tap the **Contact us** message from `yourname+tom4@gmail.com` ("Test 4i: I can't sign in"). Under **Reply**, choose **Someone in distress**: the box fills with Samaritans' 116 123 and the debt helplines. Add `Test 4j.` as a first line, and tap **Send reply**: "Reply sent to yourname+tom4@gmail.com.", and your words under **Replies**.
+4. In your Gmail, "A reply from PrePenny support", from hello@prepenny.co.uk to `yourname+tom4@gmail.com`: your words, each line a paragraph, then "For your privacy, this email doesn't repeat what you wrote." Nothing Tom wrote in step 4i is in it.
+5. Tap **Back to the inbox**, then the **Something looks wrong** message from `yourname+jess4@gmail.com`: your screenshot from step 4i shows, with when it's deleted.
+
+Jess lets support see her plan:
+
+6. On device B, go to https://prepenny.co.uk/app/, tap **More**, then **Sign up or sign in**, and sign in with `yourname+tom4@gmail.com`.
+7. On device A, tap **More**, then under **Security**, **Let support see my plan**. It says "Support sees what you see: your own accounts and the shared ones, never Tom's private ones. Tom is told in Activity." Tap **Let support see it for 7 days**: "PrePenny support can see your plan until [now] on [a week today]."
+8. On device B, tap **More**, then **Activity**: "Jess let PrePenny support see the plan until [a week today]."
+9. On device C, under **Find an account**, type `yourname+jess4@gmail.com` and tap **Find**. Her account: when she signed up and last signed in, "Plan: shared with a partner", and "They let support see their plan until ...". Tap **See their plan**: Jess's accounts and the shared ones, each with its bank figure, lowest point and coming payments, and none of Tom's private accounts. Nothing on it can be tapped to change.
+10. On device A, go back and open **Let support see my plan** again: "Support last looked at [just now]." Tap **Stop support seeing my plan**: it says support can't see your plan now.
+11. On device C, reload the page: "They've stopped support seeing their plan, or its 7 days are over, so it can't be shown." On device B, **Activity**: "Jess stopped PrePenny support seeing the plan."
+
+Support's actions, on Tom:
+
+12. On device B, tap **More**, **Security**, **Two-step sign-in**, and turn it on with your own authenticator app, as in step 3e (it adds a second PrePenny line to the app, for Tom). Then **More**, **Security**, **Email addresses**, and add `yourname+tom4backup@gmail.com` as the backup email, with its code.
+13. On device C, find `yourname+tom4@gmail.com`. Tap **Turn off two-step sign-in**, then **Start the 7-day wait**: "The 7-day wait has started. Two-step sign-in is turned off at [now] on [a week today], unless it's stopped." In Gmail, to `yourname+tom4@gmail.com`, "PrePenny support is turning off two-step sign-in", with **Stop it**. Tap it: a page "Keep two-step sign-in on"; tap **Stop it**: "It's stopped". On device C, reload: **Under way** says "Nothing is under way.", and **What support did** lists both, with the time.
+14. On device C, tap **Send a link to their backup email**, then **Send the link**: "Link sent to yourname+tom4backup@gmail.com." In Gmail, to that address, "A link from PrePenny support to get back in". Open its **Get back in** in a new private window: "PrePenny support sent you this link to get back into your account.", with **Use the link from PrePenny support**. Tap it: "You've asked to get back in", and to `yourname+tom4@gmail.com`, "Someone asked to get into your PrePenny account", with **Stop it**. Tap that **Stop it**, then **Stop it** on its page, so nothing changes on Tom's account.
+15. On device C, tap **Sign out everywhere**, then **Sign out everywhere** again: "Signed out of 1 phone or computer. They've been emailed." Within a minute device B is signed out, and Gmail has "PrePenny support signed you out" to `yourname+tom4@gmail.com`.
+
+The tax year check, on GitHub:
+
+16. On github.com, **Actions**, then **Tax year**, then **Run workflow**, keeping **Branch: main**: a green tick, and its last step says "The pay calculator has the tax file for every tax year it needs now." From 1 March it turns red each morning until next year's file is added (step 4r).
+
+If something looks different, note the step number and what you saw. The last section deletes both test accounts, and with them everything support kept about them. Afterwards, remove the second PrePenny line, for Tom, from your authenticator app.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.

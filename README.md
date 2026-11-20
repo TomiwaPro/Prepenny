@@ -905,6 +905,40 @@ Nothing here changes a message. The SQL Editor is only for you: nobody signed in
 2. On supabase.com, **Integrations**, **Cron**: `prepenny-support-told` and `prepenny-support-tidy` are listed, and their runs succeed.
 3. What to check by hand, on your phone and in a private window, is in `docs/TRY-PHASE-4.md`, section "Step 4i".
 
+### W. Step 4j: support tools
+
+What changed (D617 to D636): **the support screen**, at https://prepenny.co.uk/app/support/, for you alone: every message and idea, newest first, with any picture and plan copy; your reply, emailed from hello@prepenny.co.uk, with ready replies (one for someone in distress, with Samaritans and free debt advice); finding an account and seeing its status, never its money; signing someone out everywhere, the 7-day wait to turn off two-step sign-in, and a link to a locked backup email; usage counts; and the tax year check. Under **More**, **Security**, people can **Let support see my plan** for 7 days, read only; a partner is told in Activity.
+
+**What you need to set up: one GitHub secret.** Checked on 20 Nov 2026 against each service (D636). The database learns who you are from it, and it's never written in a file, as the repository is public.
+
+1. On github.com, open the **TomiwaPro/Prepenny** repository.
+2. Tap **Settings** (on a phone, it may be under the **...** menu beside the repository's name).
+3. In the menu on the left, under **Security**, tap **Secrets and variables**, then **Actions**.
+4. On the **Secrets** tab, tap **New repository secret**.
+5. **Name:** `SUPPORT_EMAIL`. **Secret:** the email address you sign in to PrePenny with, exactly, such as `yourname@gmail.com`.
+6. Tap **Add secret**.
+7. Turn on two-step sign-in on your own PrePenny account if it isn't on: in PrePenny, **More**, **Security**, **Two-step sign-in**. The support screen never opens without it.
+
+Nothing else: **Supabase** gets the new tables, steps and the scheduled job `prepenny-support-tools` from the Database workflow, which also puts the changed get-back-in function online and passes the secret to the database. **Resend** sends the replies with the key the database already has, within its free plan: support's own emails are capped at 15 a day, so sign-in codes always have room (D620). **Cloudflare** needs nothing: three new pages, 66 of its 100 rules.
+
+**Using it:**
+
+- Open https://prepenny.co.uk/app/support/, signed in as yourself, with your authenticator app's code. Add it to your home screen if you like. The email that messages are waiting has **Open the support screen** too.
+- Tap a message to read it. To reply, choose a ready reply or write your own, change anything, and tap **Send reply**. Never write an amount, a payment name or a note: Resend keeps emails for 30 days.
+- **Find an account** by the address they sign in with, or their backup email. Their plan shows only if they've let support see it, from **More**, **Security**, **Let support see my plan**: the ready reply **Can we see your plan?** says how.
+- **Lost the authenticator app, still has the email:** on their account, **Turn off two-step sign-in**. It's turned off after 7 days, unless stopped from the email to them. Send the ready reply **Lost the authenticator app**.
+- **Lost the sign-in email, no backup:** support never moves an account. Send the ready reply **Lost the sign-in email, no backup**.
+- **Backup email kept locked by someone else:** on their account, **Send a link to their backup email**, and the ready reply **Backup email kept locked**. The link to finish goes by itself after 24 hours.
+- From 1 March, the **Tax files** card, a yellow warning on every pull request and a red **Tax year** run each morning say when next year's tax file is missing: ask Claude Code for step 4r.
+
+Part V's SQL Editor queries still work, but you no longer need them.
+
+**To check it worked, after merging:**
+
+1. **Actions**, then **Database**: a green tick, with **Tell the database who PrePenny support is** saying "The database knows who PrePenny support is." A yellow "SUPPORT_EMAIL isn't set" means the secret above isn't added yet: add it, then **Run workflow** on **Database**, keeping **Branch: main**.
+2. **Actions**, then **Tax year**, then **Run workflow**: a green tick, saying every tax file needed now is there.
+3. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4j".
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.
