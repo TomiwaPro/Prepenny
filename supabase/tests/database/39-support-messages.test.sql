@@ -212,7 +212,9 @@ select is(pg_temp.newest_to('hello@prepenny.co.uk') ->> 'Subject',
 select is(pg_temp.newest_to('hello@prepenny.co.uk') ->> 'Text',
   '1 message is waiting.' || E'\n\n'
   || 'Someone wrote to PrePenny support. This email doesn''t hold their words or their email address.'
-  || E'\n\n' || 'Read it in Supabase''s SQL Editor, as README.md part V says.'
+  -- Since step 4j, it points to the support screen (D617).
+  || E'\n\n' || 'Read it on PrePenny''s support screen, signed in as support with two-step sign-in.'
+  || E'\n\n' || 'Open the support screen: http://127.0.0.1:4173/app/support/'
   || E'\n\n' || 'PrePenny sends this at most once every 4 hours.'
   || E'\n\n' || 'PrePenny. Plan every penny before payday.',
   'with none of the words, and not who sent it');
