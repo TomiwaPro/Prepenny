@@ -2270,6 +2270,8 @@ export const strings = {
       'signed-out': 'Signed them out everywhere',
       'two-step-wait': 'Started the 7-day wait to turn off two-step sign-in',
       'two-step-stopped': 'Stopped turning off two-step sign-in',
+      'two-step-kept':
+        'Two-step sign-in stays on: they stopped the wait, or used their authenticator app',
       'two-step-off': 'Two-step sign-in was turned off after 7 days',
       'backup-link': 'Sent a link to their backup email',
       'backup-finish-link': 'Sent the link to finish getting back in',
@@ -3315,6 +3317,23 @@ export const strings = {
       "It's stopped. Nothing on your account changed, and we've told your backup email. If you don't know who has your backup email, change it: More, then Email addresses.",
     notStopped:
       "There was nothing to stop: it had already ended, or was just finishing. If you're signed out in the next minute, write to hello@prepenny.co.uk.",
+    gotIt: 'Got it',
+  },
+
+  /**
+   * The notice on every signed-in device while PrePenny support's 7-day wait
+   * to turn off two-step sign-in runs (step 4j, D638).
+   */
+  twoStepOffNotice: {
+    heading: 'PrePenny support is turning off two-step sign-in',
+    waiting: (when: string) =>
+      `Unless it's stopped, at ${when} two-step sign-in on your account is turned off, and anyone who can get into your email can sign in.`,
+    whatToDo:
+      "If you didn't ask PrePenny support for this, stop it now. If you did, you don't need to do anything.",
+    stop: 'Stop it',
+    stopping: 'Stopping it.',
+    stopped: "It's stopped. Two-step sign-in stays on.",
+    notStopped: 'There was nothing to stop: it had already ended.',
     gotIt: 'Got it',
   },
 

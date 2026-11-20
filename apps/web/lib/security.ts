@@ -545,6 +545,13 @@ export async function stopWithLink(token: string): Promise<Done<boolean>> {
   return { ok: true, value: answer.value.stopped };
 }
 
+/** "Stop it", in the notice on a signed-in phone: stops the person's own two-step wait (step 4j, D638). */
+export async function stopTwoStepOff(): Promise<Done<boolean>> {
+  const answer = await call<{ stopped: boolean }>('stop_two_step_off');
+  if (!answer.ok) return answer;
+  return { ok: true, value: answer.value.stopped };
+}
+
 /**
  * The stop link from the email PrePenny support's 7-day wait to turn off
  * two-step sign-in sends (step 4j, D621): true when it stopped the wait,

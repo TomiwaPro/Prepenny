@@ -242,7 +242,6 @@ async function checkView(page: Page, name: string) {
   }
 }
 
-
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Support tools, in ${colorScheme} mode`, () => {
     test.beforeEach(async ({ page }) => {
@@ -521,7 +520,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // Alex: an account with two-step sign-in, a backup email, and a phone signed in.
       const alex = newEmail('alex');
       const backup = newEmail('alex-backup');
-      await turnOnTwoStep(alex);
+      const alexKey = await turnOnTwoStep(alex);
       const alexId = sql(`select id from auth.users where email = ${quoted(alex)}`);
       sql(
         `insert into app.backup_emails (person_id, email) values (${quoted(alexId)}, ${quoted(backup)})`,
@@ -600,7 +599,42 @@ for (const colorScheme of ['light', 'dark'] as const) {
         sql(`select stopped_how from app.two_step_waits where person_id = ${quoted(alexId)}`),
       ).toBe('link');
 
-      // Started again, and after 7 days it's turned off.
+      // Alex, signed in on his own phone, sees the notice when it starts again,
+      // and stops it there (D638).
+      const { page: ownPhone, context: ownPhoneContext } = await secondPhone(
+        browser,
+        info,
+        colorScheme,
+      );
+      await openOnExample(ownPhoneContext);
+      await signIn(ownPhone, alex);
+      await box(ownPhone, strings.security.appCodeLabel).fill(appCode(alexKey));
+      await ownPhone.getByRole('button', { name: strings.secondStep.finish, exact: true }).click();
+      await expect(ownPhone).toHaveURL(/\/app\//, { timeout: 20_000 });
+      await page.reload();
+      await page.getByRole('button', { name: t.twoStep }).click();
+      await page
+        .getByRole('dialog', { name: t.twoStepTitle })
+        .getByRole('button', { name: t.twoStepYes })
+        .click();
+      await expect(page.getByTestId('support-account-said')).toHaveText(
+        /^The 7-day wait has started\./,
+      );
+      const notice = ownPhone.getByTestId('two-step-off-notice');
+      await expect(notice).toBeVisible({ timeout: 70_000 });
+      await expect(notice).toContainText(strings.twoStepOffNotice.heading);
+      await checkView(ownPhone, 'two-step-off-notice');
+      await notice.getByRole('button', { name: strings.twoStepOffNotice.stop }).click();
+      await expect(ownPhone.getByTestId('two-step-off-stopped')).toHaveText(
+        new RegExp(strings.twoStepOffNotice.stopped.replace('.', '\\.')),
+      );
+      expect(
+        sql(`select count(*) from app.two_step_waits where person_id = ${quoted(alexId)}
+          and stopped_how = 'device'`),
+      ).toBe('1');
+      await ownPhoneContext.close();
+
+      // Started a third time, and after 7 days it's turned off.
       await page.reload();
       await page.getByRole('button', { name: t.twoStep }).click();
       await page
@@ -676,12 +710,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // Every action is recorded, with the time.
       await page.reload();
-      await expect(page.getByTestId('support-did-entry')).toHaveCount(6);
+      await expect(page.getByTestId('support-did-entry')).toHaveCount(9);
       expect(
         sql(
           `select string_agg(action, ',' order by at) from app.support_actions where person_id = ${quoted(alexId)}`,
         ),
-      ).toBe('signed-out,two-step-wait,two-step-wait,two-step-off,backup-link,backup-finish-link');
+      ).toBe(
+        'signed-out,two-step-wait,two-step-kept,two-step-wait,two-step-kept,two-step-wait,two-step-off,backup-link,backup-finish-link',
+      );
       await checkView(page, 'account-after-actions');
     });
 

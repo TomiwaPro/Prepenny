@@ -27,6 +27,7 @@ import { LeftNote } from './LeftNote.tsx';
 import { OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlanActions } from './PlanProvider.tsx';
 import { SupportFooter } from './SomethingWrong.tsx';
+import { TwoStepOffNotice } from './TwoStepOffNotice.tsx';
 import { UndoBar } from './UndoBar.tsx';
 import { UpdateNote } from './UpdateNote.tsx';
 
@@ -38,6 +39,7 @@ function Notes() {
       {onHome ? null : <ExampleNote />}
       <OfflineNote />
       <GetBackInNotice />
+      <TwoStepOffNotice />
       <FinishJoining />
       <LeftNote />
     </div>

@@ -32,7 +32,24 @@ type Loaded =
 /** The plan someone let support see, while they let it. */
 export function SupportPlanView({ person }: { readonly person: string }) {
   const [loaded, setLoaded] = useState<Loaded>({ kind: 'loading' });
+  const [look, setLook] = useState(0);
 
+  // Looked at again every minute, and the moment it ends, so a plan never
+  // stays on screen after the person has stopped it (D638).
+  useEffect(() => {
+    const timer = setInterval(() => setLook((n) => n + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const endsAt = loaded.kind === 'ready' ? loaded.endsAt : null;
+  useEffect(() => {
+    if (endsAt === null) return;
+    const wait = Date.parse(endsAt) - Date.now();
+    if (!(wait > 0 && wait < 2 ** 31 - 1)) return;
+    const timer = setTimeout(() => setLook((n) => n + 1), wait + 1000);
+    return () => clearTimeout(timer);
+  }, [endsAt]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: looked at again when `look` counts up
   useEffect(() => {
     void supportPlan(person).then((answer) => {
       if (!answer.ok) {
@@ -59,7 +76,7 @@ export function SupportPlanView({ person }: { readonly person: string }) {
         setLoaded({ kind: 'failed', words: t.notAPlan });
       }
     });
-  }, [person]);
+  }, [person, look]);
 
   return (
     <>

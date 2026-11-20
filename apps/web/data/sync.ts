@@ -84,6 +84,7 @@ import {
 import { getBackInNoticeChanges, setGetBackInNotice } from './get-back-in-notice.ts';
 import { setJoinRequests } from './join-requests.ts';
 import { setJoining } from './joining.ts';
+import { setTwoStepOffNotice } from './two-step-off-notice.ts';
 
 // ---------------------------------------------------------------------------
 // What the screens show.
@@ -265,6 +266,7 @@ async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
       get_back_in?: unknown;
       join_requests?: unknown;
       joining?: unknown;
+      two_step_off?: unknown;
     }>(client, 'hello', {}, db),
   );
   // A database from before step 3e has no `hello`: it's still being updated.
@@ -272,6 +274,8 @@ async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
   // Someone getting back in with the backup email: every screen says so,
   // with "Stop it" (step 3e hardening).
   setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
+  // PrePenny support's 7-day wait to turn off two-step sign-in (step 4j, D638).
+  setTwoStepOffNotice(answer.data.sign_in === 'ok' ? (answer.data.two_step_off ?? null) : null);
   // Someone asking to join this person's plan (step 3f).
   setJoinRequests(answer.data.sign_in === 'ok' ? answer.data.join_requests : []);
   // This person let into a plan, with their own plan still to bring (step 3f-2).
@@ -356,9 +360,13 @@ export function lookForGetBackIn(): Promise<void> {
           sign_in?: unknown;
           get_back_in?: unknown;
           join_requests?: unknown;
+          two_step_off?: unknown;
         }>(client, 'hello', {});
         if (!answer.ok) continue;
         setJoinRequests(answer.data.sign_in === 'ok' ? answer.data.join_requests : []);
+        setTwoStepOffNotice(
+          answer.data.sign_in === 'ok' ? (answer.data.two_step_off ?? null) : null,
+        );
         if (getBackInNoticeChanges() !== before) continue;
         setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);
       } while (lookAgain);
