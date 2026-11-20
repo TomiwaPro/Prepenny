@@ -247,10 +247,14 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Refuses "busy" once support's own emails have reached their allowance.
+-- On the local test database only, 100 times higher, as step 4i's caps for
+-- everyone together are there (app.support_scale, D606): the end-to-end
+-- tests all act as one support, many times a day. 40-support-tools.test.sql
+-- puts it back to 1 and checks the real number.
 create function app.support_may_email() returns void
 language plpgsql volatile security definer set search_path = '' as $$
 begin
-  if app.support_emails_today() >= app.support_own_emails_a_day() then
+  if app.support_emails_today() >= app.support_own_emails_a_day() * app.support_scale() then
     perform app.refuse('busy');
   end if;
 end;
