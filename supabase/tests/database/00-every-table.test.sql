@@ -135,7 +135,7 @@ select set_eq(
     'stop_two_step_off_with_link', 'support_status', 'support_inbox', 'support_message',
     'support_file', 'support_reply', 'support_plan', 'support_find', 'support_account',
     'support_sign_out', 'support_start_two_step_wait', 'support_stop_two_step_wait',
-    'support_send_backup_link', 'support_usage'],
+    'support_send_backup_link', 'support_usage', 'stop_two_step_off'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -168,7 +168,7 @@ select set_eq(
     'stop_two_step_off_with_link', 'support_status', 'support_inbox', 'support_message',
     'support_file', 'support_reply', 'support_plan', 'support_find', 'support_account',
     'support_sign_out', 'support_start_two_step_wait', 'support_stop_two_step_wait',
-    'support_send_backup_link', 'support_usage'],
+    'support_send_backup_link', 'support_usage', 'stop_two_step_off'],
   'The Data API''s part holds only the steps the phone calls'
 );
 

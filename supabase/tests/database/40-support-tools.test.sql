@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(150);
+select plan(177);
 
 -- As on a fresh database, whatever the end-to-end tests left on this one
 -- (PLAN.md item 41): all undone when the test ends.
@@ -43,6 +43,10 @@ delete from app.support_person;
 select tests.make_jess_and_tom();
 select tests.make_person('sue');
 select tests.make_person('pat');
+select tests.make_person('lee');
+-- Every account here has proved its address, as signing up does.
+update auth.users set email_confirmed_at = now()
+  where id in (tests.id('jess'), tests.id('tom'), tests.id('alex'), tests.id('sue'), tests.id('pat'), tests.id('lee'));
 insert into app.backup_emails (person_id, email) values (tests.id('alex'), 'alex.backup@example.test'),
   (tests.id('tom'), 'tom.backup@example.test');
 
@@ -128,6 +132,8 @@ create function pg_temp.time_passes(span interval) returns void language sql sec
   update app.code_tries set tried_at = tried_at - span;
   update app.code_locks set locked_until = locked_until - span;
   update app.error_codes set at = at - span;
+  update auth.mfa_amr_claims set created_at = created_at - span, updated_at = updated_at - span;
+  update auth.mfa_challenges set created_at = created_at - span, verified_at = verified_at - span;
 $$;
 
 -- Support is Sue, with two-step sign-in on and passed on this sign-in.
@@ -172,7 +178,10 @@ select is_empty($$ select p.proname::text from pg_proc p join pg_namespace n on 
        'app.is_support()'::regprocedure, 'app.support_only()'::regprocedure,
        'app.plan_as_seen_by(uuid)'::regprocedure, 'app.finish_two_step_waits(uuid)'::regprocedure,
        'app.send_support_link(uuid, text, text, uuid)'::regprocedure,
-       'app.support_tools_tick()'::regprocedure, 'app.note_support_action(uuid, uuid, text, boolean)'::regprocedure,
+       'app.support_tools_tick()'::regprocedure,
+       'app.note_support_action(uuid, uuid, text, boolean, integer)'::regprocedure,
+       'app.app_used_since(uuid, timestamptz)'::regprocedure, 'app.end_support_access_on_joining()'::regprocedure,
+       'app.start_get_back_in(uuid, text, text)'::regprocedure,
        'app.access_open(uuid)'::regprocedure, 'app.people_opened(interval)'::regprocedure)
        and (has_function_privilege('anon', p.oid, 'execute')
          or has_function_privilege('authenticated', p.oid, 'execute')
@@ -214,6 +223,14 @@ select tests.as_test();
 update auth.sessions set aal = 'aal2' where id = tests.id('sue-session');
 select pg_temp.as_support();
 select is(public.support_status() ->> 'status', 'support', 'Once it''s passed, Sue is support');
+select tests.as_test();
+update auth.users set email_confirmed_at = null where id = tests.id('sue');
+select pg_temp.as_support();
+select is(pg_temp.refusal('select public.support_inbox()'), 'not-allowed',
+  'An account that hasn''t proved support''s address isn''t support (D638)');
+select tests.as_test();
+update auth.users set email_confirmed_at = now() where id = tests.id('sue');
+select pg_temp.as_support();
 select is(jsonb_typeof(public.support_inbox() -> 'messages'), 'array', 'and reads the inbox');
 
 -- An ended sign-in.
@@ -380,6 +397,17 @@ select is_empty(format($$ select x from jsonb_array_elements(%L::jsonb) x
   'Support sees none of Jess''s private records through Tom''s access');
 select is(pg_temp.refusal(format('select public.support_plan(%L)', tests.id('jess'))), 'no-access',
   'and still nothing of Jess''s plan through hers');
+-- Someone joining the plan ends it at once, for everyone in it (D637): the
+-- plan isn't the one it was given for, and whoever joined wasn't told.
+select tests.as_test();
+insert into public.plan_members (plan_id, person_id, role) values (tests.id('plan'), tests.id('lee'), 'viewer');
+select pg_temp.as_support();
+select is(pg_temp.refusal(format('select public.support_plan(%L)', tests.id('tom'))), 'no-access',
+  'When someone joins the plan, support access given before ends at once');
+select tests.as_person('tom');
+select is(public.my_support_access() ->> 'on', 'false', 'and Tom''s phone says so');
+select tests.as_test();
+delete from public.plan_members where plan_id = tests.id('plan') and person_id = tests.id('lee');
 select tests.as_person('pat');
 select is(pg_temp.refusal('select public.give_support_access()'), 'no-plan',
   'Someone with no plan in their account can''t give access to nothing');
@@ -462,6 +490,11 @@ select is(pg_temp.newest_to('alex@example.test') ->> 'Subject', 'PrePenny suppor
 select ok(pg_temp.token_in('alex@example.test', '/stop-two-step-off/#') is not null, 'with a link to stop it');
 select ok(pg_temp.newest_to('alex@example.test') ->> 'Text' like '%Nothing changes for 7 days. Unless it''s stopped, at % two-step sign-in is turned off, and you sign in with this email address alone.%',
   'saying when it will be off');
+select is(pg_temp.newest_to('alex.backup@example.test') ->> 'Subject', 'PrePenny support is turning off two-step sign-in',
+  'and his backup address is told too (D638)');
+select tests.as_person_with_second_step('alex');
+select ok(public.hello() -> 'two_step_off' ->> 'ends_at' is not null,
+  'Every phone signed in to his account hears of it, to show the notice with Stop it');
 select set_config('test.stop', pg_temp.token_in('alex@example.test', '/stop-two-step-off/#'), true);
 select tests.as_nobody();
 select is(public.stop_two_step_off_with_link(repeat('A', 43)) ->> 'stopped', 'false',
@@ -472,9 +505,23 @@ select is(public.stop_two_step_off_with_link(current_setting('test.stop')) ->> '
   'once only');
 select tests.as_test();
 select ok(app.two_step_on(tests.id('alex')), 'Alex''s two-step sign-in is still on');
+select is(pg_temp.actions_on('alex'), array['two-step-wait', 'two-step-kept'],
+  'and support sees he stopped it');
 
+-- "Stop it" in the notice on his phone.
 select pg_temp.as_support();
 select ok(public.support_start_two_step_wait(tests.id('alex')) ->> 'ends_at' is not null, 'Started again');
+select tests.as_person('jess');
+select is(public.stop_two_step_off() ->> 'stopped', 'false', 'Jess can''t stop Alex''s wait, only her own');
+select tests.as_person_with_second_step('alex');
+select is(public.stop_two_step_off() ->> 'stopped', 'true', 'Alex stops it on his phone');
+select ok(public.hello() -> 'two_step_off' = 'null'::jsonb, 'and the notice goes');
+select tests.as_test();
+select is((select count(*) from app.two_step_waits where person_id = tests.id('alex') and stopped_how = 'device'),
+  1::bigint, 'stopped on a device');
+
+select pg_temp.as_support();
+select ok(public.support_start_two_step_wait(tests.id('alex')) ->> 'ends_at' is not null, 'Started a third time');
 select tests.as_test();
 -- Alex last typed a code an hour ago.
 update auth.mfa_amr_claims set updated_at = now() - interval '1 hour' where session_id = tests.id('alex-session');
@@ -488,8 +535,8 @@ select is((app.support_tools_tick() ->> 'two_step_off')::integer, 1,
   'After 7 days, the scheduled job turns it off');
 select ok(not app.two_step_on(tests.id('alex')), 'Two-step sign-in is off for Alex');
 select is(pg_temp.newest_to('alex@example.test') ->> 'Subject', 'Two-step sign-in is off', 'and he''s told');
-select is(pg_temp.actions_on('alex'), array['two-step-wait', 'two-step-wait', 'two-step-off'],
-  'Each is recorded');
+select is(pg_temp.actions_on('alex'), array['two-step-wait', 'two-step-kept', 'two-step-wait', 'two-step-kept',
+  'two-step-wait', 'two-step-off'], 'Each is recorded');
 
 -- Support can stop one too, and says so.
 select tests.as_test();
@@ -499,6 +546,18 @@ select ok(public.support_start_two_step_wait(tests.id('pat')) ->> 'ends_at' is n
 select is(public.support_stop_two_step_wait(tests.id('pat')) ->> 'stopped', 'true', 'stopped by support');
 select is(pg_temp.newest_to('pat@example.test') ->> 'Subject', 'Two-step sign-in stays on', 'Pat is told');
 select is(pg_temp.actions_on('pat'), array['two-step-wait', 'two-step-stopped'], 'and both are recorded');
+
+-- Using the app during the wait keeps it on (D638): it isn't lost.
+select ok(public.support_start_two_step_wait(tests.id('pat')) ->> 'ends_at' is not null, 'Another wait for Pat');
+select tests.as_test();
+update auth.mfa_amr_claims set updated_at = now() + interval '1 second' where session_id = tests.id('pat-session');
+select pg_temp.time_passes(interval '7 days');
+select is((app.support_tools_tick() ->> 'two_step_off')::integer, 0,
+  'After 7 days, Pat''s two-step sign-in isn''t turned off, as Pat used the app meanwhile');
+select ok(app.two_step_on(tests.id('pat')), 'it''s still on');
+select is(pg_temp.newest_to('pat@example.test') ->> 'Subject', 'Two-step sign-in stays on', 'and Pat is told why');
+select is(pg_temp.actions_on('pat'), array['two-step-wait', 'two-step-stopped', 'two-step-wait', 'two-step-kept'],
+  'which support sees');
 
 -- A backup address kept locked by someone typing wrong codes (D392).
 select tests.as_test();
@@ -527,6 +586,9 @@ select is(public.get_back_in_with_link(current_setting('test.link')) - 'ready_at
 select is(public.get_back_in_with_link(current_setting('test.link')) ->> 'in', 'false', 'once only');
 select is(pg_temp.newest_to('alex@example.test') ->> 'Subject', 'Someone asked to get into your PrePenny account',
   'The address Alex signs in with is told, as for a code');
+select ok(pg_temp.newest_to('alex@example.test') ->> 'Text' like
+    '%someone opened a link PrePenny support sent to your backup email, alex.backup@example.test, to get into your account.%',
+  'saying it was support''s link, not a code (D638)');
 select ok(pg_temp.token_in('alex@example.test', '/stop-get-back-in/#') is not null, 'with "Stop it"');
 select tests.as_test();
 select is((select from_support from app.get_back_in where person_id = tests.id('alex') and done_at is null
@@ -549,17 +611,49 @@ select is(public.get_back_in_with_link(current_setting('test.finish')) ->> 'stat
 select tests.as_test();
 select ok((select finishing_at from app.get_back_in where person_id = tests.id('alex') and done_at is null
     and stopped_at is null) is not null, 'and from then on it can''t be stopped');
-select is(pg_temp.actions_on('alex'), array['two-step-wait', 'two-step-wait', 'two-step-off', 'backup-link',
-  'backup-finish-link'], 'Both links are recorded');
 
--- A link runs out after 24 hours.
+-- A finish that didn't complete opens the request again: the next link to
+-- finish goes once the last has run out (D638).
+select set_config('test.request', (select id::text from app.get_back_in where person_id = tests.id('alex')
+  and done_at is null and stopped_at is null), true);
+select tests.as_supabase_admin();
+select is(public.get_back_in_not_finished(current_setting('test.request')::uuid) ->> 'done', 'false',
+  'Supabase''s admin route couldn''t finish: the request is open again');
+select tests.as_test();
+select is((app.support_tools_tick() ->> 'finish_links')::integer, 0, 'The link sent today hasn''t run out yet');
+select pg_temp.time_passes(interval '24 hours');
+select is((app.support_tools_tick() ->> 'finish_links')::integer, 1, 'Once it has, a new link to finish goes');
+select is(pg_temp.actions_on('alex'), array['two-step-wait', 'two-step-kept', 'two-step-wait', 'two-step-kept',
+  'two-step-wait', 'two-step-off', 'backup-link', 'backup-finish-link', 'backup-finish-link'],
+  'Every link is recorded');
+
+-- Support's start link, opened while a request Tom asked for with a code is
+-- open: it's support's too, so the link to finish is emailed (D638).
 select pg_temp.as_support();
 select is(public.support_send_backup_link(tests.id('tom')) ->> 'sent', 'start', 'A link for Tom');
 select set_config('test.tom', pg_temp.token_in('tom.backup@example.test', '/get-back-in/#support='), true);
+select tests.as_nobody();
+select is(public.send_get_in_code('tom.backup@example.test') ->> 'sent', 'true', 'Tom asks for a code himself');
+select tests.as_supabase_admin();
+select is(public.get_back_in_with_code('tom.backup@example.test',
+    substring(pg_temp.newest_to('tom.backup@example.test') ->> 'Text' from '\n\n([0-9]{6})\n\n')) ->> 'state',
+  'waiting', 'and his code starts the 24-hour wait');
+select is(public.get_back_in_with_link(current_setting('test.tom')) ->> 'state', 'waiting',
+  'Support''s link, opened after, says it''s waiting');
+select tests.as_test();
+select is((select from_support from app.get_back_in where person_id = tests.id('tom') and done_at is null
+    and stopped_at is null), true, 'and the request is support''s too, so its link to finish will go');
+
+-- A link runs out after 24 hours.
+select tests.as_test();
+insert into app.backup_emails (person_id, email) values (tests.id('lee'), 'lee.backup@example.test');
+select pg_temp.as_support();
+select is(public.support_send_backup_link(tests.id('lee')) ->> 'sent', 'start', 'A link for Lee');
+select set_config('test.lee', pg_temp.token_in('lee.backup@example.test', '/get-back-in/#support='), true);
 select tests.as_test();
 select pg_temp.time_passes(interval '24 hours' + interval '1 second');
 select tests.as_supabase_admin();
-select is(public.get_back_in_with_link(current_setting('test.tom')) ->> 'in', 'false',
+select is(public.get_back_in_with_link(current_setting('test.lee')) ->> 'in', 'false',
   'A link not used in 24 hours does nothing');
 
 -- ---------------------------------------------------------------------------
@@ -567,10 +661,13 @@ select is(public.get_back_in_with_link(current_setting('test.tom')) ->> 'in', 'f
 
 select tests.as_test();
 delete from app.support_actions;
-insert into app.support_actions (person_id, action, emailed)
-  select null, 'reply', true from generate_series(1, 14);
+insert into app.support_actions (person_id, action, emailed, emails)
+  select null, 'reply', true, 1 from generate_series(1, 13);
 select pg_temp.as_support();
-select is(public.support_reply(tests.id('message-jess'), 'One more.') ->> 'sent', 'true', 'The 15th email goes');
+select is(pg_temp.refusal(format('select public.support_send_backup_link(%L)', tests.id('lee'))), 'busy',
+  'With 13 sent, a link is refused: it counts for the emails opening it can lead to (D638)');
+select is(public.support_reply(tests.id('message-jess'), 'One more.') ->> 'sent', 'true', 'The 14th email goes');
+select is(public.support_reply(tests.id('message-jess'), 'And one more.') ->> 'sent', 'true', 'The 15th email goes');
 select is(pg_temp.refusal(format('select public.support_reply(%L, %L)', tests.id('message-jess'), 'And another.')),
   'busy', 'The 16th in 24 hours is refused, so sign-in codes keep their share of Resend''s 100 a day');
 select is(pg_temp.refusal(format('select public.support_sign_out(%L)', tests.id('jess'))), 'busy',

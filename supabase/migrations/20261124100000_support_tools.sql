@@ -65,12 +65,16 @@ begin
 end;
 $$;
 
--- True when this person's sign-in address is support's.
+-- True when this person's sign-in address is support's: a confirmed,
+-- ordinary account (not single sign-on, not anonymous), as only those keep
+-- an address to themselves (D638).
 create function app.is_support_address(person uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (
     select 1 from app.support_person s join auth.users u on u.id = person
-    where u.email is not null and s.email_key = app.address_key('support:' || lower(u.email))
+    where u.email is not null and u.email_confirmed_at is not null
+      and not coalesce(u.is_sso_user, false) and not coalesce(u.is_anonymous, false)
+      and s.email_key = app.address_key('support:' || lower(u.email))
   )
 $$;
 
@@ -128,9 +132,12 @@ create table app.support_actions (
   person_id uuid references auth.users (id) on delete cascade,
   message_id uuid references app.support_messages (id) on delete set null,
   action text not null check (action in ('reply', 'looked', 'signed-out', 'two-step-wait',
-    'two-step-stopped', 'two-step-off', 'backup-link', 'backup-finish-link')),
-  -- An email went with it, counted towards support's own allowance (D620).
+    'two-step-stopped', 'two-step-kept', 'two-step-off', 'backup-link', 'backup-finish-link')),
+  -- The person was emailed.
   emailed boolean not null default false,
+  -- How many emails it counts for in support's own allowance (D633): the
+  -- ones it sent, and for a link, the ones opening it can lead to.
+  emails smallint not null default 0 check (emails between 0 and 5),
   at timestamptz not null default now()
 );
 create index support_actions_by_person on app.support_actions (person_id, at desc);
@@ -162,6 +169,8 @@ create index error_codes_by_time on app.error_codes (at);
 create table app.support_access (
   id uuid primary key default gen_random_uuid(),
   person_id uuid not null references auth.users (id) on delete cascade,
+  -- The plan they were in when they gave it: it's for that plan only (D637).
+  plan_id uuid not null references public.plans (id) on delete cascade,
   granted_at timestamptz not null default now(),
   ends_at timestamptz not null,
   ended_at timestamptz,
@@ -178,7 +187,7 @@ create table app.two_step_waits (
   -- The stop link's token, scrambled; gone once the wait has ended.
   stop_hash text unique,
   stopped_at timestamptz,
-  stopped_how text check (stopped_how in ('link', 'support')),
+  stopped_how text check (stopped_how in ('link', 'support', 'device', 'app-used')),
   done_at timestamptz,
   check (stopped_at is null or done_at is null)
 );
@@ -239,11 +248,12 @@ language sql immutable set search_path = '' as $$ select 30 $$;
 create function app.error_codes_kept() returns interval
 language sql immutable set search_path = '' as $$ select interval '30 days' $$;
 
--- How many emails support's tools sent in the last 24 hours.
+-- How many emails support's tools sent, or a link sent may yet lead to, in
+-- the last 24 hours.
 create function app.support_emails_today() returns integer
 language sql stable security definer set search_path = '' as $$
-  select count(*)::integer from app.support_actions a
-  where a.emailed and a.at > now() - interval '24 hours'
+  select coalesce(sum(a.emails), 0)::integer from app.support_actions a
+  where a.at > now() - interval '24 hours'
 $$;
 
 -- Refuses "busy" once support's own emails have reached their allowance.
@@ -251,20 +261,23 @@ $$;
 -- everyone together are there (app.support_scale, D606): the end-to-end
 -- tests all act as one support, many times a day. 40-support-tools.test.sql
 -- puts it back to 1 and checks the real number.
-create function app.support_may_email() returns void
+create function app.support_may_email(needed integer default 1) returns void
 language plpgsql volatile security definer set search_path = '' as $$
 begin
-  if app.support_emails_today() >= app.support_own_emails_a_day() * app.support_scale() then
+  perform app.support_one_at_a_time();
+  if app.support_emails_today() + needed > app.support_own_emails_a_day() * app.support_scale() then
     perform app.refuse('busy');
   end if;
 end;
 $$;
 
-create function app.note_support_action(person uuid, message uuid, what text, emailed boolean)
+create function app.note_support_action(person uuid, message uuid, what text, emailed boolean,
+  emails integer default null)
 returns void
 language sql volatile security definer set search_path = '' as $$
-  insert into app.support_actions (person_id, message_id, action, emailed, at)
-  values (person, message, what, emailed, clock_timestamp())
+  insert into app.support_actions (person_id, message_id, action, emailed, emails, at)
+  values (person, message, what, emailed, coalesce(emails, case when emailed then 1 else 0 end),
+    clock_timestamp())
 $$;
 
 -- The address a person signs in with, or null.
@@ -287,7 +300,8 @@ $$;
 create function app.support_message_json(m app.support_messages) returns jsonb
 language sql stable security definer set search_path = '' as $$
   select jsonb_build_object(
-    'id', m.id, 'kind', m.kind, 'sent_at', app.utc_words(m.sent_at), 'words', m.words,
+    -- To the microsecond, so "Show older messages" never skips one sent in the same second (D638).
+    'id', m.id, 'kind', m.kind, 'sent_at', app.utc_exact(m.sent_at), 'words', m.words,
     'screen', m.screen, 'app_version', m.app_version, 'phone_type', m.phone_type,
     'answer_by', m.answer_by, 'file_kind', m.file_kind,
     'has_file', exists (select 1 from app.support_files f where f.message_id = m.id),
@@ -337,7 +351,7 @@ begin
   end if;
   return app.support_message_json(m) || jsonb_build_object(
     'replies', coalesce((select jsonb_agg(jsonb_build_object('words', r.words,
-        'sent_at', app.utc_words(r.sent_at)) order by r.sent_at)
+        'sent_at', app.utc_exact(r.sent_at)) order by r.sent_at)
       from app.support_replies r where r.message_id = m.id), '[]'::jsonb),
     'file', (select jsonb_build_object('kind', f.kind, 'content_type', f.content_type, 'bytes', f.bytes,
         'width', f.width, 'height', f.height, 'added_at', app.utc_words(f.added_at),
@@ -413,11 +427,13 @@ $$;
 -- ---------------------------------------------------------------------------
 -- 3. Support access (question 13, D618).
 
--- True while a person's support access is open.
+-- True while a person's support access is open: given, not stopped, its 7
+-- days not over, and they're still in the plan they gave it for (D637).
 create function app.access_open(person uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (select 1 from app.support_access a
-    where a.person_id = person and a.ended_at is null and a.ends_at > now())
+    where a.person_id = person and a.ended_at is null and a.ends_at > now()
+      and a.plan_id = (select p.plan_id from app.plan_now(person) p))
 $$;
 
 -- The person's support access as their phone shows it.
@@ -431,6 +447,7 @@ language sql stable security definer set search_path = '' as $$
   from (select 1) one
   left join lateral (select * from app.support_access x
     where x.person_id = person and x.ended_at is null and x.ends_at > now()
+      and x.plan_id = (select p.plan_id from app.plan_now(person) p)
     order by x.granted_at desc limit 1) a on true
 $$;
 
@@ -471,20 +488,22 @@ create function public.give_support_access() returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
   me uuid := auth.uid();
+  plan uuid;
   given app.support_access;
 begin
   if not app.session_ok() then
     perform app.refuse('not-allowed', '42501');
   end if;
-  if not exists (select 1 from app.plan_now(me)) then
+  select p.plan_id into plan from app.plan_now(me) p;
+  if plan is null then
     perform app.refuse('no-plan');
   end if;
   perform app.one_at_a_time(me::text, 'support-access');
   if app.access_open(me) then
     return app.access_json(me);
   end if;
-  insert into app.support_access (person_id, ends_at)
-  values (me, now() + app.support_access_lasts())
+  insert into app.support_access (person_id, plan_id, ends_at)
+  values (me, plan, now() + app.support_access_lasts())
   returning * into given;
   perform app.note_access_in_activity(me, jsonb_build_object('until',
     (given.ends_at at time zone 'Europe/London')::date));
@@ -502,14 +521,38 @@ begin
     perform app.refuse('not-allowed', '42501');
   end if;
   perform app.one_at_a_time(me::text, 'support-access');
-  update app.support_access a set ended_at = now()
-    where a.person_id = me and a.ended_at is null and a.ends_at > now();
-  if found then
+  if app.access_open(me) then
     perform app.note_access_in_activity(me, jsonb_build_object('ended', true));
   end if;
+  update app.support_access a set ended_at = now()
+    where a.person_id = me and a.ended_at is null;
   return app.access_json(me);
 end;
 $$;
+
+-- Whenever someone joins a plan or leaves one, support access given by
+-- anyone in either plan ends at once (D637): the plan support would see
+-- isn't the one it was given for, and whoever joined wasn't told. Each can
+-- give it again, and Activity says so then.
+create function app.end_support_access_on_joining() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if tg_op = 'UPDATE' and new.left_at is not distinct from old.left_at
+      and new.plan_id = old.plan_id and new.person_id = old.person_id then
+    return new;
+  end if;
+  update app.support_access a set ended_at = now()
+    where a.ended_at is null and a.ends_at > now()
+      and (a.person_id = new.person_id
+        or a.plan_id in (new.plan_id, case when tg_op = 'UPDATE' then old.plan_id end)
+        or a.person_id in (select m.person_id from public.plan_members m
+          where m.plan_id in (new.plan_id, case when tg_op = 'UPDATE' then old.plan_id end)));
+  return new;
+end;
+$$;
+
+create trigger prepenny_end_support_access after insert or update on public.plan_members
+  for each row execute function app.end_support_access_on_joining();
 
 -- The person's plan exactly as plan_changes gives it to their own phone
 -- (D564, D618): the same rows, from the same tables, chosen by the same
@@ -534,7 +577,10 @@ begin
       'edit_by', e.person_id, 'edit_kind', e.kind)
     into the_plan from public.plans p
     left join public.edits e on e.id = p.edit_id and e.plan_id = p.id
+      and (e.private_to is null or e.private_to = person)
     where p.id = plan;
+  -- Who changed each record, as the person's phone may read it: the
+  -- privacy rules on edits give a phone only shared ones and its own.
   select string_agg(format($q$
       select %s as kind_order, r.seq, jsonb_build_object('table', %L,
           'row', to_jsonb(r) - 'plan_id' - 'created_at',
@@ -542,6 +588,7 @@ begin
           'edit_by', e.person_id, 'edit_kind', e.kind) as one
       from public.%I r
       left join public.edits e on e.id = r.edit_id and e.plan_id = r.plan_id
+        and (e.private_to is null or e.private_to = $2)
       where r.plan_id = $1 and r.seq > 0
         and (r.private_to is null or r.private_to = $2)$q$,
       t.n, t.name, t.name), ' union all ' order by t.n)
@@ -668,7 +715,7 @@ begin
     'is_you', person = auth.uid(),
     'access', app.access_json(person),
     'error_codes', coalesce((select jsonb_agg(jsonb_build_object('code', e.code, 'screen', e.screen,
-        'app_version', e.app_version, 'at', app.utc_words(e.at)) order by e.at desc)
+        'app_version', e.app_version, 'at', app.utc_exact(e.at)) order by e.at desc)
       from (select * from app.error_codes x where x.person_id = person order by x.at desc limit 20) e),
       '[]'::jsonb),
     'two_step_wait', case when wait.id is null then null else jsonb_build_object(
@@ -685,8 +732,9 @@ begin
         where x.person_id = person or x.email in (lower(u.email),
           (select b.email from app.backup_emails b where b.person_id = person))
         order by x.sent_at desc limit 20) m), '[]'::jsonb),
+    -- Times to the microsecond, each one apart from the next (D638).
     'actions', coalesce((select jsonb_agg(jsonb_build_object('action', a.action,
-        'at', app.utc_words(a.at), 'emailed', a.emailed) order by a.at desc)
+        'at', app.utc_exact(a.at), 'emailed', a.emailed) order by a.at desc)
       from (select * from app.support_actions x where x.person_id = person order by x.at desc limit 30) a),
       '[]'::jsonb),
     'now', app.server_time());
@@ -779,6 +827,7 @@ create function public.support_start_two_step_wait(person uuid) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
   address text;
+  backup text;
   token text := app.new_token();
   started app.two_step_waits;
   site text;
@@ -795,7 +844,8 @@ begin
   if (app.open_two_step_wait(person)).id is not null then
     perform app.refuse('already');
   end if;
-  perform app.support_may_email();
+  select b.email into backup from app.backup_emails b where b.person_id = person;
+  perform app.support_may_email(case when backup is null then 1 else 2 end);
   insert into app.two_step_waits (person_id, stop_hash) values (person, app.token_hash(token))
     returning * into started;
   select s.site into site from app.email_sender s;
@@ -805,9 +855,22 @@ begin
       'Nothing changes for 7 days. Unless it''s stopped, at ' || app.when_words(started.started_at + app.two_step_wait())
         || ' two-step sign-in is turned off, and you sign in with this email address alone.',
       'If it was you, you don''t need to do anything. If it wasn''t, stop it now.'],
-    'This link works once, and can only stop this.',
+    'This link works once, and can only stop this. You can also stop it in PrePenny on any phone or computer that''s signed in.',
     'Stop it', coalesce(site, 'https://prepenny.co.uk') || '/stop-two-step-off/#' || token);
-  perform app.note_support_action(person, null, 'two-step-wait', true);
+  -- The backup address is told too, in case the sign-in address isn't the
+  -- person's own any more (D638).
+  if backup is not null then
+    perform app.send_email(backup, 'PrePenny support is turning off two-step sign-in',
+      'Two-step sign-in on your PrePenny account will be turned off', null,
+      array['PrePenny support was asked to turn off two-step sign-in on the PrePenny account this is the backup email for, because the authenticator app was lost.',
+        'Unless it''s stopped, at ' || app.when_words(started.started_at + app.two_step_wait())
+          || ' two-step sign-in is turned off.'],
+      'If you didn''t ask for this, stop it with the link in the email to the address you sign in with, or in PrePenny on any phone or computer that''s signed in.');
+  end if;
+  -- Every signed-in phone shows the notice with "Stop it" at once.
+  perform app.nudge_my_phones(person);
+  perform app.note_support_action(person, null, 'two-step-wait', true,
+    case when backup is null then 1 else 2 end);
   return jsonb_build_object('started_at', app.utc_words(started.started_at),
     'ends_at', app.utc_words(started.started_at + app.two_step_wait()), 'now', app.server_time());
 end;
@@ -822,6 +885,7 @@ begin
   perform app.support_only();
   address := app.support_target(person);
   perform app.support_may_email();
+  perform app.nudge_my_phones(person);
   update app.two_step_waits w set stopped_at = now(), stopped_how = 'support', stop_hash = null
     where w.person_id = person and w.stopped_at is null and w.done_at is null;
   if not found then
@@ -842,15 +906,56 @@ $$;
 -- else. It signs nobody in or out, and says nothing about the account.
 create function public.stop_two_step_off_with_link(token text) returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
+declare
+  stopped app.two_step_waits;
 begin
   if token is null or token !~ '^[A-Za-z0-9_-]{43}$' then
     return jsonb_build_object('stopped', false);
   end if;
   update app.two_step_waits w set stopped_at = now(), stopped_how = 'link', stop_hash = null
     where w.stop_hash = app.token_hash(token) and w.stopped_at is null and w.done_at is null
-      and w.started_at > now() - app.two_step_wait();
-  return jsonb_build_object('stopped', found);
+      and w.started_at > now() - app.two_step_wait()
+    returning * into stopped;
+  if not found then
+    return jsonb_build_object('stopped', false);
+  end if;
+  -- Support's account page shows why it stopped (D638).
+  perform app.note_support_action(stopped.person_id, null, 'two-step-kept', false);
+  perform app.nudge_my_phones(stopped.person_id);
+  return jsonb_build_object('stopped', true);
 end;
+$$;
+
+-- "Stop it", in the notice on a phone or computer signed in to the account
+-- (D638): stops the person's own wait, never anyone else's.
+create function public.stop_two_step_off() returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+begin
+  if not app.session_ok() then
+    perform app.refuse('not-allowed', '42501');
+  end if;
+  update app.two_step_waits w set stopped_at = now(), stopped_how = 'device', stop_hash = null
+    where w.person_id = auth.uid() and w.stopped_at is null and w.done_at is null;
+  if not found then
+    return jsonb_build_object('stopped', false, 'now', app.server_time());
+  end if;
+  perform app.note_support_action(auth.uid(), null, 'two-step-kept', false);
+  perform app.nudge_my_phones(auth.uid());
+  return jsonb_build_object('stopped', true, 'now', app.server_time());
+end;
+$$;
+
+-- True when the person has used their authenticator app since a moment: a
+-- code checked on any of their sign-ins (D638). Someone who can do that
+-- hasn't lost it.
+create function app.app_used_since(person uuid, moment timestamptz) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+      select 1 from auth.mfa_amr_claims c join auth.sessions s on s.id = c.session_id
+      where s.user_id = person and c.authentication_method = 'totp' and c.updated_at > moment)
+    or exists (
+      select 1 from auth.mfa_challenges ch join auth.mfa_factors f on f.id = ch.factor_id
+      where f.user_id = person and ch.verified_at > moment)
 $$;
 
 -- Finishes the two-step waits that are due, for one person or everyone:
@@ -870,10 +975,24 @@ begin
       and (only_person is null or w.person_id = only_person)
     for update skip locked
   loop
+    address := app.sign_in_address(due.person_id);
+    -- They used the app during the wait, so it isn't lost: it stays on (D638).
+    if app.app_used_since(due.person_id, due.started_at) then
+      update app.two_step_waits w set stopped_at = now(), stopped_how = 'app-used', stop_hash = null
+        where w.id = due.id;
+      perform app.nudge_my_phones(due.person_id);
+      if address is not null and app.email_ready() then
+        perform app.send_email(address, 'Two-step sign-in stays on',
+          'Two-step sign-in stays on for your PrePenny account', null,
+          array['Your authenticator app was used to sign in to your account after PrePenny support was asked to turn off two-step sign-in, so it stays on. Nothing on your account changed.'],
+          'If you didn''t ask PrePenny support for this, reply to this email.');
+      end if;
+      perform app.note_support_action(due.person_id, null, 'two-step-kept', address is not null);
+      continue;
+    end if;
     delete from auth.mfa_factors f where f.user_id = due.person_id;
     update app.two_step_waits w set done_at = now(), stop_hash = null where w.id = due.id;
     perform app.nudge_my_phones(due.person_id);
-    address := app.sign_in_address(due.person_id);
     if address is not null and app.email_ready() then
       perform app.send_email(address, 'Two-step sign-in is off',
         'Two-step sign-in is now off for your PrePenny account', null,
@@ -936,10 +1055,14 @@ begin
     perform app.refuse('waiting');
   end if;
   stage := case when open_one.id is null then 'start' else 'finish' end;
-  perform app.support_may_email();
+  -- A link counts for what opening it can lead to (D638): a start link, the
+  -- email to the sign-in address and one to the backup if it's stopped; a
+  -- finish link, the email to the old address.
+  perform app.support_may_email(case when stage = 'start' then 3 else 2 end);
   perform app.send_support_link(person, backup, stage, open_one.id);
   perform app.note_support_action(person, null,
-    case when stage = 'start' then 'backup-link' else 'backup-finish-link' end, true);
+    case when stage = 'start' then 'backup-link' else 'backup-finish-link' end, true,
+    case when stage = 'start' then 3 else 2 end);
   return jsonb_build_object('sent', stage, 'now', app.server_time());
 end;
 $$;
@@ -977,7 +1100,10 @@ end;
 $$;
 
 -- Sends the finishing link for every request started from support's link
--- whose 24 hours are over, once. Run by the scheduled job every 15 minutes.
+-- whose 24 hours are over. Run by the scheduled job every 15 minutes. Once
+-- a link has gone, another goes only when it has run out, and so, if a
+-- finish didn't complete and the request is open again, within 24 hours
+-- (D638), while the request can still be finished (7 days, D391).
 create function app.send_finish_links() returns integer
 language plpgsql volatile security definer set search_path = '' as $$
 declare
@@ -986,16 +1112,17 @@ declare
 begin
   for ready in
     select * from app.get_back_in r
-    where r.from_support and r.finish_link_at is null and r.stopped_at is null and r.done_at is null
+    where r.from_support and r.stopped_at is null and r.done_at is null
       and r.finishing_at is null and now() >= app.ready_at(r)
       and r.started_at > now() - app.get_back_in_wait() - app.get_back_in_lasts()
+      and (r.finish_link_at is null or r.finish_link_at <= now() - app.support_link_lasts())
     for update skip locked
   loop
     continue when not app.email_ready()
       or not exists (select 1 from app.backup_emails b where b.person_id = ready.person_id
         and b.email = ready.backup_email);
     perform app.send_support_link(ready.person_id, ready.backup_email, 'finish', ready.id);
-    perform app.note_support_action(ready.person_id, null, 'backup-finish-link', true);
+    perform app.note_support_action(ready.person_id, null, 'backup-finish-link', true, 2);
     sent := sent + 1;
   end loop;
   return sent;
@@ -1038,7 +1165,12 @@ begin
   open_one := app.open_get_back_in(link.person_id);
   if link.stage = 'start' then
     if open_one.id is null then
-      open_one := app.start_get_back_in(link.person_id, link.backup_email);
+      open_one := app.start_get_back_in(link.person_id, link.backup_email, 'support-link');
+    end if;
+    -- Opened while a request asked for with a code is open, from the same
+    -- backup address: it's support's now too, so its link to finish is
+    -- emailed (D638), as the screen says it will be.
+    if open_one.backup_email = link.backup_email then
       update app.get_back_in r set from_support = true where r.id = open_one.id;
     end if;
     return jsonb_build_object('in', true, 'state', 'waiting',
@@ -1070,6 +1202,97 @@ begin
     'person', link.person_id, 'email', link.backup_email, 'in_the_way', in_the_way);
 end;
 $$;
+
+-- Getting back in's start, as step 3e hardening made it, now saying what
+-- was used: a code typed, or a link from PrePenny support (D638), so the
+-- person deciding whether to stop it is told what happened.
+drop function app.start_get_back_in(uuid, text);
+create function app.start_get_back_in(person uuid, backup text, how text default 'code')
+returns app.get_back_in
+language plpgsql security definer set search_path = '' as $$
+declare
+  token text := app.new_token();
+  started app.get_back_in;
+  sign_in_email text;
+  site text;
+begin
+  insert into app.get_back_in (person_id, backup_email, stop_hash, from_support)
+    values (person, backup, app.token_hash(token), how = 'support-link')
+    returning * into started;
+  select u.email into sign_in_email from auth.users u where u.id = person;
+  select s.site into site from app.email_sender s;
+  if sign_in_email is not null and sign_in_email <> '' then
+    perform app.send_email(sign_in_email, 'Someone asked to get into your PrePenny account',
+      'Someone asked to get into your PrePenny account', null,
+      array[case when how = 'support-link'
+          then 'At ' || app.when_words(started.started_at) || ', someone opened a link PrePenny support sent to your backup email, '
+            || backup || ', to get into your account.'
+          else 'At ' || app.when_words(started.started_at) || ', someone typed a code sent to your backup email, '
+            || backup || ', to get into your account.' end,
+        'Nothing has changed yet. Unless it''s stopped, from ' || app.when_words(app.ready_at(started))
+          || ' they can make ' || backup || ' the address your account signs in with, and every phone and computer signed in to it will be signed out.',
+        'If it was you, you don''t need to do anything. If it wasn''t, stop it now.'],
+      'This link works once, and can only stop this. You can also stop it in PrePenny on any phone or computer that''s signed in.',
+      'Stop it', coalesce(site, 'https://prepenny.co.uk') || '/stop-get-back-in/#' || token);
+  end if;
+  perform app.nudge_my_phones(person);
+  return started;
+end;
+$$;
+
+-- What a signed-in phone asks when PrePenny opens and every minute, as in
+-- step 3h, now also with support's two-step wait, if there's one (D638).
+create or replace function public.hello() returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  standing text;
+  problem text := app.version_problem();
+  open_one app.get_back_in;
+  asked jsonb;
+  requests jsonb;
+  joining jsonb;
+  wait app.two_step_waits;
+  two_step_off jsonb;
+begin
+  if auth.uid() is not null and not exists (select 1 from auth.users u where u.id = auth.uid()) then
+    standing := 'deleted';
+  elsif not exists (
+    select 1 from auth.sessions s
+    where s.id = app.session_id() and s.user_id = auth.uid()
+      and (s.not_after is null or s.not_after > now())
+  ) then
+    standing := 'ended';
+  elsif app.two_step_on(auth.uid()) and not app.second_step_passed() then
+    standing := 'second-step';
+  else
+    standing := 'ok';
+    if problem is null then
+      insert into app.devices as d (session_id, person_id, last_used_at)
+      values (app.session_id(), auth.uid(), now())
+      on conflict (session_id) do update set last_used_at = now()
+        where d.last_used_at < now() - interval '1 minute';
+      requests := app.join_requests();
+      joining := app.my_joining();
+    end if;
+    open_one := app.open_get_back_in(auth.uid());
+    if open_one.id is not null and open_one.finishing_at is null then
+      asked := jsonb_build_object('started_at', app.utc_words(open_one.started_at),
+        'ready_at', app.utc_words(app.ready_at(open_one)));
+    end if;
+    -- Step 4j (D638): PrePenny support's 7-day wait to turn off two-step
+    -- sign-in, so every signed-in device shows its notice with "Stop it".
+    wait := app.open_two_step_wait(auth.uid());
+    if wait.id is not null then
+      two_step_off := jsonb_build_object('started_at', app.utc_words(wait.started_at),
+        'ends_at', app.utc_words(wait.started_at + app.two_step_wait()));
+    end if;
+  end if;
+  return jsonb_build_object('sign_in', standing, 'version', coalesce(problem, 'ok'),
+    'now', app.server_time(), 'get_back_in', asked, 'join_requests', coalesce(requests, '[]'::jsonb),
+    'joining', coalesce(joining, '[]'::jsonb), 'two_step_off', two_step_off);
+end;
+$$;
+
 
 -- ---------------------------------------------------------------------------
 -- 6. Usage, counts only (D623): never a name, an address or an amount.
@@ -1259,10 +1482,13 @@ select cron.schedule('prepenny-support-tools', '3,18,33,48 * * * *', $$select ap
 -- with Supabase's admin key.
 
 revoke all on function
+  app.start_get_back_in(uuid, text, text), app.app_used_since(uuid, timestamptz),
+  app.end_support_access_on_joining(),
   app.set_support(text), app.is_support_address(uuid), app.is_support(), app.support_only(),
   app.support_access_lasts(), app.two_step_wait(), app.support_link_lasts(),
   app.support_own_emails_a_day(), app.error_codes_a_day(), app.error_codes_kept(),
-  app.support_emails_today(), app.support_may_email(), app.note_support_action(uuid, uuid, text, boolean),
+  app.support_emails_today(), app.support_may_email(integer),
+  app.note_support_action(uuid, uuid, text, boolean, integer),
   app.sign_in_address(uuid), app.moment_day_words(timestamptz),
   app.support_message_json(app.support_messages), app.access_open(uuid), app.access_json(uuid),
   app.note_access_in_activity(uuid, jsonb), app.plan_as_seen_by(uuid), app.open_two_step_wait(uuid),
@@ -1277,7 +1503,8 @@ revoke all on function
   public.support_find(text), public.support_account(uuid), public.note_error_code(text, text, text),
   public.support_sign_out(uuid), public.support_start_two_step_wait(uuid),
   public.support_stop_two_step_wait(uuid), public.stop_two_step_off_with_link(text),
-  public.support_send_backup_link(uuid), public.get_back_in_with_link(text), public.support_usage()
+  public.support_send_backup_link(uuid), public.get_back_in_with_link(text), public.support_usage(),
+  public.stop_two_step_off()
   from public, anon, authenticated, service_role;
 
 grant execute on function
@@ -1287,7 +1514,7 @@ grant execute on function
   public.support_find(text), public.support_account(uuid), public.note_error_code(text, text, text),
   public.support_sign_out(uuid), public.support_start_two_step_wait(uuid),
   public.support_stop_two_step_wait(uuid), public.stop_two_step_off_with_link(text),
-  public.support_send_backup_link(uuid), public.support_usage()
+  public.support_send_backup_link(uuid), public.support_usage(), public.stop_two_step_off()
   to authenticated;
 grant execute on function public.stop_two_step_off_with_link(text) to anon;
 grant execute on function public.get_back_in_with_link(text) to service_role;
