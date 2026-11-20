@@ -2092,13 +2092,12 @@ export const strings = {
 
     /** Usage, counts only (D623). */
     usageHeading: 'Usage',
-    usageLine: 'Counts only: never names, addresses or money.',
+    usageLine:
+      'Counts only: never names, addresses or money. Opened means signed in on a phone or computer that used PrePenny then.',
     signUpsCaption: 'Sign-ups by week',
-    weekStarting: 'Week starting',
-    signUps: 'Sign-ups',
+    weekOf: (day: string) => `Week starting ${day}`,
     opened7: 'Opened PrePenny in the last 7 days',
     opened30: 'Opened PrePenny in the last 30 days',
-    openedNote: 'People signed in on a phone or computer that used PrePenny then.',
     sharedPlans: 'Shared plans',
     remindersOn: 'People with reminders on',
     waitingCount: 'Messages waiting for a reply',

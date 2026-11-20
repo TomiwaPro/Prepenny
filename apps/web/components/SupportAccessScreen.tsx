@@ -49,7 +49,7 @@ export function SupportAccessScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [said, setSaid] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
-  const status = useRef<HTMLParagraphElement>(null);
+  const card = useRef<HTMLElement>(null);
 
   const load = useCallback(async () => {
     const answer = await mySupportAccess();
@@ -81,7 +81,8 @@ export function SupportAccessScreen() {
         ? t.given(momentWords(done.value.endsAt))
         : t.ended,
     );
-    status.current?.focus();
+    // The button tapped has gone: focus goes to the card, which says what's true now.
+    card.current?.focus();
   }
 
   const header = (
@@ -112,13 +113,8 @@ export function SupportAccessScreen() {
     <>
       {header}
       {partner === null ? null : <p className={styles.line}>{t.shared(partner)}</p>}
-      <p
-        ref={status}
-        tabIndex={-1}
-        className={styles.line}
-        role="status"
-        data-testid="support-access-said"
-      >
+      {/* Heard, not shown: the card below says the same in its own words. */}
+      <p className="visually-hidden" role="status" data-testid="support-access-said">
         {busy ?? said}
       </p>
       {loaded.kind === 'loading' ? (
@@ -135,7 +131,7 @@ export function SupportAccessScreen() {
           </div>
         </section>
       ) : (
-        <section className={styles.card} data-testid="support-access">
+        <section ref={card} tabIndex={-1} className={styles.card} data-testid="support-access">
           {loaded.access.on && loaded.access.endsAt !== null ? (
             <>
               <p className={styles.line}>{t.on(momentWords(loaded.access.endsAt))}</p>

@@ -450,24 +450,15 @@ function UsageCard() {
               </li>
             ))}
           </ul>
-          <p className={styles.second}>{t.openedNote}</p>
-          <table className={own.table}>
-            <caption className={styles.label}>{t.signUpsCaption}</caption>
-            <thead>
-              <tr>
-                <th scope="col">{t.weekStarting}</th>
-                <th scope="col">{t.signUps}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usage.signUps.map((week) => (
-                <tr key={week.week}>
-                  <th scope="row">{dayWords(week.week)}</th>
-                  <td className="num">{week.count}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <h3 className={styles.label}>{t.signUpsCaption}</h3>
+          <ul className={styles.list} data-testid="support-sign-ups">
+            {usage.signUps.map((week) => (
+              <li key={week.week} className={own.count} data-testid="support-week">
+                <span className={styles.line}>{t.weekOf(dayWords(week.week))}</span>
+                <span className={`${own.figure} num`}>{week.count}</span>
+              </li>
+            ))}
+          </ul>
         </>
       )}
     </section>

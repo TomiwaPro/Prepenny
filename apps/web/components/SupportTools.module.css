@@ -1,7 +1,7 @@
 /* The support screen (step 4j): PrePenny's cards and rows (DESIGN.md), with
    a few parts of its own: the first lines of a message, a message's words
    as written, a picture that fits the card, counts beside their labels, and
-   the sign-ups table. No colour of its own: red, amber and green are for
+   the sign-ups list. No colour of its own: red, amber and green are for
    money only (DESIGN.md). */
 
 .form {
@@ -72,37 +72,6 @@
 .figure {
   font-size: var(--size-name);
   font-weight: 700;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--size-body);
-}
-
-.table caption {
-  padding-bottom: var(--space-2);
-  text-align: left;
-}
-
-.table th,
-.table td {
-  padding: var(--space-2) 0;
-  border-top: 1px solid var(--divider);
-  text-align: left;
-  font-weight: 400;
-}
-
-.table thead th {
-  border-top: 0;
-  color: var(--ink-muted);
-  font-size: var(--size-second);
-  font-weight: 600;
-}
-
-.table td,
-.table thead th:last-child {
-  text-align: right;
 }
 
 /* One thing support did, or an error code: a line and a second line. */

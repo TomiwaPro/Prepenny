@@ -28,6 +28,7 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { strings } from '../strings/en-GB.ts';
+import { layoutProblems } from './coming-up.ts';
 import { openOnExample, settingScript } from './fixtures.ts';
 import { addAccount, entries, jessAndTom, openActivity, planOf } from './jess-and-tom.ts';
 import { box, noAxeProblems } from './setup.ts';
@@ -221,10 +222,26 @@ function watchConsole(page: Page): string[] {
 const neverPersonal = (said: string[]) =>
   expect(said.filter((line) => /@|£/.test(line))).toEqual([]);
 
-// A real 2 by 2 PNG, with nothing but its picture in it.
-const PNG =
-  '89504e470d0a1a0a0000000d49484452000000020000000208020000007bda4c' +
-  '6f0000000f4944415478da63f8cfc0f01f8c19000f6f02fe4af59d2a0000000049454e44ae426082';
+/** The screenshots for the owner (docs/screens/4j): 320px, light. */
+const SHOTS = '../../docs/screens/4j';
+
+/**
+ * A view's checks: axe, then with text at 200% nothing outside the screen
+ * or cut off and every tap target 44 by 44px (WCAG 1.4.4, 2.5.8), then the
+ * text back as it was. At 320px in light, its screenshot for the owner.
+ */
+async function checkView(page: Page, name: string) {
+  await noAxeProblems(page);
+  const style = await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  expect(await layoutProblems(page), `${name} at 200% text`).toEqual([]);
+  await style.evaluate((element) => (element as HTMLStyleElement).remove());
+  const light = await page.evaluate(() => matchMedia('(prefers-color-scheme: light)').matches);
+  if (light && page.viewportSize()?.width === 320) {
+    mkdirSync(SHOTS, { recursive: true });
+    await page.screenshot({ path: `${SHOTS}/${name}-320-light.png`, fullPage: true });
+  }
+}
+
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test.describe(`Support tools, in ${colorScheme} mode`, () => {
@@ -250,7 +267,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.goto('/app/support/');
       await expect(page.getByTestId('support-needs')).toContainText(t.notSupport);
       await expect(page.getByTestId('support-inbox')).toHaveCount(0);
-      await noAxeProblems(page);
+      await checkView(page, 'not-support');
       // Through the Data API, with Tom's own sign-in, every step is refused.
       const tomToken = await page.evaluate(
         () =>
@@ -327,7 +344,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(support.getByTestId('support-usage').getByTestId('support-count')).toHaveCount(
         5,
       );
-      await noAxeProblems(support);
+      await checkView(support, 'support');
       neverPersonal(said);
       neverPersonal(supportSaid);
       await supportPhone.close();
@@ -344,15 +361,25 @@ for (const colorScheme of ['light', 'dark'] as const) {
         values ('problem', ${quoted(sam)}, 'I can''t cope with the bills. Words only support reads',
           'home', 'b498ae820a00', 'Android, Chrome 131', 'picture', now())
         returning id`);
+      // A real screenshot, as a phone sends one: the front page.
+      await page.goto('/');
+      // A part of it, small enough to hand to the database in one command.
+      const png = await page.screenshot({ clip: { x: 0, y: 0, width: 160, height: 200 } });
       sql(`insert into app.support_files (message_id, kind, content_type, data, bytes, width, height)
-        values (${quoted(message)}, 'picture', 'image/png', decode('${PNG}', 'hex'), ${PNG.length / 2}, 2, 2)`);
+        values (${quoted(message)}, 'picture', 'image/png', decode('${png.toString('hex')}', 'hex'),
+          ${png.length}, ${png.readUInt32BE(16)}, ${png.readUInt32BE(20)})`);
       const said = watchConsole(page);
       await openAsSupport(page);
       await openView(page, `message=${message}`, t.kinds.problem ?? '');
       await expect(page.getByTestId('support-words')).toContainText('Words only support reads');
       await expect(page.getByTestId('support-about')).toContainText(t.fromChecked(sam));
       await expect(page.getByTestId('support-about')).toContainText(t.onScreen('home'));
-      await expect(page.getByRole('img', { name: t.pictureAlt })).toBeVisible();
+      // The picture itself is drawn, not just its words.
+      const picture = page.getByRole('img', { name: t.pictureAlt });
+      await expect(picture).toBeVisible();
+      await expect
+        .poll(() => picture.evaluate((element) => (element as HTMLImageElement).naturalWidth))
+        .toBeGreaterThan(0);
       await expect(page.getByTestId('support-replies')).toContainText(t.noReply);
       await noAxeProblems(page);
 
@@ -365,7 +392,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(words).toHaveValue(/National Debtline: 0808 808 4000/);
       await expect(words).toHaveValue(/0800 240 4420/);
       await words.fill(`Hi Sam.\n${await words.inputValue()}`);
-      await noAxeProblems(page);
+      await checkView(page, 'message-reply-ready');
       const after = Date.now();
       await form.getByRole('button', { name: t.sendReply }).click();
       await expect(page.getByTestId('support-reply-said')).toHaveText(t.replySent(sam));
@@ -416,7 +443,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         /PrePenny support can see your plan until/,
       );
       await expect(page.getByTestId('support-access')).toContainText(a.notLooked);
-      await noAxeProblems(page);
+      await checkView(page, 'support-access-on');
       const jess = await personOn(page);
       const until = sql(`select to_char((ends_at at time zone 'Europe/London')::date, 'Dy FMDD Mon')
         from app.support_access where person_id = ${quoted(jess)} and ended_at is null`);
@@ -429,7 +456,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
         new RegExp(`Jess let PrePenny support see the plan until ${day}\\.`),
         { timeout: 20_000 },
       );
-      await noAxeProblems(tom.page);
+      await checkView(tom.page, 'activity-tom-told');
 
       // Support sees Jess's plan, and nothing of Tom's private account.
       const { page: support, context: supportPhone } = await secondPhone(
@@ -443,7 +470,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(support.getByTestId('support-their-plan')).toContainText(
         /They let support see their plan until/,
       );
-      await noAxeProblems(support);
+      await checkView(support, 'account-with-access');
       await support.getByRole('link', { name: t.seePlan }).click();
       await expect(
         support.getByRole('heading', { level: 1, name: t.planViewHeading }),
@@ -456,7 +483,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(support.getByText('Tom private savings')).toHaveCount(0);
       // Read only: nothing on it opens or changes anything.
       await expect(support.getByTestId('read-only-row').getByRole('button')).toHaveCount(0);
-      await noAxeProblems(support);
+      await checkView(support, 'plan-read-only');
       expect(
         sql(
           `select count(*) from app.support_actions where person_id = ${quoted(jess)} and action = 'looked'`,
@@ -474,7 +501,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await support.reload();
       await expect(support.getByTestId('support-plan-needs')).toHaveText(t.accessEnded);
       await expect(support.getByText('Rent')).toHaveCount(0);
-      await noAxeProblems(support);
+      await checkView(support, 'plan-access-ended');
       // And Tom is told it ended.
       await tom.page.reload();
       await expect(entries(tom.page).first()).toContainText(
@@ -510,14 +537,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByTestId('support-account')).toContainText(t.twoStepOn);
       await expect(page.getByTestId('support-account')).toContainText(t.backup(backup));
       await expect(page.getByTestId('support-account')).toContainText(t.plans.none ?? '');
-      await noAxeProblems(page);
+      await checkView(page, 'account');
 
       // Sign out everywhere.
       let after = Date.now();
       await page.getByRole('button', { name: t.signOut }).click();
       const signOut = page.getByRole('dialog', { name: t.signOutTitle(alex) });
       await expect(signOut).toBeVisible();
-      await noAxeProblems(page);
+      await checkView(page, 'sign-out-sheet');
       await signOut.getByRole('button', { name: t.signOutYes }).click();
       await expect(page.getByTestId('support-account-said')).toHaveText(
         /^Signed out of \d+ phones? or computers?\. They've been emailed\.$/,
@@ -567,7 +594,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(stopper.getByTestId('stop-outcome')).toContainText(
         strings.stopTwoStepOff.stopped,
       );
-      await noAxeProblems(stopper);
+      await checkView(stopper, 'stop-two-step-off');
       await stopperPhone.close();
       expect(
         sql(`select stopped_how from app.two_step_waits where person_id = ${quoted(alexId)}`),
@@ -615,13 +642,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await phone.goto(startLink);
       await expect(phone.getByTestId('get-back-in-link')).toBeVisible();
       await expect(phone).toHaveURL(/\/get-back-in\/$/);
-      await noAxeProblems(phone);
+      await checkView(phone, 'get-back-in-link');
       after = Date.now();
       await phone.getByRole('button', { name: strings.getBackIn.useLink }).click();
       await expect(phone.getByTestId('get-back-in-waiting')).toContainText(
         strings.getBackIn.linkThenWhat(backup),
       );
-      await noAxeProblems(phone);
+      await checkView(phone, 'get-back-in-waiting');
       const told = await newestEmail(
         alex,
         'Someone asked to get into your PrePenny account',
@@ -655,7 +682,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
           `select string_agg(action, ',' order by at) from app.support_actions where person_id = ${quoted(alexId)}`,
         ),
       ).toBe('signed-out,two-step-wait,two-step-wait,two-step-off,backup-link,backup-finish-link');
-      await noAxeProblems(page);
+      await checkView(page, 'account-after-actions');
     });
 
     test("5. Usage is counts only, and from 1 March the tax year check says next year's file is missing", async ({
@@ -673,12 +700,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
       for (const count of await usage.getByTestId('support-count').all()) {
         await expect(count).toHaveText(/^.+\d+$/);
       }
-      await expect(usage.getByRole('table')).toBeVisible();
-      await expect(usage.getByRole('row')).toHaveCount(9);
+      // The last 8 weeks' sign-ups, newest first, each a count.
+      await expect(usage.getByTestId('support-week')).toHaveCount(8);
+      await expect(usage.getByTestId('support-week').first()).toHaveText(/^Week starting .+\d+$/);
       // Never a name, an address or money.
       await expect(usage).not.toContainText('@');
       await expect(usage).not.toContainText('£');
-      await noAxeProblems(page);
+      await checkView(page, 'support-tax-missing');
       // The day before 1 March, there's nothing to say.
       await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today: '2027-02-28' }] as const);
       await page.reload();
