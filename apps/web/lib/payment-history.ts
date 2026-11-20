@@ -40,6 +40,7 @@ const OWN_STEPS: readonly string[] = [
   'share-record',
   'change-role',
   'leave',
+  'support-access',
 ];
 
 type Copy = Readonly<Record<string, unknown>>;

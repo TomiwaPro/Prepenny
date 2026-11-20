@@ -1,0 +1,475 @@
+'use client';
+
+// The support screen (step 4j, brief 4.16, ARCHITECTURE.md 3.7, D617 to
+// D625), at /app/support/, for PrePenny support only. The database decides
+// who that is: the account whose address is in the SUPPORT_EMAIL secret,
+// signed in with two-step sign-in on and passed. Anyone else who opens the
+// page gets nothing from the database, and is told so.
+//
+// One page, as static export needs (D337), with what's shown after the "#":
+// - nothing: the tax year check, the inbox, finding an account and usage;
+// - #message=id: one message, its picture or plan copy, its replies, and
+//   the reply box with ready replies;
+// - #account=id: an account's status, what's under way, its error codes,
+//   support's actions on it and what support did;
+// - #plan=id: the plan someone let support see, read only;
+// - #copy=id: a message's plan copy, read only.
+
+import Link from 'next/link';
+import {
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react';
+import { useAccount } from '../lib/account.ts';
+import { formatDay } from '../lib/dates.ts';
+import { momentWords } from '../lib/device-words.ts';
+import {
+  type Inbox,
+  type InboxMessage,
+  type SupportStatus,
+  supportFind,
+  supportInbox,
+  supportStatus,
+  supportUsage,
+  type Usage,
+} from '../lib/support-tools.ts';
+import { taxYearWords } from '../lib/tax-year-check.ts';
+import { localToday } from '../lib/today.ts';
+import { strings } from '../strings/en-GB.ts';
+import { describedBy, Field } from './Fields.tsx';
+import formStyles from './Form.module.css';
+import { todayOf } from './PlanProvider.tsx';
+import styles from './Screens.module.css';
+import { SupportAccountView } from './SupportAccount.tsx';
+import { SupportMessageView } from './SupportMessage.tsx';
+import { SupportCopyView, SupportPlanView } from './SupportPlan.tsx';
+import own from './SupportTools.module.css';
+
+const t = strings.supportTools;
+
+/** What's shown, from the address after "#". */
+export type SupportView =
+  | { readonly kind: 'home' }
+  | { readonly kind: 'message' | 'account' | 'plan' | 'copy'; readonly id: string };
+
+const ID = /^[0-9a-f-]{36}$/;
+
+export function viewOf(hash: string): SupportView {
+  const found = /^#?(message|account|plan|copy)=([0-9a-f-]{36})$/.exec(hash);
+  if (found === null || !ID.test(found[2] ?? '')) return { kind: 'home' };
+  return { kind: found[1] as 'message' | 'account' | 'plan' | 'copy', id: found[2] as string };
+}
+
+/** Today, "YYYY-MM-DD", as every screen has it (the tests can set it, lib/test-setting.ts). */
+export const supportToday = () => todayOf({ isExample: false, id: '' });
+
+/** "2:05pm on Fri 20 Nov", by this phone's clock. */
+export const when = (time: string) => momentWords(time);
+/** "Fri 20 Nov", for a date. */
+export const dayWords = (date: string) => formatDay(date, supportToday());
+/** "Fri 20 Nov", for a moment, by this phone's clock. */
+export const dayOfMoment = (time: string) => dayWords(localToday(new Date(time)));
+
+/** The top of a view: an optional link back, its heading, which takes focus, and what it's for. */
+export function ViewHeader({
+  heading,
+  purpose,
+  back,
+}: {
+  readonly heading: string;
+  readonly purpose: string;
+  readonly back: { readonly label: string; readonly href: string } | null;
+}) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: each new view's heading takes focus
+  useEffect(() => {
+    if (back !== null) ref.current?.focus();
+  }, [heading, purpose]);
+  return (
+    <header className={styles.header}>
+      {back === null ? null : (
+        <a className={styles.back} href={back.href}>
+          {back.label}
+        </a>
+      )}
+      <h1 ref={ref} tabIndex={-1} className={styles.heading}>
+        {heading}
+      </h1>
+      <p className={styles.purpose}>{purpose}</p>
+    </header>
+  );
+}
+
+/** A card saying why there's nothing to show, with what to do. */
+function Needs({ words, link }: { readonly words: string; readonly link?: ReactNode }) {
+  return (
+    <>
+      <ViewHeader heading={t.heading} purpose={t.purpose} back={null} />
+      <section className={styles.card} data-testid="support-needs">
+        <p className={styles.line}>{words}</p>
+        {link === undefined ? null : <div className={styles.actions}>{link}</div>}
+      </section>
+    </>
+  );
+}
+
+export function SupportScreen() {
+  const account = useAccount();
+  const [status, setStatus] = useState<SupportStatus | 'loading' | 'failed' | 'offline'>('loading');
+  const [view, setView] = useState<SupportView>({ kind: 'home' });
+
+  useEffect(() => {
+    const follow = () => setView(viewOf(window.location.hash));
+    follow();
+    window.addEventListener('hashchange', follow);
+    return () => window.removeEventListener('hashchange', follow);
+  }, []);
+
+  const look = useCallback(async () => {
+    setStatus('loading');
+    const answer = await supportStatus();
+    setStatus(answer.ok ? answer.value : answer.problem === 'offline' ? 'offline' : 'failed');
+  }, []);
+
+  useEffect(() => {
+    if (account.status === 'signed-in') void look();
+  }, [account.status, look]);
+
+  if (account.status !== 'signed-in') {
+    return (
+      <Needs
+        words={t.signedOut}
+        link={
+          <Link className={formStyles.outlined} href="/sign-in/?from=more">
+            {t.signIn}
+          </Link>
+        }
+      />
+    );
+  }
+  if (status === 'loading') return <Needs words={t.loading} />;
+  if (status === 'failed' || status === 'offline') {
+    return (
+      <Needs
+        words={status === 'offline' ? t.offline : t.couldNotLoad}
+        link={
+          <button type="button" className={formStyles.outlined} onClick={() => void look()}>
+            {t.tryAgain}
+          </button>
+        }
+      />
+    );
+  }
+  if (status === 'two-step') {
+    return (
+      <Needs
+        words={t.needsTwoStep}
+        link={
+          <Link className={formStyles.outlined} href="/app/two-step/">
+            {t.setUpTwoStep}
+          </Link>
+        }
+      />
+    );
+  }
+  if (status === 'no') {
+    return (
+      <Needs
+        words={t.notSupport}
+        link={
+          <Link className={formStyles.outlined} href="/app/more/">
+            {t.backToMore}
+          </Link>
+        }
+      />
+    );
+  }
+  switch (view.kind) {
+    case 'message':
+      return <SupportMessageView key={view.id} id={view.id} />;
+    case 'account':
+      return <SupportAccountView key={view.id} id={view.id} />;
+    case 'plan':
+      return <SupportPlanView key={view.id} person={view.id} />;
+    case 'copy':
+      return <SupportCopyView key={view.id} message={view.id} />;
+    default:
+      return <SupportHome />;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The first view: the tax year check, the inbox, finding an account, usage.
+
+function SupportHome() {
+  const tax = taxYearWords(supportToday());
+  return (
+    <>
+      <ViewHeader heading={t.heading} purpose={t.purpose} back={null} />
+      <section
+        className={tax.missing.length === 0 ? styles.card : `${styles.card} ${own.notice}`}
+        aria-labelledby="support-tax"
+        data-testid="support-tax-year"
+      >
+        <h2 id="support-tax" className={styles.cardTitle}>
+          {t.taxYearHeading}
+        </h2>
+        {tax.lines.map((line) => (
+          <p key={line} className={styles.line}>
+            {line}
+          </p>
+        ))}
+      </section>
+      <InboxCard />
+      <FindCard />
+      <UsageCard />
+    </>
+  );
+}
+
+function MessageRow({ message }: { readonly message: InboxMessage }) {
+  const kind = t.kinds[message.kind] ?? message.kind;
+  const at = when(message.sentAt);
+  // Named by its own words, so voice control can say what it shows (WCAG 2.5.3).
+  const state =
+    message.kind === 'idea'
+      ? t.ideaStatus
+      : message.repliedAt === null
+        ? t.waitingReply
+        : t.replied;
+  return (
+    <li>
+      <a
+        className={styles.rowLink}
+        href={`#message=${message.id}`}
+        data-testid="support-message-row"
+      >
+        <span className={styles.rowBody}>
+          <span className={styles.rowTop}>
+            <span className={styles.rowName}>{kind}</span>
+            <span className={styles.tag}>{state}</span>
+          </span>
+          <span className={styles.second}>{at}</span>
+          {message.from === null ? null : (
+            <span className={`${styles.second} ${own.address}`}>{message.from}</span>
+          )}
+          {/* The first few lines only: the whole message is on its own view. */}
+          <span className={`${styles.line} ${own.snippet}`}>{message.words}</span>
+        </span>
+        <span className={styles.arrow} aria-hidden="true" />
+      </a>
+    </li>
+  );
+}
+
+function InboxCard() {
+  const [inbox, setInbox] = useState<Inbox | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async (olderThan: string | null) => {
+    setBusy(true);
+    setFailed(null);
+    const answer = await supportInbox(olderThan);
+    setBusy(false);
+    if (!answer.ok) {
+      setFailed(answer.problem === 'offline' ? t.offline : t.couldNotLoad);
+      return;
+    }
+    setInbox((before) =>
+      olderThan === null || before === null
+        ? answer.value
+        : { ...answer.value, messages: [...before.messages, ...answer.value.messages] },
+    );
+  }, []);
+
+  useEffect(() => {
+    void load(null);
+  }, [load]);
+
+  const oldest = inbox?.messages.at(-1)?.sentAt ?? null;
+  return (
+    <section className={styles.card} aria-labelledby="support-inbox" data-testid="support-inbox">
+      <h2 id="support-inbox" className={styles.cardTitle}>
+        {t.inboxHeading}
+      </h2>
+      {inbox === null ? (
+        <p className={styles.line}>{failed ?? t.loading}</p>
+      ) : (
+        <>
+          <p className={styles.second}>{t.inboxLine(inbox.waiting)}</p>
+          {inbox.messages.length === 0 ? (
+            <p className={styles.line}>{t.empty}</p>
+          ) : (
+            <ul className={styles.list}>
+              {inbox.messages.map((message) => (
+                <MessageRow key={message.id} message={message} />
+              ))}
+            </ul>
+          )}
+          {inbox.more && oldest !== null ? (
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={formStyles.outlined}
+                aria-disabled={busy}
+                onClick={() => {
+                  if (!busy) void load(oldest);
+                }}
+              >
+                {t.showOlder}
+              </button>
+            </div>
+          ) : null}
+          <p className={styles.second} role="status">
+            {busy && inbox !== null ? t.showingOlder : (failed ?? '')}
+          </p>
+        </>
+      )}
+      {failed !== null && inbox === null ? (
+        <div className={styles.actions}>
+          <button type="button" className={formStyles.outlined} onClick={() => void load(null)}>
+            {t.tryAgain}
+          </button>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function FindCard() {
+  const id = useId();
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | undefined>();
+  const [said, setSaid] = useState('');
+  const [busy, setBusy] = useState(false);
+  const box = useRef<HTMLInputElement>(null);
+
+  async function find(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    const typed = email.trim();
+    if (!EMAIL.test(typed)) {
+      setError(t.findMissing);
+      box.current?.focus();
+      return;
+    }
+    setError(undefined);
+    setBusy(true);
+    setSaid(t.finding);
+    const answer = await supportFind(typed);
+    setBusy(false);
+    if (!answer.ok) {
+      setSaid(answer.problem === 'offline' ? t.offline : t.couldNotLoad);
+      return;
+    }
+    if (answer.value === null) {
+      setSaid(t.notFound);
+      return;
+    }
+    setSaid('');
+    window.location.hash = `account=${answer.value}`;
+  }
+
+  return (
+    <section className={styles.card} aria-labelledby={`${id}-heading`} data-testid="support-find">
+      <h2 id={`${id}-heading`} className={styles.cardTitle}>
+        {t.findHeading}
+      </h2>
+      <form className={own.form} onSubmit={find} noValidate>
+        <Field id={`${id}-email`} label={t.findLabel} error={error} hint={t.findLine}>
+          <input
+            ref={box}
+            id={`${id}-email`}
+            className={formStyles.input}
+            type="email"
+            inputMode="email"
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            aria-invalid={error !== undefined}
+            aria-describedby={describedBy(`${id}-email`, error, [`${id}-email-hint`])}
+          />
+        </Field>
+        <button type="submit" className={formStyles.outlined} aria-disabled={busy}>
+          {t.find}
+        </button>
+      </form>
+      <p className={styles.line} role="status" data-testid="support-find-said">
+        {said}
+      </p>
+    </section>
+  );
+}
+
+function UsageCard() {
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+
+  useEffect(() => {
+    void supportUsage().then((answer) => {
+      if (answer.ok) setUsage(answer.value);
+      else setFailed(answer.problem === 'offline' ? t.offline : t.couldNotLoad);
+    });
+  }, []);
+
+  const counts: readonly (readonly [string, number])[] =
+    usage === null
+      ? []
+      : [
+          [t.opened7, usage.opened7],
+          [t.opened30, usage.opened30],
+          [t.sharedPlans, usage.sharedPlans],
+          [t.remindersOn, usage.remindersOn],
+          [t.waitingCount, usage.waiting],
+        ];
+  return (
+    <section className={styles.card} aria-labelledby="support-usage" data-testid="support-usage">
+      <h2 id="support-usage" className={styles.cardTitle}>
+        {t.usageHeading}
+      </h2>
+      <p className={styles.second}>{t.usageLine}</p>
+      {usage === null ? (
+        <p className={styles.line}>{failed ?? t.loading}</p>
+      ) : (
+        <>
+          <ul className={styles.list}>
+            {counts.map(([label, value]) => (
+              <li key={label} className={own.count} data-testid="support-count">
+                <span className={styles.line}>{label}</span>
+                <span className={`${own.figure} num`}>{value}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.second}>{t.openedNote}</p>
+          <table className={own.table}>
+            <caption className={styles.label}>{t.signUpsCaption}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{t.weekStarting}</th>
+                <th scope="col">{t.signUps}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usage.signUps.map((week) => (
+                <tr key={week.week}>
+                  <th scope="row">{dayWords(week.week)}</th>
+                  <td className="num">{week.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </section>
+  );
+}

@@ -170,7 +170,12 @@ Deno.serve(async (request) => {
         refusal.code === '23505' ||
         refusal.code === 'email_exists' ||
         refusal.error_code === 'email_exists';
-      if (await settle()) return answer(200, { in: true, state: 'finished' });
+      if (await settle())
+        return answer(200, {
+          in: true,
+          state: 'finished',
+          ...(withLink ? { email: finish.email } : {}),
+        });
       return answer(inUse ? 409 : 503, { problem: inUse ? 'in-use' : 'server' });
     }
     // Every device signed out, the backup used up and the old address told.
@@ -178,12 +183,21 @@ Deno.serve(async (request) => {
     try {
       const done = await rpc('get_back_in_finished', { request: finish.request });
       if (done.ok && ((await done.json()) as { done?: unknown }).done === true) {
-        return answer(200, { in: true, state: 'finished' });
+        return answer(200, {
+          in: true,
+          state: 'finished',
+          ...(withLink ? { email: finish.email } : {}),
+        });
       }
     } catch {
       // Settled below.
     }
-    if (await settle()) return answer(200, { in: true, state: 'finished' });
+    if (await settle())
+      return answer(200, {
+        in: true,
+        state: 'finished',
+        ...(withLink ? { email: finish.email } : {}),
+      });
     return answer(503, { problem: 'server' });
   } catch {
     return answer(503, { problem: 'server' });

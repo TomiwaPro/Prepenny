@@ -207,6 +207,24 @@ const SCREENS = [
     heading: strings.support.contact.heading,
     purpose: strings.support.contact.purpose,
   },
+  // Step 4j (D617, D618, D621): the support screen, as someone signed out
+  // sees it; Let support see my plan, signed out; and the stop link's page
+  // for support's 7-day wait to turn off two-step sign-in.
+  {
+    path: '/app/support/',
+    heading: strings.supportTools.heading,
+    purpose: strings.supportTools.purpose,
+  },
+  {
+    path: '/app/support-access/',
+    heading: strings.supportAccess.heading,
+    purpose: strings.supportAccess.purpose,
+  },
+  {
+    path: '/stop-two-step-off/',
+    heading: strings.stopTwoStepOff.heading,
+    purpose: strings.stopTwoStepOff.purpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

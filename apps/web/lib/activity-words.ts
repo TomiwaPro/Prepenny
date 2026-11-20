@@ -687,6 +687,14 @@ export function whatItDid(
         const words = strings.share.roles[role];
         return words === undefined ? null : w.role(whoInside(person, context), words);
       }
+      case 'support-access': {
+        // Step 4j (D618): "Jess let PrePenny support see the plan until Fri 20 Nov."
+        if (summary.ended === true) return w.supportAccessEnded;
+        const until = text(summary.until);
+        return until === null || !/^\d{4}-\d{2}-\d{2}$/.test(until)
+          ? null
+          : w.supportAccess(formatDay(until, context.today));
+      }
       case 'leave': {
         // In the plan left: "Tom left the plan." In the leaver's own new
         // plan: "You left the shared plan, and took a copy of the shared accounts."

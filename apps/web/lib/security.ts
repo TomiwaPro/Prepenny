@@ -478,6 +478,55 @@ export async function getInWithCode(email: string, code: string): Promise<Done<G
   }
 }
 
+/** What support's link did (step 4j, D622): as a code's, with the backup address it's for. */
+export type GetInWithLink =
+  | { readonly state: 'waiting'; readonly readyAt: string; readonly email: string }
+  | { readonly state: 'in-use' }
+  | { readonly state: 'finished'; readonly email: string };
+
+/**
+ * Uses a link PrePenny support emailed to a backup address, through the
+ * get-back-in function, as a code is. A link that was used, has run out or
+ * was never one says "code-wrong".
+ */
+export async function getInWithLink(link: string): Promise<Done<GetInWithLink>> {
+  const config = signInConfig();
+  if (config === null) return { ok: false, problem: 'server' };
+  try {
+    const response = await fetchWithTimeLimit()(`${config.url}/functions/v1/get-back-in`, {
+      method: 'POST',
+      headers: {
+        apikey: config.key,
+        'Content-Type': 'application/json',
+        'x-prepenny-version': appVersion().database,
+      },
+      body: JSON.stringify({ link }),
+    });
+    const answer = (await response.json().catch(() => ({}))) as {
+      in?: unknown;
+      state?: unknown;
+      ready_at?: unknown;
+      email?: unknown;
+      problem?: unknown;
+    };
+    if (!response.ok) {
+      return { ok: false, problem: answer.problem === 'in-use' ? 'in-use' : 'server' };
+    }
+    if (answer.in !== true) return { ok: false, problem: 'code-wrong' };
+    const email = typeof answer.email === 'string' ? answer.email : null;
+    if (answer.state === 'waiting' && typeof answer.ready_at === 'string' && email !== null) {
+      return { ok: true, value: { state: 'waiting', readyAt: answer.ready_at, email } };
+    }
+    if (answer.state === 'in-use') return { ok: true, value: { state: 'in-use' } };
+    if (answer.state === 'finished' && email !== null) {
+      return { ok: true, value: { state: 'finished', email } };
+    }
+    return { ok: false, problem: 'server' };
+  } catch (error) {
+    return { ok: false, problem: problemOf(error) };
+  }
+}
+
 /** "Stop it", on a signed-in phone: stops the person's own request to get back in. */
 export async function stopGetBackIn(): Promise<Done<boolean>> {
   const answer = await call<{ stopped: boolean }>('stop_get_back_in');
@@ -492,6 +541,17 @@ export async function stopGetBackIn(): Promise<Done<boolean>> {
  */
 export async function stopWithLink(token: string): Promise<Done<boolean>> {
   const answer = await call<{ stopped: boolean }>('stop_get_back_in_with_link', { token }, true);
+  if (!answer.ok) return answer;
+  return { ok: true, value: answer.value.stopped };
+}
+
+/**
+ * The stop link from the email PrePenny support's 7-day wait to turn off
+ * two-step sign-in sends (step 4j, D621): true when it stopped the wait,
+ * false when it had been used, the wait had ended, or it was never one.
+ */
+export async function stopTwoStepOffWithLink(token: string): Promise<Done<boolean>> {
+  const answer = await call<{ stopped: boolean }>('stop_two_step_off_with_link', { token }, true);
   if (!answer.ok) return answer;
   return { ok: true, value: answer.value.stopped };
 }

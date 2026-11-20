@@ -2032,6 +2032,383 @@ export const strings = {
   },
 
   /**
+   * The support screen (step 4j, brief 4.16, D617 to D623), at /app/support/,
+   * for PrePenny support only: the inbox, a message and its reply, an
+   * account, the plan someone let support see, usage and the tax year check.
+   */
+  supportTools: {
+    heading: 'Support',
+    purpose:
+      'Messages and ideas people sent to PrePenny, and the tools to help them. Only PrePenny support can open this screen.',
+    backToMore: 'Back to More',
+    /** Who can open it (D617). */
+    notSupport: 'This screen is for PrePenny support only.',
+    needsTwoStep:
+      'PrePenny support always uses two-step sign-in. Turn it on, and type its code, to open this screen.',
+    setUpTwoStep: 'Set up two-step sign-in',
+    signedOut: 'Sign in as PrePenny support to open this screen.',
+    signIn: 'Sign in',
+    loading: 'Getting the support inbox.',
+    couldNotLoad: "PrePenny couldn't reach its server. Try again in a minute.",
+    offline: "You're offline. Connect to the internet to use the support screen.",
+    tryAgain: 'Try again',
+    /** "2:05pm on Fri 20 Nov". */
+    at: (time: string, day: string) => `${time} on ${day}`,
+
+    /** The tax year check (brief 4.15, D45, D625). */
+    taxYearHeading: 'Tax files',
+    taxYearFine: 'The pay calculator has the tax file for every tax year it needs now.',
+    taxYearMissing: (year: string, starts: string) =>
+      `The pay calculator has no tax file for the ${year} tax year, which starts on ${starts}. Ask Claude Code to add it (step 4r) before then.`,
+
+    /** The inbox. */
+    inboxHeading: 'Inbox',
+    inboxLine: (waiting: number) =>
+      waiting === 0
+        ? 'Newest first. Nothing is waiting for a reply.'
+        : waiting === 1
+          ? 'Newest first. 1 message is waiting for a reply.'
+          : `Newest first. ${waiting} messages are waiting for a reply.`,
+    empty: 'No messages yet.',
+    kinds: {
+      contact: 'Contact us',
+      problem: 'Something looks wrong',
+      idea: 'Suggest a feature',
+    } as Record<string, string>,
+    waitingReply: 'Waiting for a reply',
+    replied: 'Replied',
+    ideaStatus: 'An idea',
+    showOlder: 'Show older messages',
+    showingOlder: 'Finding older messages.',
+
+    /** Finding an account. */
+    findHeading: 'Find an account',
+    findLine: 'Type the address they sign in with, or their backup email.',
+    findLabel: 'Email address',
+    findMissing: 'Type an email address, for example sam@example.com.',
+    find: 'Find',
+    finding: 'Finding the account.',
+    notFound: 'No account signs in with that address or has it as its backup email.',
+
+    /** Usage, counts only (D623). */
+    usageHeading: 'Usage',
+    usageLine: 'Counts only: never names, addresses or money.',
+    signUpsCaption: 'Sign-ups by week',
+    weekStarting: 'Week starting',
+    signUps: 'Sign-ups',
+    opened7: 'Opened PrePenny in the last 7 days',
+    opened30: 'Opened PrePenny in the last 30 days',
+    openedNote: 'People signed in on a phone or computer that used PrePenny then.',
+    sharedPlans: 'Shared plans',
+    remindersOn: 'People with reminders on',
+    waitingCount: 'Messages waiting for a reply',
+
+    /** One message. */
+    backToInbox: 'Back to the inbox',
+    messagePurpose:
+      'One message, with everything that came with it. Your reply is emailed from hello@prepenny.co.uk.',
+    sentAt: (when: string) => `Sent at ${when}`,
+    fromSignedIn: (email: string) => `From ${email}, signed in`,
+    fromChecked: (email: string) => `From ${email}, checked with a code`,
+    onScreen: (screen: string) => `On the screen: ${screen}`,
+    phone: (phone: string) => `Phone: ${phone}`,
+    version: (version: string) => `PrePenny version: ${version}`,
+    answerBy: (day: string) => `The automatic reply said by the end of ${day}.`,
+    wroteHeading: 'What they wrote',
+    pictureHeading: 'Their screenshot',
+    pictureAlt: 'The screenshot they sent',
+    pictureFacts: (width: number, height: number, gone: string) =>
+      `${width} by ${height}. It's deleted at ${gone}, 30 days after it was sent.`,
+    planHeading: 'Their plan copy',
+    planFacts: (gone: string) => `It's deleted at ${gone}, 30 days after it was sent.`,
+    readPlan: 'Read the plan copy',
+    readingFile: 'Getting the file.',
+    fileGone: (day: string) => `What they added was deleted on ${day}, 30 days after it was sent.`,
+    notAPlan: "That file can't be read as a plan. It may be from a newer version of PrePenny.",
+    openAccount: 'Open their account',
+    findTheirAccount: 'Find their account',
+    repliesHeading: 'Replies',
+    noReply: 'No reply yet.',
+    replyHeading: 'Reply',
+    readyLegend: 'Start from a ready reply?',
+    readyNone: 'No, write my own',
+    replyLabel: 'Your reply',
+    replyHint:
+      "Each line is a paragraph. Never write an amount, a payment name or a note: Resend keeps emails for 30 days. The email doesn't repeat what they wrote.",
+    replyMissing: 'Type your reply, or start from a ready reply.',
+    replyTooLong: (count: string) => `Make it 5,000 characters or fewer. It's ${count} now.`,
+    sendReply: 'Send reply',
+    sendingReply: 'Sending your reply.',
+    replySent: (email: string) => `Reply sent to ${email}.`,
+    busy: 'Support has sent its 15 emails for today, so sign-in codes keep their room. Try again tomorrow.',
+    emailOff: "Emails from PrePenny aren't switched on yet, so nothing was sent.",
+    noAddress: "There's no address to reply to: the account has been deleted.",
+    server: "PrePenny couldn't reach its server, so nothing was sent. Try again in a minute.",
+
+    /**
+     * Ready replies to pick and change before sending (brief 4.16). Every
+     * number was checked on the organisation's own website on Fri 20 Nov 2026
+     * (D589, D626).
+     */
+    ready: [
+      {
+        key: 'distress',
+        title: 'Someone in distress',
+        words: [
+          "Thank you for telling us. You don't have to deal with this on your own.",
+          "If you're struggling or feel you can't cope, Samaritans are there any time, day or night. Call 116 123, free from any phone.",
+          "If you're in danger now, call 999.",
+          'For free, confidential help with money and debt:',
+          'StepChange: 0800 138 1111, free from mobiles and landlines. Monday to Friday 8am to 8pm, Saturday 9am to 2pm.',
+          'National Debtline: 0808 808 4000, free to call. Monday to Friday 9am to 8pm, Saturday 9:30am to 1pm.',
+          "Citizens Advice's debt helpline: 0800 240 4420, free from mobiles and landlines. Monday to Friday 9am to 8pm, Saturday 9:30am to 1pm, not on public holidays.",
+          'PrePenny is here too. Reply to this email any time.',
+        ],
+      },
+      {
+        key: 'looking',
+        title: "Thanks, we're looking into it",
+        words: [
+          "Thanks for writing to PrePenny. We're looking into it, and we'll write again when we know more.",
+        ],
+      },
+      {
+        key: 'see-plan',
+        title: 'Can we see your plan?',
+        words: [
+          "To help, it would be useful to see your plan. If you're happy for us to, open PrePenny, tap More, then Let support see my plan, then Let support see it for 7 days.",
+          'We can look but never change anything, and you can stop it at any time. In a shared plan, we only see what you see, and your partner is told.',
+        ],
+      },
+      {
+        key: 'lost-app',
+        title: 'Lost the authenticator app',
+        words: [
+          "We can turn off two-step sign-in for you. For your safety, it takes 7 days. We've started the wait now, and emailed the address you sign in with, with a link to stop it if it wasn't you.",
+          'After 7 days, you sign in with your email address alone. To turn two-step sign-in on again with a new authenticator app, tap More, then Two-step sign-in.',
+        ],
+      },
+      {
+        key: 'lost-email',
+        title: 'Lost the sign-in email, no backup',
+        words: [
+          "We're sorry, but PrePenny support never moves an account to a new email address. Someone close to you could answer questions about your plan, so it wouldn't be safe.",
+          "Your email provider can help you get back into your email: look for Can't sign in or Account recovery on its sign-in page.",
+          'Or start a new plan with a new address. If you share a plan, your partner can invite your new address: More, then Share with my partner.',
+        ],
+      },
+      {
+        key: 'locked-backup',
+        title: 'Backup email kept locked',
+        words: [
+          "We've sent a link to your backup email. Open it to ask to get back in. Wrong codes typed by anyone else can't stop it.",
+          'For your safety, nothing changes for 24 hours, and we tell the address you sign in with now. After 24 hours, we email your backup address a new link to finish.',
+        ],
+      },
+      {
+        key: 'idea',
+        title: 'Thanks for the idea',
+        words: ["Thank you for the idea. It's on PrePenny's list to think about."],
+      },
+    ] as readonly {
+      readonly key: string;
+      readonly title: string;
+      readonly words: readonly string[];
+    }[],
+
+    /** One account (D619). */
+    accountHeading: 'Account',
+    accountPurpose:
+      "Who this is and what's set up. Never their amounts, payment names or notes, unless they let support see their plan.",
+    aboutHeading: 'About this account',
+    signsInWith: (email: string) => `Signs in with ${email}`,
+    backup: (email: string) => `Backup email: ${email}`,
+    noBackup: 'No backup email',
+    signedUp: (day: string) => `Signed up on ${day}`,
+    lastSignedIn: (when: string) => `Last signed in at ${when}`,
+    neverSignedIn: 'Never signed in',
+    twoStepOn: 'Two-step sign-in: on',
+    twoStepOff: 'Two-step sign-in: off',
+    plans: {
+      own: 'Plan: their own',
+      shared: 'Plan: shared with a partner',
+      none: 'Plan: none in the account yet',
+    } as Record<string, string>,
+    devices: (count: number) =>
+      count === 0
+        ? 'Not signed in anywhere now'
+        : count === 1
+          ? 'Signed in on 1 phone or computer'
+          : `Signed in on ${count} phones or computers`,
+    yourOwn: 'This is your own account, so support actions are off here.',
+    planAccessHeading: 'Their plan',
+    accessOn: (when: string) => `They let support see their plan until ${when}.`,
+    accessOff:
+      "They haven't let support see their plan. They can, in PrePenny: More, then Let support see my plan.",
+    seePlan: 'See their plan',
+    errorsHeading: 'Recent error codes',
+    errorsEmpty: 'No error codes in the last 30 days.',
+    errorLine: (code: string, screen: string | null, when: string) =>
+      screen === null ? `${code}, at ${when}` : `${code} on ${screen}, at ${when}`,
+    underWayHeading: 'Under way',
+    nothingUnderWay: 'Nothing is under way.',
+    twoStepWaiting: (when: string) =>
+      `Two-step sign-in is turned off at ${when}, unless it's stopped.`,
+    stopTwoStepWait: 'Stop turning it off',
+    getBackInWaiting: (started: string, ready: string) =>
+      `They asked to get back in with their backup email at ${started}. It can be finished from ${ready}.`,
+    getBackInFromSupport:
+      "It was started with support's link. The link to finish is emailed once the 24 hours are up.",
+    finishLinkSent: (when: string) => `The link to finish was emailed at ${when}.`,
+    messagesHeading: 'Their messages',
+    noMessages: 'No messages from this account.',
+    messageLine: (when: string, state: string) => `${when}. ${state}.`,
+    didHeading: 'What support did',
+    didNothing: 'Nothing yet.',
+    did: {
+      reply: 'Replied to a message',
+      looked: 'Looked at their plan',
+      'signed-out': 'Signed them out everywhere',
+      'two-step-wait': 'Started the 7-day wait to turn off two-step sign-in',
+      'two-step-stopped': 'Stopped turning off two-step sign-in',
+      'two-step-off': 'Two-step sign-in was turned off after 7 days',
+      'backup-link': 'Sent a link to their backup email',
+      'backup-finish-link': 'Sent the link to finish getting back in',
+    } as Record<string, string>,
+    didAt: (what: string, when: string) => `${what}, at ${when}.`,
+    emailed: 'They were emailed.',
+
+    /** Actions (D621, D622). Each asks once, and the person is emailed. */
+    actionsHeading: 'Actions',
+    actionsLine: 'Each one is recorded with the time, and they get an email saying so.',
+    signOut: 'Sign out everywhere',
+    signOutLine: 'Ends every sign-in on every phone and computer.',
+    signOutTitle: (email: string) => `Sign ${email} out everywhere?`,
+    signOutIntro:
+      'Every phone and computer signed in to this account is signed out within a minute. Their plan is safe in their account.',
+    signOutYes: 'Sign out everywhere',
+    signOutNo: 'Keep them signed in',
+    signedOutDone: (count: number) =>
+      count === 1
+        ? "Signed out of 1 phone or computer. They've been emailed."
+        : `Signed out of ${count} phones or computers. They've been emailed.`,
+    twoStep: 'Turn off two-step sign-in',
+    twoStepLine:
+      'For someone who lost their authenticator app but still has their email. Nothing changes for 7 days, and their sign-in address gets an email with Stop it.',
+    twoStepTitle: 'Start the 7-day wait?',
+    twoStepIntro:
+      "Two-step sign-in is turned off after 7 days, unless it's stopped with the link in the email to their sign-in address.",
+    twoStepYes: 'Start the 7-day wait',
+    twoStepNo: "Don't start it",
+    twoStepStarted: (when: string) =>
+      `The 7-day wait has started. Two-step sign-in is turned off at ${when}, unless it's stopped.`,
+    stopTitle: 'Stop turning off two-step sign-in?',
+    stopIntro: 'Two-step sign-in stays on, and they get an email saying so.',
+    stopYes: 'Stop turning it off',
+    stopNo: 'Keep the wait',
+    stopped: "Stopped. Two-step sign-in stays on, and they've been emailed.",
+    backupLink: 'Send a link to their backup email',
+    backupLinkLine:
+      "For someone whose backup email is kept locked by someone typing wrong codes. The link can't be locked. It starts the same 24-hour wait, with Stop it.",
+    backupLinkTitle: 'Send the link?',
+    backupLinkIntro: (email: string) =>
+      `A link goes to ${email}. Opening it asks to get back in, and the address they sign in with is told, with Stop it.`,
+    backupLinkYes: 'Send the link',
+    backupLinkNo: "Don't send it",
+    backupLinkSent: (email: string) => `Link sent to ${email}.`,
+    finishLinkSentNow: (email: string) => `The link to finish was sent to ${email}.`,
+    lostEmail:
+      'Lost their sign-in email, with no backup? Support never moves an account to a new address. Use the ready reply Lost the sign-in email, no backup.',
+    problems: {
+      busy: 'Support has sent its 15 emails for today, so sign-in codes keep their room. Try again tomorrow.',
+      already: 'A wait to turn off two-step sign-in has already started.',
+      waiting: "Their 24-hour wait to get back in hasn't finished yet. Try again once it has.",
+      'two-step-off': "Two-step sign-in is off on this account, so there's nothing to turn off.",
+      'no-backup': 'This account has no backup email.',
+      'is-you': "This is your own account, so support can't act on it.",
+      'email-off': "Emails from PrePenny aren't switched on yet, so nothing was done.",
+      'no-address': 'This account has no address to email.',
+      'not-found': "That account isn't there any more. It may have been deleted.",
+      offline: "You're offline. Connect to the internet, then try again.",
+      server: "PrePenny couldn't reach its server, so nothing was done. Try again in a minute.",
+    } as Record<string, string>,
+
+    /** The plan someone let support see, read only (D618). */
+    planViewHeading: 'Their plan',
+    planViewPurpose: 'What this person sees in PrePenny, read only. Nothing here can change it.',
+    planCopyHeading: 'Their plan copy',
+    planCopyPurpose: 'The plan copy they sent, read only, worked out as from today.',
+    backToAccount: 'Back to their account',
+    backToMessage: 'Back to the message',
+    accessUntil: (when: string) => `They let support see it until ${when}.`,
+    accessEnded:
+      "They've stopped support seeing their plan, or its 7 days are over, so it can't be shown.",
+    noPlan: 'They have no plan in their account.',
+    accountChecked: (amount: string, day: string) => `Bank: ${amount} on ${day}`,
+    lowest: (amount: string, day: string) => `Lowest point ahead: ${amount} on ${day}`,
+    comingUp: 'Coming up',
+    notTicked: (when: string) => `${when}, not ticked yet`,
+    nothingComing: 'Nothing planned.',
+    debtsHeading: 'Debts',
+    debtLine: (name: string, left: string) => `${name}: ${left} left now`,
+    paidOffOn: (day: string) => `Paid off on ${day}`,
+    stillOwed: (amount: string) => `${amount} still owed at the end of the next 24 months`,
+  },
+
+  /**
+   * "Let support see my plan", under More, Security (step 4j, question 13,
+   * D618): for 7 days, read only, ended at any time.
+   */
+  supportAccess: {
+    heading: 'Let support see my plan',
+    purpose:
+      "If you've written to PrePenny support, this lets them see your plan to help. They can look but never change anything, for 7 days at most.",
+    moreLine: 'For when PrePenny support is helping you',
+    back: 'Back to More',
+    shared: (partner: string) =>
+      `Support sees what you see: your own accounts and the shared ones, never ${partner}'s private ones. ${partner} is told in Activity.`,
+    off: "PrePenny support can't see your plan now. They never see amounts, payment names or notes without this.",
+    give: 'Let support see it for 7 days',
+    giving: 'Letting support see your plan.',
+    on: (when: string) => `PrePenny support can see your plan until ${when}.`,
+    lastLooked: (when: string) => `Support last looked at ${when}.`,
+    notLooked: "Support hasn't looked yet.",
+    end: 'Stop support seeing my plan',
+    ending: 'Stopping it.',
+    given: (when: string) => `Done. Support can see your plan until ${when}.`,
+    ended: "Done. Support can't see your plan any more.",
+    signedOut: 'Sign in first: support can only see a plan that is kept in your account.',
+    signIn: 'Sign up or sign in',
+    noPlan: "Your plan isn't kept in your account yet, so there's nothing for support to see.",
+    loading: 'Checking.',
+    offline: "You're offline. Connect to the internet to change this.",
+    server: "PrePenny couldn't reach its server, so nothing changed. Try again in a minute.",
+    tryAgain: 'Try again',
+  },
+
+  /**
+   * The page the stop link opens (step 4j, D621), at /stop-two-step-off/#token,
+   * from the email to the address an account signs in with when PrePenny
+   * support starts the 7-day wait to turn off two-step sign-in.
+   */
+  stopTwoStepOff: {
+    heading: 'Keep two-step sign-in on',
+    purpose:
+      "PrePenny support was asked to turn off two-step sign-in on your account. If it wasn't you, stop it here.",
+    stop: 'Stop it',
+    stopping: 'Stopping it.',
+    stoppedHeading: "It's stopped",
+    stopped: "Two-step sign-in stays on, and this link doesn't work any more.",
+    notYou:
+      "If you didn't ask PrePenny support for this, someone may know your email address. Write to hello@prepenny.co.uk.",
+    notStopped:
+      "This link has been used already, or the wait it was for has ended, so there's nothing to stop. If you think someone got into your account, write to hello@prepenny.co.uk.",
+    noLink:
+      'This page needs the whole link from the email. Open the link in the email from PrePenny again.',
+    goToPrePenny: 'Go to PrePenny',
+  },
+
+  /**
    * Adding PrePenny to the home screen (step 4d, D546 to D551): the
    * suggestion on Home on the second day, before setup on an iPhone, and the
    * steps under More, in each phone's own button names.
@@ -2896,6 +3273,18 @@ export const strings = {
     noBackup:
       'No backup email? Write to hello@prepenny.co.uk from any address, and say which address you signed up with.',
     backToSignIn: 'Back to signing in',
+    /** A link PrePenny support sent to the backup email (step 4j, D622). */
+    linkPurpose: 'PrePenny support sent you this link to get back into your account.',
+    linkWhat:
+      "If it's the link to ask, nothing changes for 24 hours, and we tell the address you sign in with now. If it's the link to finish, your backup email becomes the address you sign in with, and every phone and computer signed in to your account is signed out.",
+    useLink: 'Use the link from PrePenny support',
+    usingLink: 'Using the link.',
+    linkUsed:
+      'This link has been used already, or it has run out. Write to hello@prepenny.co.uk for a new one.',
+    linkThenWhat: (email: string) =>
+      `When the 24 hours are up, we'll email ${email} a new link to finish. From then on, you sign in with ${email}.`,
+    linkReady: (email: string) =>
+      `We email ${email} the link to finish within 15 minutes of the 24 hours being up. Open it to finish.`,
   },
 
   /**
@@ -3149,6 +3538,9 @@ export const strings = {
       left: 'left the plan',
       leftOwn: 'left the shared plan',
       leftOwnCopy: 'left the shared plan, and took a copy of the shared accounts',
+      /** Support access (step 4j, D618). */
+      supportAccess: (day: string) => `let PrePenny support see the plan until ${day}`,
+      supportAccessEnded: 'stopped PrePenny support seeing the plan',
       kinds: { account: 'account', debt: 'debt', goal: 'savings goal' } as Record<string, string>,
     },
 

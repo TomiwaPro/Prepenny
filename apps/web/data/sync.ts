@@ -40,6 +40,7 @@ import {
   stillSignedIn,
 } from '../lib/account.ts';
 import type { ClashFacts, QueuedChange } from '../lib/clash.ts';
+import { noteErrorCode } from '../lib/error-codes.ts';
 import { copyOf, holidayMoves, newerCopy } from '../lib/holidays.ts';
 import { newId } from '../lib/ids.ts';
 import { HOME_MONTHS_AHEAD, planLookAhead } from '../lib/plan-input.ts';
@@ -1045,6 +1046,8 @@ async function takeOff(
   });
   await rebuild(db, link);
   if (tell !== null) clashesChanged();
+  // The server refused a change: its code alone, for support's account page (step 4j, D619).
+  if (tell?.kind === 'refused' && tell.code !== undefined) noteErrorCode(tell.code);
 }
 
 // ---------------------------------------------------------------------------

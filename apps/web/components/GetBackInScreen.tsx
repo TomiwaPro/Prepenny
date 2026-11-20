@@ -17,12 +17,18 @@
 //    phone and computer signed in to it is signed out. Then signing in as
 //    usual, with a sign-in code sent to that address, and with the
 //    authenticator app's code when two-step sign-in is on.
+//
+// Since step 4j (D622), a link PrePenny support emailed to the backup
+// address, /get-back-in/#support=token, does what a code does, for someone
+// whose backup address is kept locked by someone else typing wrong codes:
+// it can't be locked or used up by wrong codes. The first link starts the
+// wait; once the 24 hours are up, a new link is emailed, and it finishes.
 
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { CODE_LASTS_MS, sendCode } from '../lib/account.ts';
 import { momentWords } from '../lib/device-words.ts';
-import { getInWithCode, sendGetInCode } from '../lib/security.ts';
+import { getInWithCode, getInWithLink, sendGetInCode } from '../lib/security.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
 import { useStarted } from '../lib/started.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -43,11 +49,34 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Coming back later, the person types their backup email again.
  */
 const WAITING_KEY = 'prepenny-get-back-in';
+/** Support's link, kept for this tab only until it's used, as the stop link is. */
+const LINK_KEY = 'prepenny-support-link';
+/** A whole link token: 32 bytes, as the database makes them. */
+const WHOLE = /^[A-Za-z0-9_-]{43}$/;
 
 interface Waiting {
   readonly email: string;
   /** When it can be finished, a UTC time from the server. */
   readonly readyAt: string;
+  /** Started with support's link: the link to finish is emailed (D622). */
+  readonly fromSupport?: boolean;
+}
+
+function keptLink(): string {
+  try {
+    return sessionStorage.getItem(LINK_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function keepLink(token: string | null) {
+  try {
+    if (token === null) sessionStorage.removeItem(LINK_KEY);
+    else sessionStorage.setItem(LINK_KEY, token);
+  } catch {
+    // A tab that keeps nothing needs the link opened again after a reload.
+  }
 }
 
 function rememberedWait(): Waiting | null {
@@ -56,7 +85,7 @@ function rememberedWait(): Waiting | null {
       sessionStorage.getItem(WAITING_KEY) ?? 'null',
     ) as Partial<Waiting> | null;
     return typeof kept?.email === 'string' && typeof kept.readyAt === 'string'
-      ? { email: kept.email, readyAt: kept.readyAt }
+      ? { email: kept.email, readyAt: kept.readyAt, fromSupport: kept.fromSupport === true }
       : null;
   } catch {
     return null;
@@ -85,7 +114,9 @@ function usePassed(time: string | null): boolean {
 export function GetBackInScreen() {
   const router = useRouter();
   const id = useId();
-  const [step, setStep] = useState<'email' | 'code' | 'waiting'>('email');
+  const [step, setStep] = useState<'email' | 'code' | 'waiting' | 'link'>('email');
+  const [fromSupport, setFromSupport] = useState(false);
+  const link = useRef('');
   // Its forms only once its code has started (lib/started.ts).
   const started = useStarted();
   const [email, setEmail] = useState('');
@@ -104,12 +135,40 @@ export function GetBackInScreen() {
   const ready = usePassed(readyAt);
 
   // A wait started in this tab shows again when the page is loaded again.
+  // A link from support comes first: it's taken out of the address bar at
+  // once, and kept for this tab until it's used (D622). The link to finish,
+  // opened while this page is open, as in the same tab, changes only what's
+  // after the "#", so the page listens for that too, however it opened.
   useEffect(() => {
-    const waiting = rememberedWait();
-    if (waiting === null) return;
-    setEmail(waiting.email);
-    setReadyAt(waiting.readyAt);
-    setStep('waiting');
+    const takeLink = (): boolean => {
+      const fromLink = /^#support=(.+)$/.exec(window.location.hash)?.[1] ?? '';
+      if (window.location.hash !== '') {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      if (!WHOLE.test(fromLink)) return false;
+      link.current = fromLink;
+      keepLink(fromLink);
+      setProblem(null);
+      setStep('link');
+      return true;
+    };
+    const another = () => void takeLink();
+    window.addEventListener('hashchange', another);
+    if (!takeLink()) {
+      link.current = keptLink();
+      if (WHOLE.test(link.current)) {
+        setStep('link');
+      } else {
+        const waiting = rememberedWait();
+        if (waiting !== null) {
+          setEmail(waiting.email);
+          setReadyAt(waiting.readyAt);
+          setFromSupport(waiting.fromSupport === true);
+          setStep('waiting');
+        }
+      }
+    }
+    return () => window.removeEventListener('hashchange', another);
   }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the step changes
@@ -206,7 +265,49 @@ export function GetBackInScreen() {
     router.replace(signIn.ok ? '/sign-in/?got-back-in' : '/sign-in/');
   }
 
+  async function followLink() {
+    if (busy !== null) return;
+    setProblem(null);
+    setBusy(t.usingLink);
+    const done = await getInWithLink(link.current);
+    if (!done.ok) {
+      setBusy(null);
+      setProblem(
+        done.problem === 'code-wrong'
+          ? t.linkUsed
+          : done.problem === 'in-use'
+            ? t.inUse
+            : securityWords(done.problem),
+      );
+      if (done.problem === 'code-wrong') keepLink(null);
+      return;
+    }
+    keepLink(null);
+    const answer = done.value;
+    if (answer.state === 'waiting') {
+      setBusy(null);
+      rememberWait({ email: answer.email, readyAt: answer.readyAt, fromSupport: true });
+      setEmail(answer.email);
+      setReadyAt(answer.readyAt);
+      setFromSupport(true);
+      setStep('waiting');
+      return;
+    }
+    if (answer.state === 'in-use') {
+      setBusy(null);
+      setProblem(t.inUse);
+      return;
+    }
+    // Finished: the backup is now the sign-in address. Sign in with it as usual.
+    rememberWait(null);
+    const signIn = await sendCode(answer.email);
+    setBusy(null);
+    router.replace(signIn.ok ? '/sign-in/?got-back-in' : '/sign-in/');
+  }
+
   const otherEmail = () => {
+    keepLink(null);
+    setFromSupport(false);
     rememberWait(null);
     setReadyAt(null);
     setStep('email');
@@ -221,7 +322,7 @@ export function GetBackInScreen() {
       </a>
       <main className={styles.main}>
         <header className={screenStyles.header}>
-          {step === 'email' ? (
+          {step === 'email' || step === 'link' ? (
             <a className={screenStyles.back} href="/sign-in/">
               {t.backToSignIn}
             </a>
@@ -238,7 +339,13 @@ export function GetBackInScreen() {
             {step === 'waiting' ? t.waitingHeading : t.heading}
           </h1>
           <p className={screenStyles.purpose}>
-            {step === 'code' ? t.sent(email) : step === 'waiting' ? t.waitingPurpose : t.purpose}
+            {step === 'code'
+              ? t.sent(email)
+              : step === 'waiting'
+                ? t.waitingPurpose
+                : step === 'link'
+                  ? t.linkPurpose
+                  : t.purpose}
           </p>
         </header>
         {off ? (
@@ -274,6 +381,18 @@ export function GetBackInScreen() {
               {strings.support.contact.cantSignIn}
             </a>
           </>
+        ) : step === 'link' ? (
+          <section className={styles.card} data-testid="get-back-in-link">
+            <p className={styles.line}>{t.linkWhat}</p>
+            <button
+              type="button"
+              className={formStyles.main}
+              aria-disabled={busy !== null}
+              onClick={() => void followLink()}
+            >
+              {t.useLink}
+            </button>
+          </section>
         ) : step === 'code' ? (
           <form className={styles.card} onSubmit={check} noValidate>
             <CodeBox
@@ -303,9 +422,15 @@ export function GetBackInScreen() {
             <p className={styles.strong}>
               {ready || readyAt === null ? t.finishNow : t.finishFrom(momentWords(readyAt))}
             </p>
-            <p className={styles.line}>{t.thenWhat(email)}</p>
+            <p className={styles.line}>
+              {!fromSupport
+                ? t.thenWhat(email)
+                : ready
+                  ? t.linkReady(email)
+                  : t.linkThenWhat(email)}
+            </p>
             <p className={styles.line}>{t.told}</p>
-            {ready ? (
+            {ready && !fromSupport ? (
               <button
                 type="button"
                 className={formStyles.main}
