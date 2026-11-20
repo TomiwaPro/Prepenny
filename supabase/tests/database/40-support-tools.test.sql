@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(177);
+select plan(181);
 
 -- As on a fresh database, whatever the end-to-end tests left on this one
 -- (PLAN.md item 41): all undone when the test ends.
@@ -408,6 +408,27 @@ select tests.as_person('tom');
 select is(public.my_support_access() ->> 'on', 'false', 'and Tom''s phone says so');
 select tests.as_test();
 delete from public.plan_members where plan_id = tests.id('plan') and person_id = tests.id('lee');
+-- Someone who can view only can let support see what they see too, and
+-- Activity tells the rest of the plan, as for anyone in it (D617, D639).
+update public.plan_members set role = 'viewer'
+  where plan_id = tests.id('plan') and person_id = tests.id('tom');
+select tests.as_person('tom');
+select is(public.give_support_access() ->> 'on', 'true',
+  'Tom, who can view only, lets support see what he sees');
+select tests.as_test();
+select is((select count(*)::int from public.edits e where e.plan_id = tests.id('plan')
+    and e.kind = 'support-access' and e.person_id = tests.id('tom') and e.private_to is null
+    and e.summary ? 'until'), 2,
+  'and Activity says so to everyone in the plan, as the second time he has');
+select pg_temp.as_support();
+select is_empty(format($$ select x from jsonb_array_elements(%L::jsonb) x
+     where x -> 'row' ->> 'id' = any (tests.private_ids('jess')) $$, public.support_plan(tests.id('tom')) -> 'rows'),
+  'and support sees none of Jess''s private records through it');
+select tests.as_person('tom');
+select is(public.end_support_access() ->> 'on', 'false', 'He stops it again');
+select tests.as_test();
+update public.plan_members set role = 'editor'
+  where plan_id = tests.id('plan') and person_id = tests.id('tom');
 select tests.as_person('pat');
 select is(pg_temp.refusal('select public.give_support_access()'), 'no-plan',
   'Someone with no plan in their account can''t give access to nothing');
