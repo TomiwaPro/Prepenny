@@ -79,6 +79,13 @@ jobs:
       - name: Tests
         run: pnpm test
 
+      - name: Tax year check
+        # Step 4j (brief 4.15, D45, D625): from 1 March, a yellow warning if
+        # the pay calculator has no tax file for the tax year starting on the
+        # coming 6 April. A warning only here, so nothing waits on GOV.UK; the
+        # daily Tax year workflow fails, so GitHub emails the owner.
+        run: node scripts/check-tax-year.ts
+
       - name: Wait for the local database
         timeout-minutes: 10
         run: |

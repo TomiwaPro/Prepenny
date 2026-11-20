@@ -1,0 +1,43 @@
+name: Tax year
+
+# The tax year check (brief 4.15, D45, step 4j, D625). Every morning, from 1
+# March, it fails if the pay calculator has no tax file for the tax year
+# starting on the coming 6 April, so GitHub emails the owner each day until
+# step 4r adds it. The rest of the year it passes and says so. The Check
+# workflow gives the same as a yellow warning on every pull request, and the
+# support screen says it too.
+
+on:
+  schedule:
+    # 6:47am UTC, every day.
+    - cron: "47 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Is next year's tax file there?
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v5
+
+      - name: Set up pnpm (the version in package.json)
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0, 13 Mar 2026: runs on Node 24
+
+      - name: Set up Node (the version in .node-version)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Tax year check
+        run: node scripts/check-tax-year.ts --fail

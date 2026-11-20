@@ -14,7 +14,9 @@ name: Database
 # SUPABASE_DB_PASSWORD. See "The database" in README.md. Until they're added,
 # it says plainly that nothing was changed. For signing in it also uses
 # RESEND_API_KEY, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET when they're there
-# (README.md, "Signing in"), and says what's still missing.
+# (README.md, "Signing in"), and since step 4j SUPPORT_EMAIL, the address the
+# owner signs in with, for the support screen (README.md part W), and says
+# what's still missing.
 
 on:
   workflow_run:
@@ -181,6 +183,35 @@ jobs:
             exit 1
           fi
           echo "The database knows where the reminders function is, and has started it once."
+
+      - name: Tell the database who PrePenny support is
+        # Step 4j (D617): the support screen opens only for the account that
+        # signs in with this address, with two-step sign-in on and passed.
+        # The address is the SUPPORT_EMAIL secret, never in a file, as the
+        # repository is public. It goes as a parameter, never in the query's
+        # text (D494), and the database keeps it only scrambled. Without the
+        # secret, nobody is support, and the run says so.
+        if: steps.supabase.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPPORT_EMAIL: ${{ secrets.SUPPORT_EMAIL }}
+        run: |
+          status=$(jq -n --arg email "$SUPPORT_EMAIL" '{query: "select app.set_support($1) as support", parameters: [$email]}' | curl --silent --show-error \
+            --output "$RUNNER_TEMP/support.json" --write-out '%{http_code}' --request POST \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Support::Supabase answered $status. Check SUPPORT_EMAIL is the email address you sign in to PrePenny with (README.md, part W)."
+            exit 1
+          fi
+          case "$(jq -r '.[0].support // empty' "$RUNNER_TEMP/support.json")" in
+            set) echo "The database knows who PrePenny support is." ;;
+            cleared) echo "::warning title=Support::SUPPORT_EMAIL isn't set, so nobody can open the support screen. Follow README.md, part W." ;;
+            *)
+              echo "::error title=Support::Supabase didn't say whether support was set. Run this workflow again."
+              exit 1 ;;
+          esac
 
       - name: Check the Data API shows PrePenny's public part only
         # The Data API (PostgREST) answers for the schemas listed in the
