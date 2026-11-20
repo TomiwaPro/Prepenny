@@ -10,11 +10,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAccount } from '../../lib/account.ts';
+import { HELP_ROUTES } from '../../lib/help-routes.ts';
 import { suggestOnWelcome, useHomeScreen } from '../../lib/install.ts';
 import { forgetPayDraft } from '../../lib/pay-draft.ts';
 import { strings } from '../../strings/en-GB.ts';
 import formStyles from '../Form.module.css';
 import { SignedInLine } from '../SignedInLine.tsx';
+import { SupportFooter } from '../SomethingWrong.tsx';
 import { InstallBeforeSetup } from './InstallBeforeSetup.tsx';
 import styles from './Setup.module.css';
 import { useSetup } from './SetupProvider.tsx';
@@ -120,6 +122,7 @@ export function Welcome({ inSetup }: { readonly inSetup: boolean }) {
       ) : null}
       {/* Who's signed in, with "Sign out", since the welcome can't reach More (D353). */}
       <SignedInLine />
+      <SupportFooter helpHref={HELP_ROUTES.site.index} screen="welcome" />
       <InstallBeforeSetup
         open={before}
         onClose={() => setBefore(false)}

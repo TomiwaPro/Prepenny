@@ -1,0 +1,117 @@
+/* Contact us, Something looks wrong and Suggest a feature (step 4i):
+   PrePenny's own boxes and buttons (DESIGN.md), a bigger box for words, and
+   the line at the end of every screen. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* A box for a few sentences: the text box's border and corners, taller. */
+.words {
+  min-height: 8.5rem;
+  padding: var(--space-3);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.45;
+}
+
+/* The consent message and what to do, in the sunk colour, before any file
+   can be chosen (D602). */
+.consent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 14px;
+  border-radius: var(--radius-inner);
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.consentWords {
+  font-size: var(--size-body);
+  font-weight: 600;
+}
+
+.consentHow {
+  font-size: var(--size-second);
+}
+
+.chosen {
+  font-size: var(--size-second);
+}
+
+.added {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+.sent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sentTitle {
+  font-size: var(--size-heading);
+  font-weight: 700;
+}
+
+.sentTitle:focus {
+  outline: none;
+}
+
+.line {
+  font-size: var(--size-body);
+}
+
+.busy:empty {
+  display: none;
+}
+
+.busy {
+  font-size: var(--size-second);
+  color: var(--ink-muted);
+}
+
+/* The end of every screen (D603): "Help" and "Something looks wrong", side
+   by side where they fit, one under the other where they don't, after
+   everything else, so nothing on the screen moves for them. */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-4);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--divider);
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  /* 44 by 44px to tap even for "Help", the words where they'd be without it (DESIGN.md). */
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  font-size: var(--size-body);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* The website's pages (/contact/): the same column as the help site. */
+.siteCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--card);
+}

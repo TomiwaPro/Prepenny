@@ -51,8 +51,11 @@ export function Sheet({
       aria-describedby={intro === null ? undefined : introId}
       onClose={(event) => {
         // Only its own: React passes a sheet's "close" up to a sheet it's
-        // inside, which would close that one too (step 4h, D596).
-        if (event.target === event.currentTarget) onClose();
+        // inside, which would close that one too (step 4h, D596). And not a
+        // close that arrives once it's open again: a dialog says it closed a
+        // moment after it does, and a sheet opened again in that moment would
+        // otherwise close at once (D616).
+        if (event.target === event.currentTarget && !event.currentTarget.open) onClose();
       }}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();

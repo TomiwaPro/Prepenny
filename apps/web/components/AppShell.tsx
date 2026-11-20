@@ -9,6 +9,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { HELP_ROUTES } from '../lib/help-routes.ts';
 import { refusalMessage } from '../lib/refusals.ts';
 import { useUpdateNoteShowing } from '../lib/update.ts';
 import { strings } from '../strings/en-GB.ts';
@@ -25,6 +26,7 @@ import { KeepInStep } from './KeepInStep.tsx';
 import { LeftNote } from './LeftNote.tsx';
 import { OfflineNote } from './Notes.tsx';
 import { PlanProvider, usePlanActions } from './PlanProvider.tsx';
+import { SupportFooter } from './SomethingWrong.tsx';
 import { UndoBar } from './UndoBar.tsx';
 import { UpdateNote } from './UpdateNote.tsx';
 
@@ -129,6 +131,8 @@ function Column({ children }: { readonly children: ReactNode }) {
     >
       <Notes />
       <main className={styles.main}>{children}</main>
+      {/* At the end of every screen, after everything else, in the same place on every screen (D603). */}
+      <SupportFooter helpHref={HELP_ROUTES.app.index} />
     </div>
   );
 }

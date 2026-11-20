@@ -240,6 +240,42 @@ Updating to a new version, after a later merge. This step changed how an open Pr
 
 If something looks different, note the step number and what you saw. Nothing new to clean up: the tour's card is gone only on device A, and signing out, or deleting the test account in the last section, clears it.
 
+## Step 4i: Contact us, Something looks wrong and Suggest a feature (15 minutes)
+
+Writing to support signed in and signed out, a screenshot with the consent message first, and reading it all in Supabase. On device A, signed in as `yourname+jess4@gmail.com`, as at the end of step 4h; device B is a private window, signed out. The emails go to your own Gmail inbox, as the test addresses are "+" addresses.
+
+At the end of every screen:
+
+1. On device A, open **Home** and scroll to the very end: under everything, after **+ Add an account**, a line with **Help** and **Something looks wrong**. The lowest point hasn't moved: on a small phone, **Lowest point ahead** is still on screen without scrolling. Tap **Coming up**, **Debts** and **More**: the same line is at the end of each, in the same order.
+
+Something looks wrong, with a screenshot:
+
+2. Take a screenshot of **Home** with your phone's buttons. Then tap **Something looks wrong**. A sheet says "Tell PrePenny support what looks wrong on this screen, and we'll look into it." Under **What looks wrong?**, type `Test 4i: the lowest point`.
+3. Under **Add a picture or your plan?**, **No, just my words** is chosen. There's no button for a picture yet. Choose **A screenshot**: a soft box says "This picture may show your balances and payments. Only PrePenny support sees it, and it's deleted after 30 days.", then how, then **Choose a picture**.
+4. Tap **Close**, then **Something looks wrong** again: what you typed and **A screenshot** are still there.
+5. Tap **Choose a picture** and choose the screenshot from your photos. It says "Picture chosen: ... by ..., ... KB. Its hidden details have been taken out."
+6. Under it: "PrePenny adds its version (...), your phone type (...) and which screen you're on, and nothing about your money." The phone type is short, such as "Android, Chrome 131". There's no box for an email address, as you're signed in.
+7. Tap **Send**. It says **Sent**, "Thanks. We aim to answer within 1 working day, so by the end of [the next working day].", and "We've emailed yourname+jess4@gmail.com to say so, and we'll reply there."
+8. In your Gmail, an email "PrePenny has your message" to `yourname+jess4@gmail.com`: it says when to expect an answer, and "For your privacy, this email doesn't repeat what you wrote." Nothing you typed is in it. At hello@prepenny.co.uk, "A message is waiting in PrePenny's support inbox": how many, and nothing you typed, and not who sent it. (If one came in the last 4 hours, the next comes once the 4 hours are up.)
+
+Suggest a feature, and the "Not ticked yet" sheet:
+
+9. Tap **More**. Under **Help**, there are **Contact us** and **Suggest a feature**. Tap **Suggest a feature**, type `Test 4i: an idea` and tap **Send**: "Thanks. Your idea has been sent to PrePenny." No email comes for an idea.
+10. If **Coming up** has a **Not ticked yet** section, tap **Why** beside it: one line now says "If a payment from that day or before had already gone, your bank's figure already includes it. Until you tick it, PrePenny counts it twice." Close it.
+
+Contact us on the website, signed out:
+
+11. On device B, open a new private window and go to https://prepenny.co.uk/sign-in/. Under the sign-in buttons, "Can't sign in? Contact us": tap it. **Contact us** opens, with **Open PrePenny** at the top and no bottom bar.
+12. Type `Test 4i: I can't sign in` and your address `yourname+tom4@gmail.com`, then tap **Send**. It says "We've sent a 6-digit code to yourname+tom4@gmail.com. Type it here to send your message. It lasts 10 minutes."
+13. Type `000000` and tap **Send my message**: "That code doesn't match. Check the 6 numbers in the email from PrePenny." Type the code from the email "Your PrePenny code to send your message" and tap **Send my message**: **Sent**, with the working day and "We've emailed yourname+tom4@gmail.com to say so, and we'll reply there." The automatic reply arrives there too, with none of your words.
+
+Reading them in Supabase:
+
+14. On a computer, follow README.md part V, "Reading messages": the query lists your three test messages, newest first: `contact` from `yourname+tom4@gmail.com`, `idea` and `problem` from `yourname+jess4@gmail.com`, the problem with **on_screen** `home` and **attached** `picture`.
+15. Look at the picture with step 3 there: it's your screenshot. (That its hidden details, such as a location, were taken out is checked by the tests, byte by byte.)
+
+If something looks different, note the step number and what you saw. The last section deletes both test accounts, and deleting them deletes their messages too, those sent signed out from their addresses included.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.

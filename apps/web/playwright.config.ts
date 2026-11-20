@@ -19,7 +19,7 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
  * signed in (step 4h).
  */
 const SIGN_IN_TESTS =
-  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data|security|brief-8-7|journeys-signed-in|shared-budgets|shared-bank-holidays|reminders|shared-notifications|updating-signed-in)\.spec\.ts$/;
+  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data|security|brief-8-7|journeys-signed-in|shared-budgets|shared-bank-holidays|reminders|shared-notifications|updating-signed-in|support)\.spec\.ts$/;
 const port = 4173;
 /** The second copy, for the move from the old address (D428). */
 const OLD_ADDRESS_PORT = 4174;

@@ -3,7 +3,7 @@
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
 D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. D446 to D452 are the owner's answers to its questions and instructions about the public repository, and D453 was decided while building them, the same day. D454 to D486 come from steps 3g and 3h, on 12 Nov 2026; each section says which are the owner's. D487 to D503 come from step 3i, Phase 3 checks, on 12 and 13 Nov 2026: D488 to D494 from its outside review. D508 and D509 are the owner's answers to step 3i's two questions, on 13 Nov 2026. D510 comes from the checks of the Phase 4 plan's pull request, on 13 and 14 Nov 2026. D511 to D513 are the owner's approval of Phase 4's steps and answers to its first two questions, on 14 Nov 2026. D514 to D524 come from step 4a, on 14 Nov 2026: D514 and D523 are the owner's. D525 and D526 are the owner's answer to question 24 and new rule for what to check by hand, on 14 Nov 2026, with the instructions for step 4b, and D527 to D531 were decided while building step 4b, the same day, and D532 comes from its outside review. D533 and D535 come from GitHub's runs of step 4b, and D534 is the owner's answer to question 25, on 15 Nov 2026. D536 to D544 come from step 4c, on 15 Nov 2026: D539 is the owner's. D545 and D546 are the owner's answers to questions 26 and 5, given with the instructions for step 4d on 16 Nov 2026, D547 to D554 come from building step 4d, and D555 to D557 are the owner's answers to step 4d's questions, on 17 Nov 2026.
-D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. D560 to D565 are the owner's answers to questions 6, 7, 29 and 30 and instructions for step 4e, reminders, on 17 Nov 2026, and D566 to D573 were decided while building it, and D574 comes from its outside review, the same day. D575 is the owner's answer to question 8 with step 4f's instructions, on 18 Nov 2026, D576 to D582 were decided while building step 4f, and D583 comes from its outside review, the same day. D584 is the owner's answer to question 9 with step 4g's instructions, on 18 Nov 2026, and D585 to D591 were decided while building step 4g, the help centre, the same day. D592 and D593 are the owner's change to D585 and answer to question 31, on 19 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. D560 to D565 are the owner's answers to questions 6, 7, 29 and 30 and instructions for step 4e, reminders, on 17 Nov 2026, and D566 to D573 were decided while building it, and D574 comes from its outside review, the same day. D575 is the owner's answer to question 8 with step 4f's instructions, on 18 Nov 2026, D576 to D582 were decided while building step 4f, and D583 comes from its outside review, the same day. D584 is the owner's answer to question 9 with step 4g's instructions, on 18 Nov 2026, and D585 to D591 were decided while building step 4g, the help centre, the same day. D592 and D593 are the owner's change to D585 and answer to question 31, on 19 Nov 2026. D594 to D600 come from step 4h, on 19 Nov 2026. D601 to D604, D611 and D612 are the owner's answers to questions 10, 11, 12 and 32 and instructions for step 4i, on 19 Nov 2026, and D605 to D610, D613 and D614 were decided while building it, and D615 comes from its outside review, and D616 from GitHub's end-to-end run on its pull request, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -7422,3 +7422,229 @@ Decided 19 Nov 2026 in step 4h, from GitHub's run on its pull request.
 - GitHub's standard machines cost nothing for a public repository (D452), so the extra time costs nothing.
 
 Why: a check cut off by its own time limit says nothing about PrePenny, and would hold up merging and going live.
+
+## The owner's answers and instructions for step 4i
+
+D601 to D604, D611 and D612 are the owner's answers to `PLAN.md` questions 10, 11, 12 and 32, and instructions, given on 19 Nov 2026 with the instructions for step 4i: Contact us, Something looks wrong and Suggest a feature (brief 4.16, D55).
+
+### D601. Messages are kept in PrePenny's database, and hello@prepenny.co.uk is told one is waiting
+
+Agreed 19 Nov 2026, the owner's answer to `PLAN.md` question 10, as recommended.
+
+The owner's words: "messages are kept in PrePenny's database. hello@prepenny.co.uk gets a short email saying a message is waiting, with none of its words. I'll answer on the support screen in step 4j, and replies go from hello@prepenny.co.uk through Resend, so my own address never shows. Until 4j is merged, tell me exactly how to read messages in Supabase's dashboard."
+
+- **Kept** in `app.support_messages`, with a picture or plan copy in `app.support_files` (D607): what kind it is (Contact us, Something looks wrong or Suggest a feature), the words, who sent it (the person, signed in, or the address they proved, signed out, D605), the version and phone type (D610), the screen's name for Something looks wrong, and when. Nobody signed in or out can read either table; the database's own steps and its administrator (the owner, in Supabase's dashboard) can.
+- **hello@prepenny.co.uk is told**: "A message is waiting in PrePenny's support inbox", with how many are waiting and nothing else: no words, no address, not even which kind. At most once every 4 hours (D606): straight after a message when none has been sent in the last 4 hours, and otherwise by the job `prepenny-support-told` every 15 minutes once the 4 hours are up.
+- **Until step 4j's support screen**, the owner reads messages in Supabase's SQL Editor, with the query in README.md part V, which also says how to look at a picture or plan copy.
+- **Contact us** is under **More**, **Help**, and on the website at `/contact/` for anyone, signed in or not, such as someone who can't sign in. The sign-in page and Get back in link to it with "Can't sign in? Contact us", and so does the end of every help page on the website. Emails sent straight to hello@prepenny.co.uk reach the owner as before, and the page says so.
+
+Why: the owner's answer. The person's words stay in PrePenny's database, in London, rather than passing through Resend, which keeps emails for 30 days in the US.
+
+### D602. Screenshots are chosen from the photos, after the consent message; a plan copy is the backup file
+
+Agreed 19 Nov 2026, the owner's answer to `PLAN.md` question 11, as recommended.
+
+- **A screenshot** is one the person takes with their phone's own buttons, then chooses from their photos, as a web app can't take a picture of the screen without asking to share the whole screen.
+- **The consent message comes first.** In Something looks wrong, "Add a picture or your plan?" has **No, just my words** (chosen at the start), **A screenshot** and **A copy of my plan**. Only once **A screenshot** is chosen does the message show, in the owner's words, "This picture may show your balances and payments. Only PrePenny support sees it, and it's deleted after 30 days.", and only under it is the button that opens the photos, **Choose a picture**. There's no other way to choose a file.
+- **A copy of the plan** is the backup file from **Download my data** (step 3h), chosen the same way, under its own message: "This file has your whole plan: every account, balance, payment and note. Only PrePenny support sees it, and it's deleted after 30 days."
+- The database keeps when the person agreed (`consent_at`) with the message, and refuses a file sent without it.
+
+Why: the owner's answer.
+
+### D603. "Something looks wrong" at the end of every screen, beside Help
+
+Agreed 19 Nov 2026, the owner's answer to `PLAN.md` question 12, as recommended.
+
+- At the end of every screen, after everything else, a line with **Help** and **Something looks wrong**, in that order, in the same place on every screen (WCAG 3.2.6, consistent help): every screen of the app (Home, Coming up, Debts, More and every screen under them), setup's welcome and its six screens, where **Help** opens the website's help centre, as setup can't reach the app's.
+- It never pushes Home's lowest point down (D442): it's below everything, so on a 320 by 568 phone Home still shows the account and the lowest point first. The test hides it and checks the lowest point hasn't moved.
+- **Something looks wrong** opens a sheet: "Tell PrePenny support what looks wrong on this screen, and we'll look into it.", with **What looks wrong?**, the choice of a picture or plan copy (D602) and **Send**. The screen it was opened on goes with it, by its name from the address only ("coming-up", "debt"), never anything after a "#", where a debt's id is (D337).
+- Closing the sheet, as to take a screenshot, keeps what was typed until PrePenny is closed, in memory only; once it's sent, it starts afresh.
+
+Why: the owner's answer, and WCAG 2.2's help in the same place on every screen.
+
+### D604. Messages are deleted 12 months after the last reply
+
+The owner's instruction, 19 Nov 2026: "Messages are deleted 12 months after the last reply; record that as a decision I can change."
+
+- A message, with anything still attached, is deleted 12 months after support's last reply to it (`last_reply_at`, from step 4j), or 12 months after it was sent if it never had one.
+- The job `prepenny-support-tidy` runs every hour, so each goes within an hour of its 12 months.
+- **To change it,** the 12 months is one setting, `app.support_messages_kept()` in `supabase/migrations/20261123100000_support_messages.sql`: a new migration replacing that one line changes it for every message, with its test (`39-support-messages.test.sql`).
+- Deleting an account deletes the person's messages straight away (D613).
+
+Why: the owner's instruction.
+
+## Made during step 4i
+
+D605 to D610, D613 and D614 were decided on 19 Nov 2026 while building step 4i.
+
+### D605. Signed out, the sender proves the address is theirs with a code
+
+Decided 19 Nov 2026 in step 4i. The owner asked: "A signed-out sender proves the address is theirs, or the automatic reply is capped per address and per connection and holds nothing they typed. Choose one, and say why in a decision."
+
+**Chosen: the sender proves the address is theirs.** Signed out, **Send** first emails a 6-digit code to the address typed ("Your PrePenny code to send your message"), and the message goes only with that code. Nothing typed is sent before then. The code works as the other codes do (D384, D392): 6 digits from the database's secure random numbers, kept only scrambled, lasting 10 minutes, 5 tries, once a minute, 3 a day for an address, and 10 wrong tries in a day lock the address for 24 hours.
+
+Why this one rather than capping the automatic reply:
+
+- **Support's own answers.** In step 4j the owner answers messages from hello@prepenny.co.uk. With an address nobody proved, that answer, in the owner's own words and perhaps about money, could go to whoever's address someone typed. With the code, every answer goes to the person who wrote.
+- **Nothing anonymous.** A message can't be sent by someone who can't read the inbox they name, so floods need real inboxes, each capped at 3 codes and 5 messages a day.
+- **The same either way for the inbox typed.** Both ways, an email can reach an address someone typed: a code, or a capped reply. The code email holds only the code and fixed words, as a sign-in code does, at most 3 a day.
+- **The cost:** someone signed out types a code, as they do to sign in. Someone who can't get into their sign-in email uses another address they can read, and says which address they signed up with, as the box's hint asks.
+
+Signed in, no address is typed: the automatic reply goes only to the address the person signs in with, and the address and code the phone could send are ignored.
+
+Test: `39-support-messages.test.sql` section 3 and `e2e/support.spec.ts` tests 1 and 4.
+
+### D606. The caps, and support's share of Resend's free plan
+
+Decided 19 Nov 2026 in step 4i, from the owner's instruction: "Caps per address and per connection stop floods. Contact emails must never use up the daily allowance that sign-in codes need: check Resend's current free-plan limits on Resend's own pricing page, and stay well below them."
+
+**Resend's free plan, read on its own pricing page** (https://resend.com/pricing, 19 Nov 2026): "$0 / mo", "3,000 emails / mo", "Daily limit 100", "Data retention 30 days". The same page says "Each received email counts towards your transactional emails quota." (only if hello@prepenny.co.uk receives through Resend, which PrePenny doesn't decide) and that the API's rate limit "is the same on every plan". The building computer's network was opened to resend.com for this, with the owner's approval. This confirms D479's 30 days (launch checklist item 9).
+
+**Support's emails, at most 21 a day of the 100**, each kind with its own allowance, so a flood of one never stops another (D615):
+
+- **Codes:** 10 in 24 hours; then "PrePenny support has had a lot of messages today. Try again tomorrow, or email hello@prepenny.co.uk."
+- **Automatic replies:** 5 in 24 hours, one a day at most for each sender; after that a message is still kept, and the screen still says when to expect an answer.
+- **Notices to hello@prepenny.co.uk:** once every 4 hours at most, so 6 a day.
+- That leaves at least 79 a day for sign-in codes and the account's own emails, whatever happens. Suggest a feature sends no email to the person.
+
+**Caps per address, sender and connection**, each over the last 24 hours:
+
+- Codes: 3 for one address (D392's number), once a minute; 6 from one connection, whatever the addresses.
+- Messages, every kind together: 5 from one sender (a person signed in, or an address proved), 10 from one connection, 100 from everyone.
+- Pictures and plan copies: 2 from one sender, 4 from one connection, 25 MB from everyone, and 150 MB kept at most (Supabase's free plan has 500 MB of database).
+- Each refusal says what to do, with hello@prepenny.co.uk, and keeps what was typed on screen.
+
+**A connection** is the sender's address on the internet: Cloudflare's own CF-Connecting-IP when Supabase passes it on, which Cloudflare writes itself, or else as Supabase's own documentation says to read it in a database step ("To access the client's IP address, look up the X-Forwarded-For header", "takes the client IP before the first comma", Securing your API, read 19 Nov 2026), kept only scrambled with the database's own secret and for 2 days. Someone can disguise their connection, so the caps for everyone together are what make sure the emails and the storage can't be used up. Every step works one request at a time, so requests sent at the same moment can't get past a cap.
+
+Each number is one setting in the migration, the owner's to change. Moving to Resend's paid plan, which has no daily limit, would let them rise.
+
+**On the local test database only** (`supabase/seed.sql`, never the real project, D297), the caps for one connection and for everyone together are 100 times higher (`app.support_test`), as the end-to-end tests all write from one computer, through one connection, many times a day. `39-support-messages.test.sql` puts it back to 1 and checks the real numbers. Like the reminders' test clock (step 4e), only the database's administrator can change it.
+
+Test: `39-support-messages.test.sql` section 4, each cap broken on purpose to see it fail (D609); `e2e/support.spec.ts` test 3.
+
+### D607. Pictures and plan copies: checked by their contents, details taken out, kept privately, gone after 30 days
+
+Decided 19 Nov 2026 in step 4i, from the owner's instruction and D55.
+
+- **JPEG or PNG only, by their contents.** The phone reads the first bytes, never the name or the type the phone gives it, so a GIF named "screenshot.png" is refused: "Choose a JPEG or PNG picture, such as a screenshot." The database reads the contents again (`app.picture_facts`) and refuses anything else.
+- **Hidden details are taken out on the phone** (`apps/web/lib/picture.ts`): the picture is drawn afresh, turned the way the phone shows it, made smaller if its longest side is over 2,400 pixels, and saved again; then every part that isn't the picture itself is removed: from a JPEG every application segment (where Exif keeps the place a photo was taken, and XMP) and comments, keeping only its tables, its size and its picture data; from a PNG everything but its header, colours, transparency and picture data (no text, eXIf, time or colour profile). The sheet says so: "Picture chosen: 720 by 1560, 213 KB. Its hidden details have been taken out." The database checks every part before the picture data and refuses one with any of them, so a picture can't reach it with a place in it.
+- **Size:** a picture is 2 MB at most (a PNG too big is sent as a JPEG, then smaller, before giving up: "That picture is too big to send, even made smaller. Try a screenshot instead."); a plan copy 5 MB at most.
+- **A plan copy** is checked by its contents too: JSON saying it's PrePenny's backup, version 1, with a plan in it, on the phone and in the database. It's sent as it was chosen.
+- **Kept privately, in PrePenny's own database, not Supabase Storage.** `app.support_files` is closed to everyone signed in or out, as every `app` table is; only the database's own steps and its administrator read it, and from step 4j the support screen. Storage was considered: it would show a picture in Supabase's dashboard, but it checks a file's type only by what the phone says, not its contents, so a separate server function would be needed to check it; and a file in Storage can only be deleted through Storage's own service, not by the database's scheduled job, so the 30 days couldn't be proved by a database test. In the database, the checks, the caps, the deletion and the tests are all in one place.
+- **Deleted 30 days after it's sent** (D55), by `prepenny-support-tidy` every hour, so within an hour of its 30 days. The message stays, noting when its file was deleted (`file_gone_at`).
+
+Test: `39-support-messages.test.sql` sections 5 and 6; `apps/web/test/unit/support.test.ts`; `e2e/something-wrong.spec.ts` tests 2 to 4 (a real screenshot with a place written in, as Exif in a JPEG and as text and eXIf in a PNG, and what the phone sends, byte by byte); `e2e/support.spec.ts` test 1 (what the database keeps has no place in it).
+
+### D608. When to expect an answer
+
+Decided 19 Nov 2026 in step 4i. Builds brief 4.16's "an automatic reply saying when to expect an answer, aiming for 1 working day".
+
+- **The day:** the first working day after the day it was sent, in UK time, skipping Saturdays, Sundays and England and Wales bank holidays from the newest list the database has fetched from PrePenny's own site (D569). Sent on a Thursday: by Friday; sent on a Friday, Saturday or Sunday: by Monday; sent on Christmas Eve 2026: by Tue 29 Dec. England and Wales is where the owner answers from; there's no single UK list.
+- **Its words** in the automatic reply: "We aim to answer within 1 working day, so by the end of Fri 20 Nov." "We aim to" because it's an aim, not a promise nobody can check (VOICE.md). The same line is on the screen once it's sent.
+- **Contact us and Something looks wrong** get the reply and the day. **Suggest a feature** gets neither: ideas are collected for the owner to review (brief 4.16), and the screen says "Thanks. Your idea has been sent to PrePenny."
+
+Test: `39-support-messages.test.sql` (the days, in UK time); `e2e/support.spec.ts` (the day on screen and in the email are the database's).
+
+### D609. How step 4i is tested
+
+Decided 19 Nov 2026 in step 4i.
+
+- **The database** (`supabase/tests/database/39-support-messages.test.sql`, 132 checks with the outside review's, D615): nobody reads a message, a picture or a code, signed in or out, and nobody but the database runs its own steps; signed in, the reply goes only to the person's own address; signed out, nothing without the code, a code works once, runs out after 10 minutes, and 10 wrong tries lock the address; every email's words, word for word, with none of what was typed; hello@prepenny.co.uk told once in 4 hours, then about the ones that came meanwhile; every cap; pictures by their contents, with hidden details refused, too big refused and the consent needed; plan copies; the 30 days and the 12 months; the working day; and deleting an account deletes what the person sent, signed in and signed out. `00-every-table.test.sql` lists the two new steps.
+- **Each rule broken on purpose**, one at a time, to see the checks fail, then put back: the reply going to an address typed while signed in (6 checks failed); no code check (11, and the test stopped); no 3 codes a day (2); no connection cap on codes (2) or messages (1); no sender cap (1); replies able to take what codes need (2); JPEG details let through (3, and stopped); PNG details let through (2); no consent needed (1, and stopped); files kept 31 days (3); messages kept 13 months (2); hello@prepenny.co.uk told every hour (2); the words in the reply (3) or the notice (2); deleting an account keeping messages sent signed out (1); someone signed in able to read messages (1); pictures up to 3 MB (1); no daily cap on files from everyone (2). And the outside review's: replies and codes counted together (4); Cloudflare's header ignored (1); no way in for a sign-in that has ended (the test stopped); nothing checked after a JPEG's picture data starts (2); PNG chunk sizes not checked (1); JPEG tables not walked (1); no limit on fill bytes (1, the speed check); Exif's opening words not looked for (1).
+- **Unit tests** (`apps/web/test/unit/support.test.ts`, 14): the phone's type from real browsers' descriptions, always in the database's pattern; screen names never holding what's after a "#"; JPEG and PNG known by their contents; Exif, XMP, comments, text, eXIf, time and colour profiles taken out, and pictures cut short refused.
+- **End to end, with no server** (`e2e/something-wrong.spec.ts`, 7 tests at 320px and 360px, in light and dark, with axe): the line at the end of every screen, last and in the same order, never moving Home's lowest point; the consent message before any file can be chosen; a real screenshot with a place written in, and what the phone would send, byte by byte and field by field; a GIF named as a PNG refused; plan copies; the sheet keeping what was typed when closed, and nothing kept on the phone; Contact us and Suggest a feature under More; Contact us on the website; every problem's words. The two steps the phone calls are answered by the test, so it reads exactly what would be sent.
+- **End to end, with the local Supabase** (`e2e/support.spec.ts`, 4 tests at 320px and 360px, in light and dark, with axe): each kind signed out, with the code from the test inbox, the automatic reply and the note to hello@prepenny.co.uk read from it, and the picture the database kept; each kind signed in; the caps; a sign-in the server refuses, writing with the address and a code instead; and Tom trying every way to read Jess's message, and to send his words to her address.
+- **Every screen's checks** (`e2e/checks.spec.ts`) now include Contact us and Suggest a feature, Contact us on the website, and the Something looks wrong sheet from Home and Coming up: axe, the plain sentence, the keyboard all the way round, 200% text with every tap target 44px, and nothing sent.
+
+Why: the owner's list of what the tests must show.
+
+### D610. What the phone adds by itself
+
+Decided 19 Nov 2026 in step 4i. Builds brief 4.16's "collects the app version and phone type automatically, never money data", and the owner's "never the full browser string".
+
+- **The version** is the build PrePenny came from, as `/version.json` names it, such as "b498ae820a00".
+- **The phone type** is the kind of device and the browser with its main version number, such as "Android, Chrome 131", "iPhone, Safari 18" or "Windows, Edge 131", worked out on the phone from the browser's description (`phoneType` in `apps/web/lib/support.ts`). An iPad that says it's a Mac is told apart by its touch screen. The database refuses anything not in that pattern, so the browser's whole description can't be kept even by a phone that tried.
+- **Nothing about money** is added: the phone sends only the words typed, the screen's name for Something looks wrong, the picture or plan copy the person chose after the consent message, the version and the phone type. The test checks every field sent.
+- **Said in words** under every form: "PrePenny adds its version (b498ae820a00) and your phone type (Android, Chrome 131), and nothing about your money.", with "and which screen you're on" for Something looks wrong.
+- **Nothing typed is logged or kept.** No step writes the words to a log or puts them in a refusal, which is always a short code ("too-many", "bad-message"); the words, address and code are never written to the phone's console; nothing typed is kept on the phone (the browser is asked not to remember the box either); and only the database keeps the message.
+
+Test: `e2e/something-wrong.spec.ts` tests 3 and 5, `apps/web/test/unit/support.test.ts`, `39-support-messages.test.sql`.
+
+## The owner's answers in step 4i
+
+### D611. No "?" beside Left to spend or "About £… now"
+
+Agreed 19 Nov 2026, the owner's answer to `PLAN.md` question 32, as recommended: "leave "Left to spend" and "About £… now" without a "? Why"." The help article "Every payment shows what you'll have left after it" covers both, and Home's lowest point stays where it is on a 320 by 568 phone (D442). Nothing changes.
+
+Why: the owner's answer.
+
+### D612. The "Not ticked yet" sheet's new words
+
+The owner's fix from step 4h's review, 19 Nov 2026. In the "Not ticked yet" sheet (D596), "A payment dated then or before that had already gone is in your bank's figure, so until it's ticked, PrePenny counts it twice." becomes "If a payment from that day or before had already gone, your bank's figure already includes it. Until you tick it, PrePenny counts it twice." After "You last checked your balance on Sun 25 Oct." as before.
+
+Test: `apps/web/test/unit/why.test.ts` and `e2e/why.spec.ts` test 2 read the words from the strings file.
+
+Why: the owner's words, which are plainer.
+
+## Made during step 4i, continued
+
+### D613. Smaller choices in step 4i
+
+Decided 19 Nov 2026 in step 4i.
+
+- **Any version of PrePenny can write to support.** A signed-in phone on an older version gets no plan data (D386), but its message is taken, from a sign-in that still holds, so a phone that can't update can still ask for help.
+- **Deleting an account deletes what the person sent** (D478): signed in, by their id; signed out, by the address they sign in with and their backup email; with any codes sent to them.
+- **The form shows only once PrePenny's code has started** (D487). Found by the every-screen checks: the line saying what the phone adds was drawn ahead of time without the phone's type, and the page disagreed with itself when it started (a React error the console check caught).
+- **The sheet's form is made the first time it opens,** then kept while PrePenny is open. Found by the full run of the end-to-end tests: made on every screen, closed, it put a form on every page, which the help centre's test of "nothing typed is sent" rightly caught.
+- **Both links at the end of a screen are 44 by 44px to tap** (DESIGN.md), "Help" too, whose word alone is narrower. Found by the full run's tap target checks.
+- **The picture and plan copy readers are "stable", not "immutable"**, as they call steps that are only stable. Found by GitHub's database lint on the draft pull request, as D544 was in step 4c. And the step's database test starts from empty support tables inside its own transaction, so what the end-to-end tests leave in a local database can't change it (PLAN.md item 41).
+- **"Write another message"** after Contact us and Suggest a feature starts a fresh form; the sheet starts afresh the next time it opens.
+- **More's Help card** has **Contact us** ("Write to PrePenny support") and **Suggest a feature** ("Ideas for what PrePenny could do"), after **Take the tour**.
+- **Contact us's box** says "If you can't sign in, say which email address you signed up with. Never send a card number or a password."
+
+Why: each follows from the owner's instructions and earlier decisions where they didn't say exactly.
+
+### D614. What the owner sets up for step 4i: nothing
+
+Checked 19 Nov 2026 against each service's own settings:
+
+- **Supabase:** the Database workflow makes the tables, the two steps and the two scheduled jobs from the migration, as for every step. No Storage bucket (D607), no new function, secret or setting. The emails go through the Resend key the database already has (README.md part F).
+- **Resend:** nothing. The emails go from hello@prepenny.co.uk, which is already set up, and stay within the free plan (D606).
+- **Cloudflare:** nothing. Three new pages (`/contact/`, `/app/contact/` and `/app/suggest/`) each get their own security policy: 63 of the 100 rules, which the build checks.
+- **GitHub:** no new secret or variable.
+
+Supabase's documentation, read on 19 Nov 2026, names no limit on the size of a request to the Data API, and the local Supabase takes a 2 MB picture; the live app is tried by hand in `docs/TRY-PHASE-4.md`, step 4i.
+
+Why: the owner asked to be told plainly what to set up, checked against each service.
+
+## From the outside review of step 4i
+
+### D615. What the outside review of step 4i changed
+
+Decided 19 Nov 2026 in step 4i, from an outside review of the whole change. Adds to D601 to D614.
+
+- **A file made to be slow to read held up everyone.** A 2 MB JPEG of nothing but filler took 1.7 seconds to read, while every other request to support waited. Now a picture or plan copy is read before waiting for any other request, and reading is bounded (7 filler bytes in a row, 64 parts before a JPEG's picture data, 4 or 8 tables in a part, 4,096 PNG chunks): the same file is refused in about 20 milliseconds, which a check now times.
+- **Someone whose sign-in isn't finished, or has ended, couldn't write at all.** The phone sent their kept sign-in, the database refused it, and the screen said to sign in again, which they couldn't. Now the two requests for someone signed out carry no sign-in at all (PrePenny's public key only, and no Supabase code is loaded for them), the database takes a message with an address and its code from anyone whose sign-in doesn't hold, and when a signed-in send is refused the phone says "Your sign-in has ended, or isn't finished. Type your email address, and we'll send a code to check it's yours." and shows the address box.
+- **A few code requests could stop everyone's automatic replies,** as codes and replies shared one count. Now codes (10) and replies (5) have their own (D606). And the connection is Cloudflare's own CF-Connecting-IP where Supabase passes it on, which a sender can't write, before the first address in X-Forwarded-For.
+- **Typed words could reach the database's log.** A message holding the "null" character, or half of a pair that makes one character, made the Data API refuse the whole request and write it into its log. The phone now takes those out (`cleanText` in `apps/web/lib/support.ts`) before sending, from the words and the address.
+- **The database's picture check could be fooled** by something that isn't PrePenny's own screen: application data after a JPEG's picture data starts, words after a first end, words padding a table, or a PNG chunk longer than its standard size. Now every table is as long as its contents, every PNG chunk exactly its standard size, nothing but picture data, restarts and tables after a JPEG's picture data starts, exactly one end at the very end, and the words Exif and XMP start with appear nowhere. PrePenny's own phones were never affected: they draw the picture afresh and take every part out first.
+- **Smaller:** the picture step could stay on "Getting the picture ready" for a photo that isn't on the phone yet, or show a picture chosen before the form was started afresh, and now can't; "PrePenny can't send another code today. Try again tomorrow, or email hello@prepenny.co.uk." in place of words about 3 codes, as the cap reached may be the connection's; and **Use another email address** puts the cursor in the address box.
+- **Accepted:** someone who can disguise their connection can use up the day's 10 codes or 100 messages for everyone; then the screen says to email hello@prepenny.co.uk, and sign-in codes keep their share whatever happens. The local tests' multiplier (D606) is set only by `seed.sql`, which never reaches the real project.
+
+Test: `39-support-messages.test.sql` (132 checks, 13 of them from this review, each new rule broken on purpose to see them fail, D609); `apps/web/test/unit/support.test.ts` ("What was typed never reaches a log"); `e2e/support.spec.ts` test 2 (a signed-in send refused, then written with the address and a code).
+
+Why: the outside review.
+
+## From GitHub's run of step 4i
+
+### D616. Two moments a quick keyboard could lose: the tour's focus, and a sheet opened again at once
+
+Decided 19 Nov 2026 in step 4i, from GitHub's end-to-end run on the ready pull request: at 320px, tour test 3 found focus back on a step's words after Tab had reached **Next**, and "?" test 1 found Home's "? Why" sheet not open after Enter. Both had passed on `main` and on this computer, slowed six times too; GitHub's browser is Playwright's own Chrome 156, this computer's Chrome 157, and its report couldn't be fetched from here. Reading the code found two real races, each of which can catch out someone quick with a keyboard, and each now has a test that makes its moment happen every time and fails without its fix (all 8 runs failed without the fixes, and pass with them):
+
+- **The tour pulled focus back.** Each step puts focus on its words once its part of Home is in view, after the scroll settles, up to 0.7 seconds later. Someone who pressed Tab meanwhile had focus pulled back to the words. Now the words take focus then only if it's still where it was when the step started, as `focusLater` does elsewhere (D533). Test: `e2e/tour.spec.ts` test 5b.
+- **A sheet opened again at once closed itself.** A dialog says it has closed a moment after it does. A sheet opened again in that moment, as with a quick Enter straight after closing it, heard that late "close" and closed again. Now a sheet, and the tour, ignore a close that arrives once they're open again. Test: `e2e/why.spec.ts` test 5.
+
+Every sheet uses the same code: the every-sheet checks and the sheet, edit, budget, goal and Something looks wrong tests pass, 246 of 246 at 320px and 360px in light and dark, and the tour and "?" files 48 of 48.
+
+Why: GitHub's run, and the rule that a failure is fixed at its cause, never retried.
+

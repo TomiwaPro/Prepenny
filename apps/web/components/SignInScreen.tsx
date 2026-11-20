@@ -669,6 +669,10 @@ export function SignInScreen() {
             <a className={styles.backupLink} href="/get-back-in/">
               {strings.getBackIn.link}
             </a>
+            {/* Step 4i (D601): for someone who can't sign in at all. */}
+            <a className={styles.backupLink} href="/contact/">
+              {strings.support.contact.cantSignIn}
+            </a>
           </>
         ) : (
           <form className={styles.card} onSubmit={check} noValidate>

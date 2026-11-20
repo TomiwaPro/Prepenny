@@ -575,3 +575,11 @@ delete from app.bank_holiday_fetches;
 update app.reminder_server
   set test_push_prefix = 'http://host.docker.internal:', test_clock = true
   where one;
+
+-- Contact us, Something looks wrong and Suggest a feature (step 4i), on this
+-- local Supabase only, never the real project: the end-to-end tests all
+-- write from one computer, through one connection, many times a day, so the
+-- caps for one connection and for everyone together are 100 times higher
+-- here (D606). 39-support-messages.test.sql puts them back and checks the
+-- real numbers.
+update app.support_test set scale = 100 where only_one;

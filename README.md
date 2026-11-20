@@ -849,6 +849,62 @@ What changed (D594 to D599): an open PrePenny now finds a new version within sec
 2. Open https://prepenny.co.uk/offline-version.json: it says the same `build` as https://prepenny.co.uk/version.json.
 3. What to check by hand on your phone, including updating to a new version after a later merge, is in `docs/TRY-PHASE-4.md`, section "Step 4h".
 
+### V. Step 4i: Contact us, Something looks wrong and Suggest a feature
+
+What changed (D601 to D614): **Contact us** is under **More**, **Help**, and on the website at https://prepenny.co.uk/contact/ for anyone, signed in or not. **Something looks wrong** is at the end of every screen, beside **Help**: someone says what looks wrong, and can add a screenshot from their photos or the backup file of their plan, only after the consent message. **Suggest a feature** is under **More**, **Help**. Every message is kept in PrePenny's own database. hello@prepenny.co.uk gets "A message is waiting in PrePenny's support inbox", with none of its words, at most once every 4 hours. The person gets an automatic reply saying when to expect an answer, with none of their words. Signed out, they first type a code sent to their address, so nobody can make PrePenny email someone else. Pictures and plan copies are deleted after 30 days, and messages 12 months after your last reply (D604).
+
+**What you need to set up: nothing.** Checked on 19 Nov 2026, against each service (D614):
+
+- **Supabase:** nothing by hand. The Database workflow makes the new tables, the two steps the app calls and two scheduled jobs (`prepenny-support-told` every 15 minutes, `prepenny-support-tidy` every hour) from the migration, as for every step. No Storage bucket: pictures are kept in the database itself (D607). No new function, secret or setting.
+- **Resend:** nothing. The emails go from hello@prepenny.co.uk with the key the database already has (part F). Resend's own pricing page, read on 19 Nov 2026, says the free plan is 3,000 emails a month and 100 a day, and keeps emails 30 days. Support's emails are capped at 21 a day, so at least 79 are always left for sign-in codes (D606).
+- **Cloudflare:** nothing. Three new pages, each with its own security policy: 63 of the 100 rules, which the build checks.
+- **GitHub, Apple, Google:** nothing.
+
+**Reading messages, until step 4j's support screen:**
+
+1. On supabase.com, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
+2. Paste this, and tap **Run**:
+
+   ```sql
+   select to_char(m.sent_at at time zone 'Europe/London', 'Dy DD Mon HH24:MI') as sent,
+     m.kind, m.words, m.screen as on_screen,
+     coalesce(m.email, u.email) as reply_to,
+     m.answer_by, m.phone_type, m.app_version,
+     m.file_kind as attached, m.file_gone_at as attachment_deleted, m.id
+   from app.support_messages m
+   left join auth.users u on u.id = m.person_id
+   order by m.sent_at desc
+   limit 50;
+   ```
+
+   Newest first. **kind** is `contact` (Contact us), `problem` (Something looks wrong) or `idea` (Suggest a feature). **reply_to** is the address to answer: the one they sign in with, or the one they proved with a code. **answer_by** is the working day the automatic reply aimed for. **attached** says `picture` or `plan` when they added one.
+3. To look at a picture: copy the message's **id** from the last column, then run this with it in place of `PASTE-THE-ID-HERE`:
+
+   ```sql
+   select 'data:' || f.content_type || ';base64,' || translate(encode(f.data, 'base64'), E'\n', '') as picture
+   from app.support_files f
+   where f.message_id = 'PASTE-THE-ID-HERE' and f.kind = 'picture';
+   ```
+
+   Copy the result, which starts `data:image/`, and paste it into a new browser tab's address bar: the picture opens, on your computer only. A very big picture may be too long to paste; step 4j's support screen shows it, well within its 30 days.
+4. To read a copy of a plan, the same with this, which shows the backup file's text:
+
+   ```sql
+   select convert_from(f.data, 'UTF8') as plan_copy
+   from app.support_files f
+   where f.message_id = 'PASTE-THE-ID-HERE' and f.kind = 'plan';
+   ```
+
+5. To answer, until step 4j: write from hello@prepenny.co.uk to the **reply_to** address. Someone in distress: step 4j adds the ready reply with Samaritans and free debt advice.
+
+Nothing here changes a message. The SQL Editor is only for you: nobody signed in to PrePenny can read any message, not even their own.
+
+**To check it worked, after merging:**
+
+1. **Actions**, then **Database**: a green tick, with **Change the real database** done.
+2. On supabase.com, **Integrations**, **Cron**: `prepenny-support-told` and `prepenny-support-tidy` are listed, and their runs succeed.
+3. What to check by hand, on your phone and in a private window, is in `docs/TRY-PHASE-4.md`, section "Step 4i".
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.
