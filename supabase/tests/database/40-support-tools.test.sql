@@ -345,8 +345,11 @@ select pg_temp.as_support();
 select is(pg_temp.refusal(format('select public.support_plan(%L)', tests.id('jess'))), 'no-access',
   'Support can''t see it from that moment');
 select tests.as_person('tom');
-select is((select e -> 'summary' ->> 'ended' from jsonb_array_elements(public.plan_activity(tests.id('plan')) -> 'edits') e
-    where e ->> 'kind' = 'support-access' order by e ->> 'saved_at' desc limit 1), 'true',
+-- (Both entries are saved at the same moment inside this test's transaction,
+-- so it's looked for by what it says, not by which is newer.)
+select ok(exists (select 1 from jsonb_array_elements(public.plan_activity(tests.id('plan')) -> 'edits') e
+    where e ->> 'kind' = 'support-access' and e ->> 'by' = tests.id('jess')::text
+      and e -> 'summary' ->> 'ended' = 'true'),
   'and Tom sees in Activity that it ended');
 
 -- After 7 days it ends by itself, to the second.
