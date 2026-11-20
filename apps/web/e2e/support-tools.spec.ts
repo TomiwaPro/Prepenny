@@ -254,10 +254,19 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }, info) => {
       test.setTimeout(120_000);
       const said = watchConsole(page);
-      // Signed out: nothing is asked of the database.
-      await page.goto('/app/support/');
-      await expect(page.getByTestId('support-needs')).toHaveText(new RegExp(t.signedOut));
-      await noAxeProblems(page);
+      // Signed out, on a phone with the example plan (a phone with nothing on
+      // it goes to setup from every screen of the app): nothing is asked of
+      // the database.
+      const { page: signedOut, context: signedOutPhone } = await secondPhone(
+        browser,
+        info,
+        colorScheme,
+      );
+      await openOnExample(signedOutPhone);
+      await signedOut.goto('/app/support/');
+      await expect(signedOut.getByTestId('support-needs')).toHaveText(new RegExp(t.signedOut));
+      await noAxeProblems(signedOut);
+      await signedOutPhone.close();
 
       // Someone else, signed in.
       await makeAPlan(page);
@@ -645,8 +654,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
         /^The 7-day wait has started\./,
       );
       after = Date.now();
+      // Seven days pass: for the wait, and for when Alex last used his app.
       sql(`update app.two_step_waits set started_at = started_at - interval '7 days'
         where person_id = ${quoted(alexId)} and stopped_at is null and done_at is null`);
+      sql(`update auth.mfa_amr_claims set created_at = created_at - interval '7 days',
+          updated_at = updated_at - interval '7 days'
+        where session_id in (select id from auth.sessions where user_id = ${quoted(alexId)})`);
+      sql(`update auth.mfa_challenges set created_at = created_at - interval '7 days',
+          verified_at = verified_at - interval '7 days'
+        where factor_id in (select id from auth.mfa_factors where user_id = ${quoted(alexId)})`);
       sql('select app.support_tools_tick()');
       expect(sql(`select app.two_step_on(${quoted(alexId)})`)).toBe('f');
       const offEmail = await newestEmail(alex, 'Two-step sign-in is off', after);
