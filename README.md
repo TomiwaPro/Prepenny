@@ -941,6 +941,26 @@ Part V's SQL Editor queries still work, but you no longer need them.
 
 **To check it worked, after merging:** steps 9 to 11 above, then **Actions**, **Tax year**, **Run workflow**: a green tick, saying every tax file needed now is there. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4j".
 
+### If support's authenticator app is lost
+
+The support dashboard opens only with the code from the authenticator app on your phone. If that phone is lost, or the app was removed, turn off two-step sign-in for support's account yourself, in Supabase, then set it up again with your new phone (D648, since step 4k). You never type support's address: the database already knows which account is support's.
+
+1. On supabase.com, sign in, open the **prepenny** project, then **SQL Editor** in the menu on the left, then **New query**.
+2. Paste this line, exactly, and tap **Run**:
+
+   ```sql
+   select app.turn_off_support_two_step();
+   ```
+
+3. The result says: "Two-step sign-in is off for PrePenny support's account, and it has been signed out everywhere. Sign in to the support dashboard again, and set up two-step sign-in with your new phone." It removes support's authenticator app and ends every sign-in of support's account, on every computer. It changes nothing on anyone else's account.
+   - If it says "Nobody is PrePenny support in this database yet", check the GitHub secret `SUPPORT_EMAIL` (part W, step 6), then **Actions**, **Database**, **Run workflow**, and try again. Nothing was changed.
+   - If it says two-step sign-in "was already off", support's account is signed out everywhere: go on to step 4.
+4. Open https://admin.prepenny.co.uk/ on your computer and sign in as before: Cloudflare's code, then the dashboard's code by email to support's address.
+5. The dashboard shows **Set up two-step sign-in**, as the first time (part W, step 11): tap **Set it up**, scan the picture with the authenticator app on your new phone, type the code it shows for PrePenny support, and tap **Turn on**. Keep the key it shows somewhere safe.
+6. If you find the old phone, remove the old "PrePenny support" entry from its authenticator app: its codes no longer work.
+
+Only people who can sign in to the Supabase project can open its SQL Editor. Nobody signed in to PrePenny, nobody signed out, and not even Supabase's own key can run this step: `supabase/tests/database/42-support-lost-authenticator.test.sql` checks it.
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.
