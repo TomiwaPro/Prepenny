@@ -253,6 +253,16 @@ type Standing =
   | 'wait';
 
 /**
+ * Whether PrePenny is on screen now. The server counts only a look made while
+ * it is as someone opening PrePenny (step 4k, D646): the looks every minute
+ * while it's in the background, so an ended sign-in is found within a
+ * minute (D21), aren't someone using it.
+ */
+function onScreen(): boolean {
+  return typeof document === 'undefined' || document.visibilityState === 'visible';
+}
+
+/**
  * Asks the server whether this phone's sign-in stands and whether it's on
  * the version the server expects, and the live site which version is live.
  * A phone on an older version updates itself before it sends anything, so it
@@ -269,7 +279,7 @@ async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
       joining?: unknown;
       two_step_off?: unknown;
       support_account?: unknown;
-    }>(client, 'hello', {}, db),
+    }>(client, 'hello', { on_screen: onScreen() }, db),
   );
   // A database from before step 3e has no `hello`: it's still being updated.
   if (!answer.ok) return 'wait';
@@ -366,7 +376,7 @@ export function lookForGetBackIn(): Promise<void> {
           get_back_in?: unknown;
           join_requests?: unknown;
           two_step_off?: unknown;
-        }>(client, 'hello', {});
+        }>(client, 'hello', { on_screen: onScreen() });
         if (!answer.ok) continue;
         setJoinRequests(answer.data.sign_in === 'ok' ? answer.data.join_requests : []);
         setTwoStepOffNotice(

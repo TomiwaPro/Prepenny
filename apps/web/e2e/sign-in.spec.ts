@@ -134,16 +134,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // the phone also gives the plan its bank holiday list: GOV.UK's, with
       // nothing the person typed (D536). Since step 4j it first asks whether
       // the account is PrePenny support's own (D640), which sends nothing at
-      // all either.
+      // all either. Since step 4k, its look at the sign-in says only whether
+      // PrePenny is on screen (D646).
       for (const request of sent) {
         expect(new URL(request.url()).pathname).toMatch(
           /^\/(auth\/v1\/(otp|verify|user|token)|rest\/v1\/(plan_members|rpc\/(start_plan|save_edit|plan_changes|hello|support_status|use_bank_holidays))|realtime\/v1\/.*)$/,
         );
-        if (
-          ['/rest/v1/rpc/hello', '/rest/v1/rpc/support_status'].includes(
-            new URL(request.url()).pathname,
-          )
-        ) {
+        if (new URL(request.url()).pathname === '/rest/v1/rpc/hello') {
+          expect(request.postData() ?? '{}').toMatch(/^\{"on_screen":(true|false)\}$/);
+        }
+        if (new URL(request.url()).pathname === '/rest/v1/rpc/support_status') {
           expect(request.postData() ?? '{}').toBe('{}');
         }
         if (new URL(request.url()).pathname === '/rest/v1/rpc/use_bank_holidays') {
