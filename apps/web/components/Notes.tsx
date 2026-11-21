@@ -7,8 +7,10 @@
 import { useSyncExternalStore } from 'react';
 import { useSync } from '../data/sync.ts';
 import { useAccount } from '../lib/account.ts';
+import { useServerDown } from '../lib/server-status.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Notes.module.css';
+import { StatusLink } from './StatusLink.tsx';
 
 /**
  * "This is an example plan. Nothing here is yours.", with a way back to the
@@ -75,20 +77,39 @@ export function OfflineMessage({ sending = false }: { readonly sending?: boolean
 }
 
 /**
+ * Signed in, with a signal, when PrePenny's server isn't answering (step 4k,
+ * D645): what that means for changes, and the status page.
+ */
+export function ServerDownMessage() {
+  return (
+    <div
+      className={`${styles.note} ${styles.offline} ${styles.withLink}`}
+      data-testid="server-down-note"
+    >
+      <p>{strings.statusPage.serverDown}</p>
+      <StatusLink className={styles.noteLink} label={strings.statusPage.serverDownLink} />
+    </div>
+  );
+}
+
+/**
  * The offline note, shown only while the phone is offline; and signed in,
- * with a signal, the note that changes can't be sent for now. Screen readers
- * hear each appear.
+ * with a signal, the note that PrePenny's server isn't answering (step 4k),
+ * or that changes can't be sent for now. Screen readers hear each appear.
  */
 export function OfflineNote() {
   const offline = useOffline();
   const account = useAccount();
   const sync = useSync();
+  const serverDown = useServerDown();
   const signedIn = account.status === 'signed-in';
   const cantSend = signedIn && sync.cantSend && (sync.unsent > 0 || !sync.kept);
   return (
     <div role="status">
       {offline ? (
         <OfflineMessage sending={signedIn} />
+      ) : signedIn && serverDown ? (
+        <ServerDownMessage />
       ) : cantSend ? (
         <p className={`${styles.note} ${styles.offline}`} data-testid="cant-send-note">
           {strings.banners.cantSend}

@@ -6,6 +6,7 @@
 import type { ReactNode } from 'react';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Help.module.css';
+import { StatusLink } from './StatusLink.tsx';
 import supportStyles from './Support.module.css';
 
 export function HelpSite({
@@ -13,7 +14,11 @@ export function HelpSite({
   contact = true,
 }: {
   readonly children: ReactNode;
-  /** "Can't sign in? Contact us" at the end (step 4i, D601), but not on Contact us itself. */
+  /**
+   * "Can't sign in? Contact us" and, since step 4k, PrePenny's status at the
+   * end (D601, D643), but not on Contact us itself, which has the status
+   * page above its form.
+   */
   readonly contact?: boolean;
 }) {
   return (
@@ -33,6 +38,8 @@ export function HelpSite({
           <a className={supportStyles.footerLink} href="/contact/">
             {strings.support.contact.cantSignIn}
           </a>
+          {/* PrePenny's status page, at UptimeRobot (step 4k, D643). */}
+          <StatusLink className={supportStyles.footerLink} />
         </footer>
       ) : null}
     </div>

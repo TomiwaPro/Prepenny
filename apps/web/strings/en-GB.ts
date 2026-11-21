@@ -455,6 +455,23 @@ export const strings = {
     gettingNewVersion: "Getting the new version. It opens by itself once it's on this phone.",
   },
 
+  /** PrePenny's status page, and the note when its server isn't answering (step 4k, D643 to D645). */
+  statusPage: {
+    /** The link's words, on More, Contact us and the website's help pages. */
+    link: "PrePenny's status",
+    /** Under the link on More (D213). */
+    moreLine: 'Whether the app, signing in, saving changes and reminders are working now',
+    /** What screen readers hear after the link's words: it opens a page of its own. */
+    opensPage: 'Opens the status page',
+    /** On Contact us, in the app and on the website. */
+    contactLine: "If PrePenny isn't working, its status page says whether it's down for everyone.",
+    /** Signed in, with a signal, when PrePenny's server isn't answering. */
+    serverDown:
+      "PrePenny's server isn't answering right now, so changes can't be sent to your account. They're saved on this phone and will be sent when it's back.",
+    /** The link in that note. */
+    serverDownLink: "See PrePenny's status",
+  },
+
   /** On every page of a pull request's preview, never the live app (step 3e-2, D407). */
   preview: {
     line: "Test version: don't use real details.",

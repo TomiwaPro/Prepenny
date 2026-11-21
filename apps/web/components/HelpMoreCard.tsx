@@ -5,6 +5,7 @@
 // and between help pages is, so only the pages are kept on the phone, not
 // Next.js's data for moving between them (D588).
 import { HELP_ROUTES, MONEY_TIGHT_SLUG, TOUR_ROUTE } from '../lib/help-routes.ts';
+import { statusPageUrl } from '../lib/status-page.ts';
 import { strings } from '../strings/en-GB.ts';
 import styles from './Screens.module.css';
 
@@ -33,6 +34,8 @@ const links = [
 ] as const;
 
 export function HelpMoreCard() {
+  // PrePenny's status page, at UptimeRobot (step 4k, D643), when there's one.
+  const status = statusPageUrl();
   return (
     <nav className={styles.card} aria-labelledby="help-on-more">
       <h2 id="help-on-more" className={styles.cardTitle}>
@@ -50,6 +53,26 @@ export function HelpMoreCard() {
             </a>
           </li>
         ))}
+        {status === null ? null : (
+          <li>
+            {/* Another website's page, so it opens on its own, as help's links to other websites do (step 4g). */}
+            <a
+              className={styles.rowLink}
+              href={status}
+              target="_blank"
+              rel="noreferrer noopener"
+              data-status-link=""
+            >
+              <span className={styles.rowBody}>
+                <span className={styles.rowName}>{strings.statusPage.link}</span>
+                <span className={styles.second}>{strings.statusPage.moreLine}</span>
+                {/* Screen readers hear where it goes, after what they see (WCAG 2.5.3). */}
+                <span className="visually-hidden">{`, ${strings.statusPage.opensPage}`}</span>
+              </span>
+              <span className={styles.arrow} aria-hidden="true" />
+            </a>
+          </li>
+        )}
       </ul>
     </nav>
   );

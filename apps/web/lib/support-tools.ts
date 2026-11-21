@@ -8,8 +8,10 @@
 // here writes an email address, words or anything about money to the
 // console or anywhere else (CLAUDE.md).
 
+import { signInConfig } from './sign-in-config.ts';
 import { type AccessState, accessOf, callWith, count, type Done, text } from './support-calls.ts';
 import { supportClient } from './support-client.ts';
+import { fetchWithTimeLimit } from './time-limit.ts';
 
 export type { AccessState, Done, ToolsProblem } from './support-calls.ts';
 
@@ -355,4 +357,46 @@ export async function supportUsage(): Promise<Done<Usage>> {
       waiting: count(one.waiting),
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// PrePenny's status (step 4k, D644): the status function's four parts, the
+// same as the status page shows, checked now. Asked with no sign-in, as the
+// status page asks: the function uses nobody's account or data.
+
+export type StatusPart = 'app' | 'sign-in' | 'saving' | 'reminders';
+export const STATUS_PARTS: readonly StatusPart[] = ['app', 'sign-in', 'saving', 'reminders'];
+
+export interface ServiceStatus {
+  readonly working: Readonly<Record<StatusPart, boolean>>;
+  readonly checkedAt: string;
+}
+
+/** The status function's answer, or null when it gave none. */
+export function readServiceStatus(body: unknown): ServiceStatus | null {
+  if (body === null || typeof body !== 'object') return null;
+  const { working, checked_at: checkedAt } = body as Record<string, unknown>;
+  if (working === null || typeof working !== 'object' || typeof checkedAt !== 'string') return null;
+  const parts = working as Record<string, unknown>;
+  if (!STATUS_PARTS.every((part) => typeof parts[part] === 'boolean')) return null;
+  return {
+    working: Object.fromEntries(STATUS_PARTS.map((part) => [part, parts[part] === true])) as Record<
+      StatusPart,
+      boolean
+    >,
+    checkedAt,
+  };
+}
+
+export async function serviceStatus(): Promise<ServiceStatus | null> {
+  const config = signInConfig();
+  if (config === null) return null;
+  try {
+    const answer = await fetchWithTimeLimit()(`${config.url}/functions/v1/status`, {
+      cache: 'no-store',
+    });
+    return answer.ok ? readServiceStatus(await answer.json()) : null;
+  } catch {
+    return null;
+  }
 }

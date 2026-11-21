@@ -585,3 +585,11 @@ update app.reminder_server
 -- here (D606). 39-support-messages.test.sql puts them back and checks the
 -- real numbers.
 update app.support_test set scale = 100 where only_one;
+
+-- Service status (step 4k), on this local Supabase only, never the real
+-- project: the status function asks for the app at a stand-in each test
+-- starts on the building computer, on a port of its own, reached from
+-- Supabase's function runner as host.docker.internal (e2e/status-site.ts),
+-- never the real prepenny.co.uk. Until a test starts one, nothing answers
+-- there, so "the app" isn't working here.
+update app.service_checks set site = 'http://host.docker.internal:1' where only_one;

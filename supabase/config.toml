@@ -454,6 +454,14 @@ verify_jwt = false
 enabled = true
 verify_jwt = false
 
+# PrePenny's status (step 4k): asked by the status page at UptimeRobot every
+# 5 minutes and by the support dashboard, with no sign-in, as the status page
+# is for everyone. It answers working or not for four parts, and uses nobody's
+# account or data. Supabase gives it its own secret key; it holds no other.
+[functions.status]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = false
 port = 54327

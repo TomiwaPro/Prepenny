@@ -56,6 +56,26 @@ export const supportStrings = {
     finding: 'Finding the account.',
     notFound: 'No account signs in with that address or has it as its backup email.',
 
+    /** PrePenny's status, at the top of the dashboard (step 4k, D644): the status page's four parts. */
+    statusHeading: "PrePenny's status",
+    statusLine:
+      "The same checks as the status page, made now. None of them uses anyone's account or data.",
+    statusParts: {
+      app: 'The app',
+      'sign-in': 'Signing in',
+      saving: 'Saving changes',
+      reminders: 'Reminders',
+    },
+    working: 'Working',
+    notWorking: 'Not working',
+    checking: 'Checking.',
+    checkedAt: (time: string) => `Checked at ${time}.`,
+    noAnswer:
+      "PrePenny's server didn't answer, so nothing could be checked. Signing in, saving changes and reminders may all be down.",
+    checkAgain: 'Check again',
+    statusPage: 'Open the status page',
+    statusPageOpens: 'Opens the status page',
+
     /** Usage, counts only (D623). */
     usageHeading: 'Usage',
     usageLine:

@@ -82,3 +82,15 @@
   padding: var(--space-2) 0;
   overflow-wrap: anywhere;
 }
+
+/* The status page's link on the status card (step 4k): underlined, 44px to tap. */
+.statusPage {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--tap);
+  color: var(--accent-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

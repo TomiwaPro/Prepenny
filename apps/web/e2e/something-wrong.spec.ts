@@ -560,5 +560,71 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(main.getByLabel(t.contact.wordsLabel)).toHaveValue('Hello');
       await page.context().setOffline(false);
     });
+
+    test("8. A picture gets ready off the screen, so a busy screen can't hold it up", async ({
+      page,
+    }) => {
+      // Step 4k: on the screen's own thread, Chrome saves a drawing as a file
+      // only while the screen is idle, and can wait over 5 seconds when it
+      // isn't. Every time the screen's thread saves a drawing is counted: the
+      // picture must be got ready in the background worker, never there.
+      await page.addInitScript(() => {
+        const counted = { encodes: 0 };
+        Reflect.set(window, '__screenEncodes', counted);
+        const toBlob = HTMLCanvasElement.prototype.toBlob;
+        HTMLCanvasElement.prototype.toBlob = function (...args) {
+          counted.encodes += 1;
+          return toBlob.apply(this, args);
+        };
+        const convertToBlob = OffscreenCanvas.prototype.convertToBlob;
+        OffscreenCanvas.prototype.convertToBlob = function (...args) {
+          counted.encodes += 1;
+          return convertToBlob.apply(this, args);
+        };
+      });
+      await page.goto('/app/more/');
+      await expect(page.getByRole('heading', { level: 1, name: 'More' })).toBeVisible();
+      const png = await pngWithDetails(page);
+      const jpeg = await jpegWithDetails(page);
+      await openSomethingWrong(page);
+      const dialog = sheet(page);
+      await dialog.getByRole('radio', { name: p.picture }).check();
+
+      // The screen is kept busy, as a slow phone's is: every frame takes all
+      // of its time, so the screen is never idle.
+      await page.evaluate(() => {
+        const busy = { on: true };
+        Reflect.set(window, '__busy', busy);
+        const frame = () => {
+          if (!busy.on) return;
+          const end = performance.now() + 16;
+          while (performance.now() < end) {
+            // Working, as a slow phone's screen is.
+          }
+          requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+      });
+      for (const [name, file] of [
+        ['Screenshot.png', { mimeType: 'image/png', buffer: png }],
+        ['IMG_0413.jpg', { mimeType: 'image/jpeg', buffer: jpeg }],
+      ] as const) {
+        await choosePicture(page, { name, ...file });
+        // Well inside the 5 seconds Chrome can wait on the screen's thread.
+        await expect(dialog.getByTestId('file-chosen')).toHaveText(/^Picture chosen: /, {
+          timeout: 3000,
+        });
+      }
+      await page.evaluate(() => {
+        (Reflect.get(window, '__busy') as { on: boolean }).on = false;
+      });
+      expect(
+        await page.evaluate(
+          () => (Reflect.get(window, '__screenEncodes') as { encodes: number }).encodes,
+        ),
+      ).toBe(0);
+      await expect(dialog.getByText(p.unreadable)).toHaveCount(0);
+      await noAxeProblems(page);
+    });
   });
 }

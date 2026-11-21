@@ -109,7 +109,7 @@ Versions are the latest at the time of writing (27 Oct 2026). Step 1a pinned the
 | Resend | Sends emails: sign-in codes, invites, trial and renewal reminders, support replies | Free plan | Yes: 3,000 emails a month, 100 a day. Resend keeps email text for 30 days on servers in the US, so **no email ever contains amounts, payment names or notes**. A French alternative, Brevo, is ready if the owner prefers |
 | Web Push | Reminders on the phone, sent straight from PrePenny's server with no other push company in between (brief 7.1) | Since step 4e, PrePenny's own few lines with the browser's own WebCrypto (`apps/web/lib/web-push.ts`, RFC 8291 and 8292), checked against the standard's worked example, rather than the `web-push` library | Free. On iPhone it needs "Add to Home Screen" until Phase 6 (D22). No Apple developer account (D573) |
 | Sentry, EU data region | Error reports, with every amount, name and note stripped before sending (brief 7.1). Built into our own code, not loaded from Sentry. Only the error type, where in the code, the app version and phone type are sent | Free (Developer) plan | Yes: 5,000 errors a month |
-| UptimeRobot | Checks every 5 minutes that the app and server are up, and runs the status page (brief 4.16) | Free plan | Yes: 50 checks and 1 status page. Its terms, updated in May 2026, allow business use; older guides say otherwise, so check again before launch |
+| UptimeRobot | Checks every 5 minutes that the app and server are up, and runs the status page (brief 4.16) | Free plan | Yes: 50 checks and 1 status page. Its terms, updated in May 2026, allow business use; older guides say otherwise, so check again before launch. Checked again on its own pages in step 4k (D643): "Good for personal and commercial projects"; 4 of the 50 monitors, and the 1 status page at its UptimeRobot address |
 | Google sign-in | Lets people sign in with Google (D20) | Google Cloud | Free |
 | A web address | The website, and the address sign-in emails come from | About £10 a year | **Not free.** Needed by Phase 3, before the rest of the launch checklist |
 | Stripe | Subscriptions: Checkout, the customer portal and payment messages (brief 4.17). Test mode until launch | No monthly fee | Yes. Stripe takes about 1.5% + 20p of each UK card payment, plus 0.7% for running subscriptions |
@@ -826,6 +826,15 @@ The same pattern goes on every plan table. Every table starts with everything re
 - Scheduled job `prepenny-support-tools` at 3, 18, 33 and 48 minutes past each hour: `app.support_tools_tick()` (`app.finish_two_step_waits`, `app.send_finish_links`, and tidying: error codes after 30 days, actions, access and waits after 12 months, links after 7 days).
 - Tests: `supabase/tests/database/40-support-tools.test.sql`.
 
+**Built in step 4k** (D643 to D651), service status and four fixes:
+
+- `supabase/migrations/20261125100000_opening_prepenny.sql`: `public.hello(on_screen boolean default true)` replaces `hello()`; it notes `app.devices` for any version whose sign-in stands, and only `on_screen` (D646). The phone sends `on_screen` from `document.visibilityState` (`data/sync.ts`, `onScreen`). Test: `41-opening-prepenny.test.sql`.
+- `supabase/migrations/20261125150000_support_lost_authenticator.sql`: `app.turn_off_support_two_step()` (the database's administrator only), and `app.fresh_second_step_to_turn_off` lets it through for support's account while it runs (`prepenny.support_app_lost`) (D648). Test: `42-support-lost-authenticator.test.sql`.
+- `supabase/migrations/20261125200000_service_status.sql`: `app.service_checks` (one row: `checked_at`, `site`, the app's address the status function asks; `http://host.docker.internal:1` in `seed.sql`), `app.reminders_job_ok()` (pg_cron's `prepenny-reminders` finished well in the last 5 minutes), `public.service_status()` (`service_role` only: saves `checked_at`, answers `{saving, reminders_job, site, now}`) (D644). Test: `43-service-status.test.sql`.
+- The function `supabase/functions/status` (`verify_jwt = false`, deployed by `database.yml`): `?part=app|sign-in|saving|reminders` answers `{part, working}` with 200 or 503; with no part, `{working: {app, sign-in, saving, reminders}, checked_at}` with 200; `Access-Control-Allow-Origin: *`, `no-store`. Its rules are in `checks.ts`, tested by `scripts/status-function.test.ts`.
+- The phone: `lib/status-page.ts` (`statusPageUrl`, from `NEXT_PUBLIC_STATUS_PAGE_URL`, the GitHub variable `STATUS_PAGE_URL`), `components/StatusLink.tsx`, `lib/server-status.ts` (`watchServer`, given to Supabase's client in `lib/account.ts`; `checkServer`: the site's `/version.json`, then the status function's `saving`; `useServerDown`), `ServerDownMessage` in `components/Notes.tsx`, and the links in `HelpMoreCard.tsx`, `ContactScreen.tsx` and `HelpSite.tsx`. The dashboard: `StatusCard` in `components/SupportScreen.tsx`, `serviceStatus` in `lib/support-tools.ts`. Tests: `e2e/service-status.spec.ts`, `e2e/status-links.spec.ts`, `e2e/support-tools.spec.ts` test 6 with `e2e/status-site.ts`, `test/unit/service-status.test.ts`.
+- Pictures for Something looks wrong are got ready in the engine's background worker with OffscreenCanvas (`PictureAsk`, `lib/picture-background.ts`), never waiting for the screen to be idle (D647). Test: `e2e/something-wrong.spec.ts` test 8.
+
 ### 3.8 Kept on the phone only
 
 Stored in the phone's browser database (IndexedDB):
@@ -984,7 +993,7 @@ The app has four places in the bottom navigation: **Home, Coming up, Debts, More
 
 - **Undo bar** after every change: "Rent changed for this and all later ones. Undo" (brief Part 3, principle 4).
 - **Offline note:** "You're offline. Changes are saved on this phone and will be sent when you're back online." (brief Part 6)
-- **Sync down note:** "Changes can't be sent right now. They're saved on this phone." (brief 4.16)
+- **Sync down note:** "Changes can't be sent right now. They're saved on this phone." (brief 4.16). Since step 4k, when it's PrePenny's server that isn't answering a phone with a signal: "PrePenny's server isn't answering right now, so changes can't be sent to your account. They're saved on this phone and will be sent when it's back.", with **See PrePenny's status** (D645).
 - **Example plan banner:** "This is an example plan. Nothing here is yours." (brief 4.1, D15)
 - **Trial ended banner:** "Your free trial has ended. You can still see your plan, update your balance and tick payments." (brief 4.17)
 - **Gentle advice note,** after a shortfall three paydays running: "Free, confidential help is available" with a link to Help when money is tight (brief 4.16).

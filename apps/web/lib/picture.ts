@@ -181,17 +181,49 @@ export function sizeToDraw(
   };
 }
 
-function encoded(
-  canvas: HTMLCanvasElement,
-  type: PictureType,
-  quality: number,
-): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+/** Somewhere to draw the picture afresh, and to save it as a file. */
+interface Surface {
+  readonly drawing: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null;
+  encode(type: PictureType, quality: number): Promise<Blob | null>;
+}
+
+/**
+ * Where the picture is drawn: off the screen (OffscreenCanvas) wherever the
+ * browser has it, as in the background worker; a canvas element otherwise.
+ *
+ * Why it matters (step 4k): on the screen's own thread, Chrome saves a
+ * drawing as a file only in the moments the screen is idle, waits up to a
+ * second for one to start, and once it has started, up to 5 seconds more
+ * before finishing anyway. On a slow phone, or a busy computer, the screen
+ * is rarely idle, so "Getting the picture ready." stayed for over 5 seconds.
+ * In the background worker there's no screen to wait for, so it's saved at
+ * once (lib/picture-background.ts).
+ */
+function surface(width: number, height: number): Surface {
+  if (typeof OffscreenCanvas === 'function') {
+    const canvas = new OffscreenCanvas(width, height);
+    return {
+      drawing: canvas.getContext('2d'),
+      encode: (type, quality) => canvas.convertToBlob({ type, quality }).catch(() => null),
+    };
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return {
+    drawing: canvas.getContext('2d'),
+    encode: (type, quality) =>
+      new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality)),
+  };
 }
 
 /**
  * A picture the person chose, ready to send: known by its contents, drawn
  * afresh with its hidden details taken out, and no bigger than 2 MB.
+ *
+ * Worked out where it's called: in the background worker for the app
+ * (lib/picture-background.ts), or on the screen's own thread when the
+ * browser can't draw in a worker.
  */
 export async function preparePicture(file: Blob): Promise<Chosen<Picture>> {
   try {
@@ -227,10 +259,8 @@ async function readPicture(file: Blob): Promise<Chosen<Picture>> {
     ];
     for (const one of tries) {
       const size = sizeToDraw(bitmap.width, bitmap.height, one.longest);
-      const canvas = document.createElement('canvas');
-      canvas.width = size.width;
-      canvas.height = size.height;
-      const drawing = canvas.getContext('2d');
+      const canvas = surface(size.width, size.height);
+      const drawing = canvas.drawing;
       if (drawing === null) return { ok: false, problem: 'unreadable' };
       if (one.type === 'image/jpeg') {
         // A JPEG has no see-through parts: white behind them, as a screen shows.
@@ -238,7 +268,7 @@ async function readPicture(file: Blob): Promise<Chosen<Picture>> {
         drawing.fillRect(0, 0, size.width, size.height);
       }
       drawing.drawImage(bitmap, 0, 0, size.width, size.height);
-      const blob = await encoded(canvas, one.type, one.quality);
+      const blob = await canvas.encode(one.type, one.quality);
       if (blob === null) continue;
       const raw = new Uint8Array(await blob.arrayBuffer());
       const plain = one.type === 'image/png' ? plainPng(raw) : plainJpeg(raw);

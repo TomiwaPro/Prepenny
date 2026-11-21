@@ -12,13 +12,8 @@
 // is the backup file from Download my data, chosen the same way.
 
 import { type ChangeEvent, useId, useMemo, useRef, useState } from 'react';
-import {
-  type Picture,
-  type PlanCopy,
-  preparePicture,
-  preparePlanCopy,
-  sizeWords,
-} from '../lib/picture.ts';
+import { type Picture, type PlanCopy, preparePlanCopy, sizeWords } from '../lib/picture.ts';
+import { preparePictureInBackground } from '../lib/picture-background.ts';
 import { screenName } from '../lib/support.ts';
 import { strings } from '../strings/en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
@@ -65,9 +60,9 @@ export function useAttachment(): NonNullable<SupportFormProps['attachment']> {
     const mine = ++latest.current;
     setError(undefined);
     setReading(true);
-    let ready: Awaited<ReturnType<typeof preparePicture>>;
+    let ready: Awaited<ReturnType<typeof preparePictureInBackground>>;
     try {
-      ready = await preparePicture(file);
+      ready = await preparePictureInBackground(file);
     } finally {
       if (mine === latest.current) setReading(false);
     }

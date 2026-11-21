@@ -16,11 +16,15 @@
 // - #copy=id: a message's plan copy, read only.
 
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
-import { formatDay } from '../lib/dates.ts';
+import { formatDay, formatTime } from '../lib/dates.ts';
 import { momentWords } from '../lib/device-words.ts';
+import { statusPageUrl } from '../lib/status-page.ts';
 import {
   type Inbox,
   type InboxMessage,
+  type ServiceStatus,
+  STATUS_PARTS,
+  serviceStatus,
   supportFind,
   supportInbox,
   supportUsage,
@@ -126,6 +130,7 @@ function SupportHome() {
   return (
     <>
       <ViewHeader heading={t.heading} purpose={t.purpose} back={null} />
+      <StatusCard />
       <section
         className={tax.missing.length === 0 ? styles.card : `${styles.card} ${own.notice}`}
         aria-labelledby="support-tax"
@@ -144,6 +149,81 @@ function SupportHome() {
       <FindCard />
       <UsageCard />
     </>
+  );
+}
+
+/**
+ * PrePenny's status, at the top (step 4k, D644): the status page's four
+ * parts, checked now by the same function the status page asks, each with
+ * its word. In the sunk colour with a brass edge when anything isn't
+ * working, never Short's red (DESIGN.md).
+ */
+function StatusCard() {
+  const [status, setStatus] = useState<ServiceStatus | null | 'checking'>('checking');
+  const check = useCallback(() => {
+    setStatus('checking');
+    void serviceStatus().then(setStatus);
+  }, []);
+  useEffect(() => check(), [check]);
+  const page = statusPageUrl();
+  const down =
+    status === null ||
+    (status !== 'checking' && STATUS_PARTS.some((part) => !status.working[part]));
+  return (
+    <section
+      className={down ? `${styles.card} ${own.notice}` : styles.card}
+      aria-labelledby="support-status"
+      data-testid="support-status"
+    >
+      <h2 id="support-status" className={styles.cardTitle}>
+        {t.statusHeading}
+      </h2>
+      <p className={styles.second}>{t.statusLine}</p>
+      <div role="status">
+        {status === 'checking' ? (
+          <p className={styles.line}>{t.checking}</p>
+        ) : status === null ? (
+          <p className={styles.line}>{t.noAnswer}</p>
+        ) : (
+          <>
+            <ul className={styles.list}>
+              {STATUS_PARTS.map((part) => (
+                <li key={part} className={own.count} data-testid="support-status-part">
+                  <span className={styles.line}>{t.statusParts[part]}</span>
+                  <span className={own.figure}>
+                    {status.working[part] ? t.working : t.notWorking}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className={styles.second}>{t.checkedAt(formatTime(status.checkedAt))}</p>
+          </>
+        )}
+      </div>
+      <div className={formStyles.actions}>
+        <button
+          type="button"
+          className={formStyles.outlined}
+          aria-disabled={status === 'checking'}
+          onClick={() => {
+            if (status !== 'checking') check();
+          }}
+        >
+          {t.checkAgain}
+        </button>
+        {page === null ? null : (
+          <a
+            className={own.statusPage}
+            href={page}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={`${t.statusPage}, ${t.statusPageOpens}`}
+          >
+            {t.statusPage}
+          </a>
+        )}
+      </div>
+    </section>
   );
 }
 

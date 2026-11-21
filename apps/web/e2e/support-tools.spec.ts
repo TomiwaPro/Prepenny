@@ -20,6 +20,8 @@
 //    the link to a locked backup email, with its 24-hour wait and Stop it,
 //    finishing through the get-back-in function.
 // 5. The usage numbers, counts only, and the tax year check from 1 March.
+// 6. PrePenny's status at the top (step 4k): the status page's four parts,
+//    from the same status function, checked now.
 //
 // The database's own test, supabase/tests/database/40-support-tools.test.sql,
 // proves every step refuses everyone else, each rule broken on purpose.
@@ -38,6 +40,7 @@ import { openOnExample, settingScript } from './fixtures.ts';
 import { addAccount, entries, jessAndTom, openActivity, planOf } from './jess-and-tom.ts';
 import { box, noAxeProblems } from './setup.ts';
 import { makeAPlan, newEmail, TODAY } from './sign-in-helpers.ts';
+import { remindersJobRanJustNow, standInSite } from './status-site.ts';
 import { appCode } from './totp.ts';
 import {
   LOCAL_SECRET_KEY,
@@ -299,21 +302,23 @@ const neverPersonal = (said: string[]) =>
 
 /** The screenshots for the owner (docs/screens/4j): 320px, light. */
 const SHOTS = '../../docs/screens/4j';
+/** Step 4k's, of PrePenny's status at the top of the dashboard. */
+const STEP_4K_SHOTS = '../../docs/screens/4k';
 
 /**
  * A view's checks: axe, then with text at 200% nothing outside the screen
  * or cut off and every tap target 44 by 44px (WCAG 1.4.4, 2.5.8), then the
  * text back as it was. At 320px in light, its screenshot for the owner.
  */
-async function checkView(page: Page, name: string) {
+async function checkView(page: Page, name: string, shots = SHOTS) {
   await noAxeProblems(page);
   const style = await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
   expect(await layoutProblems(page), `${name} at 200% text`).toEqual([]);
   await style.evaluate((element) => (element as HTMLStyleElement).remove());
   const light = await page.evaluate(() => matchMedia('(prefers-color-scheme: light)').matches);
   if (light && page.viewportSize()?.width === 320) {
-    mkdirSync(SHOTS, { recursive: true });
-    await page.screenshot({ path: `${SHOTS}/${name}-320-light.png`, fullPage: true });
+    mkdirSync(shots, { recursive: true });
+    await page.screenshot({ path: `${shots}/${name}-320-light.png`, fullPage: true });
   }
 }
 
@@ -899,6 +904,73 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today: '2027-02-28' }] as const);
       await page.reload();
       await expect(page.getByTestId('support-tax-year')).toContainText(t.taxYearFine);
+    });
+
+    test("6. PrePenny's status is at the top: the status page's four parts, checked now by the same function", async ({
+      page,
+    }) => {
+      test.setTimeout(120_000);
+      await openAsSupport(page);
+      const status = page.getByTestId('support-status');
+      // At the top: the first card under the dashboard's heading.
+      await expect(page.locator('main section').first()).toHaveAttribute(
+        'data-testid',
+        'support-status',
+      );
+      const parts = status.getByTestId('support-status-part');
+      const checkAgain = status.getByRole('button', { name: t.checkAgain });
+      const words = (working: Readonly<Record<string, boolean>>) =>
+        (['app', 'sign-in', 'saving', 'reminders'] as const).map(
+          (part) => `${t.statusParts[part]}${working[part] ? t.working : t.notWorking}`,
+        );
+      await withSupport(async () => {
+        // The app's site answering, and the reminders job just run, as on the real project.
+        const site = await standInSite();
+        const takeAway = remindersJobRanJustNow();
+        try {
+          await checkAgain.click();
+          await expect(parts).toHaveText(
+            words({ app: true, 'sign-in': true, saving: true, reminders: true }),
+          );
+          await expect(status).toContainText(/Checked at \d{1,2}:\d{2}(am|pm)\./);
+          await expect(status).not.toHaveClass(/notice/);
+          const statusPageLink = status.getByRole('link', {
+            name: `${t.statusPage}, ${t.statusPageOpens}`,
+          });
+          await expect(statusPageLink).toHaveAttribute(
+            'href',
+            'https://stats.uptimerobot.com/prepenny-test',
+          );
+          await expect(statusPageLink).toHaveAttribute('target', '_blank');
+          await checkView(page, 'support-status', STEP_4K_SHOTS);
+
+          // The app's site stops answering: only the app isn't working.
+          site.working = false;
+          await checkAgain.click();
+          await expect(parts).toHaveText(
+            words({ app: false, 'sign-in': true, saving: true, reminders: true }),
+          );
+          await expect(status).toHaveClass(/notice/);
+          await checkView(page, 'support-status-app-down', STEP_4K_SHOTS);
+        } finally {
+          takeAway();
+          await site.close();
+        }
+        // The reminders job stopped: reminders aren't working either.
+        await checkAgain.click();
+        await expect(parts).toHaveText(
+          words({ app: false, 'sign-in': true, saving: true, reminders: false }),
+        );
+
+        // PrePenny's server doesn't answer at all: nothing could be checked.
+        await page.route(`${LOCAL_SUPABASE.url}/functions/v1/status`, (route) =>
+          route.abort('connectionrefused'),
+        );
+        await checkAgain.click();
+        await expect(status.getByRole('status')).toHaveText(t.noAnswer);
+        await expect(status).toHaveClass(/notice/);
+        await noAxeProblems(page);
+      });
     });
   });
 }
