@@ -8089,3 +8089,15 @@ Checked 21 Nov 2026 against each service's own pages:
 - **Cloudflare:** nothing. No new page, rule or setting.
 
 Why: the owner asked for exact steps, checked against each service's own pages, saying which come before merging and which after.
+
+## From GitHub's run of step 4k
+
+### D652. Fix 4: the end-to-end parts stay three, measured on step 4k's ready run
+
+Decided 21 Nov 2026 in step 4k, from the owner's instruction: "GitHub's end-to-end part 2 took 69 of its 80 minutes on step 4j. If any part now goes over 70 minutes, split the tests into four parts."
+
+- **Measured on this step's ready run** (End-to-end when ready, run 28), with this step's new tests in: part 1 took 51 minutes, part 2 took 64 and part 3 took 41, every test passing. None went over 70, so the tests stay in three parts, each with its 80 minutes (D600).
+- **Why part 2 is the longest:** Playwright shares the tests out by number, not by time, and the longest ones (brief 8.7 test 2, about 4 to 5 minutes each on its own, and the two-phone tests) fall unevenly. The same commit's parts took 43, 69 and 50 minutes on step 4j's pull request and 44, 59 and 49 on `main` after it, so a part can move by 10 minutes from run to run.
+- **Next time:** when a ready run's part goes over 70 minutes, the split into four is one line in `.github/workflows/end-to-end.yml` (`part: [1, 2, 3, 4]`, `--shard=${{ matrix.part }}/4`, twice), with a fourth machine's minutes, which cost nothing for a public repository (D452, D600).
+
+Why: the owner's instruction, measured rather than guessed.
