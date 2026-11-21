@@ -27,6 +27,9 @@
 --    the last 7 and 30 days, shared plans, people with reminders on, and
 --    messages waiting.
 -- 7. Error codes a phone noted, as codes only, for the account's page.
+-- 8. Support's account is its own, never the owner's personal one, and
+--    never in a plan (D640). Its dashboard is on its own address,
+--    admin.prepenny.co.uk, behind Cloudflare Access (D641).
 --
 -- Nothing here writes an amount, a payment name, a note or an email address
 -- to a log or into a refusal: every refusal is a short code (CLAUDE.md).
@@ -45,7 +48,9 @@ revoke all on app.support_person from public, anon, authenticated, service_role;
 -- Sets who support is: the address the owner signs in with, from the
 -- Database workflow's SUPPORT_EMAIL secret, sent as a parameter so it's never
 -- in a query's text or a log (D617). Empty clears it, so nobody is support.
--- Answers "set" or "cleared". Only the database's administrator can call it.
+-- Answers "set", "cleared", or "in-a-plan" for an account that's in a plan,
+-- which is never support's (D640). Only the database's administrator can
+-- call it.
 create function app.set_support(email text) returns text
 language plpgsql volatile security definer set search_path = '' as $$
 declare
@@ -57,6 +62,15 @@ begin
     end if;
     delete from app.support_person;
     return 'cleared';
+  end if;
+  -- Support's account is its own and never has a plan (D640): an address
+  -- whose account is in a plan, such as someone's personal one, isn't
+  -- taken, and nobody is support until the secret is support's own.
+  if exists (
+      select 1 from auth.users u join public.plan_members m on m.person_id = u.id
+      where lower(u.email) = address and m.left_at is null) then
+    delete from app.support_person;
+    return 'in-a-plan';
   end if;
   insert into app.support_person as s (only_one, email_key)
   values (true, app.address_key('support:' || address))
@@ -119,6 +133,23 @@ begin
   return jsonb_build_object('status', 'no');
 end;
 $$;
+
+-- Support's account never has a plan (D640): nobody can add it to one, by
+-- starting a plan, keeping a phone's plan, joining with an invite or any
+-- other way, as the database checks every change of who's in a plan.
+create function app.no_plan_for_support() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if app.is_support_address(new.person_id) then
+    perform app.refuse('support-account');
+  end if;
+  return new;
+end;
+$$;
+
+create trigger prepenny_no_plan_for_support
+  before insert or update of person_id on public.plan_members
+  for each row execute function app.no_plan_for_support();
 
 -- ---------------------------------------------------------------------------
 -- Records: what support did, replies, error codes, support access, the
@@ -1289,13 +1320,17 @@ begin
   end if;
   return jsonb_build_object('sign_in', standing, 'version', coalesce(problem, 'ok'),
     'now', app.server_time(), 'get_back_in', asked, 'join_requests', coalesce(requests, '[]'::jsonb),
-    'joining', coalesce(joining, '[]'::jsonb), 'two_step_off', two_step_off);
+    'joining', coalesce(joining, '[]'::jsonb), 'two_step_off', two_step_off,
+    -- Support's own account, which the app shows nothing for but a line
+    -- saying so (D640).
+    'support_account', auth.uid() is not null and app.is_support_address(auth.uid()));
 end;
 $$;
 
 
 -- ---------------------------------------------------------------------------
--- 6. Usage, counts only (D623): never a name, an address or an amount.
+-- 6. Usage, counts only (D623): never a name, an address or an amount, and
+-- never support's own account (D640).
 
 create function public.support_usage() returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
@@ -1306,7 +1341,7 @@ begin
   return jsonb_build_object(
     'sign_ups', (select jsonb_agg(jsonb_build_object('week', w.week, 'count', (
         select count(*) from auth.users u
-        where u.email_confirmed_at is not null
+        where u.email_confirmed_at is not null and not app.is_support_address(u.id)
           and (u.created_at at time zone 'Europe/London')::date >= w.week
           and (u.created_at at time zone 'Europe/London')::date < w.week + 7)) order by w.week desc)
       from (select this_week - 7 * n as week from generate_series(0, 7) n) w),
@@ -1322,7 +1357,8 @@ end;
 $$;
 
 -- People signed in on a phone or computer that asked PrePenny's server
--- anything, or renewed its sign-in, in the last span.
+-- anything, or renewed its sign-in, in the last span. Support's own account
+-- isn't counted (D640).
 create function app.people_opened(span interval) returns bigint
 language sql stable security definer set search_path = '' as $$
   select count(distinct who) from (
@@ -1331,6 +1367,7 @@ language sql stable security definer set search_path = '' as $$
     select s.user_id from auth.sessions s
     where greatest(s.created_at, s.refreshed_at at time zone 'utc', s.updated_at) > now() - span
   ) seen
+  where not app.is_support_address(who)
 $$;
 
 -- ---------------------------------------------------------------------------
@@ -1419,7 +1456,13 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- hello@prepenny.co.uk's notice now points to the support screen.
+-- hello@prepenny.co.uk's notice now points to the support dashboard, on its
+-- own address (D641): https://admin.prepenny.co.uk for the real project, and
+-- the tests' own copy on this computer (supabase/seed.sql).
+
+alter table app.email_sender
+  add column support_site text not null default 'https://admin.prepenny.co.uk'
+  check (support_site ~ '^https?://[a-z0-9.:-]+$');
 
 create or replace function app.tell_support() returns integer
 language plpgsql volatile security definer set search_path = '' as $$
@@ -1427,7 +1470,7 @@ declare
   told app.support_told;
   waiting integer;
   support text;
-  site text;
+  dashboard text;
 begin
   select * into told from app.support_told for update;
   if told.told_at is not null and told.told_at > now() - app.support_told_every() then
@@ -1437,14 +1480,14 @@ begin
   if waiting = 0 or not app.email_ready() then
     return 0;
   end if;
-  select s.from_address, s.site into support, site from app.email_sender s;
+  select s.from_address, s.support_site into support, dashboard from app.email_sender s;
   perform app.send_email(support, 'A message is waiting in PrePenny''s support inbox',
     case when waiting = 1 then '1 message is waiting.' else waiting || ' messages are waiting.' end,
     null,
     array['Someone wrote to PrePenny support. This email doesn''t hold their words or their email address.',
-      'Read it on PrePenny''s support screen, signed in as support with two-step sign-in.'],
+      'Read it on PrePenny''s support dashboard, signed in as support with two-step sign-in.'],
     'PrePenny sends this at most once every 4 hours.',
-    'Open the support screen', coalesce(site, 'https://prepenny.co.uk') || '/app/support/');
+    'Open the support dashboard', dashboard || '/');
   update app.support_messages m set told = true where not m.told;
   update app.support_told t set told_at = now() where t.only_one;
   return waiting;
@@ -1483,7 +1526,7 @@ select cron.schedule('prepenny-support-tools', '3,18,33,48 * * * *', $$select ap
 
 revoke all on function
   app.start_get_back_in(uuid, text, text), app.app_used_since(uuid, timestamptz),
-  app.end_support_access_on_joining(),
+  app.end_support_access_on_joining(), app.no_plan_for_support(),
   app.set_support(text), app.is_support_address(uuid), app.is_support(), app.support_only(),
   app.support_access_lasts(), app.two_step_wait(), app.support_link_lasts(),
   app.support_own_emails_a_day(), app.error_codes_a_day(), app.error_codes_kept(),

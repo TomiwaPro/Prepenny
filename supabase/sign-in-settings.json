@@ -1,6 +1,6 @@
 {
   "site_url": "https://prepenny.co.uk",
-  "uri_allow_list": "https://prepenny.co.uk/**,https://prepenny.prepenny.workers.dev/**,https://*-prepenny.prepenny.workers.dev/**",
+  "uri_allow_list": "https://prepenny.co.uk/**,https://prepenny.prepenny.workers.dev/**,https://*-prepenny.prepenny.workers.dev/**,https://admin.prepenny.co.uk/",
   "disable_signup": false,
   "external_email_enabled": true,
   "external_phone_enabled": false,

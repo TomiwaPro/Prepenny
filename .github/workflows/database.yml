@@ -185,10 +185,10 @@ jobs:
           echo "The database knows where the reminders function is, and has started it once."
 
       - name: Tell the database who PrePenny support is
-        # Step 4j (D617): the support screen opens only for the account that
-        # signs in with this address, with two-step sign-in on and passed.
-        # The address is the SUPPORT_EMAIL secret, never in a file, as the
-        # repository is public. It goes as a parameter, never in the query's
+        # Step 4j (D617, D640): the support dashboard opens only for the
+        # account that signs in with this address, support's own, which never
+        # has a plan, with two-step sign-in on and passed. The address is the
+        # SUPPORT_EMAIL secret, never in a file, as the repository is public. It goes as a parameter, never in the query's
         # text (D494), and the database keeps it only scrambled. Without the
         # secret, nobody is support, and the run says so.
         if: steps.supabase.outputs.ready == 'true'
@@ -202,12 +202,17 @@ jobs:
             "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
             --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" --header "Content-Type: application/json" --data @-)
           if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
-            echo "::error title=Support::Supabase answered $status. Check SUPPORT_EMAIL is the email address you sign in to PrePenny with (README.md, part W)."
+            echo "::error title=Support::Supabase answered $status. Check SUPPORT_EMAIL is support's own email address (README.md, part W)."
             exit 1
           fi
           case "$(jq -r '.[0].support // empty' "$RUNNER_TEMP/support.json")" in
             set) echo "The database knows who PrePenny support is." ;;
-            cleared) echo "::warning title=Support::SUPPORT_EMAIL isn't set, so nobody can open the support screen. Follow README.md, part W." ;;
+            cleared) echo "::warning title=Support::SUPPORT_EMAIL isn't set, so nobody can open the support dashboard. Follow README.md, part W." ;;
+            in-a-plan)
+              # Support's own account never has a plan (D640): this address
+              # is someone's own, so nobody is support until it's changed.
+              echo "::error title=Support::The account with the SUPPORT_EMAIL address is in a plan, so it isn't PrePenny support's own account. Put support's own address in SUPPORT_EMAIL (README.md, part W), then run this workflow again."
+              exit 1 ;;
             *)
               echo "::error title=Support::Supabase didn't say whether support was set. Run this workflow again."
               exit 1 ;;

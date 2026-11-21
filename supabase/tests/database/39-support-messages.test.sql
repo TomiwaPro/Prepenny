@@ -212,9 +212,9 @@ select is(pg_temp.newest_to('hello@prepenny.co.uk') ->> 'Subject',
 select is(pg_temp.newest_to('hello@prepenny.co.uk') ->> 'Text',
   '1 message is waiting.' || E'\n\n'
   || 'Someone wrote to PrePenny support. This email doesn''t hold their words or their email address.'
-  -- Since step 4j, it points to the support screen (D617).
-  || E'\n\n' || 'Read it on PrePenny''s support screen, signed in as support with two-step sign-in.'
-  || E'\n\n' || 'Open the support screen: http://127.0.0.1:4173/app/support/'
+  -- Since step 4j, it points to the support dashboard, on its own address (D617, D641).
+  || E'\n\n' || 'Read it on PrePenny''s support dashboard, signed in as support with two-step sign-in.'
+  || E'\n\n' || 'Open the support dashboard: http://127.0.0.1:4176/'
   || E'\n\n' || 'PrePenny sends this at most once every 4 hours.'
   || E'\n\n' || 'PrePenny. Plan every penny before payday.',
   'with none of the words, and not who sent it');

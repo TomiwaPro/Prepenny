@@ -24,7 +24,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(181);
+select plan(190);
 
 -- As on a fresh database, whatever the end-to-end tests left on this one
 -- (PLAN.md item 41): all undone when the test ends.
@@ -181,6 +181,7 @@ select is_empty($$ select p.proname::text from pg_proc p join pg_namespace n on 
        'app.support_tools_tick()'::regprocedure,
        'app.note_support_action(uuid, uuid, text, boolean, integer)'::regprocedure,
        'app.app_used_since(uuid, timestamptz)'::regprocedure, 'app.end_support_access_on_joining()'::regprocedure,
+       'app.no_plan_for_support()'::regprocedure,
        'app.start_get_back_in(uuid, text, text)'::regprocedure,
        'app.access_open(uuid)'::regprocedure, 'app.people_opened(interval)'::regprocedure)
        and (has_function_privilege('anon', p.oid, 'execute')
@@ -722,6 +723,27 @@ select is_empty(format($$ select k from jsonb_object_keys(%L::jsonb) k
      where k not in ('sign_ups', 'opened_7', 'opened_30', 'shared_plans', 'reminders_on', 'waiting', 'now') $$,
      public.support_usage()),
   'Usage is counts only: no names, addresses or money');
+-- Support's own account is left out of the usage numbers (D640).
+select tests.as_test();
+select set_config('test.week_people', (select count(*) from auth.users u
+    where u.email_confirmed_at is not null and u.id <> tests.id('sue')
+      and (u.created_at at time zone 'Europe/London')::date
+        >= date_trunc('week', now() at time zone 'Europe/London')::date)::text, true);
+-- Support's account signed up this week, and its phone or computer asked
+-- the server something just now.
+update auth.users set created_at = now() where id = tests.id('sue');
+insert into app.devices as d (session_id, person_id, last_used_at)
+values (tests.id('sue-session'), tests.id('sue'), now())
+on conflict (session_id) do update set last_used_at = now();
+select set_config('test.opened', app.people_opened(interval '7 days')::text, true);
+select pg_temp.as_support();
+select is(public.support_usage() -> 'sign_ups' -> 0 ->> 'count', current_setting('test.week_people'),
+  'Support''s own account isn''t among this week''s sign-ups (D640)');
+select tests.as_test();
+select app.set_support('');
+select is(app.people_opened(interval '7 days'), current_setting('test.opened')::bigint + 1,
+  'nor among the people who opened PrePenny: it would be, as anyone else''s');
+select app.set_support('sue@example.test');
 
 -- ---------------------------------------------------------------------------
 -- 7. No refusal holds an address or anything about money.
@@ -734,7 +756,29 @@ select is_empty($$ select said from unnest(array[
   'Every refusal is a short code');
 
 -- ---------------------------------------------------------------------------
--- 8. Deleting an account deletes what support kept about it.
+-- 8. Support's own account never has a plan (D640).
+
+select tests.as_test();
+select is(pg_temp.refusal(format(
+    'insert into public.plan_members (plan_id, person_id, role) values (%L, %L, ''editor'')',
+    tests.id('plan'), tests.id('sue'))), 'support-account',
+  'Nobody can add support''s account to a plan, not even the database''s administrator');
+select pg_temp.as_support();
+select is(pg_temp.refusal(format('select public.start_plan(%L, ''england-and-wales'')', tests.id('sue-plan'))),
+  'support-account', 'Support''s account can''t start a plan of its own, or keep a phone''s');
+select is(public.hello() ->> 'support_account', 'true',
+  'A phone signed in to it is told it''s support''s account, so the app shows nothing else');
+select tests.as_person('jess');
+select is(public.hello() ->> 'support_account', 'false', 'and nobody else''s phone is');
+select tests.as_test();
+select is(app.set_support('jess@example.test'), 'in-a-plan',
+  'An address whose account is in a plan, such as someone''s own, is never taken as support''s');
+select ok(not exists (select 1 from app.support_person),
+  'and nobody is support until the secret is support''s own address');
+select is(app.set_support('sue@example.test'), 'set', '(Sue is support again)');
+
+-- ---------------------------------------------------------------------------
+-- 9. Deleting an account deletes what support kept about it.
 
 delete from auth.users where id = tests.id('alex');
 select is((select count(*) from app.support_actions where person_id = tests.id('alex'))
