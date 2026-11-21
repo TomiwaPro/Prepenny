@@ -38,7 +38,8 @@ export function dashboardProblem(answer: Answer, team: string): string | null {
     } catch {
       return `it sends people to an address that can't be read: ${answer.location}`;
     }
-    if (to.hostname === team && to.pathname.startsWith('/cdn-cgi/access/login')) return null;
+    // Access's own sign-in is on the team's address (its exact page can change).
+    if (to.protocol === 'https:' && to.hostname === team) return null;
     return `it sends people to ${to.origin}${to.pathname}, not Cloudflare Access's sign-in on ${team}`;
   }
   if (answer.status === 404) {

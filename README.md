@@ -907,23 +907,29 @@ Nothing here changes a message. The SQL Editor is only for you: nobody signed in
 
 ### W. Step 4j: support tools
 
-What changed (D617 to D636): **the support screen**, at https://prepenny.co.uk/app/support/, for you alone: every message and idea, newest first, with any picture and plan copy; your reply, emailed from hello@prepenny.co.uk, with ready replies (one for someone in distress, with Samaritans and free debt advice); finding an account and seeing its status, never its money; signing someone out everywhere, the 7-day wait to turn off two-step sign-in, and a link to a locked backup email; usage counts; and the tax year check. Under **More**, **Security**, people can **Let support see my plan** for 7 days, read only; a partner is told in Activity.
+What changed (D617 to D642): **the support dashboard**, an internal site of its own at https://admin.prepenny.co.uk/, for support's own account alone, never your personal one: every message and idea, newest first, with any picture and plan copy; your reply, emailed from hello@prepenny.co.uk, with ready replies (one for someone in distress, with Samaritans and free debt advice); finding an account and seeing its status, never its money; signing someone out everywhere, the 7-day wait to turn off two-step sign-in, and a link to a locked backup email; usage counts; and the tax year check. The app has no support pages, and nothing in the app or on the website links to the dashboard. Under **More**, **Security**, people can **Let support see my plan** for 7 days, read only; a partner is told in Activity.
 
-**What you need to set up: one GitHub secret.** Checked on 20 Nov 2026 against each service (D636). The database learns who you are from it, and it's never written in a file, as the repository is public.
+Support's account is its own: an address at prepenny.co.uk that you choose, forwarded to your Gmail, and never written anywhere public: not in the app, the website, PrePenny's emails or this repository. It lives only in Cloudflare (Email Routing and Access) and in GitHub's `SUPPORT_EMAIL` secret. Below it's called **support's address**. That account never has a plan: signed in on prepenny.co.uk, it sees only "This is PrePenny support's account. Open the support dashboard instead." (D640).
 
-1. On github.com, open the **TomiwaPro/Prepenny** repository.
-2. Tap **Settings** (on a phone, it may be under the **...** menu beside the repository's name).
-3. In the menu on the left, under **Security**, tap **Secrets and variables**, then **Actions**.
-4. On the **Secrets** tab, tap **New repository secret**.
-5. **Name:** `SUPPORT_EMAIL`. **Secret:** the email address you sign in to PrePenny with, exactly, such as `yourname@gmail.com`.
-6. Tap **Add secret**.
-7. Turn on two-step sign-in on your own PrePenny account if it isn't on: in PrePenny, **More**, **Security**, **Two-step sign-in**. The support screen never opens without it.
+**Checked on Cloudflare's own pages on 21 Nov 2026 (D641):** Cloudflare Access is part of the Zero Trust Free plan, "$0 forever", with a "50 user limit", and the dashboard needs one user. Cloudflare's setup page says that when you start Zero Trust you choose a plan and enter payment details: "If you chose the Zero Trust Free plan, this step is still needed but you will not be charged." So it asks for a card even on the Free plan. GitHub's Cloudflare key needs nothing new: adding a Worker's own address accepts **Workers Scripts** permission (Cloudflare's API reference), which the key has from part A, on the same prepenny.co.uk it already puts the app on. Supabase allows the dashboard's address for signing in from `supabase/sign-in-settings.json`, which the Database workflow sends at the merge: nothing to do by hand.
 
-Nothing else: **Supabase** gets the new tables, steps and the scheduled job `prepenny-support-tools` from the Database workflow, which also puts the changed get-back-in function online and passes the secret to the database. **Resend** sends the replies with the key the database already has, within its free plan: support's own emails are capped at 15 a day, so sign-in codes always have room (D620). **Cloudflare** needs nothing: three new pages, 66 of its 100 rules.
+**Do these in this order.** Steps 1 to 7 come before merging; step 8 is the merge; steps 9 to 11 come after.
+
+1. **Support's address, forwarded to your Gmail.** On dash.cloudflare.com, choose your account, then **Compute**, **Email Service**, **Email Routing**, **Routing Rules**, then **Create routing rule**. In **Email pattern**, type the part of support's address before the @, with the domain `prepenny.co.uk`. **Action**: **Send to an email**. **Destination**: your Gmail, which is there already from part A (hello@). Save it. Send an email to support's address from another account: it arrives in your Gmail.
+2. **Zero Trust, once.** On dash.cloudflare.com, choose **Zero Trust**. Choose a team name, such as `prepenny` (your Access address becomes `prepenny.cloudflareaccess.com`), then the **Zero Trust Free** plan, and enter the payment details it asks for (nothing is charged). You can see the team name later under **Zero Trust**, **Settings**.
+3. **The one-time code login.** In **Zero Trust**, **Integrations**, **Identity providers**, choose **Add new identity provider**, then **One-time PIN**.
+4. **Cloudflare Access in front of the dashboard.** In **Zero Trust**, **Access controls**, **Applications**, choose **Create new application**, then **Self-hosted and private**, then **Add public hostname**: subdomain `admin`, domain `prepenny.co.uk`, nothing in the path. Under **Access policies**, create a new policy: name it `Support only`, action **Allow**, and include **Emails**: support's address, and nothing else. Under login methods, choose **One-time PIN** only, and turn on **Apply instant authentication**. **Session Duration**: 24 hours. Choose **Create**. Don't make a DNS record for `admin` yourself: the deploy makes it (Cloudflare can't add a Worker's address where one already exists).
+5. **Two GitHub variables, from Access.** In Access, open the application (**Edit**), then **Additional settings**, and copy the **Application Audience (AUD) Tag**: 64 letters and numbers. On github.com, open the repository, **Settings**, **Secrets and variables**, **Actions**, the **Variables** tab, **New repository variable**: name `CLOUDFLARE_ACCESS_AUD`, value the tag. Then another: `CLOUDFLARE_ACCESS_TEAM_DOMAIN`, value your team's Access address, such as `prepenny.cloudflareaccess.com`. Neither is secret: the dashboard checks with them that every request came through Access, and serves nothing without them.
+6. **The GitHub secret.** Same page, the **Secrets** tab, **New repository secret**: name `SUPPORT_EMAIL`, secret support's address, exactly. **Add secret**. (If you added your own address here before, change it: the Database workflow refuses an address whose account is in a plan.)
+7. **The Cloudflare key.** Check GitHub's key still has the three permissions in part A, steps 1 to 4. Nothing else is needed.
+8. **Merge** the pull request.
+9. **Check the runs.** **Actions**, then **Deploy**: a green tick, with **Put the support dashboard online** and **Check the support dashboard is only at its own address, behind Cloudflare Access** both done. The first time, the new address's certificate can take a few minutes, and the check waits up to 5. Then **Actions**, **Database**: **Tell the database who PrePenny support is** says "The database knows who PrePenny support is."
+10. **Sign in to the dashboard, once, on your computer.** Open https://admin.prepenny.co.uk/. Cloudflare asks for an email address: type support's address, then the code Cloudflare emails (it arrives in your Gmail). Then the dashboard's own page, **Sign in to PrePenny support**: support's address, **Send me a code**, the code from the email, **Sign in**.
+11. **Turn on its two-step sign-in.** The first time, the dashboard shows **Set up two-step sign-in**: tap **Set it up**, scan the picture with the authenticator app on your phone, type the code it shows for PrePenny support, and tap **Turn on**. The dashboard opens. Keep the key it shows somewhere safe. From then on, every sign-in asks for Cloudflare's code, the dashboard's code by email, then the app's code.
 
 **Using it:**
 
-- Open https://prepenny.co.uk/app/support/, signed in as yourself, with your authenticator app's code. Add it to your home screen if you like. The email that messages are waiting has **Open the support screen** too.
+- Open https://admin.prepenny.co.uk/ on your computer. Nothing of the dashboard is kept there: closing the tab signs you out of it. The email to hello@prepenny.co.uk that messages are waiting has **Open the support dashboard** too.
 - Tap a message to read it. To reply, choose a ready reply or write your own, change anything, and tap **Send reply**. Never write an amount, a payment name or a note: Resend keeps emails for 30 days.
 - **Find an account** by the address they sign in with, or their backup email. Their plan shows only if they've let support see it, from **More**, **Security**, **Let support see my plan**: the ready reply **Can we see your plan?** says how.
 - **Lost the authenticator app, still has the email:** on their account, **Turn off two-step sign-in**. It's turned off after 7 days, unless it's stopped from the email to them or the notice on any phone they're signed in on, or they sign in with the app meanwhile. Send the ready reply **Lost the authenticator app**.
@@ -933,11 +939,7 @@ Nothing else: **Supabase** gets the new tables, steps and the scheduled job `pre
 
 Part V's SQL Editor queries still work, but you no longer need them.
 
-**To check it worked, after merging:**
-
-1. **Actions**, then **Database**: a green tick, with **Tell the database who PrePenny support is** saying "The database knows who PrePenny support is." A yellow "SUPPORT_EMAIL isn't set" means the secret above isn't added yet: add it, then **Run workflow** on **Database**, keeping **Branch: main**.
-2. **Actions**, then **Tax year**, then **Run workflow**: a green tick, saying every tax file needed now is there.
-3. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4j".
+**To check it worked, after merging:** steps 9 to 11 above, then **Actions**, **Tax year**, **Run workflow**: a green tick, saying every tax file needed now is there. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4j".
 
 ## Bank holidays
 

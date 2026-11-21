@@ -276,41 +276,47 @@ Reading them in Supabase:
 
 If something looks different, note the step number and what you saw. The last section deletes both test accounts, and deleting them deletes their messages too, those sent signed out from their addresses included.
 
-## Step 4j: support tools (20 minutes)
+## Step 4j: support tools (25 minutes)
 
-The support screen, for you alone; a reply; Jess letting support see her plan; and support's actions on Tom. First, follow README.md part W: the `SUPPORT_EMAIL` secret, and two-step sign-in on your own account. Device A is your phone, signed in as `yourname+jess4@gmail.com`, in Tom's plan since step 4f. Device B is a private window. Device C is an ordinary browser window on a computer, where you sign in as yourself.
+The support dashboard, at its own address for support's own account alone; a reply; Jess letting support see her plan; and support's actions on Tom. First, follow README.md part W, in its order: support's own address, Cloudflare Access, the GitHub secret and variables, merging, then signing in to the dashboard once and setting up its two-step sign-in. Device A is your phone, signed in as `yourname+jess4@gmail.com`, in Tom's plan since step 4f. Device B is a private window. Device C is an ordinary browser window on a computer, for the support dashboard.
 
-The support screen is yours alone:
+The dashboard is only at its own address, for support alone:
 
-1. On device A, open https://prepenny.co.uk/app/support/. It says "This screen is for PrePenny support only.", with **Back to More**, and nothing else.
-2. On device C, open https://prepenny.co.uk/app/support/ and sign in with your own address, then your authenticator app's code. **Support** opens: **Tax files** says "The pay calculator has the tax file for every tax year it needs now."; **Inbox** lists step 4i's test messages, newest first, each with its kind, when, who it's from and its first lines; then **Find an account** and **Usage**, with numbers only.
+1. On device A, open https://prepenny.co.uk/app/support/. It says "This page isn't here", as for any address PrePenny doesn't have. Nothing in the app or on the website links to the dashboard.
+2. On device A, open https://admin.prepenny.co.uk/. Cloudflare's own page asks for an email address before anything else. Type `yourname+jess4@gmail.com`: it never lets you through, and nothing of the dashboard loads.
+3. On device C, open https://admin.prepenny.co.uk/. On Cloudflare's page, type support's own address, then the code Cloudflare emails to it (it arrives in your Gmail, forwarded). Then the dashboard's own page, "Sign in to PrePenny support": type support's address again, tap **Send me a code**, type the code from the email "Your PrePenny sign-in code", and tap **Sign in**. Then "Type the code from your authenticator app": type it, and tap **Continue**. **Support** opens: **Tax files** says "The pay calculator has the tax file for every tax year it needs now."; **Inbox** lists step 4i's test messages, newest first, each with its kind, when, who it's from and its first lines; then **Find an account** and **Usage**, with numbers only; and **Sign out** at the bottom.
+4. Close that tab and open https://admin.prepenny.co.uk/ in a new one: the dashboard asks you to sign in again (Cloudflare may not, for a while). Nothing of the dashboard was kept on the computer. Sign in again as in step 3.
 
 A reply, from a ready reply:
 
-3. Tap the **Contact us** message from `yourname+tom4@gmail.com` ("Test 4i: I can't sign in"). Under **Reply**, choose **Someone in distress**: the box fills with Samaritans' 116 123 and the debt helplines. Add `Test 4j.` as a first line, and tap **Send reply**: "Reply sent to yourname+tom4@gmail.com.", and your words under **Replies**.
-4. In your Gmail, "A reply from PrePenny support", from hello@prepenny.co.uk to `yourname+tom4@gmail.com`: your words, each line a paragraph, then "For your privacy, this email doesn't repeat what you wrote." Nothing Tom wrote in step 4i is in it.
-5. Tap **Back to the inbox**, then the **Something looks wrong** message from `yourname+jess4@gmail.com`: your screenshot from step 4i shows, with when it's deleted.
+5. Tap the **Contact us** message from `yourname+tom4@gmail.com` ("Test 4i: I can't sign in"). Under **Reply**, choose **Someone in distress**: the box fills with Samaritans' 116 123 and the debt helplines. Add `Test 4j.` as a first line, and tap **Send reply**: "Reply sent to yourname+tom4@gmail.com.", and your words under **Replies**.
+6. In your Gmail, "A reply from PrePenny support", from hello@prepenny.co.uk to `yourname+tom4@gmail.com`: your words, each line a paragraph, then "For your privacy, this email doesn't repeat what you wrote." Nothing Tom wrote in step 4i is in it.
+7. Tap **Back to the inbox**, then the **Something looks wrong** message from `yourname+jess4@gmail.com`: your screenshot from step 4i shows, with when it's deleted.
 
 Jess lets support see her plan:
 
-6. On device B, go to https://prepenny.co.uk/app/, tap **More**, then **Sign up or sign in**, and sign in with `yourname+tom4@gmail.com`.
-7. On device A, tap **More**, then under **Security**, **Let support see my plan**. It says "Support sees what you see: your own accounts and the shared ones, never Tom's private ones. Tom is told in Activity." Tap **Let support see it for 7 days**: "PrePenny support can see your plan until [now] on [a week today]."
-8. On device B, tap **More**, then **Activity**: "Jess let PrePenny support see the plan until [a week today]."
-9. On device C, under **Find an account**, type `yourname+jess4@gmail.com` and tap **Find**. Her account: when she signed up and last signed in, "Plan: shared with a partner", and "They let support see their plan until ...". Tap **See their plan**: Jess's accounts and the shared ones, each with its bank figure, lowest point and coming payments, and none of Tom's private accounts. Nothing on it can be tapped to change.
-10. On device A, go back and open **Let support see my plan** again: "Support last looked at [just now]." Tap **Stop support seeing my plan**: it says support can't see your plan now.
-11. On device C, reload the page: "They've stopped support seeing their plan, or its 7 days are over, so it can't be shown." On device B, **Activity**: "Jess stopped PrePenny support seeing the plan."
+8. On device B, go to https://prepenny.co.uk/app/, tap **More**, then **Sign up or sign in**, and sign in with `yourname+tom4@gmail.com`.
+9. On device A, tap **More**, then under **Security**, **Let support see my plan**. It says "Support sees what you see: your own accounts and the shared ones, never Tom's private ones. Tom is told in Activity." Tap **Let support see it for 7 days**: "PrePenny support can see your plan until [now] on [a week today]."
+10. On device B, tap **More**, then **Activity**: "Jess let PrePenny support see the plan until [a week today]."
+11. On device C, under **Find an account**, type `yourname+jess4@gmail.com` and tap **Find**. Her account: when she signed up and last signed in, "Plan: shared with a partner", and "They let support see their plan until ...". Tap **See their plan**: Jess's accounts and the shared ones, each with its bank figure, lowest point and coming payments, and none of Tom's private accounts. Nothing on it can be tapped to change.
+12. On device A, go back and open **Let support see my plan** again: "Support last looked at [just now]." Tap **Stop support seeing my plan**: it says support can't see your plan now.
+13. On device C, reload the page: "They've stopped support seeing their plan, or its 7 days are over, so it can't be shown." On device B, **Activity**: "Jess stopped PrePenny support seeing the plan."
 
 Support's actions, on Tom:
 
-12. On device B, tap **More**, **Security**, **Two-step sign-in**, and turn it on with your own authenticator app, as in step 3e (it adds a second PrePenny line to the app, for Tom). Then **More**, **Security**, **Email addresses**, and add `yourname+tom4backup@gmail.com` as the backup email, with its code.
-13. On device C, find `yourname+tom4@gmail.com`. Tap **Turn off two-step sign-in**, then **Start the 7-day wait**: "The 7-day wait has started. Two-step sign-in is turned off at [now] on [a week today], unless it's stopped." In Gmail, to `yourname+tom4@gmail.com`, "PrePenny support is turning off two-step sign-in", with **Stop it**, and the same to `yourname+tom4backup@gmail.com`. Tap **Stop it** in the first: a page "Keep two-step sign-in on"; tap **Stop it**: "It's stopped". On device C, reload: **Under way** says "Nothing is under way.", and **What support did** lists both, with the time.
-14. On device C, tap **Turn off two-step sign-in** and **Start the 7-day wait** again. On device B, within a minute, every screen shows "PrePenny support is turning off two-step sign-in", with **Stop it**. Tap it: "It's stopped. Two-step sign-in stays on." 
-15. On device C, tap **Send a link to their backup email**, then **Send the link**: "Link sent to yourname+tom4backup@gmail.com." In Gmail, to that address, "A link from PrePenny support to get back in". Open its **Get back in** in a new private window: "PrePenny support sent you this link to get back into your account.", with **Use the link from PrePenny support**. Tap it: "You've asked to get back in", and to `yourname+tom4@gmail.com`, "Someone asked to get into your PrePenny account", with **Stop it**. Tap that **Stop it**, then **Stop it** on its page, so nothing changes on Tom's account.
-16. On device C, tap **Sign out everywhere**, then **Sign out everywhere** again: "Signed out of 1 phone or computer. They've been emailed." Within a minute device B is signed out, and Gmail has "PrePenny support signed you out" to `yourname+tom4@gmail.com`.
+14. On device B, tap **More**, **Security**, **Two-step sign-in**, and turn it on with your own authenticator app, as in step 3e (it adds a second PrePenny line to the app, for Tom). Then **More**, **Security**, **Email addresses**, and add `yourname+tom4backup@gmail.com` as the backup email, with its code.
+15. On device C, find `yourname+tom4@gmail.com`. Tap **Turn off two-step sign-in**, then **Start the 7-day wait**: "The 7-day wait has started. Two-step sign-in is turned off at [now] on [a week today], unless it's stopped." In Gmail, to `yourname+tom4@gmail.com`, "PrePenny support is turning off two-step sign-in", with **Stop it**, and the same to `yourname+tom4backup@gmail.com`. Tap **Stop it** in the first: a page "Keep two-step sign-in on"; tap **Stop it**: "It's stopped". On device C, reload: **Under way** says "Nothing is under way.", and **What support did** lists both, with the time.
+16. On device C, tap **Turn off two-step sign-in** and **Start the 7-day wait** again. On device B, within a minute, every screen shows "PrePenny support is turning off two-step sign-in", with **Stop it**. Tap it: "It's stopped. Two-step sign-in stays on." 
+17. On device C, tap **Send a link to their backup email**, then **Send the link**: "Link sent to yourname+tom4backup@gmail.com." In Gmail, to that address, "A link from PrePenny support to get back in". Open its **Get back in** in a new private window: "PrePenny support sent you this link to get back into your account.", with **Use the link from PrePenny support**. Tap it: "You've asked to get back in", and to `yourname+tom4@gmail.com`, "Someone asked to get into your PrePenny account", with **Stop it**. Tap that **Stop it**, then **Stop it** on its page, so nothing changes on Tom's account.
+18. On device C, tap **Sign out everywhere**, then **Sign out everywhere** again: "Signed out of 1 phone or computer. They've been emailed." Within a minute device B is signed out, and Gmail has "PrePenny support signed you out" to `yourname+tom4@gmail.com`.
+
+Support's own account in the app, which never has a plan:
+
+19. On device B (signed out after step 18), open https://prepenny.co.uk/, tap **Already have an account? Sign in**, and sign in with support's own address, and its authenticator code if asked. It shows only "This is PrePenny support's account." and "Open the support dashboard instead.", with **Sign out**, on every page: no setup and no plan. Tap **Sign out**, then sign in again with `yourname+tom4@gmail.com` (and Tom's authenticator code) for the last section.
 
 The tax year check, on GitHub:
 
-17. On github.com, **Actions**, then **Tax year**, then **Run workflow**, keeping **Branch: main**: a green tick, and its last step says "The pay calculator has the tax file for every tax year it needs now." From 1 March it turns red each morning until next year's file is added (step 4r).
+20. On github.com, **Actions**, then **Tax year**, then **Run workflow**, keeping **Branch: main**: a green tick, and its last step says "The pay calculator has the tax file for every tax year it needs now." From 1 March it turns red each morning until next year's file is added (step 4r).
 
 If something looks different, note the step number and what you saw. The last section deletes both test accounts, and with them everything support kept about them. Afterwards, remove the second PrePenny line, for Tom, from your authenticator app.
 

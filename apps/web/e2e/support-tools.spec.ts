@@ -37,7 +37,7 @@ import { DASHBOARD } from './dashboard.ts';
 import { openOnExample, settingScript } from './fixtures.ts';
 import { addAccount, entries, jessAndTom, openActivity, planOf } from './jess-and-tom.ts';
 import { box, noAxeProblems } from './setup.ts';
-import { newEmail, TODAY } from './sign-in-helpers.ts';
+import { makeAPlan, newEmail, TODAY } from './sign-in-helpers.ts';
 import { appCode } from './totp.ts';
 import {
   LOCAL_SECRET_KEY,
@@ -446,7 +446,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
 
       // Support's own account, signed in on the app, gets only a line saying
       // so: no setup, no plan, and the database never gives it one (D640).
+      // On a phone with a plan of its own, which never becomes support's.
       const { page: app, context: appPhone } = await secondPhone(browser, info, colorScheme);
+      await makeAPlan(app);
       await withSupport(async () => {
         await app.goto(`/sign-in/#token_hash=${await linkKeyFor(SUPPORT)}&type=email`);
         await app.getByRole('button', { name: strings.signIn.finishLink }).click();
@@ -462,6 +464,25 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await app.goto(path);
         await expect(app.getByTestId('support-account')).toBeVisible();
       }
+      // The phone's own plan is still nobody's, after opening it again too.
+      const owners = () =>
+        app.evaluate(
+          () =>
+            new Promise<string[]>((resolve, reject) => {
+              const opened = indexedDB.open('prepenny');
+              opened.onerror = () => reject(opened.error);
+              opened.onsuccess = () => {
+                const all = opened.result.transaction('plans').objectStore('plans').getAll();
+                all.onsuccess = () =>
+                  resolve(
+                    (all.result as { isExample?: boolean; owner?: string }[])
+                      .filter((plan) => plan.isExample !== true)
+                      .map((plan) => plan.owner ?? 'nobody'),
+                  );
+              };
+            }),
+        );
+      expect(await owners()).toEqual(['nobody']);
       expect(
         sql(`select count(*) from public.plan_members m join auth.users u on u.id = m.person_id
           where u.email = ${quoted(SUPPORT)}`),

@@ -222,7 +222,8 @@ export async function checkSignIn(): Promise<void> {
       else await signInEnded();
       return;
     }
-    if ((await claimPlan(data.session.user.id)) === 'someone-else') {
+    // Support's own account never makes the phone's plan its own (D640).
+    if (!supportAccountHere() && (await claimPlan(data.session.user.id)) === 'someone-else') {
       await signOutHere();
       setAccount({ status: 'signed-out' });
       return;

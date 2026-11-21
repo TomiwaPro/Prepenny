@@ -23,7 +23,8 @@ export interface AccessKey extends JsonWebKey {
 export type KeysFor = (team: string) => Promise<readonly AccessKey[]>;
 
 const TEAM = /^[a-z0-9-]+\.cloudflareaccess\.com$/;
-const AUD = /^[0-9a-f]{64}$/;
+/** Cloudflare's AUD tags are 64 letters and numbers; any long one is taken, as Cloudflare doesn't promise the length. */
+const AUD = /^[0-9a-f]{32,128}$/;
 /** A minute either way for the clocks of Cloudflare's machines. */
 const LEEWAY_S = 60;
 
