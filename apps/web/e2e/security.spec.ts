@@ -159,7 +159,19 @@ const privateEdits = (plan: string, jess: string): Kept[] =>
  * the plan's members and its own row; and with `shared`, every shared record
  * and the rest of the history too.
  */
-function fingerprint(plan: string, jess: string, shared: boolean): string {
+/**
+ * What Jess has in the plan, as one line. `notesOf` sets aside the one thing a
+ * member of her plan may add, even with "Can view only": their own note in
+ * Activity that they let PrePenny support see what they see, or stopped it,
+ * which D617 says everyone in the plan is told (D639). The test checks that
+ * nothing else was added.
+ */
+function fingerprint(
+  plan: string,
+  jess: string,
+  shared: boolean,
+  notesOf: string | null = null,
+): string {
   const parts: string[] = [];
   for (const table of tablesOfRecords()) {
     parts.push(
@@ -170,7 +182,8 @@ function fingerprint(plan: string, jess: string, shared: boolean): string {
   }
   parts.push(
     sql(`select coalesce(md5(string_agg(to_jsonb(e)::text, '|' order by e.id)), '') from public.edits e
-      where e.plan_id = ${quoted(plan)} and (e.private_to = ${quoted(jess)} ${shared ? 'or true' : ''})`),
+      where e.plan_id = ${quoted(plan)} and (e.private_to = ${quoted(jess)} ${shared ? 'or true' : ''})
+        ${notesOf === null ? '' : `and not (e.kind = 'support-access' and e.private_to is null and e.person_id = ${quoted(notesOf)})`}`),
     sql(`select coalesce(md5(string_agg(to_jsonb(r)::text, '|' order by r.edit_id, r.record_table, r.record_id)), '')
       from app.edit_records r where r.plan_id = ${quoted(plan)}
         and (${quoted(jess)} in (r.before_private, r.after_private) ${shared ? 'or true' : ''})`),
@@ -512,9 +525,11 @@ for (const person of PEOPLE) {
       who: Who,
       secrets: readonly string[],
       mayChangeShared: boolean,
-      member: boolean,
+      memberId: string | null,
     ) => {
-      const before = fingerprint(plan, jess, !mayChangeShared);
+      const member = memberId !== null;
+      const before = fingerprint(plan, jess, !mayChangeShared, memberId);
+      const editsBefore = sql(`select count(*) from public.edits where plan_id = ${quoted(plan)}`);
       const targets = mayChangeShared ? hers : [...hers, ...shared];
 
       // 1. Every table through the Data API.
@@ -653,7 +668,20 @@ for (const person of PEOPLE) {
       }
 
       // Nothing of hers changed.
-      expect(fingerprint(plan, jess, !mayChangeShared), `${who.name} changed nothing`).toBe(before);
+      expect(
+        fingerprint(plan, jess, !mayChangeShared, memberId),
+        `${who.name} changed nothing`,
+      ).toBe(before);
+      // The one thing added to the plan, if anything: their own note in
+      // Activity about support seeing what they see (D617, D639), and only
+      // from someone in the plan.
+      expect(
+        sql(`select count(*) from public.edits e where e.plan_id = ${quoted(plan)}
+          and not (e.kind = 'support-access' and e.private_to is null
+            and e.person_id = ${quoted(memberId ?? '00000000-0000-0000-0000-000000000000')}
+            and e.summary - 'until' - 'ended' = '{}'::jsonb)`),
+        `${who.name} added nothing else to the plan`,
+      ).toBe(editsBefore);
     };
 
     // 4. Live updates: every channel, listening and sending, while Jess changes
@@ -788,7 +816,12 @@ for (const person of PEOPLE) {
     }
     const member = person === 'Tom' || person === 'Tom, who can view only';
     // Alex and someone signed out get nothing of the plan at all; "Can view only" changes nothing shared.
-    await tryEverything(who, member ? privateSecrets : planSecrets, person === 'Tom', member);
+    await tryEverything(
+      who,
+      member ? privateSecrets : planSecrets,
+      person === 'Tom',
+      member ? await personOn(tom.page) : null,
+    );
     await tryListening(who, member ? privateSecrets : planSecrets, member);
 
     await alex?.context.close();

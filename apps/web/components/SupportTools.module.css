@@ -1,0 +1,84 @@
+/* The support screen (step 4j): PrePenny's cards and rows (DESIGN.md), with
+   a few parts of its own: the first lines of a message, a message's words
+   as written, a picture that fits the card, counts beside their labels, and
+   the sign-ups list. No colour of its own: red, amber and green are for
+   money only (DESIGN.md). */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* The tax year line when a file is missing: the sunk colour, as Home's
+   suggestions, with a brass edge, never Short's red. */
+.notice {
+  border: 1px solid var(--brass);
+  background: var(--sunk);
+}
+
+/* An address on its own line, broken anywhere so it never makes the page wider. */
+.address {
+  overflow-wrap: anywhere;
+}
+
+/* The first three lines of a message in the inbox. */
+.snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+/* The reply box: taller than a one-line box, as Contact us's. */
+.box {
+  min-height: 12rem;
+  padding: var(--space-3);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.45;
+}
+
+/* A message's words, and a reply, kept as they were written. */
+.words {
+  font-size: var(--size-body);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.picture {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--radius-inner);
+}
+
+/* A count beside its label, the figure on the right, on one line or two. */
+.count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  min-height: var(--tap);
+  padding: var(--space-2) 0;
+}
+
+.figure {
+  font-size: var(--size-name);
+  font-weight: 700;
+}
+
+/* One thing support did, or an error code: a line and a second line. */
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) 0;
+  overflow-wrap: anywhere;
+}

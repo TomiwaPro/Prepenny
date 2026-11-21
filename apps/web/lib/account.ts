@@ -18,6 +18,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { useSyncExternalStore } from 'react';
 import { claimOwnPlan, openDb } from '../data/db.ts';
 import { forgetEverything, planSafelyKept } from '../data/forget.ts';
+import { setSupportAccountHere, supportAccountHere } from '../data/support-account.ts';
 import { signInConfig } from './sign-in-config.ts';
 import { fetchWithTimeLimit } from './time-limit.ts';
 import { appVersion } from './version.ts';
@@ -82,6 +83,10 @@ function setAccount(next: Account) {
     return;
   }
   account = next;
+  // Signed out, or signing in switched off: not support's account any more (D640).
+  if ((next.status === 'signed-out' || next.status === 'off') && supportAccountHere()) {
+    setSupportAccountHere(false);
+  }
   for (const listener of listeners) listener();
 }
 
@@ -217,7 +222,8 @@ export async function checkSignIn(): Promise<void> {
       else await signInEnded();
       return;
     }
-    if ((await claimPlan(data.session.user.id)) === 'someone-else') {
+    // Support's own account never makes the phone's plan its own (D640).
+    if (!supportAccountHere() && (await claimPlan(data.session.user.id)) === 'someone-else') {
       await signOutHere();
       setAccount({ status: 'signed-out' });
       return;
@@ -253,6 +259,15 @@ function signOutOnPurpose(): Promise<void> {
 /** Ends this phone's sign-in on purpose, for PrePenny's own reasons. */
 async function signOutHere(): Promise<void> {
   await signOutOnPurpose();
+}
+
+/**
+ * Signs support's own account out of this phone (D640). The phone's plan,
+ * if it has one, was never made support's, so it stays as it is.
+ */
+export async function signOutSupportAccount(): Promise<void> {
+  await signOutOnPurpose();
+  setAccount({ status: 'signed-out' });
 }
 
 /**
@@ -409,9 +424,30 @@ async function claimPlan(personId: string): Promise<'mine' | 'no-plan' | 'someon
   }
 }
 
+/**
+ * Whether this account is support's own (D640), which never has a plan: the
+ * database says, and the phone's plan isn't made its. When the server can't
+ * be reached, PrePenny goes on as for anyone, and the next hello says so.
+ */
+async function isSupportAccount(): Promise<boolean> {
+  try {
+    const { data, error } = await (await supabase()).rpc('support_status');
+    const status = (data as { status?: unknown } | null)?.status;
+    return error === null && (status === 'support' || status === 'two-step');
+  } catch {
+    return false;
+  }
+}
+
 /** After a code, a link or Google has worked: the plan becomes the person's. */
 async function signedIn(session: Session | null): Promise<Outcome> {
   if (session === null) return { ok: false, problem: { kind: 'server' } };
+  if (await isSupportAccount()) {
+    setSupportAccountHere(true);
+    forgetCodeSent();
+    setAccount(accountOf(session));
+    return { ok: true };
+  }
   if ((await claimPlan(session.user.id)) === 'someone-else') {
     await signOutHere();
     setAccount({ status: 'signed-out' });

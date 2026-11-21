@@ -16,15 +16,17 @@ const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH;
  * (step 3g), and download, import and delete (step 3h), and a shared plan's
  * bank holidays on two phones (step 4c), and reminders (step 4e), and
  * notifications in a shared plan (step 4f), and updating an open PrePenny
- * signed in (step 4h).
+ * signed in (step 4h), and support (steps 4i and 4j).
  */
 const SIGN_IN_TESTS =
-  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data|security|brief-8-7|journeys-signed-in|shared-budgets|shared-bank-holidays|reminders|shared-notifications|updating-signed-in|support)\.spec\.ts$/;
+  /(sign-in|your-plan|clashes|devices|two-step|emails|versions|recovery|sharing|together|your-data|security|brief-8-7|journeys-signed-in|shared-budgets|shared-bank-holidays|reminders|shared-notifications|updating-signed-in|support|support-tools)\.spec\.ts$/;
 const port = 4173;
 /** The second copy, for the move from the old address (D428). */
 const OLD_ADDRESS_PORT = 4174;
 /** The third copy, with its rules in the live site's order (D559). */
 const LIVE_ORDER_PORT = 4175;
+/** The support dashboard, its own site (step 4j, D641). */
+const DASHBOARD_PORT = 4176;
 /**
  * A pull request's preview on Cloudflare, tried for real by the Deploy
  * workflow (step 3e-2, D408). Given, only that test runs, against it.
@@ -96,6 +98,15 @@ export default defineConfig({
             command: `wrangler dev --config e2e/old-address.wrangler.jsonc --port ${OLD_ADDRESS_PORT} --ip 127.0.0.1 --local-protocol https --log-level warn`,
             url: `https://127.0.0.1:${OLD_ADDRESS_PORT}/app/`,
             ignoreHTTPSErrors: true,
+            reuseExistingServer: process.env.CI === undefined,
+            env: { WRANGLER_SEND_METRICS: 'false' },
+            timeout: 60_000,
+          },
+          // The support dashboard, its own site (step 4j, D641): only its
+          // page, with its own headers (e2e/admin.wrangler.jsonc).
+          {
+            command: `wrangler dev --config e2e/admin.wrangler.jsonc --port ${DASHBOARD_PORT} --ip 127.0.0.1 --log-level warn`,
+            url: `http://127.0.0.1:${DASHBOARD_PORT}/`,
             reuseExistingServer: process.env.CI === undefined,
             env: { WRANGLER_SEND_METRICS: 'false' },
             timeout: 60_000,

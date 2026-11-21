@@ -11,9 +11,12 @@
 // kept for this tab only until it's used, so the page still works if it's
 // loaded again. Nothing happens until "Stop it" is tapped, so an email
 // service that opens links to check them can't use it up (as D312).
+//
+// Since step 4j (D621), the same page, at /stop-two-step-off/#token, stops
+// PrePenny support's 7-day wait to turn off two-step sign-in, in its own words.
 
 import { useEffect, useRef, useState } from 'react';
-import { stopWithLink } from '../lib/security.ts';
+import { stopTwoStepOffWithLink, stopWithLink } from '../lib/security.ts';
 import { signInConfig } from '../lib/sign-in-config.ts';
 import { strings } from '../strings/en-GB.ts';
 import formStyles from './Form.module.css';
@@ -21,31 +24,35 @@ import screenStyles from './Screens.module.css';
 import { securityWords } from './SecondStepSheet.tsx';
 import styles from './SignInScreen.module.css';
 
-const t = strings.stopGetBackIn;
+/** Where this tab keeps each kind of link's token until it's used. */
+const TOKEN_KEYS = {
+  'get-back-in': 'prepenny-stop-link',
+  'two-step-off': 'prepenny-stop-two-step-off',
+} as const;
 
-/** Where this tab keeps the link's token until it's used. */
-const TOKEN_KEY = 'prepenny-stop-link';
+type StopKind = keyof typeof TOKEN_KEYS;
 /** A whole token: 32 bytes, as the database makes them. */
 const WHOLE = /^[A-Za-z0-9_-]{43}$/;
 
-function keptToken(): string {
+function keptToken(kind: StopKind): string {
   try {
-    return sessionStorage.getItem(TOKEN_KEY) ?? '';
+    return sessionStorage.getItem(TOKEN_KEYS[kind]) ?? '';
   } catch {
     return '';
   }
 }
 
-function keepToken(token: string | null) {
+function keepToken(kind: StopKind, token: string | null) {
   try {
-    if (token === null) sessionStorage.removeItem(TOKEN_KEY);
-    else sessionStorage.setItem(TOKEN_KEY, token);
+    if (token === null) sessionStorage.removeItem(TOKEN_KEYS[kind]);
+    else sessionStorage.setItem(TOKEN_KEYS[kind], token);
   } catch {
     // A tab that keeps nothing needs the link opened again after a reload.
   }
 }
 
-export function StopGetBackInScreen() {
+export function StopGetBackInScreen({ kind = 'get-back-in' }: { readonly kind?: StopKind }) {
+  const t = kind === 'two-step-off' ? strings.stopTwoStepOff : strings.stopGetBackIn;
   const token = useRef<string>('');
   const heading = useRef<HTMLHeadingElement>(null);
   const [outcome, setOutcome] = useState<'asking' | 'stopped' | 'not-stopped' | 'no-link'>(
@@ -60,10 +67,10 @@ export function StopGetBackInScreen() {
     if (window.location.hash !== '') {
       window.history.replaceState(null, '', window.location.pathname);
     }
-    token.current = WHOLE.test(fromLink) ? fromLink : keptToken();
-    if (WHOLE.test(token.current)) keepToken(token.current);
+    token.current = WHOLE.test(fromLink) ? fromLink : keptToken(kind);
+    if (WHOLE.test(token.current)) keepToken(kind, token.current);
     else setOutcome('no-link');
-  }, []);
+  }, [kind]);
 
   useEffect(() => {
     if (outcome !== 'asking') heading.current?.focus();
@@ -73,13 +80,16 @@ export function StopGetBackInScreen() {
     if (busy) return;
     setBusy(true);
     setProblem(null);
-    const done = await stopWithLink(token.current);
+    const done =
+      kind === 'two-step-off'
+        ? await stopTwoStepOffWithLink(token.current)
+        : await stopWithLink(token.current);
     setBusy(false);
     if (!done.ok) {
       setProblem(securityWords(done.problem));
       return;
     }
-    keepToken(null);
+    keepToken(kind, null);
     setOutcome(done.value ? 'stopped' : 'not-stopped');
   }
 
@@ -115,7 +125,7 @@ export function StopGetBackInScreen() {
             {outcome === 'stopped' ? (
               <>
                 <p className={styles.strong}>{t.stopped}</p>
-                <p className={styles.line}>{t.changeBackup}</p>
+                <p className={styles.line}>{'changeBackup' in t ? t.changeBackup : t.notYou}</p>
               </>
             ) : (
               <p className={styles.strong}>{outcome === 'no-link' ? t.noLink : t.notStopped}</p>

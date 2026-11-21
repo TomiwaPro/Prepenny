@@ -1,7 +1,8 @@
 'use client';
 
 // "Security" on More (brief 4.13, step 3e): App lock, for this phone, and,
-// once signed in, Signed-in devices, Two-step sign-in and Email addresses,
+// once signed in, Signed-in devices, Two-step sign-in, Email addresses and,
+// since step 4j, Let support see my plan,
 // each a whole row that opens its screen, with a line saying what's there (D213).
 
 import Link from 'next/link';
@@ -55,6 +56,12 @@ export function SecurityCard() {
             <Row href="/app/devices/" label={t.devices} line={t.devicesLine} />
             <Row href="/app/two-step/" label={t.twoStep} line={t.twoStepOff} />
             <Row href="/app/email/" label={t.emails} line={t.emailsLine} />
+            {/* Step 4j (D618): letting PrePenny support see the plan for 7 days. */}
+            <Row
+              href="/app/support-access/"
+              label={strings.supportAccess.heading}
+              line={strings.supportAccess.moreLine}
+            />
           </>
         ) : null}
       </ul>

@@ -501,9 +501,11 @@ grant execute on all functions in schema tests to anon, authenticated;
 -- own network is its container's name. The real project sends through
 -- Resend instead (app.use_resend, from the Database workflow). Links in the
 -- emails, such as the stop link (step 3e hardening), open the local app the
--- end-to-end tests use; the real project's open prepenny.co.uk.
-insert into app.email_sender (kind, url, site)
-values ('test-inbox', 'http://supabase_inbucket_prepenny:8025/api/v1/send', 'http://127.0.0.1:4173');
+-- end-to-end tests use; the real project's open prepenny.co.uk. The support
+-- dashboard's own copy for the tests is on port 4176 (step 4j, D641).
+insert into app.email_sender (kind, url, site, support_site)
+values ('test-inbox', 'http://supabase_inbucket_prepenny:8025/api/v1/send', 'http://127.0.0.1:4173',
+  'http://127.0.0.1:4176');
 
 -- Acts as a person who has passed the second step of two-step sign-in on
 -- this session, as Supabase's token says once the authenticator app's code

@@ -1,7 +1,8 @@
 // Checks every word people read against docs/VOICE.md, and that the app keeps
 // its words in the strings file. Run with `pnpm lint`.
 //
-// - The strings file (apps/web/strings/en-GB.ts) and the example plan's names
+// - The strings files (apps/web/strings/en-GB.ts, and support-en-GB.ts for
+//   the support dashboard) and the example plan's names
 //   (apps/web/data/example-plan.ts) must have no banned word from VOICE.md,
 //   no long dash (— or –), no exclamation mark and no emoji. The home-screen
 //   app's details (apps/web/app/manifest.ts) take their words from the strings file.
@@ -217,7 +218,12 @@ function main(): void {
   const problems: string[] = [];
   const where = (file: string, line: number) => `${relative(root, file)}:${line}`;
 
-  const readFiles = [join(web, 'strings', 'en-GB.ts'), join(web, 'data', 'example-plan.ts')];
+  const readFiles = [
+    join(web, 'strings', 'en-GB.ts'),
+    // The support dashboard's own words (step 4j, D641).
+    join(web, 'strings', 'support-en-GB.ts'),
+    join(web, 'data', 'example-plan.ts'),
+  ];
   let checked = 0;
   for (const file of readFiles) {
     for (const found of stringsIn(readFileSync(file, 'utf8'), file)) {
@@ -254,6 +260,8 @@ function main(): void {
   const screens = [
     ...filesIn(join(web, 'app'), /\.tsx$/),
     ...filesIn(join(web, 'components'), /\.tsx$/),
+    // The support dashboard's own site (step 4j, D641).
+    ...filesIn(join(web, 'admin', 'app'), /\.tsx$/),
   ];
   for (const file of screens) {
     for (const found of wordsInScreens(readFileSync(file, 'utf8'), file)) {

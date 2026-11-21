@@ -128,7 +128,14 @@ select set_eq(
     -- Step 4e: the person's own reminders, and this phone's push address (D562).
     'my_reminders', 'choose_reminders', 'add_push_address', 'remove_push_address',
     -- Step 4i: Contact us, Something looks wrong and Suggest a feature (D601).
-    'support_code', 'send_support'],
+    'support_code', 'send_support',
+    -- Step 4j: support access, error codes, the stop link for a two-step
+    -- wait, and support's own steps, each refusing anyone but support (D617).
+    'my_support_access', 'give_support_access', 'end_support_access', 'note_error_code',
+    'stop_two_step_off_with_link', 'support_status', 'support_inbox', 'support_message',
+    'support_file', 'support_reply', 'support_plan', 'support_find', 'support_account',
+    'support_sign_out', 'support_start_two_step_wait', 'support_stop_two_step_wait',
+    'support_send_backup_link', 'support_usage', 'stop_two_step_off'],
   'A signed-in person can use only the checks the privacy rules call, and the steps the phone calls'
 );
 
@@ -154,7 +161,14 @@ select set_eq(
     -- Step 4e: the person's own reminders, and this phone's push address (D562).
     'my_reminders', 'choose_reminders', 'add_push_address', 'remove_push_address',
     -- Step 4i: Contact us, Something looks wrong and Suggest a feature (D601).
-    'support_code', 'send_support'],
+    'support_code', 'send_support',
+    -- Step 4j: support access, error codes, the stop link for a two-step
+    -- wait, and support's own steps, each refusing anyone but support (D617).
+    'my_support_access', 'give_support_access', 'end_support_access', 'note_error_code',
+    'stop_two_step_off_with_link', 'support_status', 'support_inbox', 'support_message',
+    'support_file', 'support_reply', 'support_plan', 'support_find', 'support_account',
+    'support_sign_out', 'support_start_two_step_wait', 'support_stop_two_step_wait',
+    'support_send_backup_link', 'support_usage', 'stop_two_step_off'],
   'The Data API''s part holds only the steps the phone calls'
 );
 
@@ -162,20 +176,24 @@ select set_eq(
 -- in with their backup email; since step 3e hardening, use the stop link
 -- too. Typing the code goes through the get-back-in function, with
 -- Supabase's admin key (supabase/functions/get-back-in). Since step 4i, ask
--- for a code to prove their address and write to support, and nothing else.
+-- for a code to prove their address and write to support. Since step 4j,
+-- use the stop link for a two-step wait. Nothing else.
 select set_eq(
   $$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public', 'app') and has_function_privilege('anon', p.oid, 'execute') $$,
-  array['send_get_in_code', 'stop_get_back_in_with_link', 'support_code', 'send_support'],
+  array['send_get_in_code', 'stop_get_back_in_with_link', 'support_code', 'send_support',
+    'stop_two_step_off_with_link'],
   'Someone who isn''t signed in can only ask for a code at a backup email, use a stop link, and write to support'
 );
 
--- The three steps that finish getting back in are for the get-back-in
--- function alone, with Supabase's admin key, and each checks it's that key.
+-- The three steps that finish getting back in, and since step 4j the link
+-- from support, are for the get-back-in function alone, with Supabase's
+-- admin key, and each checks it's that key.
 select is_empty(
   $$ select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public'
-       and p.proname in ('get_back_in_with_code', 'get_back_in_finished', 'get_back_in_not_finished')
+       and p.proname in ('get_back_in_with_code', 'get_back_in_finished', 'get_back_in_not_finished',
+         'get_back_in_with_link')
        and (has_function_privilege('anon', p.oid, 'execute')
          or has_function_privilege('authenticated', p.oid, 'execute')
          or not has_function_privilege('service_role', p.oid, 'execute')

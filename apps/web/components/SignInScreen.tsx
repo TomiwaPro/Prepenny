@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { openDb, ownPlanOnPhone } from '../data/db.ts';
 import { forgetEverything, planSafelyKept } from '../data/forget.ts';
+import { supportAccountHere } from '../data/support-account.ts';
 import { type Connection, connectPlan, keepPhonePlan, keepSavedPlan } from '../data/sync.ts';
 import {
   CODE_LASTS_MS,
@@ -303,6 +304,9 @@ export function SignInScreen() {
    * goes up later.
    */
   async function signedInNow(cameFrom: From) {
+    // Support's own account never has a plan: the app shows only a line
+    // saying so (D640, components/SupportAccountGate.tsx), nothing more here.
+    if (supportAccountHere()) return;
     // Two-step sign-in on: the authenticator app's code first (step 3e).
     const state = await twoStep();
     if (state.ok && state.value.on && !state.value.passed) {

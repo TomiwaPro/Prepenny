@@ -12,6 +12,10 @@
 // Supabase's own log. Then the database signs every device out, uses the
 // backup up and tells the old address.
 //
+// Since step 4j (D622), it also takes a link PrePenny support sent to the
+// backup email instead of the address and code: the database decides what
+// it does (get_back_in_with_link), and it finishes the same way.
+//
 // It holds no key of its own: Supabase gives every function the project's
 // secret key, and it's used only here, never sent back. Nothing is written
 // to the function's log, so no address or code ever is (CLAUDE.md).
@@ -69,17 +73,23 @@ Deno.serve(async (request) => {
 
   let email: unknown;
   let code: unknown;
+  let link: unknown;
   try {
     if (Number(request.headers.get('content-length') ?? '0') > 1000) {
       return answer(400, { problem: 'bad-email' });
     }
     const text = await request.text();
     if (text.length > 1000) return answer(400, { problem: 'bad-email' });
-    ({ email, code } = JSON.parse(text) as { email?: unknown; code?: unknown });
+    ({ email, code, link } = JSON.parse(text) as {
+      email?: unknown;
+      code?: unknown;
+      link?: unknown;
+    });
   } catch {
     return answer(400, { problem: 'bad-email' });
   }
-  if (typeof email !== 'string' || typeof code !== 'string') {
+  const withLink = typeof link === 'string';
+  if (!withLink && (typeof email !== 'string' || typeof code !== 'string')) {
     return answer(400, { problem: 'bad-email' });
   }
 
@@ -98,7 +108,9 @@ Deno.serve(async (request) => {
     fetch(`${url}/rest/v1/rpc/${name}`, { method: 'POST', headers, body: JSON.stringify(args) });
 
   try {
-    const checked = await rpc('get_back_in_with_code', { email, code });
+    const checked = withLink
+      ? await rpc('get_back_in_with_link', { token: link })
+      : await rpc('get_back_in_with_code', { email, code });
     if (!checked.ok) {
       const refusal = (await checked.json().catch(() => ({}))) as { message?: unknown };
       const problem =
@@ -158,7 +170,12 @@ Deno.serve(async (request) => {
         refusal.code === '23505' ||
         refusal.code === 'email_exists' ||
         refusal.error_code === 'email_exists';
-      if (await settle()) return answer(200, { in: true, state: 'finished' });
+      if (await settle())
+        return answer(200, {
+          in: true,
+          state: 'finished',
+          ...(withLink ? { email: finish.email } : {}),
+        });
       return answer(inUse ? 409 : 503, { problem: inUse ? 'in-use' : 'server' });
     }
     // Every device signed out, the backup used up and the old address told.
@@ -166,12 +183,21 @@ Deno.serve(async (request) => {
     try {
       const done = await rpc('get_back_in_finished', { request: finish.request });
       if (done.ok && ((await done.json()) as { done?: unknown }).done === true) {
-        return answer(200, { in: true, state: 'finished' });
+        return answer(200, {
+          in: true,
+          state: 'finished',
+          ...(withLink ? { email: finish.email } : {}),
+        });
       }
     } catch {
       // Settled below.
     }
-    if (await settle()) return answer(200, { in: true, state: 'finished' });
+    if (await settle())
+      return answer(200, {
+        in: true,
+        state: 'finished',
+        ...(withLink ? { email: finish.email } : {}),
+      });
     return answer(503, { problem: 'server' });
   } catch {
     return answer(503, { problem: 'server' });

@@ -2032,6 +2032,70 @@ export const strings = {
   },
 
   /**
+   * Support's own account, signed in on PrePenny's app (step 4j, D640): it
+   * never has a plan, so the app shows only this.
+   */
+  supportAccount: {
+    heading: "This is PrePenny support's account.",
+    line: 'Open the support dashboard instead.',
+    signOut: 'Sign out',
+    signingOut: 'Signing out.',
+  },
+
+  /**
+   * "Let support see my plan", under More, Security (step 4j, question 13,
+   * D618): for 7 days, read only, ended at any time.
+   */
+  supportAccess: {
+    heading: 'Let support see my plan',
+    purpose:
+      "If you've written to PrePenny support, this lets them see your plan to help. They can look but never change anything, for 7 days at most.",
+    moreLine: 'For when PrePenny support is helping you',
+    back: 'Back to More',
+    shared: (partner: string) =>
+      `Support sees what you see: your own accounts and the shared ones, never ${partner}'s private ones. ${partner} is told in Activity.`,
+    off: "PrePenny support can't see your plan now. They never see amounts, payment names or notes without this.",
+    give: 'Let support see it for 7 days',
+    giving: 'Letting support see your plan.',
+    on: (when: string) => `PrePenny support can see your plan until ${when}.`,
+    lastLooked: (when: string) => `Support last looked at ${when}.`,
+    notLooked: "Support hasn't looked yet.",
+    end: 'Stop support seeing my plan',
+    ending: 'Stopping it.',
+    given: (when: string) => `Done. Support can see your plan until ${when}.`,
+    ended: "Done. Support can't see your plan any more.",
+    signedOut: 'Sign in first: support can only see a plan that is kept in your account.',
+    signIn: 'Sign up or sign in',
+    noPlan: "Your plan isn't kept in your account yet, so there's nothing for support to see.",
+    loading: 'Checking.',
+    offline: "You're offline. Connect to the internet to change this.",
+    server: "PrePenny couldn't reach its server, so nothing changed. Try again in a minute.",
+    tryAgain: 'Try again',
+  },
+
+  /**
+   * The page the stop link opens (step 4j, D621), at /stop-two-step-off/#token,
+   * from the email to the address an account signs in with when PrePenny
+   * support starts the 7-day wait to turn off two-step sign-in.
+   */
+  stopTwoStepOff: {
+    heading: 'Keep two-step sign-in on',
+    purpose:
+      "PrePenny support was asked to turn off two-step sign-in on your account. If it wasn't you, stop it here.",
+    stop: 'Stop it',
+    stopping: 'Stopping it.',
+    stoppedHeading: "It's stopped",
+    stopped: "Two-step sign-in stays on, and this link doesn't work any more.",
+    notYou:
+      "If you didn't ask PrePenny support for this, someone may know your email address. Write to hello@prepenny.co.uk.",
+    notStopped:
+      "This link has been used already, or the wait it was for has ended, so there's nothing to stop. If you think someone got into your account, write to hello@prepenny.co.uk.",
+    noLink:
+      'This page needs the whole link from the email. Open the link in the email from PrePenny again.',
+    goToPrePenny: 'Go to PrePenny',
+  },
+
+  /**
    * Adding PrePenny to the home screen (step 4d, D546 to D551): the
    * suggestion on Home on the second day, before setup on an iPhone, and the
    * steps under More, in each phone's own button names.
@@ -2896,6 +2960,18 @@ export const strings = {
     noBackup:
       'No backup email? Write to hello@prepenny.co.uk from any address, and say which address you signed up with.',
     backToSignIn: 'Back to signing in',
+    /** A link PrePenny support sent to the backup email (step 4j, D622). */
+    linkPurpose: 'PrePenny support sent you this link to get back into your account.',
+    linkWhat:
+      "If it's the link to ask, nothing changes for 24 hours, and we tell the address you sign in with now. If it's the link to finish, your backup email becomes the address you sign in with, and every phone and computer signed in to your account is signed out.",
+    useLink: 'Use the link from PrePenny support',
+    usingLink: 'Using the link.',
+    linkUsed:
+      'This link has been used already, or it has run out. Write to hello@prepenny.co.uk for a new one.',
+    linkThenWhat: (email: string) =>
+      `When the 24 hours are up, we'll email ${email} a new link to finish. From then on, you sign in with ${email}.`,
+    linkReady: (email: string) =>
+      `We email ${email} the link to finish within 15 minutes of the 24 hours being up. Open it to finish.`,
   },
 
   /**
@@ -2927,6 +3003,23 @@ export const strings = {
       "It's stopped. Nothing on your account changed, and we've told your backup email. If you don't know who has your backup email, change it: More, then Email addresses.",
     notStopped:
       "There was nothing to stop: it had already ended, or was just finishing. If you're signed out in the next minute, write to hello@prepenny.co.uk.",
+    gotIt: 'Got it',
+  },
+
+  /**
+   * The notice on every signed-in device while PrePenny support's 7-day wait
+   * to turn off two-step sign-in runs (step 4j, D638).
+   */
+  twoStepOffNotice: {
+    heading: 'PrePenny support is turning off two-step sign-in',
+    waiting: (when: string) =>
+      `Unless it's stopped, at ${when} two-step sign-in on your account is turned off, and anyone who can get into your email can sign in.`,
+    whatToDo:
+      "If you didn't ask PrePenny support for this, stop it now. If you did, you don't need to do anything.",
+    stop: 'Stop it',
+    stopping: 'Stopping it.',
+    stopped: "It's stopped. Two-step sign-in stays on.",
+    notStopped: 'There was nothing to stop: it had already ended.',
     gotIt: 'Got it',
   },
 
@@ -3149,6 +3242,9 @@ export const strings = {
       left: 'left the plan',
       leftOwn: 'left the shared plan',
       leftOwnCopy: 'left the shared plan, and took a copy of the shared accounts',
+      /** Support access (step 4j, D618). */
+      supportAccess: (day: string) => `let PrePenny support see the plan until ${day}`,
+      supportAccessEnded: 'stopped PrePenny support seeing the plan',
       kinds: { account: 'account', debt: 'debt', goal: 'savings goal' } as Record<string, string>,
     },
 

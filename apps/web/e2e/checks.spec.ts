@@ -207,6 +207,19 @@ const SCREENS = [
     heading: strings.support.contact.heading,
     purpose: strings.support.contact.purpose,
   },
+  // Step 4j (D618, D621): Let support see my plan, signed out, and the stop
+  // link's page for support's 7-day wait to turn off two-step sign-in. The
+  // support dashboard isn't in the app at all (D641, e2e/support-dashboard.spec.ts).
+  {
+    path: '/app/support-access/',
+    heading: strings.supportAccess.heading,
+    purpose: strings.supportAccess.purpose,
+  },
+  {
+    path: '/stop-two-step-off/',
+    heading: strings.stopTwoStepOff.heading,
+    purpose: strings.stopTwoStepOff.purpose,
+  },
   {
     path: '/app/no-such-page/',
     heading: strings.notFound.heading,

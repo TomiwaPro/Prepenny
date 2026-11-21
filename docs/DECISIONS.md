@@ -3,7 +3,7 @@
 Decisions made since the brief (`docs/BRIEF.md`). Where this file and the brief disagree, this file wins. Where `docs/VOICE.md` or `docs/DESIGN.md` is stricter than the brief, they win too (D36).
 
 D1 to D26 were agreed by the owner on 27 Oct 2026, before any code was written. D27 to D37 were agreed on 27 Oct 2026 as well, answering the questions left in `PLAN.md`. D38 to D74 were agreed on 27 Oct 2026 too: D38 to D58 are the proposals in `docs/ARCHITECTURE.md`, D59 to D68 answer the Phase 0 questions, and D69 to D74 come from the owner's review of the plan. D75 to D78 were decided while building step 1a, on 29 Oct 2026, and the owner confirmed D75 and D78 the same day. D79 to D85 were decided while building step 1b, on 29 Oct 2026, and the owner confirmed D79 and D81 to D84 the same day. D86 comes from the owner's review of step 1b, on 29 Oct 2026. D87 to D95 were decided while building step 1c, on 29 Oct 2026. D96 and D97 come from the owner's review of step 1c, on 29 Oct 2026, when the owner also confirmed D90 and D92. D98 to D103 were decided while building step 1d, on 29 Oct 2026; D101's minimum rule was set out by the owner. D104 to D106 come from the owner's review of step 1d, on 1 Nov 2026, when the owner also confirmed D98 to D103. D107 to D115 were decided while building step 1e, on 1 Nov 2026. D116 to D119 come from the owner's review of step 1e, on 1 Nov 2026. D120 was agreed by the owner while step 1f was being built, on 1 Nov 2026, and D121 to D128 were decided while building step 1f, the same day. D129 to D133 come from the owner's review of step 1f, on 3 Nov 2026, and D134 to D141 were decided while building step 1g, the same day. D142 to D148 come from the owner's review of step 1g, on 3 Nov 2026, and D149 to D157 were decided while building step 2a, the same day. D158 to D163 come from the owner's review of step 2a, on 3 Nov 2026, and D164 to D175 were decided while building step 2b, the same day. D176 to D182 come from the owner's review of step 2b, on 3 Nov 2026, and D183 to D189 were decided while building step 2c, the same day. D190 to D195 come from the owner's review of step 2c, on 3 Nov 2026, D196 is the owner's instruction for step 2d, and D197 to D203 were decided while building step 2d, the same day. D204 to D207 come from the owner's review of step 2d, on 4 Nov 2026, D208 to D214 are the owner's instructions for step 2d-2, and D215 was decided while building step 2d-2, the same day. D216 to D219 come from the owner's review of step 2d-2, on 4 Nov 2026, and D220 to D229 were decided while building step 2e, the same day. D230 to D233 come from the owner's review of step 2e, on 4 Nov 2026, and D234 to D246 were decided while building step 2f, the same day. D247 to D251 come from the owner's review of step 2f, on 4 Nov 2026, D252 to D260 were decided while building step 2g, the same day, D261 comes from the owner's instruction after step 2g was merged, D262 to D267 come from the owner's review of step 2g, on 4 Nov 2026, and D268 to D275 were decided while building step 2h, the same day. D276 to D287 come from the owner's review of step 2h, on 5 Nov 2026, and D288 to D299 were decided while building step 3a, the same day. D300 to D304 come from the owner's instructions and answers for step 3b, on 6 Nov 2026, D305 to D310 were decided while building step 3b, the same day, D311 to D313 come from the owner's reviewer during step 3b, and D314 from the outside review of step 3b, the same day. D315 to D320 are the owner's answers to step 3b's questions, on 7 Nov 2026, and D321 to D323 come from the owner's message the same day, which also confirmed D315 and D317 to D320 in writing. D324 to D329 are the owner's instructions for step 3c, on 7 Nov 2026, and D330 to D344 were decided while building step 3c, the same day. D345 comes from the owner's reviewer of step 3c, and D346 to D350 are the owner's answers to step 3c's questions, both on 7 Nov 2026. D351 to D354 are the owner's instructions for the step 3c fix, and D355 comes from its outside review, on 8 Nov 2026. D356 and D357 are the owner's decision for the shorter setup and the owner's answer about D352, and D358 to D360 were decided while building the shorter setup, all on 8 Nov 2026. D361 and D362 are the owner's answers about the shorter setup, and D363 and D364 come from the owner's reviewer, the same day. D365 to D374 were decided while building step 3d, offline changes and clashes, on 8 Nov 2026, and D375 comes from its outside review, the same day. D376 to D378 are the owner's answers to step 3d's questions, on 8 Nov 2026. D379 is the owner's answer in the instructions for step 3e, and D380 to D390 were decided while building step 3e, signed-in devices and extra security, on 9 Nov 2026. D391 to D396 are the owner's decisions and answers in the instructions for step 3e hardening, safer recovery, D397 and D398 were decided while building it, D399 comes from its outside review, and D400 from running every test, the same day. D401 and D402 are the owner's answers to step 3e hardening's questions, the same day. D403 to D411 come from step 3e-2 and the owner's change of plan, on 9 and 10 Nov 2026, and D412 to D425 from step 3f, on 10 Nov 2026. D426 to D434 are the owner's answers and instructions for step 3f-2, on 10 Nov 2026, D435 to D437 were decided while building it, and D438 comes from its outside review, the same day. D439 comes from the owner's review of step 3f-2 before merging, on 11 Nov 2026. D440 to D443 are the owner's decisions for the Home and wording polish, on 12 Nov 2026, and D444 and D445 were decided while building it, the same day. D446 to D452 are the owner's answers to its questions and instructions about the public repository, and D453 was decided while building them, the same day. D454 to D486 come from steps 3g and 3h, on 12 Nov 2026; each section says which are the owner's. D487 to D503 come from step 3i, Phase 3 checks, on 12 and 13 Nov 2026: D488 to D494 from its outside review. D508 and D509 are the owner's answers to step 3i's two questions, on 13 Nov 2026. D510 comes from the checks of the Phase 4 plan's pull request, on 13 and 14 Nov 2026. D511 to D513 are the owner's approval of Phase 4's steps and answers to its first two questions, on 14 Nov 2026. D514 to D524 come from step 4a, on 14 Nov 2026: D514 and D523 are the owner's. D525 and D526 are the owner's answer to question 24 and new rule for what to check by hand, on 14 Nov 2026, with the instructions for step 4b, and D527 to D531 were decided while building step 4b, the same day, and D532 comes from its outside review. D533 and D535 come from GitHub's runs of step 4b, and D534 is the owner's answer to question 25, on 15 Nov 2026. D536 to D544 come from step 4c, on 15 Nov 2026: D539 is the owner's. D545 and D546 are the owner's answers to questions 26 and 5, given with the instructions for step 4d on 16 Nov 2026, D547 to D554 come from building step 4d, and D555 to D557 are the owner's answers to step 4d's questions, on 17 Nov 2026.
-D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. D560 to D565 are the owner's answers to questions 6, 7, 29 and 30 and instructions for step 4e, reminders, on 17 Nov 2026, and D566 to D573 were decided while building it, and D574 comes from its outside review, the same day. D575 is the owner's answer to question 8 with step 4f's instructions, on 18 Nov 2026, D576 to D582 were decided while building step 4f, and D583 comes from its outside review, the same day. D584 is the owner's answer to question 9 with step 4g's instructions, on 18 Nov 2026, and D585 to D591 were decided while building step 4g, the help centre, the same day. D592 and D593 are the owner's change to D585 and answer to question 31, on 19 Nov 2026. D594 to D600 come from step 4h, on 19 Nov 2026. D601 to D604, D611 and D612 are the owner's answers to questions 10, 11, 12 and 32 and instructions for step 4i, on 19 Nov 2026, and D605 to D610, D613 and D614 were decided while building it, and D615 comes from its outside review, and D616 from GitHub's end-to-end run on its pull request, the same day. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
+D558 comes from step 4d-2, the Next.js update, on 17 Nov 2026, and D559 from the owner's instruction for the same step, the front page's security policy on the live site. D560 to D565 are the owner's answers to questions 6, 7, 29 and 30 and instructions for step 4e, reminders, on 17 Nov 2026, and D566 to D573 were decided while building it, and D574 comes from its outside review, the same day. D575 is the owner's answer to question 8 with step 4f's instructions, on 18 Nov 2026, D576 to D582 were decided while building step 4f, and D583 comes from its outside review, the same day. D584 is the owner's answer to question 9 with step 4g's instructions, on 18 Nov 2026, and D585 to D591 were decided while building step 4g, the help centre, the same day. D592 and D593 are the owner's change to D585 and answer to question 31, on 19 Nov 2026. D594 to D600 come from step 4h, on 19 Nov 2026. D601 to D604, D611 and D612 are the owner's answers to questions 10, 11, 12 and 32 and instructions for step 4i, on 19 Nov 2026, and D605 to D610, D613 and D614 were decided while building it, and D615 comes from its outside review, and D616 from GitHub's end-to-end run on its pull request, the same day. D617 to D625 are the owner's answers to questions 13 and 14 and instructions for step 4j, support tools, on 20 Nov 2026, D626 to D629 the owner's answers for the new step 4n-2, the same day, and D630 to D636 were decided while building step 4j, and D637 and D638 come from its outside review, and D639 from its full end-to-end run, the same day. D640 to D642 are the owner's changes to step 4j before it was merged, on 21 Nov 2026. Add new decisions at the end with the next number, the date and the reason. Never renumber or delete an entry; if a decision changes, add a new one that says which entry it replaces.
 
 ## Money rules
 
@@ -7648,3 +7648,313 @@ Every sheet uses the same code: the every-sheet checks and the sheet, edit, budg
 
 Why: GitHub's run, and the rule that a failure is fixed at its cause, never retried.
 
+
+## The owner's answers and instructions for step 4j
+
+D617 to D625 are the owner's answers to `PLAN.md` questions 13 and 14 and instructions, given on 20 Nov 2026 with the instructions for step 4j: support tools and the owner's dashboard (brief 4.16, ARCHITECTURE.md 3.7, PLAN.md item 44). D626 to D629 are the owner's answers for the new step 4n-2, given the same day.
+
+### D617. Support access shows what Jess sees, read only, for 7 days
+
+Agreed 20 Nov 2026, the owner's answer to `PLAN.md` question 13, as recommended.
+
+The owner's words: "when Jess lets support see her plan, support sees what Jess sees, read only, never Tom's private accounts. It ends by itself after 7 days, and Jess can end it any time. Tom is told in Activity: "Jess let PrePenny support see the plan until Fri 20 Nov.""
+
+- Under **More**, **Security**, **Let support see my plan** ("For when PrePenny support is helping you"). Signed in, with the plan kept in the account: **Let support see it for 7 days**. While it's on: "PrePenny support can see your plan until 2:05pm on Fri 27 Nov.", when support last looked, and **Stop support seeing my plan**. In a shared plan the screen says "Support sees what you see: your own accounts and the shared ones, never Tom's private ones. Tom is told in Activity."
+- Support sees exactly the rows the person's own phone gets (D630), worked out by the same engine, read only: nothing on support's screen can change a plan, and support isn't in the plan, so the database would refuse a change anyway.
+- It ends by itself 7 days after it was given, to the second, at once when the person stops it, and at once when anyone joins or leaves their plan (D637): support's very next request is refused.
+- Activity, for everyone in the plan: "Jess let PrePenny support see the plan until Fri 20 Nov." and, if she stops it early, "Jess stopped PrePenny support seeing the plan." In her own Activity: "You let ...". Neither can be undone from Activity: stopping it is the way back.
+
+Why: the owner's answer.
+
+### D618. Getting back in with nothing left: support's three cases
+
+Agreed 20 Nov 2026, the owner's answer to `PLAN.md` question 14, as recommended. Builds PLAN.md item 44, D391, D392 and D396.
+
+- **Lost the authenticator app, still has the email:** support starts a 7-day wait, and the address they sign in with gets an email with **Stop it**. After 7 days, two-step sign-in is turned off (D631).
+- **Lost the sign-in email, with no backup email:** support never moves an account to a new address, because someone close, such as a partner, could answer questions about the plan. The person gets the email back from their email provider, or starts a new plan; in a shared plan the partner can invite the new address. There's a ready reply that says so (D621), and the account page says it beside the actions.
+- **A backup address kept locked by someone typing wrong codes (D392):** support sends the backup address a way back in that those wrong codes can't lock, with the same 24-hour wait and **Stop it** (D632).
+
+Why: the owner's answer.
+
+### D619. The support screen is the owner's alone, from a GitHub secret, with two-step sign-in
+
+The owner's instruction, 20 Nov 2026: "Only my account can open it, and only with two-step sign-in on and passed. The database decides who support is from a GitHub secret holding my sign-in email address, never written in any file."
+
+- **Who support is** is the GitHub secret `SUPPORT_EMAIL`, the address the owner signs in to PrePenny with. The Database workflow gives it to the database as a query parameter, never in a query's text (D494), with `select app.set_support($1)`, and the database keeps it only scrambled with its own secret (`app.address_key`), so not even a copy of the database shows it. Without the secret, nobody is support, and the workflow says so in yellow. Changing the secret changes support on the next run.
+- **Support** is that account, signed in, from a sign-in that still holds, on the version the database expects, with two-step sign-in on **and** its code typed on that very sign-in (`app.is_support`). Every support step checks it first (`app.support_only`) and refuses anyone else with "not-allowed", as for a step that doesn't exist.
+- **The screen** is `/app/support/`, inside the app. Signed out it says "Sign in as PrePenny support to open this screen."; for anyone else, "This screen is for PrePenny support only."; for the owner without two-step sign-in, how to turn it on. The email to hello@prepenny.co.uk that messages are waiting now has **Open the support screen**, and the owner can add the page to the home screen. There's no link on More, so nobody else's More asks the database anything more.
+- The preview database (D411) gets no support person: previews aren't for answering people.
+
+Why: the owner's instruction, and the repository is public (D452).
+
+### D620. Replies go from hello@prepenny.co.uk through Resend, within support's own allowance
+
+The owner's instruction, 20 Nov 2026: "I reply on the screen; the reply goes from hello@prepenny.co.uk through Resend and is kept with the message. Keep support's email caps from step 4i so sign-in codes always have room."
+
+- **The inbox** is every message and idea, newest first, 50 at a time, each with its kind, when, who it's from and its first lines, and "Waiting for a reply", "Replied" or "An idea". A message shows its words as written, the screen's name, the phone type and version, the picture within its 30 days and a plan copy, which opens read only (D630).
+- **A reply** is emailed from hello@prepenny.co.uk, as every PrePenny email is, through Resend on the real project, to the address the message came from: the one the person signs in with, or the one they proved with a code (D605). Subject "A reply from PrePenny support"; "PrePenny support has replied to your message.", then each line typed as its own paragraph, then "You can reply to this email."; small print "For your privacy, this email doesn't repeat what you wrote. PrePenny will never ask for a password or a card number." It's kept with the message, and the message is marked replied (which starts D604's 12 months).
+- The box says "Never write an amount, a payment name or a note: Resend keeps emails for 30 days."
+- **Step 4i's caps stay as they were** (D606): at most 21 support emails a day to people writing in. **Support's own emails** (replies and every action's email) have an allowance of their own, 15 in any 24 hours (D633), so at most 36 of Resend's 100 a day go on support, and at least 64 are always left for sign-in codes. Resend's pricing page, read on 20 Nov 2026, still says "3,000 emails / mo", "100 emails a day" and "Data retention 30 days" for the free plan.
+
+Why: the owner's instruction.
+
+### D621. Ready replies, one for someone in distress, each number checked on the organisation's own website
+
+The owner's instruction, 20 Nov 2026: "Ready replies I can pick and edit, including one for someone in distress, with Samaritans (116 123) and free debt advice. Check every number on the organisation's own website, as in step 4g."
+
+- Above the reply box, "Start from a ready reply?": **No, write my own** (chosen at the start), **Someone in distress**, **Thanks, we're looking into it**, **Can we see your plan?**, **Lost the authenticator app**, **Lost the sign-in email, no backup**, **Backup email kept locked** and **Thanks for the idea**. Choosing one puts its words in the box, to change before sending. Their words are in `strings.supportTools.ready`, and in the step's report.
+- **Checked on Fri 20 Nov 2026**, each on its own website, from the building computer, whose network was opened to samaritans.org for this, with the owner's approval:
+  - Samaritans: https://www.samaritans.org/how-we-can-help/contact-samaritan/ says "call us free any time, from any phone, on 116 123" and "Call us free, day or night, 365 days a year".
+  - StepChange: https://www.stepchange.org/contact-us.aspx says "Contact us on 0800 138 1111. Monday to Friday 8am to 8pm and Saturday 9am to 2pm".
+  - National Debtline: https://nationaldebtline.org/get-help/call/ says "0808 808 4000", "Helpline hours Monday to Friday 9am-8pm Saturday 9:30am-1pm".
+  - Citizens Advice: https://www.citizensadvice.org.uk/about-us/contact-us/ says "call our debt helpline - it's available 9am to 8pm Monday to Friday and 9.30am to 1pm Saturday", "Debt helpline: 0800 240 4420", "The debt helpline is not available on public holidays. Calls are free from mobiles and landlines."
+  - 999: https://survivingeconomicabuse.org/i-need-help/ says "If you are in immediate danger, call the police on 999".
+  - The same as step 4g found (D589), so the help article needs no change.
+- No ready reply holds an amount; `apps/web/test/unit/support-tools.test.ts` checks the numbers and that.
+
+Why: the owner's instruction, so every number someone in difficulty calls is the organisation's own.
+
+### D622. An account's page: status only, never money, unless they let support see it
+
+The owner's instruction, 20 Nov 2026: "find by email; see when they signed up, last signed in, whether two-step is on, their plan type (own or shared) and recent error codes. Never amounts, payment names or notes, unless that person has given support access, and then only what they see, read only."
+
+- **Find an account** takes the address they sign in with, or their backup email, as typed in any case. An address that's nobody's says "No account signs in with that address or has it as its backup email." and no more.
+- The page shows: the address they sign in with and their backup email, when they signed up and last signed in, whether two-step sign-in is on, "Plan: their own", "Plan: shared with a partner" or "Plan: none in the account yet", how many phones or computers are signed in, whether they've let support see their plan (with **See their plan**), what's under way (a two-step wait, a request to get back in), their 20 newest error codes, their messages and what support did. Nothing else: the database's answer has no other field, which the database test checks.
+- **Error codes** are new in this step, as nothing collected them before (there are no error reports yet, PLAN.md item 31): when a signed-in phone's change is refused by the server, it notes the code alone ("not-allowed", "view-only"), and when a screen breaks, "screen-broke", each with the screen's name from the address and the version, never anything typed or about money (`apps/web/lib/error-codes.ts`, `public.note_error_code`). The same code from the same screen once in 10 minutes from a phone, at most 30 a day for a person, kept 30 days, deleted with the account. The database refuses anything that isn't a code.
+
+Why: the owner's instruction.
+
+### D623. Every action is recorded with the time, and the person is emailed
+
+The owner's instruction, 20 Nov 2026: "Actions: sign them out everywhere, and the two-step and backup-address steps above. Every action I take is recorded with the time, and the person is told by email."
+
+- **Sign out everywhere**: every sign-in of theirs ends at once, their phones are nudged and each removes the plan within a minute, keeping anything not yet sent (D348). Email "PrePenny support signed you out": "At 2:05pm on Fri 20 Nov, PrePenny support signed your PrePenny account out of every phone and computer.", "Your plan is safe in your account. To see it again, sign in with this email address."
+- **Turn off two-step sign-in** (D631) and **Send a link to their backup email** (D632), each with its emails.
+- Each asks once in a sheet, saying what it does, then is recorded in `app.support_actions` with the moment it was taken, and shown under **What support did**, with "They were emailed." Replies, looking at a plan with access (once every 10 minutes at most), the two-step wait's start, stop and end, and both links are recorded too. Kept 12 months (D604's setting), deleted with the account.
+- Support can't act on its own account ("is-you").
+
+Why: the owner's instruction.
+
+### D624. Usage, counts only
+
+The owner's instruction, 20 Nov 2026: "Usage numbers, counts only, never names or money: sign-ups by week, people who opened PrePenny in the last 7 and 30 days, shared plans, people with reminders on, messages waiting."
+
+- **Sign-ups by week:** accounts confirmed (a code typed, or Google), for this week and the 7 before it, weeks starting on Monday, UK time.
+- **Opened PrePenny in the last 7 days, and 30:** people signed in on a phone or computer that asked PrePenny's server anything, or renewed its sign-in, in that time. Someone looking at the example plan without an account, or who has signed out, isn't counted: PrePenny doesn't count people it doesn't know, and the opt-in counts of brief 7.2 come in Phase 5.
+- **Shared plans:** plans with two people in them now. **People with reminders on:** any reminder at all. **Messages waiting for a reply:** Contact us and Something looks wrong with no reply yet.
+- The database's answer has nothing but these numbers, which its test checks.
+
+Why: the owner's instruction.
+
+### D625. The tax year check: the support screen and GitHub, from 1 March
+
+The owner's instruction, 20 Nov 2026: "The tax year check from PLAN.md: from 1 March, the support screen and a GitHub check say if next year's tax file is missing." Builds brief 4.15 and D45.
+
+- The words, on the support screen's **Tax files** card and in GitHub: "The pay calculator has no tax file for the 2027 to 2028 tax year, which starts on Tue 6 Apr 2027. Ask Claude Code to add it (step 4r) before then." The rest of the year: "The pay calculator has the tax file for every tax year it needs now." The engine's `checkTaxYearFiles`, from Phase 1, decides; `apps/web/lib/tax-year-check.ts` says it.
+- **GitHub:** the Check workflow says it as a yellow warning on every pull request and on main, so nothing waits on GOV.UK; and a new **Tax year** workflow runs every morning at 6:47am UTC and fails (red) while a file is missing, so GitHub emails the owner each day until step 4r adds it (`scripts/check-tax-year.ts`).
+- The card is in the sunk colour with a brass edge when a file is missing, never Short's red (DESIGN.md).
+
+Why: the owner's instruction.
+
+### D626. Step 4n-2: charts on Home, and on Debts and Budgets
+
+The owner's answer for a new step, 20 Nov 2026, before step 4o.
+
+The owner's words: "Charts on Home, below "Next due", with the top of Home unchanged: your balance over the coming weeks (the lowest point and the "warn me" amount marked), where this pay goes, and the next 6 months, money in against money out. The debt-free chart goes on Debts, and spending against budgets on Budgets. Each chart has its words beside it for screen readers and colour-blind people."
+
+- Home's top stays as it is (D442): the balance, the lowest point and **Next due** come first; the three charts are below **Next due**.
+- Each chart has its words beside it, saying what it shows in numbers, so nobody needs the picture or its colours.
+
+Why: the owner's answer.
+
+### D627. Step 4n-2: a light and dark switch at the top right of Home
+
+The owner's answer, 20 Nov 2026: "A modern light/dark switch at the top right of Home. It follows the phone until tapped; "Match this phone" stays in More."
+
+Why: the owner's answer.
+
+### D628. Step 4n-2: fewer words on every screen
+
+The owner's answer, 20 Nov 2026: "A fewer-words pass on every screen: explanations move into "? Why" sheets, one short line per thing, and small icons for payments. Colours and fonts stay."
+
+- This changes DESIGN.md's "Decorative icons" rule and D596's "Only three" "?" buttons for the screens it touches; the step proposes the exact changes to DESIGN.md with its pictures (D629).
+
+Why: the owner's answer.
+
+### D629. Step 4n-2 starts with pictures, and waits for the owner's approval
+
+The owner's answer, 20 Nov 2026: "The step first makes pictures of the new Home in light and dark and two or three screens with fewer words, and stops for my approval before building."
+
+Why: the owner's answer.
+
+## Made during step 4j
+
+D630 to D636 were decided on 20 Nov 2026 while building step 4j.
+
+### D630. Support sees the plan exactly as the person's own phone gets it
+
+Decided 20 Nov 2026 in step 4j. Builds D617 and D564.
+
+- `app.plan_as_seen_by(person)` gives the same rows as `plan_changes` gives the person's own phone: every record table, the paydays and the bank holiday list, chosen by the same rule (shared, or private to that person). The reminders function runs `plan_changes` itself as the person's sign-in (D564), but support may need to see the plan of someone not signed in anywhere now, so the rule is written out once more, and `40-support-tools.test.sql` checks it's the same as `plan_changes` run as Jess, row for row, and has none of Tom's private records.
+- The screen turns the rows into records as the phone does (`rowsOfChanges`, `recordsFromRows`), and shows each account with its bank figure and lowest point ahead, the next 3 months of payments with what's left after each (the rows don't open), and the debts with what's left and when each is paid off (`components/ReadOnlyPlan.tsx`). A plan copy sent with Something looks wrong is read as Import reads it (`readBackup`) and shown the same way.
+- Each look is recorded once every 10 minutes at most, and the person sees "Support last looked at 2:05pm on Fri 20 Nov."
+- The Activity line is an edit of its own kind, `support-access`, made only by the database (`app.server_kind`), shown without any record, and not undoable (`app.undoable`). A partner with "Changes my partner makes" on gets it as a notification too, in the same words (step 4f).
+
+Why: "support sees what Jess sees" (D617) is proved, not assumed.
+
+### D631. The 7-day wait before two-step sign-in is turned off
+
+Decided 20 Nov 2026 in step 4j. Builds D618.
+
+- **Starting it** (only with two-step sign-in on, one at a time): the address they sign in with gets "PrePenny support is turning off two-step sign-in": "At 2:05pm on Fri 20 Nov, PrePenny support was asked to turn off two-step sign-in on your account, because the authenticator app was lost.", "Nothing changes for 7 days. Unless it's stopped, at 2:05pm on Fri 27 Nov two-step sign-in is turned off, and you sign in with this email address alone.", "If it was you, you don't need to do anything. If it wasn't, stop it now.", with **Stop it**.
+- **Stop it** opens `/stop-two-step-off/#...`, with an unguessable link that works once and can only stop it, as getting back in's does (D391): "Keep two-step sign-in on", then **Stop it**, then "It's stopped". Support can stop it too (**Stop turning it off**), and the person is told "Two-step sign-in stays on".
+- **Every signed-in phone or computer of theirs shows a notice** on every screen, as getting back in does (D391): "PrePenny support is turning off two-step sign-in", "Unless it's stopped, at 2:05pm on Fri 27 Nov two-step sign-in on your account is turned off, and anyone who can get into your email can sign in.", "If you didn't ask PrePenny support for this, stop it now. If you did, you don't need to do anything.", with **Stop it**, then "It's stopped. Two-step sign-in stays on." The backup address, if there is one, is emailed too. Added after the outside review (D638).
+- **Using the app keeps it on:** if the authenticator app is used to sign in at any time during the 7 days, it isn't lost, so the wait stops by itself and they're emailed "Two-step sign-in stays on" (D638).
+- **After 7 days**, the scheduled job `prepenny-support-tools` (every 15 minutes) removes every authenticator app on the account, nudges their phones, and emails "Two-step sign-in is off". It deletes the apps' rows in Supabase's own table, as Supabase's own admin route for removing an app does. D393 chose Supabase's admin route for changing an address because of the sign-in identities it keeps in step; removing an app has nothing like that. The database's own check that removing an app needs a code typed in the last 5 minutes (D382) lets it through only for a wait that's due, which its test checks.
+- **Accepted:** someone who has taken over the person's email could write to support pretending to have lost the app, and delete the email with **Stop it**. Nothing changes for 7 days; every phone and computer still signed in shows the notice, the backup address is told, and signing in with the app stops it.
+
+Why: the owner's answer (D618), with the same safety as getting back in.
+
+### D632. Support's way back in for a locked backup address is a link, not a 6-digit code
+
+Decided 20 Nov 2026 in step 4j. Builds D618 and D392. The owner said "support sends a code to the backup address".
+
+- A 6-digit code takes 5 tries, so whoever keeps the address locked could use those tries up too, as fast as support sends codes. So support's "code" is an unguessable link: 32 bytes from the database's secure random numbers, kept only scrambled, after a "#" so no server's log ever has it, working once, for 24 hours. A link can't be guessed, so no wrong try counts against it, and nothing anyone else types can lock it or use it up.
+- **The email** to the backup address, "A link from PrePenny support to get back in": "PrePenny support sent you a link to get back in", "Open it on the phone or computer you want to use. It works once, for 24 hours.", "For your safety, nothing changes for 24 hours, and we tell the address you sign in with now, so it can be stopped if it wasn't you. After 24 hours, we email you a new link to finish.", with **Get back in**.
+- **Opening it** (`/get-back-in/#support=...`): "PrePenny support sent you this link to get back into your account." with **Use the link from PrePenny support**. It starts exactly the same request as a code does (D391): the 24-hour wait, the email with **Stop it** to the address they sign in with, and the notice on every signed-in device.
+- **After 24 hours** the scheduled job emails the backup address "A link from PrePenny support to finish getting back in" by itself, as the code to finish must be sent after the 24 hours (D391). Opening it finishes through the get-back-in function and Supabase's admin route, as a code does (D393). If a finish doesn't complete, or the link isn't used, another goes once the last has run out, while the request can still be finished (7 days); support can also send one from the account page at any time after the 24 hours (D638).
+- The email to the address they sign in with says what happened: "someone opened a link PrePenny support sent to your backup email" (D638).
+- A support link opened while a request asked for with a code from the same backup address is open makes that request support's too, so its link to finish is emailed (D638).
+- The get-back-in function takes `{link}` as well as `{email, code}`, and the database decides what a link does (`get_back_in_with_link`), for Supabase's admin key only.
+
+Why: the owner's answer asks for something those wrong codes can't lock; a link does that, and a code couldn't.
+
+### D633. Support's own emails: 15 a day
+
+Decided 20 Nov 2026 in step 4j. Builds D620 and D606.
+
+- Replies and every action's emails count together: 15 in any 24 hours, each email once. An action that sends two (the two-step wait to an account with a backup address) counts two. A link counts for what opening it can lead to too: a link to ask counts 3 (itself, the email to the address they sign in with, and the one to the backup if it's stopped), a link to finish 2 (itself and the email to the old address) (D638). The 16th is refused: "Support has sent its 15 emails for today, so sign-in codes keep their room. Try again tomorrow." The emails the scheduled job sends after an action (two-step sign-in off or staying on, a link to finish) always go, and count. Each emailing step waits for any other to finish first, so two at once can't both pass the allowance.
+- On the local test database only, the allowance is 100 times higher, as step 4i's caps for everyone together are there (`app.support_scale`, D606); `40-support-tools.test.sql` puts it back to 1 and checks the real 15.
+- It's one setting, `app.support_own_emails_a_day()`, the owner's to change.
+
+Why: the owner's "so sign-in codes always have room".
+
+### D634. Smaller choices in step 4j
+
+Decided 20 Nov 2026 in step 4j.
+
+- **The support screen is one page** with what's shown after its "#" (`#message=`, `#account=`, `#plan=`, `#copy=`), as static export needs (D337), so one security rule covers it: 66 of Cloudflare's 100.
+- **An action needs the support sign-in to have passed two-step sign-in, not a code typed just then.** Accepted: someone holding the owner's phone while it's open and signed in as support could act. App lock (D385) covers a phone left about.
+- **"Let support see my plan" is under Security**, as it's about who can see the plan, with a fixed line so More asks the database nothing more.
+- **Get back in hears a second link opened in the same tab**, where only what's after the "#" changes. Found by the end-to-end test of the link to finish.
+- **Messages in the inbox are named by their own words**, not a separate spoken name, so voice control can say what's shown (WCAG 2.5.3). Found by axe.
+- **Sign-ups by week is a list**, not a table: at 320px with text at 200% a table was wider than the screen. Found by the layout check.
+- **"Let support see my plan" says what changed only to screen readers**, as the card says the same in its own words, and focus goes to the card.
+
+Why: each follows from the owner's instructions and earlier decisions where they didn't say exactly.
+
+### D635. How step 4j is tested
+
+Decided 20 Nov 2026 in step 4j.
+
+- **The database** (`supabase/tests/database/40-support-tools.test.sql`, 190 checks, 27 of them from the outside review, D638, 4 from D639 and 9 from D640): who support is, set only by the database's administrator and kept scrambled, changing at once; nobody signed out, nobody else signed in, not support's address without two-step sign-in, before its code or with only a token claiming it, and not an ended sign-in, can use any of the 12 support steps; nobody, Supabase's own key included, reads support's records or uses the database's own support steps; the inbox, a picture byte for byte, replies word for word and kept; support access row for row the same as `plan_changes` as Jess, none of Tom's private records, Tom told in Activity, ending at once and after 7 days to the second; find, the account page's fields only, error codes; each action, its email word for word and its record; the stop link; two-step sign-in off after 7 days and not a minute before; the locked backup address and support's link, its wait, its finish link and its 24 hours; support's 15 emails; usage counts; refusals as codes; deleting an account deleting support's records. `00-every-table.test.sql` lists the new steps.
+- **Each rule broken on purpose**, then put back: two-step sign-in not needed (2 checks failed, then the test stopped); access not checked (4); the partner's private records shown (3); actions not recorded (8); no email allowance (3); links that never run out (1); two-step sign-in off at once (the test stopped: D382's check refused it); access that never ends (3); a reply to any address (5). And the outside review's: an unconfirmed address as support (1); joining not ending access (2); the backup address not told (1); the app's use ignored (4); no second link to finish (2); a code-started request not made support's (1); links counting as one email (1, and the test stopped); the code's words for a link (1); the phone's Stop it stopping anyone's wait (4). Access tied to its plan as well (D637) fails nothing when broken alone: the joining rule, tested, already ends it whenever the plan changes, so the plan check is a second guard.
+- **Unit tests** (`apps/web/test/unit/support-tools.test.ts`, `scripts/check-tax-year.test.ts`): Activity's words, the tax year's words and GitHub's warning and failure, the ready replies' numbers.
+- **End to end** (`apps/web/e2e/support-tools.spec.ts`, 5 tests at 320px and 360px, in light and dark, with axe, and with text at 200% on every view): only support opens the screen, through the screen and the Data API, and nothing personal reaches the console; a reply from the distress reply; support access with Jess and Tom on two phones and support on a third; every action and its email, through the stop link, the notice on Alex's own phone and the get-back-in function; usage and the tax year from 1 March. They share one support account, made once, one test at a time, as a new sign-in link for an address ends the one before. The every-screen checks (`e2e/checks.spec.ts`) add the support screen and Let support see my plan signed out, and the stop page.
+
+Why: the owner's list of what the tests must prove.
+
+### D636. What the owner sets up for step 4j: one GitHub secret
+
+Checked 20 Nov 2026 against each service's own pages:
+
+- **GitHub:** the secret `SUPPORT_EMAIL`, the email address the owner signs in to PrePenny with, added as GitHub's own guide says (docs.github.com, "Using secrets in GitHub Actions", "Creating secrets for a repository", read 20 Nov 2026): the repository's **Settings**, **Secrets and variables**, **Actions**, **New repository secret**, a name and the value, **Add secret**. README.md part W has the exact steps. Then two-step sign-in on the owner's own account, if it isn't on already.
+- **Supabase:** nothing by hand. The Database workflow makes the new tables, steps and the scheduled job `prepenny-support-tools`, puts the changed get-back-in function online, and gives the database the secret.
+- **Resend:** nothing: replies go from hello@prepenny.co.uk with the key the database already has, within the free plan (D620).
+- **Cloudflare:** nothing: three new pages, each with its own security rule, 66 of the 100, which the build checks.
+
+Why: the owner asked to be told plainly what to set up, checked against each service.
+
+## From the outside review of step 4j
+
+### D637. Support access is for the plan it was given in
+
+Decided 20 Nov 2026 in step 4j, from its outside review. Adds to D617 and D630.
+
+- The review found that access followed the person, not the plan: if Jess let support see her plan and then joined Tom's within the 7 days, support would have seen Tom's shared accounts, and Tom, never told, couldn't know (her Activity line moved with her plan, private to her).
+- Now access is kept with the plan it was given in, and is open only while the person is still in that plan. And **whenever anyone joins a plan or leaves one, support access given by anyone in either plan ends at once** (a check in the database on every change of who's in a plan), so whoever joined is never seen without being told, and the person sees "PrePenny support can't see your plan now." Each can give it again, and Activity says so then. Changing what Tom can do, or which pay is the main pay, changes nothing.
+
+Test: `40-support-tools.test.sql` (someone joining ends Tom's access at once, and his phone says so).
+
+Why: "support sees what Jess sees" and "Tom is told" (D617) must both stay true while the plan changes.
+
+### D638. What the outside review of step 4j changed
+
+Decided 20 Nov 2026 in step 4j, from an outside review of the whole change, which read every step of the database and screen and reported nine things. Adds to D617 to D637.
+
+- **Support access carried into another plan** (D637).
+- **The two-step wait was told only by email:** someone who had taken over the email could delete it. Now every signed-in device shows a notice with **Stop it**, the backup address is emailed too, and using the authenticator app during the 7 days stops it by itself (D631).
+- **A link to finish could be used up by a finish that didn't complete**, with no second one sent. Now another goes once the last has run out (D632).
+- **Support's allowance counted only what support itself sent,** not what its links can lead to, and two steps at once could both pass it. Now each link counts for its follow-on emails, and each emailing step waits its turn (D633).
+- **A support link opened while a request asked for with a code was open** left the person waiting for a link to finish that never came. Now that request becomes support's too (D632).
+- **The email to the address they sign in with said a code was typed** when it was support's link. Now it says which (D632).
+- **The plan support sees** gave "who changed it" from changes private to a partner, which the person's own phone never gets. Not reachable today, as the database refuses such a link (D291), but now the same privacy rule applies (D630).
+- **Support's address** must be a proved, ordinary account: not single sign-on (which PrePenny doesn't use) and not anonymous.
+- **Smaller:** a stop with the email's link is recorded, so support's page says "Two-step sign-in stays on: they stopped the wait, or used their authenticator app"; a plan on support's screen is looked at again every minute and the moment its access ends, so it never stays on screen after; "Show older messages" and each list on the account page use times to the microsecond, so nothing sent in the same second is skipped or muddled.
+- **Not changed:** getting back in with support's link reads a version problem as "PrePenny couldn't reach its server", as getting back in with a code does (D393); the page says to try again, and the version problem is gone a minute later.
+
+Test: `40-support-tools.test.sql` (27 new checks, each new rule broken on purpose, D635); `e2e/support-tools.spec.ts` test 4 (the notice on Alex's own phone, and its Stop it).
+
+Why: the outside review.
+
+### D639. Someone who can view only can let support see what they see
+
+Decided 20 Nov 2026 in step 4j, from its full end-to-end run on this computer. Adds to D617 and D292.
+
+- Brief 8.7 test 2 has Tom, once Jess has made him "Can view only", try every request the database takes, and checks nothing in the plan changed. "Let support see my plan" added one thing: his own line in Activity, "Tom let PrePenny support see the plan until Fri 27 Nov." Nothing of Jess's changed, and nothing shared.
+- That line is right, not a leak: support would see what Tom sees, which is Jess's shared accounts, so D617's "Tom is told" works both ways and Jess must be told. Someone who can view only changes nothing shared (D292), but what they let support see is their own choice, as leaving the plan is, and Activity already says when they leave.
+- So the test now sets aside exactly that line, from the person trying, in the plan, shared with everyone, saying only until when or that it stopped, and checks that nothing else at all was added to the plan. Every other part of the test is as it was.
+
+Test: `e2e/security.spec.ts` brief 8.7 test 2, for every person; `40-support-tools.test.sql` (Tom, who can view only, lets support see what he sees, Activity says so, support sees none of Jess's private records through it, and he stops it).
+
+Why: D617, and the test must keep proving nothing else changes.
+
+### D640. Support's account is its own, and never has a plan
+
+The owner's change, 21 Nov 2026, before step 4j was merged. Replaces part of D619 ("the address the owner signs in to PrePenny with").
+
+- Support signs in with an account of its own, never the owner's personal one: an address at prepenny.co.uk, forwarded to the owner's Gmail by Cloudflare Email Routing, and never shown anywhere public: not in the app, the website, PrePenny's emails or this repository. `SUPPORT_EMAIL` holds it; README.md part W calls it "support's address".
+- **It never has a plan.** The database refuses to add it to any plan, by any step (a check on every change of who's in a plan), and the Database workflow refuses a `SUPPORT_EMAIL` whose account is in a plan, such as someone's own, so nobody is support until it's support's own address.
+- **Signed in on prepenny.co.uk**, the app shows only "This is PrePenny support's account." and "Open the support dashboard instead.", on every page, with no setup and no plan, and no link to the dashboard. The database says so when it signs in and in every hello after. A **Sign out** button is added, as without one the browser would stay stuck on that line; signing out leaves any plan on the phone as it was, as it was never made support's.
+- **Usage leaves it out:** its sign-up and its opening PrePenny aren't counted.
+
+Test: `40-support-tools.test.sql` (190 checks, 9 for this: nobody can add support's account to a plan, it can't start one, hello says it's support's for it and nobody else, an address in a plan is never taken as support's, and usage leaves it out; each rule broken on purpose fails its check); `e2e/support-tools.spec.ts` test 1 (support's account on the app sees only its line, on every page, and has no plan).
+
+Why: the owner's instruction.
+
+### D641. The support dashboard is its own site, at admin.prepenny.co.uk, behind Cloudflare Access
+
+The owner's change, 21 Nov 2026, before step 4j was merged. Replaces D619's "The screen is `/app/support/`, inside the app".
+
+- **Its own site.** The dashboard is built on its own, from `apps/web/admin`, with only its page: its own sign-in by a 6-digit code by email (the email's link opens the dashboard, never the app), its own two-step sign-in set-up the first time, and its code every time after. It reuses the app's screens and styles, and its words are in a file of their own (`strings/support-en-GB.ts`), so none of its code or words are in the app. prepenny.co.uk/app/support/ is gone, and nothing in the app or on the website links to the dashboard.
+- **Only at its own address.** It's its own Cloudflare Worker, `prepenny-admin`, at admin.prepenny.co.uk, with no workers.dev address and no preview links (Cloudflare's documentation says both are public unless switched off, and they'd skip Access). The Deploy workflow puts it online from main only, never as a preview. Every request goes through its few lines first, which serve nothing unless it came to admin.prepenny.co.uk and Cloudflare Access signed it for the dashboard's own application, now, as Cloudflare's documentation says to: "To secure your origin, you must validate the application token issued by Cloudflare Access." Anything else gets "This page isn't here." That needs the Access team's address and the application's AUD tag, two GitHub variables (not secrets); without them the dashboard isn't put online, and the run says so. Cloudflare's `ctx.access` would do this with no checking of our own, but its documentation says a Worker with static files, as the dashboard is, doesn't get it.
+- **Cloudflare Access** sits in front, allowing support's address only, with a one-time code by email, before the page loads. The database's checks stay exactly as they were: support's account, with two-step sign-in on and passed, for every step (D619).
+- **After each deploy**, a check that prepenny.co.uk/app/support/ answers 404, admin.prepenny.co.uk sends anyone not signed in to Access's own sign-in on the team's address, and the Worker has no workers.dev address.
+- **The waiting-message email** to hello@ links to admin.prepenny.co.uk ("Open the support dashboard"). Supabase allows exactly `https://admin.prepenny.co.uk/` for signing in, set by the Database workflow from `supabase/sign-in-settings.json`.
+- **Checked on Cloudflare's own pages, 21 Nov 2026:** the Zero Trust Free plan is "$0 forever", with a "50 user limit", and includes Access. Setting up Zero Trust asks for payment details on the Free plan too: "this step is still needed but you will not be charged." Adding a Worker's own address accepts the "Workers Scripts Write" permission (Cloudflare's API reference), which GitHub's key has (D322), so the key needs nothing new. The address must have no DNS record of its own first: Cloudflare makes it, with its certificate.
+
+Test: `e2e/support-dashboard.spec.ts` (the app has no support pages, and nothing it serves has the dashboard's code or words; the dashboard's site has only the dashboard, with its own security policy); `test/unit/admin-worker.test.ts` (the Worker serves nothing at any other address, nor anything Access didn't sign for this application now, nor without its settings; each of those checks broken on purpose fails its test); `scripts/workflows.test.ts` (no workers.dev address, no preview links, put online from main only); `test/unit/check-support-dashboard.test.ts`; `e2e/support-tools.spec.ts` (every support step, signed in on the dashboard).
+
+Why: the owner's instruction.
+
+### D642. Nothing from the dashboard is kept on the computer
+
+The owner's instruction, 21 Nov 2026.
+
+- The dashboard's sign-in is kept for its browser tab only, so closing the tab signs out there; a new tab asks to sign in again.
+- It has no offline helper, no home-screen app details and no install, keeps no plan, and stores nothing before someone signs in. Its pages tell the browser to keep nothing (no-store) and never to show them in a search engine.
+- A plan someone let support see is shown from the database each time, never saved.
+
+Test: `e2e/support-dashboard.spec.ts` test 2, `e2e/support-tools.spec.ts` test 1.
+
+Why: the owner's instruction.

@@ -1,0 +1,19 @@
+// The support dashboard's copy on this computer for the tests (step 4j,
+// D641), on port 4176: its own files (../admin/out), with its own security
+// headers, behind e2e/admin-test-worker.ts. The real dashboard's few lines
+// (../admin/cloudflare/worker.ts) serve nothing but to admin.prepenny.co.uk
+// through Cloudflare Access, neither of which this computer has: the unit
+// tests (test/unit/admin-worker.test.ts) prove them instead.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "prepenny-admin-test",
+  "main": "admin-test-worker.ts",
+  "compatibility_date": "2026-10-19",
+  "assets": {
+    "directory": "../admin/out",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

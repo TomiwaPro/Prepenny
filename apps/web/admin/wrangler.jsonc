@@ -1,0 +1,32 @@
+// The support dashboard on Cloudflare Workers (step 4j, D641): its own
+// Worker, apart from the app's, at admin.prepenny.co.uk only.
+//
+// - No workers.dev address and no preview links (Cloudflare calls them
+//   Version URLs): Cloudflare's documentation says both are public unless
+//   switched off, and they'd skip Cloudflare Access, which protects the
+//   address. The Deploy workflow never uploads a preview of it either.
+// - admin.prepenny.co.uk is listed here, so every deploy adds it if it's
+//   missing and keeps it, as prepenny.co.uk is for the app (D322).
+//   Cloudflare makes its DNS record and certificate.
+// - Every request goes through cloudflare/worker.ts first, which serves
+//   nothing unless it came to admin.prepenny.co.uk through Cloudflare
+//   Access. ACCESS_TEAM_DOMAIN and ACCESS_AUD come from GitHub variables
+//   at deploy (README.md, part W): without them, nothing is served.
+// - Put online by the Deploy workflow from main only.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "prepenny-admin",
+  "main": "cloudflare/worker.ts",
+  "compatibility_date": "2026-10-19",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "admin.prepenny.co.uk", "custom_domain": true }],
+  "vars": { "ADMIN_HOST": "admin.prepenny.co.uk" },
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
