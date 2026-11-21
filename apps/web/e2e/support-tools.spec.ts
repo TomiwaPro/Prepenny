@@ -1,12 +1,15 @@
-// The support screen and support's tools, for real against the local
-// Supabase (step 4j, brief 4.16, D617 to D625), at 320px and 360px wide, in
-// light and dark, checked by axe:
+// The support dashboard and support's tools, for real against the local
+// Supabase (step 4j, brief 4.16, D617 to D625, D640 to D642), at 320px and
+// 360px wide, in light and dark, checked by axe. The dashboard is its own
+// site (e2e/support-dashboard.spec.ts), with its own sign-in:
 //
-// 1. Only support, signed in with two-step sign-in passed, opens the support
-//    screen or gets anything from its steps: not someone else signed in,
-//    not someone signed out, not support's own sign-in before its code, on
-//    the screen or through the Data API. Nothing about money and no email
-//    address reaches the console.
+// 1. Only support's own account, signed in on the dashboard with two-step
+//    sign-in passed, gets anything from its steps: not someone else signed
+//    in (by the code from the email, whose link opens the dashboard), not
+//    someone signed out, not support's own sign-in before its code, on the
+//    dashboard or through the Data API. Support's own account, signed in on
+//    the app, gets only "This is PrePenny support's account.", and never a
+//    plan. Nothing about money and no email address reaches the console.
 // 2. Replying, from a ready reply for someone in distress: the email from
 //    hello@prepenny.co.uk, without their words, and the reply kept.
 // 3. Support access: Jess starts it, support sees what she sees and never
@@ -28,11 +31,13 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { LOCAL_SUPABASE } from '../lib/sign-in-config.ts';
 import { TEST_SETTING_KEY } from '../lib/test-setting.ts';
 import { strings } from '../strings/en-GB.ts';
+import { supportStrings } from '../strings/support-en-GB.ts';
 import { layoutProblems } from './coming-up.ts';
+import { DASHBOARD } from './dashboard.ts';
 import { openOnExample, settingScript } from './fixtures.ts';
 import { addAccount, entries, jessAndTom, openActivity, planOf } from './jess-and-tom.ts';
 import { box, noAxeProblems } from './setup.ts';
-import { makeAPlan, newEmail, TODAY } from './sign-in-helpers.ts';
+import { newEmail, TODAY } from './sign-in-helpers.ts';
 import { appCode } from './totp.ts';
 import {
   LOCAL_SECRET_KEY,
@@ -41,12 +46,12 @@ import {
   quoted,
   secondPhone,
   signIn,
-  signUpFromMore,
   sql,
 } from './two-phones.ts';
 
-const t = strings.supportTools;
+const t = supportStrings.supportTools;
 const a = strings.supportAccess;
+const d = supportStrings.supportDashboard;
 const INBOX = 'http://127.0.0.1:54324';
 /** Support's own account in these tests: one for every test, as there's one support (D617). */
 const SUPPORT = 'prepenny-support@example.com';
@@ -112,14 +117,26 @@ async function turnOnTwoStep(address: string): Promise<string> {
   return key;
 }
 
+/** A one-time sign-in key for an address's email link, straight from the local Supabase (no email). */
+async function linkKeyFor(address: string): Promise<string> {
+  const link = await json(
+    await fetch(`${LOCAL_SUPABASE.url}/auth/v1/admin/generate_link`, {
+      method: 'POST',
+      headers: { apikey: LOCAL_SECRET_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'magiclink', email: address }),
+    }),
+  );
+  return link.hashed_token as string;
+}
+
 /**
- * Support's account, with two-step sign-in on, made once for every test,
- * and the database told it's support, as the Database workflow does from
- * the SUPPORT_EMAIL secret. One test at a time (a folder made atomically is
- * the lock), as a new sign-in link for an address ends the one before: the
- * work given is done while the lock is held, with the authenticator app's key.
+ * Support's own account, made once for every test, and the database told
+ * it's support, as the Database workflow does from the SUPPORT_EMAIL secret
+ * (D640). One test at a time (a folder made atomically is the lock), as a
+ * new sign-in link for an address ends the one before: the work given is
+ * done while the lock is held.
  */
-async function withSupport<T>(work: (key: string) => Promise<T>): Promise<T> {
+async function withSupport<T>(work: () => Promise<T>): Promise<T> {
   const lock = join(tmpdir(), 'prepenny-support-account.lock');
   for (let waited = 0; ; waited += 1) {
     try {
@@ -137,36 +154,62 @@ async function withSupport<T>(work: (key: string) => Promise<T>): Promise<T> {
     }
   }
   try {
-    let key = sql(`select f.secret from auth.mfa_factors f join auth.users u on u.id = f.user_id
-      where u.email = ${quoted(SUPPORT)} and f.status = 'verified' order by f.created_at limit 1`);
-    if (key === '') key = await turnOnTwoStep(SUPPORT);
+    // Its first sign-in makes the account and proves its address.
+    if (sql(`select count(*) from auth.users where email = ${quoted(SUPPORT)}`) === '0') {
+      await tokenFor(SUPPORT);
+    }
     expect(sql(`select app.set_support(${quoted(SUPPORT)})`)).toBe('set');
-    return await work(key);
+    return await work();
   } finally {
     rmSync(lock, { recursive: true, force: true });
   }
 }
 
-/** Signs support in on this phone, with the authenticator app's code, and opens the support screen. */
+/** The authenticator app's key for support's account, once it's set up. */
+const supportKey = () =>
+  sql(`select f.secret from auth.mfa_factors f join auth.users u on u.id = f.user_id
+    where u.email = ${quoted(SUPPORT)} and f.status = 'verified' order by f.created_at limit 1`);
+
+/**
+ * Signs support in on the dashboard, with the email's link, then the
+ * authenticator app: set up through the dashboard the first time (its
+ * screenshot then), its code every time after. The dashboard then shows
+ * its first view.
+ */
 async function openAsSupport(page: Page, today = TODAY) {
-  await openOnExample(page.context());
   await page.addInitScript(settingScript, [TEST_SETTING_KEY, { today }] as const);
-  const key = await withSupport(async (found) => {
-    await signIn(page, SUPPORT);
-    await expect(box(page, strings.security.appCodeLabel)).toBeVisible({ timeout: 20_000 });
-    return found;
+  await withSupport(async () => {
+    await page.goto(`${DASHBOARD}/#token_hash=${await linkKeyFor(SUPPORT)}&type=email`);
+    await expect(page.getByRole('heading', { level: 1, name: d.linkHeading })).toBeVisible();
+    await page.getByRole('button', { name: d.finishLink }).click();
+    const setUp = page.getByRole('heading', { level: 1, name: d.setUpHeading });
+    const second = page.getByRole('heading', { level: 1, name: d.secondHeading });
+    await expect(setUp.or(second)).toBeVisible({ timeout: 20_000 });
+    if (await setUp.isVisible()) {
+      await checkView(page, 'dashboard-set-up-start');
+      await page.getByRole('button', { name: d.setUp, exact: true }).click();
+      const key = ((await page.getByTestId('dashboard-key').textContent()) ?? '').replace(
+        /\s/g,
+        '',
+      );
+      await checkView(page, 'dashboard-set-up');
+      await box(page, d.appCodeLabel).fill(appCode(key));
+      await page.getByRole('button', { name: d.turnOn, exact: true }).click();
+    } else {
+      await checkView(page, 'dashboard-second-step');
+      await box(page, d.appCodeLabel).fill(appCode(supportKey()));
+      await page.getByRole('button', { name: d.continue, exact: true }).click();
+    }
+    await expect(page.getByRole('heading', { level: 1, name: t.heading })).toBeVisible({
+      timeout: 20_000,
+    });
   });
-  await box(page, strings.security.appCodeLabel).fill(appCode(key));
-  await page.getByRole('button', { name: strings.secondStep.finish, exact: true }).click();
-  await expect(page).toHaveURL(/\/app\//, { timeout: 20_000 });
-  await page.goto('/app/support/');
-  await expect(page.getByRole('heading', { level: 1, name: t.heading })).toBeVisible();
   await expect(page.getByTestId('support-inbox').getByText(t.loading)).toHaveCount(0);
 }
 
-/** Opens one of the support screen's views, as a link in it does. */
+/** Opens one of the dashboard's views, as a link in it does. */
 async function openView(page: Page, view: string, heading: string) {
-  await page.goto(`/app/support/#${view}`);
+  await page.goto(`${DASHBOARD}/#${view}`);
   await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
 }
 
@@ -200,6 +243,38 @@ async function newestEmail(address: string, subject: string, after = 0): Promise
         return false;
       },
       { message: `"${subject}" to ${address}`, timeout: 20_000 },
+    )
+    .toBe(true);
+  return found;
+}
+
+/** The newest sign-in email to an address since a time: its 6-digit code and its link. */
+async function codeEmail(address: string, after: number): Promise<{ code: string; link: string }> {
+  let found = { code: '', link: '' };
+  await expect
+    .poll(
+      async () => {
+        const response = await fetch(
+          `${INBOX}/api/v1/search?query=${encodeURIComponent(`to:"${address}"`)}`,
+        );
+        const { messages } = (await response.json()) as {
+          messages: { ID: string; Created: string }[];
+        };
+        for (const one of [...messages].sort((x, y) => y.Created.localeCompare(x.Created))) {
+          if (Date.parse(one.Created) < after) continue;
+          const message = (await (await fetch(`${INBOX}/api/v1/message/${one.ID}`)).json()) as {
+            HTML: string;
+          };
+          const code = />\s*(\d{6})\s*</.exec(message.HTML)?.[1];
+          const link = /href="([^"]*#token_hash=[^"]+)"/.exec(message.HTML)?.[1];
+          if (code !== undefined && link !== undefined) {
+            found = { code, link: link.replaceAll('&amp;', '&') };
+            return true;
+          }
+        }
+        return false;
+      },
+      { message: `a sign-in code to ${address}`, timeout: 20_000 },
     )
     .toBe(true);
   return found;
@@ -248,58 +323,62 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme });
     });
 
-    test('1. Only support, with two-step sign-in passed, opens the support screen or gets anything from its steps', async ({
+    test('1. Only support, with two-step sign-in passed, gets anything from the dashboard, and its account has no plan in the app', async ({
       page,
       browser,
     }, info) => {
-      test.setTimeout(120_000);
+      test.setTimeout(180_000);
       const said = watchConsole(page);
-      // Signed out, on a phone with the example plan (a phone with nothing on
-      // it goes to setup from every screen of the app): nothing is asked of
-      // the database.
-      const { page: signedOut, context: signedOutPhone } = await secondPhone(
-        browser,
-        info,
-        colorScheme,
-      );
-      await openOnExample(signedOutPhone);
-      await signedOut.goto('/app/support/');
-      await expect(signedOut.getByTestId('support-needs')).toHaveText(new RegExp(t.signedOut));
-      await noAxeProblems(signedOut);
-      await signedOutPhone.close();
-
-      // Someone else, signed in.
-      await makeAPlan(page);
-      const tom = newEmail('tom');
-      await signUpFromMore(page, tom);
-      await page.goto('/app/support/');
-      await expect(page.getByTestId('support-needs')).toContainText(t.notSupport);
+      // Signed out, the dashboard asks for nothing but the email address.
+      await page.goto(`${DASHBOARD}/`);
+      await expect(page.getByRole('heading', { level: 1, name: d.signInHeading })).toBeVisible();
       await expect(page.getByTestId('support-inbox')).toHaveCount(0);
-      await checkView(page, 'not-support');
-      // Through the Data API, with Tom's own sign-in, every step is refused.
-      const tomToken = await page.evaluate(
+
+      // Someone else signs in on the dashboard, with the code from the
+      // email, as support will: the email's link opens the dashboard too.
+      const someone = newEmail('someone');
+      await box(page, d.emailLabel).fill(someone);
+      const asked = Date.now();
+      await page.getByRole('button', { name: d.sendCode }).click();
+      await expect(page.getByTestId('dashboard-said')).toHaveText(d.sentTo(someone));
+      await checkView(page, 'dashboard-code');
+      const email = await codeEmail(someone, asked);
+      expect(
+        email.link.startsWith(`${DASHBOARD}/#token_hash=`),
+        'the link opens the dashboard',
+      ).toBe(true);
+      await box(page, d.codeLabel).fill(email.code);
+      await page.getByRole('button', { name: d.signIn, exact: true }).click();
+      await expect(page.getByTestId('dashboard-card')).toHaveText(d.notSupport);
+      await expect(page.getByTestId('support-inbox')).toHaveCount(0);
+      await checkView(page, 'dashboard-not-support');
+      // Their sign-in is kept for this tab only: nothing in the browser's lasting store.
+      expect(await page.evaluate(() => localStorage.length)).toBe(0);
+      const someoneToken = await page.evaluate(
         () =>
           (
-            JSON.parse(localStorage.getItem('prepenny-sign-in') ?? 'null') as {
+            JSON.parse(sessionStorage.getItem('prepenny-support-sign-in') ?? 'null') as {
               access_token: string;
             }
           ).access_token,
       );
+      const someoneId = sql(`select id from auth.users where email = ${quoted(someone)}`);
+      // Through the Data API, with their own sign-in, and signed out, every step is refused.
       const version = sql('select app.database_version()');
       const steps = {
         support_inbox: {},
         support_message: { message: '00000000-0000-0000-0000-000000000000' },
         support_find: { email: SUPPORT },
-        support_account: { person: await personOn(page) },
-        support_plan: { person: await personOn(page) },
+        support_account: { person: someoneId },
+        support_plan: { person: someoneId },
         support_reply: { message: '00000000-0000-0000-0000-000000000000', words: 'Hello' },
-        support_sign_out: { person: await personOn(page) },
-        support_start_two_step_wait: { person: await personOn(page) },
-        support_send_backup_link: { person: await personOn(page) },
+        support_sign_out: { person: someoneId },
+        support_start_two_step_wait: { person: someoneId },
+        support_send_backup_link: { person: someoneId },
         support_usage: {},
       };
       for (const [step, args] of Object.entries(steps)) {
-        for (const token of [tomToken, null]) {
+        for (const token of [someoneToken, null]) {
           const response = await fetch(`${LOCAL_SUPABASE.url}/rest/v1/rpc/${step}`, {
             method: 'POST',
             headers: {
@@ -310,7 +389,9 @@ for (const colorScheme of ['light', 'dark'] as const) {
             },
             body: JSON.stringify(args),
           });
-          expect(response.ok, `${step} ${token === null ? 'signed out' : 'as Tom'}`).toBe(false);
+          expect(response.ok, `${step} ${token === null ? 'signed out' : 'as someone else'}`).toBe(
+            false,
+          );
           const refusal = (await response.json()) as { message?: string };
           // A short code, never an address or anything about money.
           expect(refusal.message ?? '').not.toMatch(/@|£/);
@@ -319,10 +400,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
       // And nobody reads support's records through the Data API's tables.
       for (const table of ['support_actions', 'support_access', 'error_codes', 'support_replies']) {
         const response = await fetch(`${LOCAL_SUPABASE.url}/rest/v1/${table}?select=*`, {
-          headers: { apikey: LOCAL_SUPABASE.key, Authorization: `Bearer ${tomToken}` },
+          headers: { apikey: LOCAL_SUPABASE.key, Authorization: `Bearer ${someoneToken}` },
         });
         expect(response.ok, `${table} isn't on the Data API`).toBe(false);
       }
+      await page.getByRole('button', { name: d.signOut, exact: true }).click();
+      await expect(page.getByRole('heading', { level: 1, name: d.signInHeading })).toBeVisible();
+      expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
 
       // Support's own sign-in, before the authenticator app's code, gets nothing.
       const early = await withSupport(() => tokenFor(SUPPORT));
@@ -340,7 +424,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
       expect(((await before.json()) as { message?: string }).message).toBe('not-allowed');
 
       // Support, with the code typed: the inbox, the tax files and usage.
-      const { page: support, context: supportPhone } = await secondPhone(
+      const { page: support, context: supportComputer } = await secondPhone(
         browser,
         info,
         colorScheme,
@@ -353,9 +437,40 @@ for (const colorScheme of ['light', 'dark'] as const) {
         5,
       );
       await checkView(support, 'support');
-      neverPersonal(said);
+      // Closing the tab signs out there: a new tab asks to sign in again.
+      const another = await supportComputer.newPage();
+      await another.goto(`${DASHBOARD}/`);
+      await expect(another.getByRole('heading', { level: 1, name: d.signInHeading })).toBeVisible();
       neverPersonal(supportSaid);
-      await supportPhone.close();
+      await supportComputer.close();
+
+      // Support's own account, signed in on the app, gets only a line saying
+      // so: no setup, no plan, and the database never gives it one (D640).
+      const { page: app, context: appPhone } = await secondPhone(browser, info, colorScheme);
+      await withSupport(async () => {
+        await app.goto(`/sign-in/#token_hash=${await linkKeyFor(SUPPORT)}&type=email`);
+        await app.getByRole('button', { name: strings.signIn.finishLink }).click();
+        await expect(app.getByTestId('support-account')).toBeVisible({ timeout: 20_000 });
+      });
+      await expect(
+        app.getByRole('heading', { level: 1, name: strings.supportAccount.heading }),
+      ).toBeVisible();
+      await expect(app.getByTestId('support-account')).toContainText(strings.supportAccount.line);
+      await expect(app.getByRole('navigation')).toHaveCount(0);
+      await checkView(app, 'app-support-account');
+      for (const path of ['/app/', '/setup/', '/app/more/']) {
+        await app.goto(path);
+        await expect(app.getByTestId('support-account')).toBeVisible();
+      }
+      expect(
+        sql(`select count(*) from public.plan_members m join auth.users u on u.id = m.person_id
+          where u.email = ${quoted(SUPPORT)}`),
+      ).toBe('0');
+      await app.getByRole('button', { name: strings.supportAccount.signOut, exact: true }).click();
+      await expect(app.getByTestId('support-account')).toHaveCount(0);
+      await expect(app).toHaveURL(/127\.0\.0\.1:4173\/$/);
+      await appPhone.close();
+      neverPersonal(said);
     });
 
     test('2. A reply from a ready reply goes from hello@prepenny.co.uk, without their words, and is kept', async ({

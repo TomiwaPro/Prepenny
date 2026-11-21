@@ -13,14 +13,17 @@
 //   into a page at all, so a page left out couldn't run, rather than run
 //   anything.
 //
-// Usage: node scripts/write-headers.ts
+// Usage: node scripts/write-headers.ts [folder]
+// The folder is out/ unless given: the support dashboard's is admin/out
+// (scripts/build-admin.ts, D641).
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { signInConfig } from '../lib/sign-in-config.ts';
 import { inlineScripts, type Page, scriptHash, writePolicies } from './page-policies.ts';
 
-const out = join(import.meta.dirname, '..', 'out');
+const given = process.argv[2];
+const out = given === undefined ? join(import.meta.dirname, '..', 'out') : resolve(given);
 const file = join(out, '_headers');
 let headers = readFileSync(file, 'utf8');
 const ownSiteOnly = "connect-src 'self';";

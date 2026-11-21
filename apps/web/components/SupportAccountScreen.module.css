@@ -1,0 +1,12 @@
+/* Support's own account on the app (D640): one column, as every page,
+   with nothing else on it. */
+
+.alone {
+  width: 100%;
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: var(--space-6) var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}

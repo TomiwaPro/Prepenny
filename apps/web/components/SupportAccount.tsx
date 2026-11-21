@@ -23,13 +23,14 @@ import {
   type ToolsProblem,
 } from '../lib/support-tools.ts';
 import { strings } from '../strings/en-GB.ts';
+import { supportStrings } from '../strings/support-en-GB.ts';
 import formStyles from './Form.module.css';
 import styles from './Screens.module.css';
 import { Sheet } from './Sheet.tsx';
 import { dayOfMoment, ViewHeader, when } from './SupportScreen.tsx';
 import own from './SupportTools.module.css';
 
-const t = strings.supportTools;
+const t = supportStrings.supportTools;
 
 const problemWords = (problem: ToolsProblem) => t.problems[problem] ?? t.problems.server ?? '';
 

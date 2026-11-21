@@ -5,6 +5,7 @@
 
 import { checkTaxYearFiles } from '@prepenny/engine';
 import { strings } from '../strings/en-GB.ts';
+import { supportStrings } from '../strings/support-en-GB.ts';
 import { formatDayAndYear } from './dates.ts';
 
 export interface TaxYearWords {
@@ -17,11 +18,11 @@ export interface TaxYearWords {
 /** What the check finds on a day, "YYYY-MM-DD", in words. */
 export function taxYearWords(today: string): TaxYearWords {
   const { missing } = checkTaxYearFiles(today);
-  if (missing.length === 0) return { missing, lines: [strings.supportTools.taxYearFine] };
+  if (missing.length === 0) return { missing, lines: [supportStrings.supportTools.taxYearFine] };
   return {
     missing,
     lines: missing.map((year) =>
-      strings.supportTools.taxYearMissing(
+      supportStrings.supportTools.taxYearMissing(
         strings.pay.taxYearWords(year),
         formatDayAndYear(`${year.slice(0, 4)}-04-06`),
       ),

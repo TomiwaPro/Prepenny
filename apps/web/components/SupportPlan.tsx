@@ -13,12 +13,12 @@ import { readBackup } from '../lib/backup.ts';
 import { newId } from '../lib/ids.ts';
 import { supportFile, supportPlan } from '../lib/support-tools.ts';
 import { type PlanChangesRows, recordsFromRows, rowsOfChanges } from '../lib/sync-rows.ts';
-import { strings } from '../strings/en-GB.ts';
+import { supportStrings } from '../strings/support-en-GB.ts';
 import { ReadOnlyPlan } from './ReadOnlyPlan.tsx';
 import styles from './Screens.module.css';
 import { supportToday, ViewHeader, when } from './SupportScreen.tsx';
 
-const t = strings.supportTools;
+const t = supportStrings.supportTools;
 
 type Loaded =
   | { readonly kind: 'loading' }

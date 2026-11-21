@@ -4,23 +4,13 @@
 // it, when it was the other person lately (step 3g). Tapping it opens the
 // edit sheet.
 
-import { dateTile, formatDay } from '../lib/dates.ts';
+import { dateTile } from '../lib/dates.ts';
 import { formatMoney } from '../lib/money.ts';
+import { secondLine } from '../lib/row-lines.ts';
 import type { RowView } from '../lib/rows.ts';
 import { strings } from '../strings/en-GB.ts';
 import { useRowChangedBy } from './ChangedBy.tsx';
 import { PaymentRow } from './PaymentRow.tsx';
-
-/** "Fri 30 Oct", "Fri 30 Oct, estimate", "Sun 25 Oct, paid", or "arrived" for money coming in (D278). */
-export function secondLine(row: RowView, today: string): string {
-  const day = formatDay(row.date, today);
-  const comingIn = row.flow === 'in' || row.flow === 'transfer-in';
-  if (row.isEstimate && row.ticked)
-    return comingIn ? strings.rows.estimateArrived(day) : strings.rows.estimatePaid(day);
-  if (row.isEstimate) return strings.rows.estimate(day);
-  if (row.ticked) return comingIn ? strings.rows.arrived(day) : strings.rows.paid(day);
-  return day;
-}
 
 export function RowItem({
   row,

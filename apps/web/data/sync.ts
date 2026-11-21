@@ -84,6 +84,7 @@ import {
 import { getBackInNoticeChanges, setGetBackInNotice } from './get-back-in-notice.ts';
 import { setJoinRequests } from './join-requests.ts';
 import { setJoining } from './joining.ts';
+import { setSupportAccountHere } from './support-account.ts';
 import { setTwoStepOffNotice } from './two-step-off-notice.ts';
 
 // ---------------------------------------------------------------------------
@@ -267,10 +268,14 @@ async function lookAtStanding(client: SupabaseClient): Promise<Standing> {
       join_requests?: unknown;
       joining?: unknown;
       two_step_off?: unknown;
+      support_account?: unknown;
     }>(client, 'hello', {}, db),
   );
   // A database from before step 3e has no `hello`: it's still being updated.
   if (!answer.ok) return 'wait';
+  // Support's own account, which never has a plan: the app shows only a line
+  // saying so (step 4j, D640).
+  if (answer.data.support_account === true) setSupportAccountHere(true);
   // Someone getting back in with the backup email: every screen says so,
   // with "Stop it" (step 3e hardening).
   setGetBackInNotice(answer.data.sign_in === 'ok' ? (answer.data.get_back_in ?? null) : null);

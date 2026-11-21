@@ -246,3 +246,55 @@ test('database.yml builds the reminders function, puts it online and tells the d
     assert.match(step(at), /if: steps\.supabase\.outputs\.ready == 'true'\n/);
   }
 });
+
+// Step 4j (D641): the support dashboard is its own Worker, at
+// admin.prepenny.co.uk only, with no workers.dev address and no preview
+// links, put online from main only, and checked straight after.
+function jsonc(path: string): Record<string, unknown> {
+  const text = readFileSync(join(import.meta.dirname, '..', path), 'utf8');
+  return JSON.parse(text.replace(/^\s*\/\/.*$/gm, '')) as Record<string, unknown>;
+}
+
+test('the support dashboard is its own Worker, at admin.prepenny.co.uk only, with no workers.dev address and no preview links', () => {
+  const dashboard = jsonc('apps/web/admin/wrangler.jsonc');
+  assert.equal(dashboard.name, 'prepenny-admin');
+  assert.equal(dashboard.workers_dev, false);
+  assert.equal(dashboard.preview_urls, false);
+  assert.deepEqual(dashboard.routes, [{ pattern: 'admin.prepenny.co.uk', custom_domain: true }]);
+  assert.deepEqual(dashboard.vars, { ADMIN_HOST: 'admin.prepenny.co.uk' });
+  const assets = dashboard.assets as Record<string, unknown>;
+  assert.equal(assets.directory, './out');
+  // Every file goes through the check for the address and Cloudflare Access first.
+  assert.equal(assets.run_worker_first, true);
+
+  const app = jsonc('apps/web/wrangler.jsonc');
+  assert.notEqual(app.name, dashboard.name);
+  assert.equal((app.assets as Record<string, unknown>).directory, './out');
+  assert.doesNotMatch(JSON.stringify(app.routes), /admin/);
+});
+
+test('deploy.yml puts the support dashboard online from main only, never as a preview, and checks it', () => {
+  const text = readFileSync(join(folder, 'deploy.yml'), 'utf8');
+  const live = text.indexOf("- name: Check the live pages are PrePenny's own");
+  const online = text.indexOf('- name: Put the support dashboard online');
+  const check = text.indexOf(
+    '- name: Check the support dashboard is only at its own address, behind Cloudflare Access',
+  );
+  const preview = text.indexOf('- name: Upload a preview of this pull request');
+  assert.ok(live > 0 && online > live && check > online && preview > check, 'in order');
+  const step = text.slice(online, check);
+  assert.match(
+    step,
+    /if: steps\.cloudflare\.outputs\.ready == 'true' && github\.event_name != 'pull_request'/,
+  );
+  assert.match(step, /wrangler deploy --config admin\/wrangler\.jsonc/);
+  assert.match(step, /ACCESS_TEAM_DOMAIN: \$\{\{ vars\.CLOUDFLARE_ACCESS_TEAM_DOMAIN \}\}/);
+  assert.match(step, /ACCESS_AUD: \$\{\{ vars\.CLOUDFLARE_ACCESS_AUD \}\}/);
+  assert.match(text.slice(check, preview), /node scripts\/check-support-dashboard\.ts/);
+  // The dashboard is never uploaded any other way: only that step uses its settings.
+  assert.equal(text.split('--config admin/wrangler.jsonc').length - 1, 1);
+  // The preview upload uses the app's own settings, never the dashboard's.
+  const upload = text.slice(preview, text.indexOf('- name:', preview + 1));
+  assert.match(upload, /pnpm exec wrangler versions upload --preview-alias/);
+  assert.doesNotMatch(upload, /--config|admin\//);
+});

@@ -24,3 +24,8 @@ supabase/.temp/
 supabase/.branches/
 # The reminders function's work, built from apps/web/server/reminders.ts (step 4e).
 supabase/functions/reminders/_built/
+# The support dashboard's own build (step 4j, D641).
+apps/web/admin/.next/
+apps/web/admin/out/
+apps/web/admin/next-env.d.ts
+apps/web/admin/.wrangler/

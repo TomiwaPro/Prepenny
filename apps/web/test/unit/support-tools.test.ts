@@ -9,7 +9,7 @@ import {
   activityWords,
 } from '../../lib/activity-words.ts';
 import { taxYearWords } from '../../lib/tax-year-check.ts';
-import { strings } from '../../strings/en-GB.ts';
+import { supportStrings } from '../../strings/support-en-GB.ts';
 
 const JESS = 'jess-id';
 const TOM = 'tom-id';
@@ -61,7 +61,7 @@ describe('The tax year check (brief 4.15, D45, D625)', () => {
   it('says nothing is missing until 1 March', () => {
     expect(taxYearWords('2027-02-28')).toEqual({
       missing: [],
-      lines: [strings.supportTools.taxYearFine],
+      lines: [supportStrings.supportTools.taxYearFine],
     });
   });
 
@@ -77,7 +77,7 @@ describe('The tax year check (brief 4.15, D45, D625)', () => {
 
 describe('Ready replies (brief 4.16, D626)', () => {
   it('the one for someone in distress has Samaritans and free debt advice, as checked on their websites', () => {
-    const distress = strings.supportTools.ready.find((one) => one.key === 'distress');
+    const distress = supportStrings.supportTools.ready.find((one) => one.key === 'distress');
     const words = distress?.words.join('\n') ?? '';
     expect(words).toContain('Call 116 123, free from any phone.');
     expect(words).toContain('StepChange: 0800 138 1111');
@@ -86,7 +86,7 @@ describe('Ready replies (brief 4.16, D626)', () => {
   });
 
   it('none holds an amount, a payment name or a note', () => {
-    for (const one of strings.supportTools.ready) {
+    for (const one of supportStrings.supportTools.ready) {
       expect(one.words.join(' ')).not.toMatch(/£/);
     }
   });

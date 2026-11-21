@@ -1,83 +1,20 @@
 'use client';
 
-// The support screen's calls to the database (step 4j, D617 to D623), and a
-// person's own support access (question 13, D618). The database decides
-// everything: each support step refuses anyone but PrePenny support, signed
-// in with two-step sign-in passed (app.support_only). This file only asks,
-// and reads the answers. Nothing here writes an email address, words or
-// anything about money to the console or anywhere else (CLAUDE.md).
+// The support dashboard's calls to the database (step 4j, D617 to D623),
+// with the dashboard's own sign-in (lib/support-client.ts, D641). The
+// database decides everything: each support step refuses anyone but
+// PrePenny support, signed in with two-step sign-in passed
+// (app.support_only). This file only asks, and reads the answers. Nothing
+// here writes an email address, words or anything about money to the
+// console or anywhere else (CLAUDE.md).
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { signedInClient } from './account.ts';
+import { type AccessState, accessOf, callWith, count, type Done, text } from './support-calls.ts';
+import { supportClient } from './support-client.ts';
 
-/** Why a step didn't work, as a code the screens turn into words. */
-export type ToolsProblem =
-  | 'offline'
-  | 'server'
-  | 'not-allowed'
-  | 'busy'
-  | 'already'
-  | 'waiting'
-  | 'two-step-off'
-  | 'no-backup'
-  | 'is-you'
-  | 'email-off'
-  | 'no-address'
-  | 'not-found'
-  | 'no-access'
-  | 'no-plan'
-  | 'bad-email'
-  | 'bad-reply';
+export type { AccessState, Done, ToolsProblem } from './support-calls.ts';
 
-const KNOWN: readonly ToolsProblem[] = [
-  'not-allowed',
-  'busy',
-  'already',
-  'waiting',
-  'two-step-off',
-  'no-backup',
-  'is-you',
-  'email-off',
-  'no-address',
-  'not-found',
-  'no-access',
-  'no-plan',
-  'bad-email',
-  'bad-reply',
-];
-
-export type Done<T> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly problem: ToolsProblem };
-
-const offline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
-
-function problemOf(error: unknown): ToolsProblem {
-  const message =
-    error !== null && typeof error === 'object' ? (error as { message?: unknown }).message : null;
-  if (typeof message === 'string') {
-    const found = KNOWN.find((one) => one === message);
-    if (found !== undefined) return found;
-  }
-  return offline() ? 'offline' : 'server';
-}
-
-async function call<T>(name: string, args: Record<string, unknown> = {}): Promise<Done<T>> {
-  if (offline()) return { ok: false, problem: 'offline' };
-  try {
-    const made: SupabaseClient | null = await signedInClient();
-    if (made === null) return { ok: false, problem: 'not-allowed' };
-    const { data, error } = await made.rpc(name, args);
-    if (error !== null) return { ok: false, problem: problemOf(error) };
-    return { ok: true, value: data as T };
-  } catch (error) {
-    return { ok: false, problem: problemOf(error) };
-  }
-}
-
-const text = (value: unknown): string | null => (typeof value === 'string' ? value : null);
-const count = (value: unknown): number =>
-  typeof value === 'number' ? value : typeof value === 'string' ? Number(value) || 0 : 0;
+const call = <T>(name: string, args: Record<string, unknown> = {}) =>
+  callWith<T>(() => supportClient(), name, args);
 
 // ---------------------------------------------------------------------------
 // Who's support.
@@ -258,21 +195,6 @@ export async function supportFind(email: string): Promise<Done<string | null>> {
   return { ok: true, value: answer.value.found === true ? text(answer.value.person) : null };
 }
 
-export interface AccessState {
-  readonly on: boolean;
-  readonly endsAt: string | null;
-  readonly lastLookedAt: string | null;
-}
-
-function accessOf(raw: unknown): AccessState {
-  const one = (raw ?? {}) as Record<string, unknown>;
-  return {
-    on: one.on === true,
-    endsAt: text(one.ends_at),
-    lastLookedAt: text(one.last_looked_at),
-  };
-}
-
 export interface AccountDetail {
   readonly person: string;
   readonly email: string | null;
@@ -433,22 +355,4 @@ export async function supportUsage(): Promise<Done<Usage>> {
       waiting: count(one.waiting),
     },
   };
-}
-
-// ---------------------------------------------------------------------------
-// A person's own support access (question 13, D618).
-
-export async function mySupportAccess(): Promise<Done<AccessState>> {
-  const answer = await call<unknown>('my_support_access');
-  return answer.ok ? { ok: true, value: accessOf(answer.value) } : answer;
-}
-
-export async function giveSupportAccess(): Promise<Done<AccessState>> {
-  const answer = await call<unknown>('give_support_access');
-  return answer.ok ? { ok: true, value: accessOf(answer.value) } : answer;
-}
-
-export async function endSupportAccess(): Promise<Done<AccessState>> {
-  const answer = await call<unknown>('end_support_access');
-  return answer.ok ? { ok: true, value: accessOf(answer.value) } : answer;
 }

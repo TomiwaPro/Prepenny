@@ -13,12 +13,13 @@ import { dateTile, formatDay } from '../lib/dates.ts';
 import { workOutDebtsView } from '../lib/debts-view.ts';
 import { formatIn, formatMoney } from '../lib/money.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
+import { secondLine } from '../lib/row-lines.ts';
 import { strings } from '../strings/en-GB.ts';
+import { supportStrings } from '../strings/support-en-GB.ts';
 import { PaymentRow } from './PaymentRow.tsx';
-import { secondLine } from './RowItem.tsx';
 import styles from './Screens.module.css';
 
-const t = strings.supportTools;
+const t = supportStrings.supportTools;
 
 /** The plan's figures, or null when the engine can't work them out. */
 function workedOut(records: PlanRecords, today: string) {

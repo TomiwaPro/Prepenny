@@ -25,6 +25,8 @@ const port = 4173;
 const OLD_ADDRESS_PORT = 4174;
 /** The third copy, with its rules in the live site's order (D559). */
 const LIVE_ORDER_PORT = 4175;
+/** The support dashboard, its own site (step 4j, D641). */
+const DASHBOARD_PORT = 4176;
 /**
  * A pull request's preview on Cloudflare, tried for real by the Deploy
  * workflow (step 3e-2, D408). Given, only that test runs, against it.
@@ -96,6 +98,15 @@ export default defineConfig({
             command: `wrangler dev --config e2e/old-address.wrangler.jsonc --port ${OLD_ADDRESS_PORT} --ip 127.0.0.1 --local-protocol https --log-level warn`,
             url: `https://127.0.0.1:${OLD_ADDRESS_PORT}/app/`,
             ignoreHTTPSErrors: true,
+            reuseExistingServer: process.env.CI === undefined,
+            env: { WRANGLER_SEND_METRICS: 'false' },
+            timeout: 60_000,
+          },
+          // The support dashboard, its own site (step 4j, D641): only its
+          // page, with its own headers (e2e/admin.wrangler.jsonc).
+          {
+            command: `wrangler dev --config e2e/admin.wrangler.jsonc --port ${DASHBOARD_PORT} --ip 127.0.0.1 --log-level warn`,
+            url: `http://127.0.0.1:${DASHBOARD_PORT}/`,
             reuseExistingServer: process.env.CI === undefined,
             env: { WRANGLER_SEND_METRICS: 'false' },
             timeout: 60_000,

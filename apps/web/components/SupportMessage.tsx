@@ -16,7 +16,7 @@ import {
   supportReply,
   type ToolsProblem,
 } from '../lib/support-tools.ts';
-import { strings } from '../strings/en-GB.ts';
+import { supportStrings } from '../strings/support-en-GB.ts';
 import { ChoiceList } from './ChoiceList.tsx';
 import { describedBy, Field } from './Fields.tsx';
 import formStyles from './Form.module.css';
@@ -24,7 +24,7 @@ import styles from './Screens.module.css';
 import { dayOfMoment, dayWords, ViewHeader, when } from './SupportScreen.tsx';
 import own from './SupportTools.module.css';
 
-const t = strings.supportTools;
+const t = supportStrings.supportTools;
 const MOST = 5000;
 
 export function replyProblem(problem: ToolsProblem): string {

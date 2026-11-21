@@ -17,8 +17,8 @@ import {
   endSupportAccess,
   giveSupportAccess,
   mySupportAccess,
-  type ToolsProblem,
-} from '../lib/support-tools.ts';
+} from '../lib/support-access.ts';
+import type { ToolsProblem } from '../lib/support-calls.ts';
 import { strings } from '../strings/en-GB.ts';
 import formStyles from './Form.module.css';
 import { usePlanActions } from './PlanProvider.tsx';

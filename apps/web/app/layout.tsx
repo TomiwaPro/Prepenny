@@ -1,7 +1,8 @@
 // The root of every page: the language, the one font (Figtree, self-hosted,
 // D23), the colours, the home-screen app details, on a pull request's
-// preview the line saying it's a test version (D407), and at the live app's
-// old address the move to prepenny.co.uk (D428).
+// preview the line saying it's a test version (D407), at the live app's
+// old address the move to prepenny.co.uk (D428), and, signed in to support's
+// own account, only the line saying so (D640).
 
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
@@ -10,6 +11,7 @@ import { InstallListener } from '../components/InstallListener.tsx';
 import { OldAddress } from '../components/OldAddress.tsx';
 import { PreviewLine } from '../components/PreviewLine.tsx';
 import { ServiceWorker } from '../components/ServiceWorker.tsx';
+import { SupportAccountGate } from '../components/SupportAccountScreen.tsx';
 import { installEarlyScript } from '../lib/install-early.ts';
 import { startupImages } from '../lib/splash-screens.ts';
 import { coloursScript, PAPER } from '../lib/theme.ts';
@@ -89,7 +91,7 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
       <body>
         <PreviewLine />
         <OldAddress />
-        {children}
+        <SupportAccountGate>{children}</SupportAccountGate>
         <ServiceWorker />
         <InstallListener />
       </body>

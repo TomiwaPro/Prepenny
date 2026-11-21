@@ -1,10 +1,10 @@
 'use client';
 
-// The support screen (step 4j, brief 4.16, ARCHITECTURE.md 3.7, D617 to
-// D625), at /app/support/, for PrePenny support only. The database decides
-// who that is: the account whose address is in the SUPPORT_EMAIL secret,
-// signed in with two-step sign-in on and passed. Anyone else who opens the
-// page gets nothing from the database, and is told so.
+// The support dashboard's views (step 4j, brief 4.16, ARCHITECTURE.md 3.7,
+// D617 to D625), on the dashboard's own address, admin.prepenny.co.uk, for
+// PrePenny support only (D641). The database decides who that is: support's
+// own account, whose address is in the SUPPORT_EMAIL secret, signed in with
+// two-step sign-in on and passed. SupportDashboard.tsx signs in first.
 //
 // One page, as static export needs (D337), with what's shown after the "#":
 // - nothing: the tax year check, the inbox, finding an account and usage;
@@ -15,42 +15,30 @@
 // - #plan=id: the plan someone let support see, read only;
 // - #copy=id: a message's plan copy, read only.
 
-import Link from 'next/link';
-import {
-  type FormEvent,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from 'react';
-import { useAccount } from '../lib/account.ts';
+import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { formatDay } from '../lib/dates.ts';
 import { momentWords } from '../lib/device-words.ts';
 import {
   type Inbox,
   type InboxMessage,
-  type SupportStatus,
   supportFind,
   supportInbox,
-  supportStatus,
   supportUsage,
   type Usage,
 } from '../lib/support-tools.ts';
 import { taxYearWords } from '../lib/tax-year-check.ts';
+import { testSetting } from '../lib/test-setting.ts';
 import { localToday } from '../lib/today.ts';
-import { strings } from '../strings/en-GB.ts';
+import { supportStrings } from '../strings/support-en-GB.ts';
 import { describedBy, Field } from './Fields.tsx';
 import formStyles from './Form.module.css';
-import { todayOf } from './PlanProvider.tsx';
 import styles from './Screens.module.css';
 import { SupportAccountView } from './SupportAccount.tsx';
 import { SupportMessageView } from './SupportMessage.tsx';
 import { SupportCopyView, SupportPlanView } from './SupportPlan.tsx';
 import own from './SupportTools.module.css';
 
-const t = strings.supportTools;
+const t = supportStrings.supportTools;
 
 /** What's shown, from the address after "#". */
 export type SupportView =
@@ -65,8 +53,8 @@ export function viewOf(hash: string): SupportView {
   return { kind: found[1] as 'message' | 'account' | 'plan' | 'copy', id: found[2] as string };
 }
 
-/** Today, "YYYY-MM-DD", as every screen has it (the tests can set it, lib/test-setting.ts). */
-export const supportToday = () => todayOf({ isExample: false, id: '' });
+/** Today, "YYYY-MM-DD", by this computer's clock (the tests can set it, lib/test-setting.ts). */
+export const supportToday = () => testSetting()?.today ?? localToday();
 
 /** "2:05pm on Fri 20 Nov", by this phone's clock. */
 export const when = (time: string) => momentWords(time);
@@ -105,22 +93,8 @@ export function ViewHeader({
   );
 }
 
-/** A card saying why there's nothing to show, with what to do. */
-function Needs({ words, link }: { readonly words: string; readonly link?: ReactNode }) {
-  return (
-    <>
-      <ViewHeader heading={t.heading} purpose={t.purpose} back={null} />
-      <section className={styles.card} data-testid="support-needs">
-        <p className={styles.line}>{words}</p>
-        {link === undefined ? null : <div className={styles.actions}>{link}</div>}
-      </section>
-    </>
-  );
-}
-
+/** The dashboard's views, once support is signed in with two-step sign-in passed (SupportDashboard.tsx). */
 export function SupportScreen() {
-  const account = useAccount();
-  const [status, setStatus] = useState<SupportStatus | 'loading' | 'failed' | 'offline'>('loading');
   const [view, setView] = useState<SupportView>({ kind: 'home' });
 
   useEffect(() => {
@@ -130,65 +104,6 @@ export function SupportScreen() {
     return () => window.removeEventListener('hashchange', follow);
   }, []);
 
-  const look = useCallback(async () => {
-    setStatus('loading');
-    const answer = await supportStatus();
-    setStatus(answer.ok ? answer.value : answer.problem === 'offline' ? 'offline' : 'failed');
-  }, []);
-
-  useEffect(() => {
-    if (account.status === 'signed-in') void look();
-  }, [account.status, look]);
-
-  if (account.status !== 'signed-in') {
-    return (
-      <Needs
-        words={t.signedOut}
-        link={
-          <Link className={formStyles.outlined} href="/sign-in/?from=more">
-            {t.signIn}
-          </Link>
-        }
-      />
-    );
-  }
-  if (status === 'loading') return <Needs words={t.loading} />;
-  if (status === 'failed' || status === 'offline') {
-    return (
-      <Needs
-        words={status === 'offline' ? t.offline : t.couldNotLoad}
-        link={
-          <button type="button" className={formStyles.outlined} onClick={() => void look()}>
-            {t.tryAgain}
-          </button>
-        }
-      />
-    );
-  }
-  if (status === 'two-step') {
-    return (
-      <Needs
-        words={t.needsTwoStep}
-        link={
-          <Link className={formStyles.outlined} href="/app/two-step/">
-            {t.setUpTwoStep}
-          </Link>
-        }
-      />
-    );
-  }
-  if (status === 'no') {
-    return (
-      <Needs
-        words={t.notSupport}
-        link={
-          <Link className={formStyles.outlined} href="/app/more/">
-            {t.backToMore}
-          </Link>
-        }
-      />
-    );
-  }
   switch (view.kind) {
     case 'message':
       return <SupportMessageView key={view.id} id={view.id} />;

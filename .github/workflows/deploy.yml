@@ -186,6 +186,46 @@ jobs:
         working-directory: apps/web
         run: node scripts/check-live-site.ts https://prepenny.co.uk
 
+      - name: Put the support dashboard online
+        # Step 4j (D641): the support dashboard is its own Worker,
+        # prepenny-admin, built into apps/web/admin/out by `pnpm build`, at
+        # admin.prepenny.co.uk only, with no workers.dev address and no
+        # preview links (apps/web/admin/wrangler.jsonc). Its few lines serve
+        # nothing unless Cloudflare Access let the request through, so they
+        # need the Access team's address and the dashboard application's AUD
+        # tag: two GitHub variables, not secrets (README.md, part W). Until
+        # both are set it isn't put online, and the run says so. From main
+        # only: a pull request never uploads it.
+        id: dashboard
+        if: steps.cloudflare.outputs.ready == 'true' && github.event_name != 'pull_request'
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.CLOUDFLARE_ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ vars.CLOUDFLARE_ACCESS_AUD }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || inputs.commit || github.sha }}
+        run: |
+          if [ -z "$ACCESS_TEAM_DOMAIN" ] || [ -z "$ACCESS_AUD" ]; then
+            echo "::warning title=Support dashboard not put online::CLOUDFLARE_ACCESS_TEAM_DOMAIN and CLOUDFLARE_ACCESS_AUD aren't set yet, so the support dashboard wasn't put online. Follow README.md, part W."
+            echo "online=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pnpm exec wrangler deploy --config admin/wrangler.jsonc \
+            --var "ACCESS_TEAM_DOMAIN:$ACCESS_TEAM_DOMAIN" --var "ACCESS_AUD:$ACCESS_AUD" \
+            --message "Commit ${COMMIT::7}"
+          echo "online=true" >> "$GITHUB_OUTPUT"
+
+      - name: Check the support dashboard is only at its own address, behind Cloudflare Access
+        # Step 4j (D641): prepenny.co.uk/app/support/ is "This page isn't
+        # here", admin.prepenny.co.uk sends anyone not signed in with Access
+        # to Access's own sign-in, and the dashboard has no workers.dev address.
+        if: steps.dashboard.outputs.online == 'true'
+        working-directory: apps/web
+        env:
+          ACCESS_TEAM_DOMAIN: ${{ vars.CLOUDFLARE_ACCESS_TEAM_DOMAIN }}
+        run: node scripts/check-support-dashboard.ts "$ACCESS_TEAM_DOMAIN"
+
       - name: Upload a preview of this pull request
         id: preview
         if: steps.cloudflare.outputs.ready == 'true' && github.event_name == 'pull_request'
