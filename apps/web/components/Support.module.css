@@ -115,3 +115,15 @@
   border-radius: var(--radius-card);
   background: var(--card);
 }
+
+/*
+ * PrePenny's status page on Contact us (step 4k): its line, then the link,
+ * above the form, with a row divider under them, as the footer's.
+ */
+.statusLine {
+  display: grid;
+  justify-items: start;
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--divider);
+}

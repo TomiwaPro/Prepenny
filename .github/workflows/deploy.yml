@@ -111,7 +111,18 @@ jobs:
           LIVE_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           PREVIEW_SUPABASE_URL: ${{ vars.PREVIEW_SUPABASE_URL }}
           PREVIEW_SUPABASE_KEY: ${{ vars.PREVIEW_SUPABASE_PUBLISHABLE_KEY }}
+          # Step 4k (D643): PrePenny's status page at UptimeRobot, linked from
+          # Help, Contact us, the website's help pages, the note when the
+          # server isn't answering and the support dashboard. A variable, not
+          # a secret: it's a public page. Until it's set, nothing links to it.
+          STATUS_PAGE_URL: ${{ vars.STATUS_PAGE_URL }}
         run: |
+          if [ -z "$STATUS_PAGE_URL" ]; then
+            echo "::warning title=No status page::The STATUS_PAGE_URL variable isn't set yet, so nothing links to PrePenny's status page. Follow README.md, part X."
+          elif ! printf '%s' "$STATUS_PAGE_URL" | grep -Eq '^https://[a-z0-9.-]+\.[a-z]{2,}(/[A-Za-z0-9._~/-]*)?$'; then
+            echo "::warning title=Status page address::STATUS_PAGE_URL isn't a plain https address, such as https://stats.uptimerobot.com/AbCdEf, so nothing links to it. Follow README.md, part X."
+          fi
+          export NEXT_PUBLIC_STATUS_PAGE_URL="$STATUS_PAGE_URL"
           if [ "$IS_PREVIEW" = "true" ]; then
             export NEXT_PUBLIC_PREVIEW=true
             if [ -z "$PREVIEW_SUPABASE_URL" ] || [ -z "$PREVIEW_SUPABASE_KEY" ]; then

@@ -6,14 +6,30 @@
 // under More.
 
 import { HELP_ROUTES } from '../lib/help-routes.ts';
+import { statusPageUrl } from '../lib/status-page.ts';
 import { strings } from '../strings/en-GB.ts';
 import { HelpSite } from './HelpSite.tsx';
 import { ScreenHeader } from './ScreenParts.tsx';
 import screenStyles from './Screens.module.css';
+import { StatusLink } from './StatusLink.tsx';
 import styles from './Support.module.css';
 import { SupportForm } from './SupportForm.tsx';
 
 const t = strings.support;
+
+/**
+ * Before writing, PrePenny's status page (step 4k, D643): someone writing
+ * because PrePenny isn't working sees whether it's down for everyone.
+ */
+function StatusLine() {
+  if (statusPageUrl() === null) return null;
+  return (
+    <div className={styles.statusLine} data-testid="contact-status">
+      <p className={styles.added}>{strings.statusPage.contactLine}</p>
+      <StatusLink className={styles.footerLink} />
+    </div>
+  );
+}
 
 function ContactForm() {
   return (
@@ -38,6 +54,7 @@ export function ContactScreen() {
         back={{ label: strings.security.backToMore, href: '/app/more/' }}
       />
       <section className={screenStyles.card} aria-label={t.contact.heading}>
+        <StatusLine />
         <ContactForm />
       </section>
     </>
@@ -53,6 +70,7 @@ export function ContactSite() {
         <p className={screenStyles.purpose}>{t.contact.purpose}</p>
       </header>
       <section className={styles.siteCard} aria-label={t.contact.heading}>
+        <StatusLine />
         <ContactForm />
       </section>
       <p>

@@ -15,6 +15,28 @@
 }
 
 /*
+ * The note when PrePenny's server isn't answering (step 4k): its words, then
+ * the status page's link under them, underlined in Navy as text, 44px to tap
+ * with padding the words around it don't move for, as help's links (D587).
+ */
+.withLink {
+  display: grid;
+  justify-items: start;
+  gap: 0;
+  padding-bottom: 0;
+}
+
+.noteLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--accent-text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/*
  * The example banner with its button back to the person's own plan (step 2e).
  * Slim since D451: the words and the button side by side wherever they fit,
  * as "Make my plan" does from 320px, with less padding above and below.

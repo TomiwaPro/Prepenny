@@ -19,6 +19,7 @@ import { useSyncExternalStore } from 'react';
 import { claimOwnPlan, openDb } from '../data/db.ts';
 import { forgetEverything, planSafelyKept } from '../data/forget.ts';
 import { setSupportAccountHere, supportAccountHere } from '../data/support-account.ts';
+import { watchServer } from './server-status.ts';
 import { signInConfig } from './sign-in-config.ts';
 import { fetchWithTimeLimit } from './time-limit.ts';
 import { appVersion } from './version.ts';
@@ -137,9 +138,11 @@ function supabase(): Promise<SupabaseClient> {
       // lib/version.ts), so an old phone can't quietly keep a different plan.
       // Every request has a time limit, so one that never gets an answer, as
       // when the phone slept part-way through it, can't hold up the rest (D404).
+      // And each is watched, so the app can say when PrePenny's server isn't
+      // answering a phone that has a signal (step 4k, lib/server-status.ts).
       global: {
         headers: { 'x-prepenny-version': appVersion().database },
-        fetch: fetchWithTimeLimit(),
+        fetch: watchServer(fetchWithTimeLimit()),
       },
       auth: {
         // Google comes back with a one-time code, checked against a secret
