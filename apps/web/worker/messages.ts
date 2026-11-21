@@ -13,6 +13,7 @@ import type { AccountsView, BudgetsView, GoalsView } from '../lib/money-views.ts
 import type { PayCommand, PayPreview } from '../lib/pay-preview.ts';
 import type { PayView } from '../lib/pay-view.ts';
 import type { PaymentAt } from '../lib/payment-at.ts';
+import type { Chosen, Picture } from '../lib/picture.ts';
 import type { PlanView, PlanViewOptions } from '../lib/plan-view.ts';
 import type { SetupProgress } from '../lib/setup-progress.ts';
 import type { SetupView } from '../lib/setup-view.ts';
@@ -143,6 +144,16 @@ export interface SyncRecordsAsk {
   readonly personId: string;
 }
 
+/**
+ * A picture chosen for Something looks wrong, drawn afresh with its hidden
+ * details taken out (D607), here rather than on the screen's own thread,
+ * where Chrome waits for the screen to be idle before saving it (step 4k).
+ */
+export interface PictureAsk {
+  readonly kind: 'picture';
+  readonly file: Blob;
+}
+
 /** What to do with one waiting change, against the newest records (step 3d, lib/clash.ts). */
 export type SettleChangeAsk = SettleAsk & { readonly kind: 'settle' };
 
@@ -150,6 +161,7 @@ export type SettleChangeAsk = SettleAsk & { readonly kind: 'settle' };
 export type ClashFactsAsk = ReplacedAsk & { readonly kind: 'clash-facts' };
 
 export type Ask =
+  | PictureAsk
   | SettleChangeAsk
   | ClashFactsAsk
   | SyncWritesAsk
@@ -189,6 +201,7 @@ export interface Answers {
   readonly 'sync-records': FromRows;
   readonly settle: Settled;
   readonly 'clash-facts': ClashFacts;
+  readonly picture: Chosen<Picture>;
 }
 
 export type WorkRequest = Ask & { readonly id: number };

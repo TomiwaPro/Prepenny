@@ -11,6 +11,7 @@ import { previewJobChange, workOutJobView } from '../lib/job-view.ts';
 import { workOutAccountsView, workOutBudgetsView, workOutGoalsView } from '../lib/money-views.ts';
 import { previewPayChange } from '../lib/pay-preview.ts';
 import { workOutPayView } from '../lib/pay-view.ts';
+import { preparePicture } from '../lib/picture.ts';
 import { workOutPlanView } from '../lib/plan-view.ts';
 import { workOutSetupView } from '../lib/setup-view.ts';
 import { syncRecords, syncWrites } from '../lib/sync-work.ts';
@@ -19,12 +20,12 @@ import type { Answers, Ask, WorkRequest, WorkResponse } from './messages.ts';
 
 interface WorkerScope {
   addEventListener(type: 'message', listener: (event: MessageEvent<WorkRequest>) => void): void;
-  postMessage(message: WorkResponse): void;
+  postMessage(message: WorkResponse, transfer?: Transferable[]): void;
 }
 
 const scope = self as unknown as WorkerScope;
 
-function answer(ask: Ask): Answers[Ask['kind']] {
+function answer(ask: Exclude<Ask, { kind: 'picture' }>): Answers[Ask['kind']] {
   switch (ask.kind) {
     case 'home':
       return workOutHome(ask.records, ask.today);
@@ -73,6 +74,23 @@ function answer(ask: Ask): Answers[Ask['kind']] {
 
 scope.addEventListener('message', (event) => {
   const request = event.data;
+  if (request.kind === 'picture') {
+    // A picture is drawn and saved here, off the screen, so it never waits for
+    // the screen to be idle (step 4k). The engine's questions are answered
+    // meanwhile; the picture's bytes are handed over, not copied. A browser
+    // that can't draw in a worker is told so, and the screen does it instead.
+    if (typeof OffscreenCanvas !== 'function' || typeof createImageBitmap !== 'function') {
+      scope.postMessage({ id: request.id, ok: false, code: 'no-drawing-here' });
+      return;
+    }
+    void preparePicture(request.file).then((ready) =>
+      scope.postMessage(
+        { id: request.id, ok: true, answer: ready },
+        ready.ok ? [ready.file.bytes.buffer as ArrayBuffer] : [],
+      ),
+    );
+    return;
+  }
   try {
     scope.postMessage({ id: request.id, ok: true, answer: answer(request) });
   } catch (error) {
