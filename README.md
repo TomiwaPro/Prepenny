@@ -961,6 +961,36 @@ The support dashboard opens only with the code from the authenticator app on you
 
 Only people who can sign in to the Supabase project can open its SQL Editor. Nobody signed in to PrePenny, nobody signed out, and not even Supabase's own key can run this step: `supabase/tests/database/42-support-lost-authenticator.test.sql` checks it.
 
+### X. Step 4k: service status
+
+What changed (D643 to D652): **PrePenny's status page** says whether four things are working: the app, signing in, saving changes and reminders. It's at UptimeRobot, on UptimeRobot's free plan, so it keeps working when PrePenny doesn't. UptimeRobot checks each part every 5 minutes, and emails you when one stops working. The app links to it from **More**, **Help**, from **Contact us**, and from the end of every help page on the website. When a signed-in phone has a signal but PrePenny's server isn't answering, a note says "PrePenny's server isn't answering right now, so changes can't be sent to your account. They're saved on this phone and will be sent when it's back.", with **See PrePenny's status**. The support dashboard shows the same four parts at the top, checked as you open it.
+
+The checks use nobody's account or data: "the app" is PrePenny's own page; the other three ask a small function on Supabase, `status`, which the Database workflow puts online. It asks Supabase's sign-in service whether it's healthy, saves the time of the check in a row of its own, and looks whether the reminders job ran in the last 5 minutes and the reminders function answers.
+
+**Checked on 21 Nov 2026:** UptimeRobot's own pricing page says its free plan is "Good for personal and commercial projects", with "50 monitors", a "5 min. monitoring interval" and "Basic status pages"; its terms say "UptimeRobot is available for any use, including commercial and business use" and "Free plan includes 1 status page with a unique UptimeRobot URL only", so the page's address is at stats.uptimerobot.com, not prepenny.co.uk (that needs a paid plan). Cloudflare and Supabase stay free: the checks use about 7% of Supabase's 500,000 free function calls a month, and 288 of Cloudflare's 100,000 free daily requests (D644).
+
+**What you set up.** Steps 1 to 5 come before merging; step 6 is the merge; steps 7 to 10 come after, as the status function goes online with the merge.
+
+1. **The account.** On https://uptimerobot.com/pricing/, under **Free**, tap **Register now**, and sign up with your Gmail. No card is needed. UptimeRobot emails you there when a part stops working.
+2. **The app's check.** In UptimeRobot's dashboard, tap **+ Add New Monitor**. Choose **HTTP(s)**. **URL**: `https://prepenny.co.uk/app/`. **Friendly Name**: `The app` (it's what the status page shows). Leave the monitoring interval at **5 minutes**, keep your email as the alert contact, and tap **Create Monitor**. Within 5 minutes it says **Up**.
+3. **The status page.** Tap **Status pages**, then **Create Status Page**. Choose the monitor **The app**. Name the page `PrePenny`. Leave your own domain empty (it's for paid plans). Tap **Finish**. Open the page: its address starts `https://stats.uptimerobot.com/`. Copy the whole address.
+4. **The GitHub variable.** On github.com, open the repository, **Settings**, **Secrets and variables**, **Actions**, then the **Variables** tab (not **Secrets**: the address is public), **New repository variable**. **Name**: `STATUS_PAGE_URL`. **Value**: the status page's address you copied, such as `https://stats.uptimerobot.com/AbCdEf123`. Tap **Add variable**.
+5. **Your Supabase address, for steps 8 and 9.** On the same **Variables** tab, open `SUPABASE_URL` and copy its value, such as `https://abcdefghijklmnopqrst.supabase.co`.
+6. **Merge** the pull request.
+7. **Check the runs.** **Actions**, then **Database**: a green tick, with **Put the status function online** done. Then **Actions**, **Deploy**: a green tick, and no yellow "No status page" warning.
+8. **The three server checks.** In UptimeRobot, tap **+ Add New Monitor** three times, each **HTTP(s)**, 5 minutes, your email as the alert contact, then **Create Monitor**. Put your Supabase address from step 5 in place of the made-up one:
+   - **Friendly Name** `Signing in`, **URL** `https://abcdefghijklmnopqrst.supabase.co/functions/v1/status?part=sign-in`
+   - **Friendly Name** `Saving changes`, **URL** `https://abcdefghijklmnopqrst.supabase.co/functions/v1/status?part=saving`
+   - **Friendly Name** `Reminders`, **URL** `https://abcdefghijklmnopqrst.supabase.co/functions/v1/status?part=reminders`
+
+   Each says **Up** within 5 minutes. A part that isn't working answers "503", which UptimeRobot counts as down.
+9. **Add them to the status page.** Tap **Status pages**, then the PrePenny page, and choose the three new monitors as well. With **Manual** sorting, drag them into this order: The app, Signing in, Saving changes, Reminders. Save.
+10. **Look at it.** Open the status page: four parts, each **Up**, with nothing personal on it. UptimeRobot's own words on the page, such as "All systems operational", are UptimeRobot's and can't be changed on the free plan.
+
+**Using it:** UptimeRobot emails your Gmail when a part goes down, and again when it's back. When people write in, the status page and the dashboard's **PrePenny's status** say whether it's PrePenny's end. What to check by hand is in `docs/TRY-PHASE-4.md`, section "Step 4k".
+
+**If something goes wrong:** if a server check stays **Down** while PrePenny works on your phone, open its address in a browser: "working": true means UptimeRobot will catch up at its next check; anything else, run **Actions**, **Database**, **Run workflow** again, then ask Claude Code.
+
 ## Bank holidays
 
 The engine's copy of the UK bank holiday list is `packages/engine/data/bank-holidays.json`, downloaded unchanged from https://www.gov.uk/bank-holidays.json by the **Bank holidays** workflow on GitHub. The file beside it, `bank-holidays.source.json`, says where it came from and when. It's built into PrePenny, so a phone with no signal still knows the bank holidays. To get a fresh copy, open **Actions**, then **Bank holidays**, then **Run workflow** on your branch. It only saves a new commit if the list has changed. A pull request gets one by itself when it's marked ready.

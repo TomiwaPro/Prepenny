@@ -320,6 +320,40 @@ The tax year check, on GitHub:
 
 If something looks different, note the step number and what you saw. The last section deletes both test accounts, and with them everything support kept about them. Afterwards, remove the second PrePenny line, for Tom, from your authenticator app.
 
+## Step 4k: service status, and four fixes (15 minutes)
+
+PrePenny's status page, its links, the note on your phone with no signal, the dashboard's status card, and the fixes. First, follow README.md part X, in its order: the UptimeRobot account and the app's check, the status page, the GitHub variable `STATUS_PAGE_URL` (on the **Variables** tab), merging, then the three server checks. Device A is your phone, still signed in as `yourname+jess4@gmail.com` from step 4j. Device C is a computer, for the support dashboard and the status page.
+
+The status page:
+
+1. On device C, open the status page's address (README.md part X, step 3). It's titled PrePenny and lists **The app**, **Signing in**, **Saving changes** and **Reminders**, each up. Nothing on it names you, an address or an account.
+2. On device A, tap **More**: under **Help**, the last row is **PrePenny's status**, "Whether the app, signing in, saving changes and reminders are working now". Tap it: the status page opens on its own, and PrePenny is still there when you go back.
+3. On device A, tap **More**, **Contact us**: above the form, "If PrePenny isn't working, its status page says whether it's down for everyone." with **PrePenny's status**. Tap it: the same page.
+4. On device C, open https://prepenny.co.uk/contact/: the same line and link. Then https://prepenny.co.uk/help/: at the end, **Can't sign in? Contact us** and **PrePenny's status**. The same at the end of any article.
+
+No note about the server when it's only your phone:
+
+5. On device A, open Home and turn on flight mode. The note says "You're offline. Changes are saved on this phone and will be sent when you're back online." Tap **Update balance** and save the balance as it is (the same figure), then tap **Undo** on the bar, so Jess's plan is as it was: both are saved on the phone. No note says PrePenny's server isn't answering.
+6. Turn flight mode off. Within a minute the note goes, and **More** says your plan is saved in your account.
+
+The note when PrePenny's server isn't answering can't be tried by hand without stopping the live server for everyone, so it's only tested on the building computer: `docs/screens/4k/server-down-320-light.png` shows it.
+
+The support dashboard:
+
+7. On device C, open https://admin.prepenny.co.uk/ and sign in as support (Cloudflare's code, the dashboard's code, then the authenticator app's). At the top, **PrePenny's status**: **The app**, **Signing in**, **Saving changes** and **Reminders**, each **Working**, and "Checked at" the time now. Tap **Check again**: the time changes. Tap **Open the status page**: the same page as step 1.
+8. Further down, under **Usage**, **Opened PrePenny in the last 7 days** is at least 1: Jess's phone in steps 2 to 6 (fix 2). It counts a phone only while PrePenny is on its screen, on any version.
+
+The picture fix:
+
+9. On device A, take a screenshot with your phone's buttons. In PrePenny, at the end of Home, tap **Something looks wrong**, then **A screenshot**, then **Choose a picture**, and choose it. "Picture chosen: ..." shows within a second or two, while the screen keeps scrolling smoothly. Close the sheet without sending.
+
+If you have 5 minutes, try README.md's "If support's authenticator app is lost", so you know it works before you need it:
+
+10. On supabase.com, the **prepenny** project, **SQL Editor**, **New query**: `select app.turn_off_support_two_step();`, then **Run**. It says "Two-step sign-in is off for PrePenny support's account, and it has been signed out everywhere. ..."
+11. On device C, reload the dashboard: it asks you to sign in again. Sign in as in step 7: it shows **Set up two-step sign-in**. Set it up with your authenticator app, then remove the older "PrePenny support" line from the app: its codes no longer work.
+
+If something looks different, note the step number and what you saw. The last section deletes the test accounts, Jess's included.
+
 ## Last: delete the test accounts (2 minutes)
 
 1. On device B, tap **More**, then **Delete my account and all my data**, then **Send me a code**. Type the code from the email to `yourname+tom4@gmail.com`, type `delete` in **Type delete to confirm**, and tap **Delete my account and all my data**. It says the account and all its data have been deleted, and an email says it's done.
